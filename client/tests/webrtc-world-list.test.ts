@@ -8,10 +8,8 @@ import { forumProfileUrl, refreshServerList, relayWorldEntries, replaceRelayWorl
 import { resolveServerTransport, setServerUrl } from "../network/serverConnection/outgoing/connectionInfo";
 import { state as connectionState } from "../network/serverConnection/state";
 
-assert.deepEqual(getWebRtcRelayConfig(), {
-    signalUrl: "wss://worlds.rsps.app",
-    iceServers: [{ urls: "stun:stun.rsps.app:3478" }],
-});
+// No built-in relay: nothing is contacted until REACT_APP_WEBRTC_SIGNAL_URL is set.
+assert.equal(getWebRtcRelayConfig(), undefined);
 
 const previousPublicUrl = process.env.PUBLIC_URL;
 process.env.PUBLIC_URL = "/play";
@@ -23,10 +21,10 @@ else process.env.PUBLIC_URL = previousPublicUrl;
 const previousSignalUrl = process.env.REACT_APP_WEBRTC_SIGNAL_URL;
 process.env.REACT_APP_WEBRTC_SIGNAL_URL = "ws://127.0.0.1:8787";
 (globalThis as any).window = { location: { search: "?browser-host-client=1&browser-host-world=browser-test" } };
-assert.equal(getWebRtcRelayConfig()?.signalUrl, "wss://worlds.rsps.app");
+assert.equal(getWebRtcRelayConfig()?.signalUrl, "ws://127.0.0.1:8787");
 assert.deepEqual(getBrowserHostWorldConfig(), {
-    signalUrl: "wss://worlds.rsps.app",
-    iceServers: [{ urls: "stun:stun.rsps.app:3478" }],
+    signalUrl: "ws://127.0.0.1:8787",
+    iceServers: [],
     worldId: "browser-test",
 });
 setServerUrl("ws://127.0.0.1:43594");

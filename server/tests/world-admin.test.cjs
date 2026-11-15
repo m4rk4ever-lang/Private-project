@@ -415,7 +415,15 @@ test("plugin ZIPs can be deleted and re-imported, with access and package checks
   const install = (packageId, version, headers) => request(port, {
     method: "POST", path: "/api/plugins/install", headers, body: { packageId, version },
   });
-  const releases = "https://github.com/RSPSApp/tsps-plugins/releases/download/";
+  // Remote plugin downloads are off by default; the install path is tested against a configured URL.
+  assert.equal((await install("welcome", "1.0.0", auth)).status, 400);
+  const releases = "https://github.com/example/my-plugins/releases/download/";
+  const previousReleases = process.env.PLUGIN_RELEASES_URL;
+  process.env.PLUGIN_RELEASES_URL = releases;
+  t.after(() => {
+    if (previousReleases === undefined) delete process.env.PLUGIN_RELEASES_URL;
+    else process.env.PLUGIN_RELEASES_URL = previousReleases;
+  });
   const asset = "https://release-assets.githubusercontent.com/welcome.zip";
   const downloads = [];
   let redirect = asset;

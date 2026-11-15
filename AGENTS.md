@@ -30,9 +30,3 @@ checkout.
   and what to look at.
 - **New worktrees:** `scripts/wt new <branch>`, not plain `git worktree add`; it writes the
   ports and copies `node_modules`.
-
-## Working through issues
-
-To fix GitHub issues unattended (claim, fix, verify in game, PR, next), follow
-[the repo-owned bugfix skill](.agents/skills/tsps-bugfix-loop/SKILL.md).
-Its helpers are in `scripts/agents/`; [docs/bug-loop.md](docs/bug-loop.md) is the docs entry point.

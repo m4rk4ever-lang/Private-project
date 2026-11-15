@@ -190,6 +190,10 @@ export class VoiceChatPlugin extends Plugin {
         document.addEventListener("keydown", this.resumeAudio);
         this.resumeAudio();
         const relay = getWebRtcRelayConfig() ?? getPublicWebRtcRelayConfig();
+        if (!relay) {
+            this.iceServers = [];
+            return Promise.resolve();
+        }
         const pending = resolveIceServers(relay.signalUrl, relay.iceServers).then(servers => {
             if (generation === this.generation) this.iceServers = servers;
         }).finally(() => {

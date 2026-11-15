@@ -20,7 +20,6 @@ type PeerState = {
   timeout: ReturnType<typeof setTimeout>;
 };
 
-const DEFAULT_SIGNAL_URL = "wss://worlds.rsps.app";
 // Never give up: the relay only evicts a stale registration of ours after ~30s of
 // missed status checks, so retries must outlast that window.
 const MAX_RECONNECT_DELAY_MS = 30_000;
@@ -31,7 +30,8 @@ const MAX_CONTENT_RESPONSE_CHARS = 2_000_000;
 // JSON escaping can expand each UTF-16 unit sixfold; the client caps frames at32768.
 const CONTENT_CHUNK_CHARS = 4096;
 const MAX_CONTENT_BUFFERED_BYTES = 8_000_000;
-const DEFAULT_ICE_SERVERS: RTCIceServer[] = [{ urls: "stun:stun.rsps.app:3478" }];
+// No built-in relay or STUN server: configure WEBRTC_SIGNAL_URL and WEBRTC_ICE_SERVERS yourself.
+const DEFAULT_ICE_SERVERS: RTCIceServer[] = [];
 
 function parseIceServers(raw: string | undefined): RTCIceServer[] {
   if (!raw) return DEFAULT_ICE_SERVERS;
@@ -61,13 +61,17 @@ export class WebRtcGameConnector {
     accept: (channel: BinaryChannel) => void,
     playerCount: () => number = () => 0
   ): WebRtcGameConnector | undefined {
-    const signalUrl = process.env.WEBRTC_SIGNAL_URL?.trim() || DEFAULT_SIGNAL_URL;
+    const signalUrl = process.env.WEBRTC_SIGNAL_URL?.trim();
     const worldId = process.env.WEBRTC_WORLD_ID?.trim();
     const worldName = getWorldDefinition().name;
     const token = process.env.WEBRTC_WORLD_TOKEN?.trim();
     if (!worldId && !token) return undefined;
     if (!worldId || !token) {
       console.warn("[webrtc] WEBRTC_WORLD_ID and WEBRTC_WORLD_TOKEN are both required");
+      return undefined;
+    }
+    if (!signalUrl) {
+      console.warn("[webrtc] WEBRTC_SIGNAL_URL is required; there is no built-in relay");
       return undefined;
     }
     try {

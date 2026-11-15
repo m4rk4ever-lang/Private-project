@@ -9,7 +9,11 @@ const { HttpError, MAX_BODY_BYTES } = require("./Http.WorldAdmin");
 const MAX_FILE_BYTES = 1024 * 1024;
 const PACKAGE_ID = /^[a-z][a-z0-9-]{0,63}$/;
 const PACKAGE_VERSION = /^\d{1,6}\.\d{1,6}\.\d{1,6}$/;
-const RELEASES = "https://github.com/RSPSApp/tsps-plugins/releases/download";
+// Remote plugin downloads are off unless you point this at your own GitHub releases,
+// e.g. PLUGIN_RELEASES_URL=https://github.com/<you>/<repo>/releases/download
+function releasesUrl() {
+  return process.env.PLUGIN_RELEASES_URL?.trim().replace(/\/$/, "");
+}
 
 function parseManifest(text) {
   const { format, id, name, version, description } = JSON.parse(text);
@@ -55,6 +59,10 @@ async function downloadPluginRelease(packageId, version) {
   if (typeof packageId !== "string" || !PACKAGE_ID.test(packageId) ||
       typeof version !== "string" || !PACKAGE_VERSION.test(version)) {
     throw new HttpError(400, "Invalid plugin package ID or version.");
+  }
+  const RELEASES = releasesUrl();
+  if (!RELEASES) {
+    throw new HttpError(400, "Plugin downloads are disabled. Upload the plugin ZIP instead, or set PLUGIN_RELEASES_URL.");
   }
   const options = { redirect: "manual", signal: AbortSignal.timeout(15000) };
   const releaseUrl = `${RELEASES}/${packageId}-v${version}/${packageId}-${version}.zip`;

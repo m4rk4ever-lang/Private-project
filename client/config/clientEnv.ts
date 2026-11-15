@@ -28,8 +28,13 @@ export type WebRtcRelayConfig = {
 
 export type BrowserHostWorldConfig = WebRtcRelayConfig & { worldId: string };
 
-const DEFAULT_WEBRTC_SIGNAL_URL = "wss://worlds.rsps.app";
-const DEFAULT_WEBRTC_ICE_SERVERS: RTCIceServer[] = [{ urls: "stun:stun.rsps.app:3478" }];
+// No built-in relay: WebRTC worlds, browser-hosted worlds and voice chat only use a relay
+// you configure yourself with REACT_APP_WEBRTC_SIGNAL_URL (and optionally ICE servers).
+const DEFAULT_WEBRTC_ICE_SERVERS: RTCIceServer[] = [];
+
+function configuredSignalUrl(): string | undefined {
+    return read(process.env.REACT_APP_WEBRTC_SIGNAL_URL);
+}
 
 function readBoolean(value: unknown, fallback: boolean): boolean {
     if (typeof value === "boolean") return value;
@@ -153,9 +158,10 @@ export function getConfiguredServers(): ConfiguredServer[] | undefined {
     }
 }
 
-/** Public relay directory used to discover WebRTC worlds. */
-export function getPublicWebRtcRelayConfig(): WebRtcRelayConfig {
-    return { signalUrl: DEFAULT_WEBRTC_SIGNAL_URL, iceServers: DEFAULT_WEBRTC_ICE_SERVERS };
+/** The configured relay directory, or undefined when none is configured. */
+export function getPublicWebRtcRelayConfig(): WebRtcRelayConfig | undefined {
+    const signalUrl = configuredSignalUrl();
+    return signalUrl ? { signalUrl, iceServers: DEFAULT_WEBRTC_ICE_SERVERS } : undefined;
 }
 
 let iceCache: { signalUrl: string; iceServers: RTCIceServer[]; expiresAt: number } | undefined;
@@ -249,7 +255,9 @@ export function getBrowserHostWorldConfig(): BrowserHostWorldConfig | undefined 
     const params = new URLSearchParams(window.location.search);
     const worldId = worldIdFromPath() ?? params.get("browser-host-world");
     if (!worldId || !/^[A-Za-z0-9._-]{1,64}$/.test(worldId)) return undefined;
-    return { ...getPublicWebRtcRelayConfig(), worldId };
+    const relay = getPublicWebRtcRelayConfig();
+    if (!relay) return undefined;
+    return { ...relay, worldId };
 }
 
 /** Public relay directory used to discover WebRTC worlds. */
@@ -258,7 +266,8 @@ export function getWebRtcRelayConfig(): WebRtcRelayConfig | undefined {
         return getPublicWebRtcRelayConfig();
     }
 
-    const signalUrl = read(process.env.REACT_APP_WEBRTC_SIGNAL_URL) ?? DEFAULT_WEBRTC_SIGNAL_URL;
+    const signalUrl = configuredSignalUrl();
+    if (!signalUrl) return undefined;
 
     const rawIceServers = read(process.env.REACT_APP_WEBRTC_ICE_SERVERS);
     if (!rawIceServers) return { signalUrl, iceServers: DEFAULT_WEBRTC_ICE_SERVERS };
