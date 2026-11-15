@@ -184,7 +184,7 @@ test("with coins to spare it may train a skill on bought materials", () => {
   assert.notEqual(none.mode, "buy_fletching", "not without the coins");
   const data = require("../plugins/bots/data/adventurers.json");
   for (const [skill, recipe] of Object.entries(data.buyToTrain)) {
-    assert.ok(recipe.tiers.length > 0 && recipe.tiers.at(-1)[0] === 1, `${skill} has a level-1 tier`);
+    assert.ok(recipe.tiers.length > 0 && recipe.tiers.at(-1)[0] <= 3, `${skill} starts near level 1`);
     assert.match(recipe.activity, /^process_/);
   }
 });

@@ -4724,6 +4724,7 @@ export class PluginManager {
       emitFiremakingBlocked: (event) => PluginManager.emitFiremakingBlocked(event),
       emitObjectInteraction: (event) => PluginManager.emitObjectInteraction(event),
       emitItemAction: (event) => PluginManager.emitItemAction(event),
+      emitItemOnItem: (event) => PluginManager.emitItemOnItem(event),
       emitNpcInteraction: (event) => PluginManager.emitNpcInteraction(event),
       emitWorldEntityInteraction: (event) => PluginManager.emitWorldEntityInteraction(event),
       emitNpcAttackOption: (event) => PluginManager.emitNpcAttackOption(event),

@@ -18,6 +18,7 @@ const { createLightFireAction } = require("./actions/LightFire.PlayerBots");
 const { createSmeltAction } = require("./actions/Smelt.PlayerBots");
 const { createSmithAction } = require("./actions/Smith.PlayerBots");
 const { createFletchAction } = require("./actions/Fletch.PlayerBots");
+const { createMakeAction } = require("./actions/Make.PlayerBots");
 const { createTrainCombatAction } = require("./actions/TrainCombat.PlayerBots");
 const { createPvpCombatAction } = require("./actions/PvpCombat.PlayerBots");
 const { createWanderAction } = require("./actions/Wander.PlayerBots");
@@ -191,6 +192,14 @@ function createAction(spec, world) {
   }
   if (spec.type === "smith") {
     return createSmithAction(spec, world);
+  }
+  if (spec.type === "make") {
+    return createMakeAction({
+      ...spec,
+      tool: spec.tool ? resolveItemId(spec.tool) : null,
+      materials: (spec.materials ?? []).map(resolveItemId).filter((id) => Number.isInteger(id)),
+      pairs: (spec.pairs ?? []).map((pair) => pair.map(resolveItemId)),
+    }, world);
   }
   if (spec.type === "fletch") {
     return createFletchAction({ ...spec, itemIds: (spec.itemIds ?? []).map(resolveItemId).filter((id) => Number.isInteger(id)) }, world);

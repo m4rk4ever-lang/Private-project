@@ -147,17 +147,24 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const recipe = data.buyToTrain?.[skill];
     if (!recipe) return null;
     const level = levelOf(player, skill);
-    const [, name] = recipe.tiers.find(([needed]) => level >= needed) ?? [];
-    const itemId = name ? Shopping.idOf(core, name) : null;
-    if (!Number.isInteger(itemId)) return null;
-    const guide = Number(core.ItemDefinition?.forId?.(itemId)?.getGrandExchangeValue?.() ?? 0) || 1;
-    return { skill, recipe, itemId, name, amount: recipe.amount, cost: Math.ceil(guide * 1.05) * recipe.amount };
+    const [, names] = recipe.tiers.find(([needed]) => level >= needed) ?? [];
+    if (!names) return null;
+    const materials = (Array.isArray(names) ? names : [names]).map((name) => Shopping.idOf(core, name));
+    if (!materials.every(Number.isInteger)) return null;
+    const cost = materials.reduce((sum, id) => {
+      const guide = Number(core.ItemDefinition?.forId?.(id)?.getGrandExchangeValue?.() ?? 0) || 1;
+      return sum + Math.ceil(guide * 1.05) * recipe.amount;
+    }, 0);
+    return { skill, recipe, itemId: materials[0], materials, amount: recipe.amount, cost };
   }
 
   /** Skills it can afford to train on bought materials (with coins to spare for food and tools). */
   function buyableSkills(player) {
     const coins = Shopping.coinsOf(player);
+    const done = questDone(player);
     return Object.keys(data.buyToTrain ?? {}).filter((skill) => {
+      // Herblore needs Druidic Ritual first, as for a player.
+      if (data.buyToTrain[skill].quest && !done(data.buyToTrain[skill].quest)) return false;
       const plan = buyPlan(player, skill);
       return plan && coins >= plan.cost + 200;
     });
@@ -257,10 +264,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const { player } = entry;
     const buy = buyPlan(player, plan.skill);
     if (!buy) return false;
-    const toolId = Shopping.idOf(core, buy.recipe.tool);
+    const toolId = buy.recipe.tool ? Shopping.idOf(core, buy.recipe.tool) : null;
     if (Number.isInteger(toolId) && !Shopping.owns(player, toolId)) return shopFor(entry, toolId, buy.recipe.tool, 1);
     entry.plan = plan;
-    if (player.getInventory().getAmount(buy.itemId) > 0) {
+    if (buy.materials.every((id) => player.getInventory().getAmount(id) > 0)) {
       const station = buy.recipe.station ?? null;
       const home = station ?? (() => { const at = player.getLocation(); return { x: at.getX(), y: at.getY(), z: at.getZ() }; })();
       startActivity(player, buy.recipe.activity, { home, nowMs });
@@ -269,20 +276,21 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       entry.phase = "training";
       entry.buying = buy.itemId;
       entry.until = nowMs + randomBetween(data.trainMinutes, random) * 60_000;
-      note(player, `Traint ${plan.skill.toLowerCase()} met gekochte ${itemName(buy.itemId)}.`);
+      note(player, `Traint ${plan.skill.toLowerCase()} met ${buy.materials.map(itemName).join(" en ")}.`);
       return true;
     }
     // Its own stock first: banked logs or bars, fetched from the nearest bank.
-    if (banked(player, buy.itemId) > 0) {
+    if (buy.materials.every((id) => banked(player, id) + player.getInventory().getAmount(id) > 0)) {
       const bank = nearestBank(player);
       const ge = { ...data.grandExchange, name: "de Grand Exchange" };
       const to = !bank || distanceTo(player, ge) <= bank.away ? ge : { ...bank, name: bank.name ?? bank.id };
       return walkTo(entry, to, {
         reason: "withdraw",
         arrive: (banker) => {
-          const got = withdraw(banker, buy.itemId, buy.amount);
+          const share = Math.floor(28 / buy.materials.length) - 1;
+          const got = buy.materials.reduce((sum, id) => sum + withdraw(banker, id, Math.min(buy.amount, share)), 0);
           if (got > 0) {
-            note(banker, `Haalt ${got} x ${itemName(buy.itemId)} van de bank om ${plan.skill.toLowerCase()} te trainen.`, "activity");
+            note(banker, `Haalt ${buy.materials.map(itemName).join(" en ")} van de bank om ${plan.skill.toLowerCase()} te trainen.`, "activity");
             entry.resume = plan;
             entry.waitingSince = now();
           }
@@ -294,12 +302,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       reason: "buy_materials",
       arrive: (buyer) => {
         emit("ge:collect", { player: buyer });
-        if (buyer.getInventory().getAmount(buy.itemId) > 0) return;
-        if (!Trade.buyAtExchange(buyer, core, emit, buy.itemId, buy.amount)) {
-          note(buyer, `Kon geen bod doen op ${itemName(buy.itemId)}.`, "activity");
+        const missing = buy.materials.filter((id) => buyer.getInventory().getAmount(id) <= 0);
+        if (missing.length === 0) return;
+        if (!missing.every((id) => Trade.buyAtExchange(buyer, core, emit, id, buy.amount))) {
+          note(buyer, `Kon niet op alles bieden (${missing.map(itemName).join(", ")}).`, "activity");
           return;
         }
-        note(buyer, `Biedt op ${buy.amount} x ${itemName(buy.itemId)} (~${buy.cost.toLocaleString("nl-NL")} gp) om ${plan.skill.toLowerCase()} te trainen.`, "activity");
+        note(buyer, `Biedt op ${buy.amount} x ${missing.map(itemName).join(" en ")} (~${buy.cost.toLocaleString("nl-NL")} gp) om ${plan.skill.toLowerCase()} te trainen.`, "activity");
         entry.resume = plan;
         entry.waitingSince = now();
       },
@@ -388,7 +397,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       if (waiting) emit("ge:collect", { player: entry.player });
       const resume = entry.resume;
       const buy = buyPlan(entry.player, resume.skill);
-      if (buy && entry.player.getInventory().getAmount(buy.itemId) > 0) {
+      if (buy && buy.materials.every((id) => entry.player.getInventory().getAmount(id) > 0)) {
         entry.resume = null;
         if (startBuyTraining(entry, resume, nowMs)) return;
       } else if (nowMs - (entry.waitingSince ?? nowMs) < BID_WAIT_MS) {
@@ -639,9 +648,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (usefulIds) return usefulIds;
     usefulIds = new Set();
     for (const recipe of Object.values(data.buyToTrain ?? {})) {
-      for (const [, name] of recipe.tiers) {
-        const id = Shopping.idOf(core, name);
-        if (Number.isInteger(id)) usefulIds.add(id);
+      for (const [, names] of recipe.tiers) {
+        for (const name of Array.isArray(names) ? names : [names]) {
+          const id = Shopping.idOf(core, name);
+          if (Number.isInteger(id)) usefulIds.add(id);
+        }
       }
     }
     for (const name of data.bankKeep ?? []) {

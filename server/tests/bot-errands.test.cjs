@@ -133,3 +133,34 @@ test("charged jewellery and tablets teleport only to their own places, and only 
   // An uncharged glory takes it nowhere.
   assert.equal(bestTeleport(core, player(3300, 2800, [1704]), { x: 3092, y: 3245 }, { jewelleryData }), null);
 });
+
+test("make: a tool on a material, the best menu entry that starts, until the material is gone", () => {
+  const { createMakeAction } = require("../plugins/bots/brain/actions/Make.PlayerBots");
+  const NEEDLE = 1733, LEATHER = 1741, GLOVES = 1059, BOOTS = 1061, BODY = 1129;
+  let leather = 3;
+  const items = () => [{ getId: () => NEEDLE, getAmount: () => 1 }, ...(leather > 0 ? [{ getId: () => LEATHER, getAmount: () => leather }] : [])];
+  let menu = null;
+  const tried = [];
+  const player = {
+    getInventory: () => ({ getItems: items, getAmount: (id) => (id === LEATHER ? leather : id === NEEDLE ? 1 : 0) }),
+    setCreationMenu: (value) => { menu = value; },
+    getCreationMenu: () => menu,
+  };
+  const world = {
+    emitItemOnItem: () => {
+      menu = { getItems: () => [GLOVES, BOOTS, BODY], execute: (id) => { tried.push(id); if (id === BOOTS) leather -= 1; } };
+    },
+  };
+  const action = createMakeAction({ tool: NEEDLE, materials: [LEATHER] }, world);
+  let clock = 0;
+  const ctx = () => ({ player, nowMs: clock });
+  action.update(ctx());
+  assert.deepEqual(tried, [BODY], "the top entry first");
+  clock += 5000;
+  action.update(ctx());
+  assert.deepEqual(tried, [BODY, BOOTS], "level too low for a body: boots");
+  clock += 1000;
+  assert.equal(action.update(ctx()), "running", "making");
+  leather = 0;
+  assert.equal(action.update(ctx()), "success", "all leather used");
+});

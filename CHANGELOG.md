@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Trainen met gekochte materialen werkt nu ook voor Crafting (edelstenen slijpen met een chisel), Cooking (rauwe vis bakken in de keuken van Lumbridge) en Herblore (unfinished potions met hun ingrediënt, pas na Druidic Ritual). Bots maken dit via de echte menu's van het spel, met het beste product dat hun level toelaat.
 - Avonturiers gebruiken hun bank slimmer: bruikbare materialen (erts, logs, staven, rauwe vis, botten, veren) bewaren ze voor later, tot 1.000 per soort; de rest verkopen ze op de GE. Waardeloze spullen laten ze vallen. Willen ze trainen met materialen, dan halen ze eerst hun eigen voorraad van de bank voordat ze iets kopen.
 - Avonturiers met geld over kopen materialen om te trainen: logs om te fletchen of te branden bij de GE, staven om te smeden bij de aambeelden van Varrock West. Ze bieden op de GE, wachten tot het bod vol is, gaan aan het werk en verkopen de producten weer, ook met verlies, zoals spelers dat doen.
 - Bots teleporteren ook met teleport tablets en geladen sieraden (glory, games necklace, ring of dueling en meer), alleen naar de bestemmingen van dat sieraad en zonder bestemmingen achter een quest of in de Wilderness. Een tablet wordt opgebruikt, een sieraad verliest een lading.

@@ -366,6 +366,10 @@
     {"id":"process_fletching","mode":"processing","capacity":64,"repeat":true,"manual":true,"failureCooldownSeconds":5,"actions":[{"type":"fletch","itemIds":["logs","oak_logs","willow_logs","maple_logs","yew_logs","magic_logs"]}]},
     {"id":"process_firemaking","mode":"processing","capacity":64,"repeat":true,"manual":true,"failureCooldownSeconds":5,"actions":[{"type":"lightFire"}]},
     {"id":"process_smithing","mode":"processing","capacity":64,"repeat":true,"manual":true,"failureCooldownSeconds":5,"actions":[{"type":"smith","bar":"any"}]},
+    {"id":"process_crafting_gems","mode":"processing","capacity":64,"repeat":true,"manual":true,"failureCooldownSeconds":5,"actions":[{"type":"make","tool":"chisel","materials":["uncut_opal","uncut_jade","uncut_red_topaz","uncut_sapphire","uncut_emerald","uncut_ruby","uncut_diamond","uncut_dragonstone"]}]},
+    {"id":"process_crafting_leather","mode":"processing","capacity":64,"repeat":true,"manual":true,"failureCooldownSeconds":5,"actions":[{"type":"make","tool":"needle","materials":["leather","hard_leather","green_dragon_leather"]}]},
+    {"id":"process_herblore","mode":"processing","capacity":64,"repeat":true,"manual":true,"failureCooldownSeconds":5,"actions":[{"type":"make","pairs":[["guam_potion_unf_","eye_of_newt"],["tarromin_potion_unf_","limpwurt_root"],["harralander_potion_unf_","red_spiders_eggs"],["ranarr_potion_unf_","snape_grass"],["irit_potion_unf_","eye_of_newt"],["kwuarm_potion_unf_","limpwurt_root"]]}]},
+    {"id":"process_cooking","mode":"processing","capacity":64,"repeat":true,"manual":true,"failureCooldownSeconds":5,"actions":[{"type":"cook"}]},
     {
       "id": "bank_trip",
       "mode": "bank_run",

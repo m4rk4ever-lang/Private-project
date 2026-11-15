@@ -114,6 +114,7 @@ function bootPlayerBotsRuntime(options = {}) {
       faceTarget(event);
       return botApi.emitItemOnObject(event);
     },
+    emitItemOnItem: (event) => botApi.emitItemOnItem(event),
     // An inventory item's option (Bury, Drink, Eat), as a click on it sends it.
     useItem: (player, slot, option) => {
       const item = player.getInventory().getItems()[slot];
