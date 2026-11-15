@@ -27,6 +27,9 @@ Indeling per versie:
   Osmumten houdt de wacht bij de sarcofaag en staande fakkels verlichten de hal. Je hitpoints,
   prayer, special attack en run-energie blijven er vol. Nog een keer `::staffzone` brengt je terug.
 - `::allquests` (owner): rondt alle quests in één keer af, met beloningen en questpunten.
+- **Getrapte XP-rate**, per skill op basis van je level: x25 van level 1 tot 49, x15 van 50 tot 79,
+  x10 van 80 tot 89 en x5 vanaf 90. Geldt ook voor quest-beloningen, lampen en tomes.
+  Aan te passen met de instelling `TieredExperience:tiers`.
 
 ### Gewijzigd
 - Nieuwe spelers starten in Lumbridge in plaats van Edgeville. `::home` gaat ook naar Lumbridge.

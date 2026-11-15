@@ -405,6 +405,7 @@ After changing a plugin's `description` or `config`, run `yarn --cwd server worl
 | `Prayer:sequentialBurying` | boolean | `false` | **Bury all bones with one click.** By default Bury buries one bone per click, as in OSRS. On, one click continues through the eligible unnoted bones in the inventory. |
 | `ShootingStars:announce` | boolean | `false` | **Announce landings.** Tells everyone online where a star landed. Useful on small worlds; OSRS has no such message. |
 | `ShootingStars:intervalMinutes` | number (> 0) | *90* | **Minutes between shooting stars.** Time between stars; a random 15 minutes either way is added on top. |
+| `TieredExperience:tiers` | json | *x25 from 1, x15 from 50, x10 from 80, x5 from 90* | **Experience tiers.** A list of { "fromLevel": <level>, "rate": <multiplier> }; a skill's rate is the tier with the highest fromLevel it has reached. Comes on top of experienceMultiplier. |
 
 #### Plugin area `world` (`pluginConfig`)
 
@@ -966,6 +967,7 @@ This table lists bundled plugins that have a description. The world config page 
 | `Slayer` | Slayer | skills | yes | Slayer: tasks, masters, points and rewards, superiors, finishers, and the slaughter and expeditious bracelets, built on the cache's Slayer tables. (members only) |
 | `Smithing` | Smithing | skills | yes | Smelting at furnaces and smithing at anvils, plus cannonballs, godswords, dragon and visage shields, barbarian spears, Varrock armour and Superheat Item. |
 | `Thieving` | Thieving | skills | yes | Thieving: pickpocketing NPCs (with the Civitas urchins' distractions of the Wealthy citizens), opening coin pouches, stealing from stalls, blackjacking, the ham trapdoor, the Ardougne castle doors, Dorgesh-Kaan's rich and average chests, the Isle of Souls Dungeon chest, the Crumbling Tower's Dark Chest and Civitas illa Fortis's house robbery (stealing valuables). (members only) |
+| `TieredExperience` | TieredExperience | skills | yes | Tiered experience rate: fast early levels, slower near 99 (by default x25 from level 1, x15 from 50, x10 from 80, x5 from 90), quest and reward experience included. |
 | `Woodcutting` | Woodcutting | skills | yes | Woodcutting: chopping trees with the Forestry despawn timer, stump respawns, the logs-chopped tracker, and bird's nest and ring drops. |
 | `Authoring.CacheEditor` | CacheEditorAuthoring | tools | yes | Opens a loopback-only writable service for the cache editor that saves overlay rows and uploads, and only when explicitly enabled for local development. |
 | `Catalog.CacheEditor` | CacheEditorCatalog | tools | yes | Serves read-only cache data to the cache editor page and applies its saved overlay rows at startup so authored changes are live on the next boot. |
