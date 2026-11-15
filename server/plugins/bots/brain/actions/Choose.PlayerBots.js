@@ -3,8 +3,8 @@
 const { playerState } = require("../ActionState.PlayerBots");
 const { clearMovementRequest } = require("../../behaviours/navigation/Navigation.PlayerBots");
 
-/** Steps that make something of the produce (Smith, Fletch). */
-const MAKING = new Set(["smith", "fletch"]);
+/** Steps that make something of the produce (Smith, Fletch, Cook). */
+const MAKING = new Set(["smith", "fletch", "cook"]);
 const MAKE_RETRY_MS = 10 * 60_000;
 
 /**

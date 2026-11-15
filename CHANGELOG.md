@@ -14,7 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
-- Bots maken zelf iets van hun grondstoffen: mijners smelten hun erts en smeden de staven op een aambeeld tot het beste wat hun Smithing-level toelaat, houthakkers fletchen hun logs met een mes. Zonder hamer of mes, of met te laag level, verkopen ze het.
+- Bots maken zelf iets van hun grondstoffen: mijners smelten hun erts en smeden de staven op een aambeeld tot het beste wat hun Smithing-level toelaat, houthakkers fletchen hun logs met een mes, vissers koken hun vangst en banken die. Zonder hamer of mes, of met te laag level, verkopen ze het.
 - Elke wereldbot krijgt bij het starten een eigen account alsof hij al speelde: gereedschap en uitrusting bij zijn levels, eten, coins en een bank met wat grondstoffen. Daarna speelt hij eerlijk: hij raapt loot op, verkoopt op de GE en koopt eten en gereedschap met zijn eigen coins. Uit te zetten met `BOT_GENERATED_ACCOUNTS=0`.
 - Bij `::volg` zie je de inventaris en skills van de bot die je volgt; na het stoppen weer je eigen.
 - `::volg <naam>`: volg een bot of avonturier live met de camera. Je bent onzichtbaar en loopt vanzelf mee. `::volg` zonder naam stopt.
