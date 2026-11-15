@@ -115,7 +115,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     random,
     // Adventurers only go where their quests and levels let them, and where they can walk to
     // (not Zeah by boat, not Morytania before Priest in Peril).
-    meets: (player, requires, place = null) => (!place || TravelHubs.onFoot(place, null, (name) => questsByName().get(normalize(name))?.isComplete(player) === true)) && (!requires || (
+    meets: (player, requires, place = null) => (!place || TravelHubs.onFoot(place, null, (name) => questsByName().get(normalize(name))?.isComplete(player) === true, (item) => Shopping.owns(player, Shopping.idOf(core, item)))) && (!requires || (
       (requires.quests ?? []).every((name) => questsByName().get(normalize(name))?.isComplete(player) === true)
       && Object.entries(requires.skills ?? {}).every(([skill, level]) => (core.Skill[skill] ? player.getSkillManager().getMaxLevel(core.Skill[skill]) : 0) >= level))),
   });
@@ -1261,7 +1261,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (!task) {
       // The best master its levels allow and it can walk to; of equals, the nearest.
       const options = Slayer.mastersFor({ combat: player.getSkillManager().getCombatLevel(), slayer: levelOf(player, "SLAYER") },
-        (place) => TravelHubs.onFoot(place, null, (name) => questsByName().get(normalize(name))?.isComplete(player) === true));
+        (place) => TravelHubs.onFoot(place, null, (name) => questsByName().get(normalize(name))?.isComplete(player) === true, (item) => Shopping.owns(player, Shopping.idOf(core, item))));
       const best = options.filter((option) => option.combat === options[0]?.combat);
       const master = Slayer.nearest(best.length > 0 ? best : Slayer.MASTERS, (place) => walkTiles(here, place, player));
       if (!master) return false;

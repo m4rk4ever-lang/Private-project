@@ -113,12 +113,15 @@ function connectedTo(from = "lumbridge", source = null) {
  * Whether a place can be walked to from Lumbridge: a hub joined to Lumbridge's network lies within
  * a plannable walk of it. Zeah (a boat), Morytania (Priest in Peril's temple) and islands are not.
  */
-function onFoot(place, source = null, questDone = null) {
+function onFoot(place, source = null, questDone = null, hasItem = null) {
   const { hubs } = source ? build(source) : (graph ??= build());
-  // Behind a quest (Morytania past the Salve): only with that quest done.
+  // Behind a quest (Morytania past the Salve) or an item (a Shantay pass for the desert): only
+  // with that quest done or that item carried.
   for (const locked of (source ?? data).lockedAreas ?? []) {
     const [minX, minY, maxX, maxY] = locked.area;
-    if (place.x >= minX && place.x <= maxX && place.y >= minY && place.y <= maxY && !questDone?.(locked.quest)) return false;
+    if (place.x < minX || place.x > maxX || place.y < minY || place.y > maxY) continue;
+    if (locked.quest && !questDone?.(locked.quest)) return false;
+    if (locked.item && !hasItem?.(locked.item)) return false;
   }
   const joined = connectedTo("lumbridge", source);
   for (const key of joined) {
