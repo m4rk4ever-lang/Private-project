@@ -1,5 +1,7 @@
 "use strict";
 
+const { isHonest } = require("../Honest.PlayerBots");
+
 /**
  * Pickpocketing, as a thief trains it: find the nearest NPC of the activity's kind (men and
  * women in Lumbridge, guards in Ardougne, knights of Ardougne at the market), walk up to it and
@@ -105,7 +107,7 @@ function createPickpocketAction(spec = {}, world = {}) {
       const bot = (state.pickpocket ??= { nextAt: 0, walkStarted: 0 });
       if (nowMs < bot.nextAt) return "running";
       if (player.getTimers?.()?.getTicks?.(world.core.TimerKey?.STUN) > 0) return "running";
-      if (eatIfHurt(player, state.honest === true)) {
+      if (eatIfHurt(player, state.honest === true || isHonest(player))) {
         bot.nextAt = nowMs + ATTEMPT_MS;
         return "running";
       }

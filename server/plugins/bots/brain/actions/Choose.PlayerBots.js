@@ -1,5 +1,7 @@
 "use strict";
 
+const { isHonest } = require("../Honest.PlayerBots");
+
 const { playerState } = require("../ActionState.PlayerBots");
 const { clearMovementRequest } = require("../../behaviours/navigation/Navigation.PlayerBots");
 
@@ -45,7 +47,7 @@ function createChooseAction(spec, compileAction) {
       const bot = stateFor(ctx.player);
       if (!bot.option) {
         let roll = Math.random() * totalWeight;
-        bot.option = (ctx.state?.honest ? honestChoice(bot, ctx.nowMs) : null)
+        bot.option = (ctx.state?.honest || isHonest(ctx.player) ? honestChoice(bot, ctx.nowMs) : null)
           ?? options.find((option) => (roll -= option.weight) < 0) ?? options[options.length - 1];
         bot.index = 0;
       }

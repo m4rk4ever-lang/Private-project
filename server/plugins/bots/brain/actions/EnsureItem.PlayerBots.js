@@ -1,5 +1,7 @@
 "use strict";
 
+const { isHonest } = require("../Honest.PlayerBots");
+
 /**
  * Ensures the inventory holds a tool (tinderbox), conjured the same way equipTool
  * provides an axe or pickaxe. Tools only: resources (ores, logs) must come from
@@ -20,7 +22,7 @@ function createEnsureItemAction(spec) {
         return "success";
       }
       // An honest bot (an adventurer) has what it bought or found, nothing more.
-      if (ctx.state?.honest) return "failed";
+      if (ctx.state?.honest || isHonest(ctx.player)) return "failed";
       inventory.adds(itemId, missing);
       return inventory.getAmount(itemId) >= amount ? "success" : "failed";
     },

@@ -302,10 +302,23 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     note(killer, `${definition.getName()} (level ${level}) verslagen.`, "boss");
   }
 
+  /** Every change in what it wears goes in its journal, so where each piece came from can be followed. */
+  function watchGear(entry) {
+    const worn = (entry.player.getEquipment().getItems() ?? []).filter((item) => item && item.getId() > 0).map((item) => item.getId());
+    const before = entry.worn ?? worn;
+    entry.worn = worn;
+    const on = worn.filter((id) => !before.includes(id));
+    const off = before.filter((id) => !worn.includes(id));
+    if (on.length === 0 && off.length === 0) return;
+    const names = (ids) => ids.map(itemName).join(", ");
+    note(entry.player, `Uitrusting: ${on.length ? `aan ${names(on)}` : ""}${on.length && off.length ? "; " : ""}${off.length ? `uit ${names(off)}` : ""}.`, "activity");
+  }
+
   function tick() {
     const nowMs = now();
     for (const entry of adventurers.values()) {
       if (!entry.player?.isRegistered?.()) continue;
+      watchGear(entry);
       // A full bag ends the stretch: off to sell (trade()), as a player banks or sells.
       if (nowMs >= entry.until || (entry.phase !== "new" && entry.player.getInventory().getFreeSlots() === 0)) next(entry, nowMs);
     }
@@ -358,7 +371,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function shopFor(player, itemId, name, amount = 1) {
     const at = player.getLocation();
     const shop = Shopping.nearestShop(itemId, { x: at.getX(), y: at.getY() });
-    if (!shop) return false;
+    // Only a shop it could walk to from here (data.shopRadius tiles): no armour from Varrock for a
+    // newcomer in Lumbridge. Further shops wait until it trains or travels near them.
+    if (!shop || shop.distance > (data.shopRadius ?? 80)) return false;
     teleport(player, { x: shop.keeper.x + 1, y: shop.keeper.y, z: shop.keeper.z });
     const coinsBefore = Shopping.coinsOf(player);
     const got = Shopping.buy(player, core, shop.shopId, itemId, amount);

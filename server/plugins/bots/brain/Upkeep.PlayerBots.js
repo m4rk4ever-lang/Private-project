@@ -1,5 +1,7 @@
 "use strict";
 
+const { isHonest } = require("./Honest.PlayerBots");
+
 /**
  * How an honest world bot keeps going (one with a generated account, Accounts.PlayerBots.js):
  * now and then it goes to the Grand Exchange, as a player does between trips.
@@ -136,7 +138,7 @@ function createUpkeep({ core, runtime, emit, isFood, now = () => Date.now(), log
       const player = entry?.player;
       const state = entry?.state;
       // A paused brain is already away (at a house party, HouseParty.PlayerBots.js).
-      if (!player || !state?.honest || state.adventurer || trips.has(player) || entry.brain?.paused) continue;
+      if (!player || !(state?.honest || isHonest(player)) || state.adventurer || trips.has(player) || entry.brain?.paused) continue;
       if (player.getCombat?.()?.getAttacker?.() || player.getHitpoints?.() <= 0) continue;
       const mode = entry.brain?.currentRoot?.()?.mode ?? null;
       if (mode === "pvp" || mode === "minigame") continue;

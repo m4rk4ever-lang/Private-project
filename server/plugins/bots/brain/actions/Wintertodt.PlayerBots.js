@@ -1,5 +1,7 @@
 "use strict";
 
+const { isHonest } = require("../Honest.PlayerBots");
+
 /**
  * Bots that play Wintertodt (plugins/minigames/Wintertodt.plugin.js) as a player does. Each bot
  * picks a corner and keeps it. During a round it:
@@ -152,7 +154,7 @@ function createWintertodtAction(spec = {}, world = {}) {
           walkStarted: 0,
         };
         // An honest bot (an adventurer) brings what it has.
-        if (!state.honest) packUp(player, wt);
+        if (!state.honest && !isHonest(player)) packUp(player, wt);
       }
       const bot = state.wintertodt;
       // Busy chopping, feeding, lighting or fixing: the plugin's own action runs.

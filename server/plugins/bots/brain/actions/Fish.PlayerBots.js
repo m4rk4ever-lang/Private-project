@@ -1,5 +1,7 @@
 "use strict";
 
+const { isHonest } = require("../Honest.PlayerBots");
+
 const { playerState, stationaryFor } = require("../ActionState.PlayerBots");
 const { nearestClusters, npcClustersFor } = require("../NpcClusterIndex.PlayerBots");
 const { canReachSpot } = require("../../behaviours/navigation/LongRoutes.PlayerBots");
@@ -183,7 +185,7 @@ function createFishAction(spec, world) {
           waitSince: bot.siteWaitSince ? nowMs - bot.siteWaitSince : 0,
         });
       }
-      if (baitId !== null && !ctx.state?.honest && inventory.getAmount(baitId) < baitAmount / 2) {
+      if (baitId !== null && !ctx.state?.honest && !isHonest(ctx.player) && inventory.getAmount(baitId) < baitAmount / 2) {
         inventory.adds(baitId, baitAmount - inventory.getAmount(baitId));
       }
       if (Fishing.isFishingActive(player)) {

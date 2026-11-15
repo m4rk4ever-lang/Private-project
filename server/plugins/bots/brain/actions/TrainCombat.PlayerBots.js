@@ -1,5 +1,7 @@
 "use strict";
 
+const { isHonest } = require("../Honest.PlayerBots");
+
 const { playerState } = require("../ActionState.PlayerBots");
 const { nearestClusters, npcClustersFor } = require("../NpcClusterIndex.PlayerBots");
 const { canReachSpot } = require("../../behaviours/navigation/LongRoutes.PlayerBots");
@@ -195,7 +197,7 @@ function createTrainCombatAction(spec, world) {
 
   function prepare(player, state) {
     // An honest bot (an adventurer) fights in what it owns and eats what it carries.
-    if (state?.honest) return false;
+    if (state?.honest || isHonest(player)) return false;
     let changed = false;
     const equipment = player.getEquipment();
     const manager = player.getSkillManager();
@@ -462,14 +464,15 @@ function createTrainCombatAction(spec, world) {
           }
         }
       }
-      if (state.honest && !bot.target && player.getHitpoints() * 2 < player.getSkillManager().getMaxLevel(Skill.HITPOINTS) &&
+      const honest = state.honest || isHonest(player);
+      if (honest && !bot.target && player.getHitpoints() * 2 < player.getSkillManager().getMaxLevel(Skill.HITPOINTS) &&
           !(player.getInventory().getItems() ?? []).some((item) => item && isFood(item.getId()))) {
         // Hurt and out of food: an honest bot stops before it dies, and restocks first
         // (Upkeep.PlayerBots.js, or an adventurer's planner).
         leaveSite(player, bot, nowMs, SITE_AVOID_MS);
         return "failed";
       }
-      if (!bot.target && state.honest) {
+      if (!bot.target && honest) {
         // An honest bot (an adventurer) takes its own loot between fights: its income.
         const ground = bot.loot ?? Loot.lootNear(world.core, player, { valueOf: (id, amount) => Value.itemValue(world.core, id, amount) });
         if (ground) {
@@ -581,7 +584,7 @@ function createTrainCombatAction(spec, world) {
       // Food and runes are provisioned for training only: take them back, so a bot
       // switching to skilling has a free inventory (the next fight re-provisions).
       const inventory = ctx.player.getInventory?.();
-      for (const itemId of ctx.state?.honest ? [] : [...allFoodIds, ...(bot.runeIds ?? [])]) {
+      for (const itemId of ctx.state?.honest || isHonest(ctx.player) ? [] : [...allFoodIds, ...(bot.runeIds ?? [])]) {
         const amount = inventory?.getAmount(itemId) ?? 0;
         if (amount > 0) inventory.deleteNumber?.(itemId, amount);
       }

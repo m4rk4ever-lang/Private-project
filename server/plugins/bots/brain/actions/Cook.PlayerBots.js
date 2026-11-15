@@ -1,5 +1,7 @@
 "use strict";
 
+const { isHonest } = require("../Honest.PlayerBots");
+
 const { playerState } = require("../ActionState.PlayerBots");
 const { resolveCatalogObjectIds } = require("../ObjectCatalog.PlayerBots");
 const { createObjectReachChecker } = require("../../behaviours/navigation/ObjectReach.PlayerBots");
@@ -130,7 +132,7 @@ function createCookAction(spec, world) {
       }
       if (inventory.getAmount(TINDERBOX) <= 0) {
         // An honest bot (an adventurer) needs its own tinderbox.
-        if (ctx.state?.honest) return "failed";
+        if (ctx.state?.honest || isHonest(ctx.player)) return "failed";
         inventory.adds(TINDERBOX, 1);
       }
       // The fire takes the tile the bot stands on and steps it aside; the next update finds it.

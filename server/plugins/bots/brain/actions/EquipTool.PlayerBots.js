@@ -1,5 +1,7 @@
 "use strict";
 
+const { isHonest } = require("../Honest.PlayerBots");
+
 const { Equipment } = require("../../../../src/main/typescript/elvarg/game/model/container/impl/Equipment");
 const { Item } = require("../../../../src/main/typescript/elvarg/game/model/Item");
 const { Flag } = require("../../../../src/main/typescript/elvarg/game/model/Flag");
@@ -58,7 +60,7 @@ function createEquipToolAction(spec) {
     update(ctx) {
       const player = ctx.player;
       const equipment = player.getEquipment();
-      if (ctx.state?.honest) return equipOwnTool(player, spec.tool);
+      if (ctx.state?.honest || isHonest(player)) return equipOwnTool(player, spec.tool);
       const toolId = resolveTool(player);
       if (!toolId) {
         return "failed";

@@ -59,6 +59,8 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Opgelost
+- Eerlijke bots konden alsnog gratis uitrusting krijgen (zoals een iron full helm) wanneer ze van klus wisselden. Ze worden nu ook als eerlijk herkend als hun klus opnieuw start. Avonturiers kopen ook alleen nog in winkels in de buurt, niet overal op de kaart. De avonturiers beginnen daarom nog één keer opnieuw.
+- Het dagboek van een avonturier toont elke wijziging in zijn uitrusting, zodat je kunt nagaan waar een stuk vandaan komt.
 - Avonturiers kregen bij het reizen nog vakkleding, capes en ringen (zoals de Explorer's ring) aangetrokken die ze nooit verdiend hadden. Dat kan niet meer bij eerlijke bots; de avonturiers beginnen daarom nog één keer opnieuw.
 - De iconen op de avonturierspagina laden nu echt: de game-server haalt ze één keer op bij de OSRS Wiki en bewaart ze.
 - Stoppen vindt het spel nu ook in een codespace, waar niet te zien is welk proces een poort

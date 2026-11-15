@@ -14,7 +14,7 @@
  *
  * HOUSE_PARTY=0 turns it off.
  */
-const { markHonest } = require("./Honest.PlayerBots");
+const { markHonest, isHonest } = require("./Honest.PlayerBots");
 // SiteSpawner and ObjectCatalog load the game core: required when a party starts, so isOpen()
 // stays cheap for TrainCombat and Upkeep (and their tests).
 const applyLevels = (...args) => require("./SiteSpawner.PlayerBots").applyLevels(...args);
@@ -202,7 +202,7 @@ function createHouseParty({ api, runtime, world, now = () => Date.now(), catalog
     for (let looked = 0; looked < Math.min(PER_CHECK, entries.length); looked += 1) {
       const entry = entries[cursor++ % entries.length];
       const player = entry?.player;
-      if (!player || player === host || !entry.state?.honest || guests.has(player) || entry.brain?.paused) continue;
+      if (!player || player === host || !(entry.state?.honest || isHonest(player)) || guests.has(player) || entry.brain?.paused) continue;
       if (player.getCombat?.()?.getAttacker?.()) continue;
       if (boneSlots(core, player).length >= BONES_TO_GO) startGuest(entry, nowMs);
     }
