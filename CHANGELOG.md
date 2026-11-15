@@ -48,6 +48,9 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Opgelost
+- Combat-bots kozen hun uitrusting met een zwakke hash, waardoor bots met bijna gelijke namen
+  vaak hetzelfde droegen. Elke bot houdt zijn eigen vaste uitrusting, maar de spreiding is nu echt
+  willekeurig, en beginners dragen nog maar de helft van de tijd een cape.
 - `update` stopt het spel nu ook als een proces blijft hangen: het zoekt wat de poorten bezet
   houdt, wacht tot 20 seconden en stopt het daarna geforceerd.
 - Account Management toont "Membership: Unlimited" in plaats van "None". De client behandelt
@@ -70,10 +73,6 @@ Indeling per versie:
   Prospector, Angler, Graceful) vanaf gevorderd niveau, en een skillcape bij 99. Na het reizen
   kleedt een skiller zich om voor zijn nieuwe klus.
 
-### Opgelost
-- Combat-bots kozen hun uitrusting met een zwakke hash, waardoor bots met bijna gelijke namen
-  vaak hetzelfde droegen. Elke bot houdt zijn eigen vaste uitrusting, maar de spreiding is nu echt
-  willekeurig, en beginners dragen nog maar de helft van de tijd een cape.
 
 ## [0.1.0] - 15-11-2026
 
