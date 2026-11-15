@@ -8,6 +8,7 @@ dist
 # Runtime/server state
 data/saves/characters
 data/saves/*.sqlite*
+data/backups/
 data/saves/gauntlet-scoreboard.json
 data/saves/clans.json
 data/saves/groups.json

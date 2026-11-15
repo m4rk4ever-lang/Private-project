@@ -391,6 +391,12 @@ After changing a plugin's `description` or `config`, run `yarn --cwd server worl
 | `Pets:skillingPetMultiplier` | number (>= 1) | `1` | **Skilling pet multiplier.** Makes every skilling pet roll this many times likelier. 1 is the normal rate; values of 1 or less change nothing. |
 | `random-events:enabled` | boolean | `true` | **Random events.** Turn off to stop random events from appearing. |
 
+#### Plugin area `persistence` (`pluginConfig`)
+
+| Key | Type | Default | Description |
+| --- | --- | --- | --- |
+| `SaveBackups:keep` | number (>= 1) | `48` | **Backups kept.** How many backups of data/saves to keep; the oldest go first. One is made each hour something changed. |
+
 #### Plugin area `quests` (`pluginConfig`)
 
 | Key | Type | Default | Description |
@@ -933,6 +939,7 @@ This table lists bundled plugins that have a description. The world config page 
 | `Autosave` | Autosave | persistence | yes | Saves every online player every few minutes, spreading the saves over ticks so a mass login does not stall the server. |
 | `IndexedDbPlayerPersistence` | IndexedDbPlayerPersistence | persistence | yes | Stores player saves and hashed passwords in the browser's IndexedDB when the server runs inside a browser host. Does nothing elsewhere. |
 | `JsonPlayerPersistence` | JsonPlayerPersistence | persistence | yes | Saves each character as a JSON file under data/saves/characters. Skipped when the server runs inside a browser host. |
+| `SaveBackups` | SaveBackups | persistence | yes | Copies data/saves to data/backups every hour and when the server stops, only when something changed, keeping the newest 48 copies. |
 | `SaveEvents` | SaveEvents | persistence | yes | Requests an immediate player save after important events: quest completions, reward-shop purchases, valuable discards and valuable drops. |
 | `SqlitePlayerPersistence` | SqlitePlayerPersistence | persistence | yes | Saves players to a SQLite database (data/saves/players.sqlite) and can import older JSON character saves. |
 | `QuestHelper` | OfflineQuestHelper | quests | yes | Runs the offline Quest Helper, answering the client's quest-helper plugin messages from the player's varps and the cache. |

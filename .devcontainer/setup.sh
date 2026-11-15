@@ -10,6 +10,9 @@ corepack install
 
 npm run setup
 
+# `update` in any terminal: stop the game, git pull, start again (scripts/update.sh).
+grep -q "alias update=" ~/.bashrc 2>/dev/null || echo "alias update='yarn --cwd $(pwd) update'" >> ~/.bashrc
+
 # Mark always logs in as owner of the world.
 touch .env
 grep -q '^OWNER_USERNAME=' .env || echo 'OWNER_USERNAME=Mark' >> .env

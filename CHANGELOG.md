@@ -31,6 +31,11 @@ Indeling per versie:
 - **Getrapte XP-rate**, per skill op basis van je level: x25 van level 1 tot 49, x15 van 50 tot 79,
   x10 van 80 tot 89 en x5 vanaf 90. Geldt ook voor quest-beloningen, lampen en tomes.
   Aan te passen met de instelling `TieredExperience:tiers`.
+- **`update`** (of `yarn update`): stopt het spel, haalt de nieuwste versie op, installeert nieuwe
+  onderdelen als dat nodig is en start het spel weer.
+- **Automatische backups** van alle saves in `server/data/backups`: elk uur en bij het stoppen van
+  de server, alleen als er iets veranderd is. De laatste 48 blijven bewaard
+  (instelling `SaveBackups:keep`).
 
 ### Opgelost
 - Account Management toont "Membership: Unlimited" in plaats van "None". De client behandelt
