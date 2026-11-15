@@ -1,0 +1,27 @@
+{
+  "name": "TSPS",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "hostRequirements": {
+    "cpus": 2,
+    "memory": "8gb"
+  },
+  "forwardPorts": [3000, 43594],
+  "portsAttributes": {
+    "3000": {
+      "label": "Spel (client)",
+      "onAutoForward": "openBrowser"
+    },
+    "43594": {
+      "label": "Gameserver",
+      "onAutoForward": "silent"
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postStartCommand": "bash .devcontainer/ports.sh",
+  "postAttachCommand": "yarn start",
+  "customizations": {
+    "codespaces": {
+      "openFiles": [".devcontainer/README.md"]
+    }
+  }
+}

@@ -15,6 +15,8 @@ Indeling per versie:
 
 ### Toegevoegd
 - `CHANGELOG.md` om ons werk bij te houden.
+- Het spel draait in GitHub Codespaces: open de repo in een codespace en het spel start
+  vanzelf in je browser (uitleg in `.devcontainer/README.md`).
 
 ## [0.1.0] - 15-11-2026
 
