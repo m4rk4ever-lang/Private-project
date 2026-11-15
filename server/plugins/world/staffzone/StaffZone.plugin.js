@@ -6,8 +6,10 @@
  *
  * One copy is shared by all staff inside it; it is built when the first one enters and goes
  * when the last one leaves. The copy lives where the cache has no map, so nobody walks in.
- * Inside: free staff shops (weapons, armour, supplies, skilling), a banker, a combat dummy,
- * and your hitpoints, prayer, special attack and run energy kept topped up. A player without
+ * Inside: free staff shops (weapons, armour, supplies, skilling), a banker, a combat dummy, an
+ * ornate pool of Rejuvenation (the house pool's own handler), Osmumten keeping watch by the
+ * sarcophagus and standing torches along the hall; your hitpoints, prayer, special attack and
+ * run energy are kept topped up. A player without
  * owner or developer rights who ends up inside is sent out. Logging out inside puts you back
  * where you came from, so you never log in to a copy that is gone.
  */
@@ -121,7 +123,15 @@ function spawnNpc(spec, marker) {
   return npc;
 }
 
-/** Builds the shared copy and its NPCs. */
+/** A scenery object (type 10) in the copy; it goes with the copy. */
+function placeObject(spec) {
+  const { GameObject, ObjectManager, ObjectIdentifiers } = core();
+  const id = ObjectIdentifiers[spec.object];
+  if (!Number.isInteger(id)) return;
+  ObjectManager.register(new GameObject(id, instanceTile(spec.tile), 10, spec.rotation ?? 0, zone.area), true);
+}
+
+/** Builds the shared copy, its NPCs and its objects. */
 function openZone() {
   const { sourceChunkX, sourceChunkY, chunks, plane } = data.template;
   const area = new (areaClass())();
@@ -129,6 +139,9 @@ function openZone() {
   zone = { area };
   spawnNpc(data.banker, { __staffZoneBanker: true });
   spawnNpc(data.dummy, { __staffZoneDummy: true });
+  spawnNpc(data.host, { __staffZoneHost: true });
+  placeObject(data.pool);
+  data.decorations.forEach(placeObject);
   data.shops.forEach((shop, index) => spawnNpc(shop, { __staffZoneShop: data.shopBaseId + index }));
   return zone;
 }
@@ -203,7 +216,7 @@ function init(pluginApi) {
 
 module.exports = {
   name: "StaffZone",
-  description: "A private Tombs of Amascut vault for owners and developers, with free staff shops, a banker and a combat dummy (::staffzone).",
+  description: "A private Tombs of Amascut vault for owners and developers, with free staff shops, a banker, a combat dummy and a pool of Rejuvenation (::staffzone).",
   register(pluginApi) {
     init(pluginApi);
     pluginApi.persistAttribute(RETURN_ATTRIBUTE);

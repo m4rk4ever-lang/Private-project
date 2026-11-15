@@ -7,6 +7,7 @@ Server.installProductionPathResolver();
 
 const { ItemIdentifiers } = require("../dist/util/ItemIdentifiers");
 const { NpcIdentifiers } = require("../dist/util/NpcIdentifiers");
+const { ObjectIdentifiers } = require("../dist/util/ObjectIdentifiers");
 const { MAX_INSTANCE_CHUNKS } = require("../dist/game/model/areas/impl/TemplatedInstanceArea");
 const StaffZone = require("../plugins/world/staffzone/StaffZone.plugin");
 
@@ -20,8 +21,14 @@ test("every staff shop item is a cache item", () => {
 });
 
 test("every staff NPC is a cache NPC", () => {
-  for (const spec of [data.banker, data.dummy, ...data.shops]) {
+  for (const spec of [data.banker, data.dummy, data.host, ...data.shops]) {
     assert.ok(Number.isInteger(NpcIdentifiers[spec.npc]), spec.npc);
+  }
+});
+
+test("every staffzone object is a cache object", () => {
+  for (const spec of [data.pool, ...data.decorations]) {
+    assert.ok(Number.isInteger(ObjectIdentifiers[spec.object]), spec.object);
   }
 });
 
@@ -30,7 +37,8 @@ test("every placed tile is inside the copied vault, and the copy fits an instanc
   assert.ok(chunks <= MAX_INSTANCE_CHUNKS);
   const inside = ([x, y]) => x >= sourceChunkX * 8 && x < (sourceChunkX + chunks) * 8
     && y >= sourceChunkY * 8 && y < (sourceChunkY + chunks) * 8;
-  for (const tile of [data.entry, data.banker.tile, data.dummy.tile, ...data.shops.map((shop) => shop.tile)]) {
+  const placed = [data.banker, data.dummy, data.host, data.pool, ...data.decorations, ...data.shops];
+  for (const tile of [data.entry, ...placed.map((spec) => spec.tile)]) {
     assert.ok(inside(tile), JSON.stringify(tile));
   }
 });

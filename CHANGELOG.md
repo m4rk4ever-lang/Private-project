@@ -23,8 +23,9 @@ Indeling per versie:
   (meerdere namen met komma's).
 - **Staffzone** (`::staffzone`, alleen owner en developer): een privé-kopie van de schatkamer
   van Tombs of Amascut, gedeeld door alle staff. Met vier gratis staffwinkels (wapens, armour,
-  voorraad, skilling), een bankier en een trainingsdummy. Je hitpoints, prayer, special attack
-  en run-energie blijven er vol. Nog een keer `::staffzone` brengt je terug.
+  voorraad, skilling), een bankier, een trainingsdummy en een sierlijke verjongingspool.
+  Osmumten houdt de wacht bij de sarcofaag en staande fakkels verlichten de hal. Je hitpoints,
+  prayer, special attack en run-energie blijven er vol. Nog een keer `::staffzone` brengt je terug.
 - `::allquests` (owner): rondt alle quests in één keer af, met beloningen en questpunten.
 
 ### Gewijzigd

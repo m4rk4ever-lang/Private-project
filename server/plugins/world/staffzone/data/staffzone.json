@@ -16,7 +16,7 @@
   "banker": {
     "npc": "BANKER",
     "tile": [
-      3677,
+      3678,
       5164,
       0
     ],
@@ -25,7 +25,7 @@
   "dummy": {
     "npc": "COL_00FFFF_COMBAT_DUMMY_COL",
     "tile": [
-      3683,
+      3682,
       5152,
       0
     ],
@@ -37,7 +37,7 @@
       "name": "Staff Weapons",
       "npc": "SHOP_KEEPER",
       "tile": [
-        3683,
+        3682,
         5164,
         0
       ],
@@ -86,7 +86,7 @@
       "name": "Staff Armour",
       "npc": "SHOP_KEEPER_2",
       "tile": [
-        3677,
+        3678,
         5158,
         0
       ],
@@ -147,7 +147,7 @@
       "name": "Staff Supplies",
       "npc": "SHOP_KEEPER_3",
       "tile": [
-        3683,
+        3682,
         5158,
         0
       ],
@@ -198,7 +198,7 @@
       "name": "Staff Skilling",
       "npc": "SHOP_KEEPER_4",
       "tile": [
-        3677,
+        3678,
         5152,
         0
       ],
@@ -255,6 +255,98 @@
         "EXPLORERS_RING_4",
         "DESERT_AMULET_4"
       ]
+    }
+  ],
+  "host": {
+    "npc": "OSMUMTEN",
+    "tile": [
+      3680,
+      5143,
+      0
+    ],
+    "face": "NORTH"
+  },
+  "pool": {
+    "object": "ORNATE_POOL_OF_REJUVENATION",
+    "tile": [
+      3677,
+      5146,
+      0
+    ],
+    "rotation": 0
+  },
+  "decorations": [
+    {
+      "object": "STANDING_TORCH",
+      "tile": [
+        3677,
+        5167,
+        0
+      ],
+      "rotation": 0
+    },
+    {
+      "object": "STANDING_TORCH",
+      "tile": [
+        3683,
+        5167,
+        0
+      ],
+      "rotation": 0
+    },
+    {
+      "object": "STANDING_TORCH",
+      "tile": [
+        3677,
+        5161,
+        0
+      ],
+      "rotation": 0
+    },
+    {
+      "object": "STANDING_TORCH",
+      "tile": [
+        3683,
+        5161,
+        0
+      ],
+      "rotation": 0
+    },
+    {
+      "object": "STANDING_TORCH",
+      "tile": [
+        3677,
+        5155,
+        0
+      ],
+      "rotation": 0
+    },
+    {
+      "object": "STANDING_TORCH",
+      "tile": [
+        3683,
+        5155,
+        0
+      ],
+      "rotation": 0
+    },
+    {
+      "object": "STANDING_TORCH",
+      "tile": [
+        3677,
+        5149,
+        0
+      ],
+      "rotation": 0
+    },
+    {
+      "object": "STANDING_TORCH",
+      "tile": [
+        3683,
+        5149,
+        0
+      ],
+      "rotation": 0
     }
   ]
 }
