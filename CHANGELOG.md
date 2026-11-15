@@ -50,6 +50,8 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Opgelost
+- Opnieuw verbinden met de codespace start het spel niet nog een keer als het al draait. Die
+  tweede kopie botste met de eerste (poort 43594 bezet).
 - Stopt de client toch onverwacht, dan start hij zichzelf opnieuw en meldt hij waardoor hij
   stopte. Alleen een stopsignaal (zoals Ctrl+C) stopt hem echt.
 - `yarn start` stopte direct na het compileren van de client ("exited with code 0") en nam de

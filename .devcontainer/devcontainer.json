@@ -18,7 +18,7 @@
   },
   "postCreateCommand": "bash .devcontainer/setup.sh",
   "postStartCommand": "bash .devcontainer/ports.sh",
-  "postAttachCommand": "yarn start",
+  "postAttachCommand": "ss -ltnH | grep -qE ':(3000|43594) ' || yarn start",
   "customizations": {
     "codespaces": {
       "openFiles": [".devcontainer/README.md"]
