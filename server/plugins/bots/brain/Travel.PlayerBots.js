@@ -202,6 +202,8 @@ function createTravel({
     }
     if (state) {
       state.home = { x: place.x, y: place.y, z: place.z ?? 0 };
+      // Where it went, for what it says there (Chatter.PlayerBots.js).
+      state.place = { id: place.id, minigame: place.minigame ?? null, combatGear: place.combatGear === true };
       // A lobby keeps its bots inside (Wintertodt's safe corridor); anywhere else they roam freely.
       if (state.roaming) {
         const [minX, minY, maxX, maxY] = place.bounds ?? [];

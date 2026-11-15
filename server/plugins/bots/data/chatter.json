@@ -1,0 +1,76 @@
+{
+  "_comment": "What bots say in public chat (brain/Chatter.PlayerBots.js), by where they are and what they do. Bots only talk where a real player can see them. chancePerCheck: the chance a bot that may talk says something at each check (every few seconds); cooldownSeconds: the quiet time between two lines of one bot; areaGapSeconds: the quiet time between two lines near the same player. levelUp: said after the bot's own level-up ({skill}, {level}). greetings/greetReplies: when a player greets nearby bots. congrats: when a player nearby levels up.",
+  "chancePerCheck": 0.03,
+  "cooldownSeconds": [90, 240],
+  "areaGapSeconds": 5,
+  "replyChance": 0.6,
+  "levelUpChance": 0.5,
+  "congratsChance": 0.6,
+  "contexts": {
+    "grand_exchange": [
+      "Selling lobs 150 ea", "Buying gf", "B> rune ess", "Anyone got a spare spade?",
+      "Prices crashing again lol", "Just flipped 2m", "Selling sharks cheap", "Who's doing raids tonight?",
+      "GE is busy today", "Buying logs", "Anyone selling a dragon axe?", "Flipping is slow today",
+      "Dropping trade, need gp", "Selling bones 200 ea"
+    ],
+    "bankstand": [
+      "This is so afk", "Just a few more inventories", "Making bows for profit", "Herb prices are wild",
+      "Bank standing gang", "Anyone know a good money maker?", "So close to 99", "zzz",
+      "Who else is just bank standing", "My bank is a mess"
+    ],
+    "hangout": [
+      "Hey", "Sup", "Anyone wanna duo?", "Quiet today", "Nice cape", "Lol", "Brb", "Back",
+      "What's everyone training?", "Bored", "Anyone going to the GE?", "Love this world"
+    ],
+    "woodcutting": [
+      "Logs logs logs", "Bird nest!!", "Tree's gone again", "Who stole my tree", "Almost full inv",
+      "Wc is so slow", "Anyone else chopping for fm?", "Beaver pls"
+    ],
+    "mining": [
+      "Rock stolen lol", "Ore ore ore", "Gem!", "Mining is relaxing", "Who took my rock",
+      "Need more pick speed", "Almost 99 mining", "Rocky pls"
+    ],
+    "fishing": [
+      "Fish fish fish", "Spot moved again", "Heron pls", "Big fish!", "This spot is dead",
+      "Fishing is so chill", "Almost full inv of fish", "Anyone got bait?"
+    ],
+    "thieving": [
+      "Caught again lol", "Free stuff", "Rogues set when", "Guard pls stop", "Easy money",
+      "Stall's empty", "Thieving is so click heavy"
+    ],
+    "combat_training": [
+      "Nice drop", "Safe spot ftw", "Need food", "Anyone got food?", "Crashed again lol",
+      "Finally a good drop", "My def is so low", "Slayer task almost done", "Kill steal much?"
+    ],
+    "minigame:wintertodt": [
+      "Light the brazier!", "Fix the brazier pls", "Brazier's out", "Heal the pyro!", "I'm freezing",
+      "500 points then out", "Gl on the crate", "Phoenix pet when", "Feed it!", "Wintertodt is so cold lol"
+    ],
+    "minigame:castle_wars": [
+      "Sara or zammy?", "Zammy best", "Sara best", "Gl everyone", "Who's on flag?", "Waiting for a game"
+    ],
+    "minigame:soul_wars": [
+      "Blue or red?", "Gl team", "Avatar time", "Who's capping?", "Waiting for game"
+    ],
+    "minigame:pest_control": [
+      "Gl", "Defend the knight", "Portal down!", "Void soon", "Points points points"
+    ],
+    "minigame:guardians_of_the_rift": [
+      "Gl", "Portal!", "Mine fragments", "Pet pls", "Guardian is charging"
+    ],
+    "minigame": [
+      "Gl", "Gl all", "Waiting for a game", "Any spots left?", "Gg"
+    ],
+    "lobby": [
+      "Who's going in?", "Gl in there", "Anyone wanna join?", "First time here", "Gear check lol",
+      "Pet hunting", "Gl on the drop"
+    ]
+  },
+  "levelUp": [
+    "Lvl {level} {skill}!", "{level} {skill} :)", "Finally {level} {skill}", "Woo {level} {skill}",
+    "Just got {level} {skill}"
+  ],
+  "greetings": ["hi", "hey", "hello", "yo", "sup", "hiya", "heya", "hai", "hallo", "hoi", "goedendag"],
+  "greetReplies": ["Hey", "Hi", "Yo", "Hey there", "Sup", "Hello", "Hiya", "o/"],
+  "congrats": ["Gz", "Gz!", "Grats", "Nice gz", "Gratz", "gz"]
+}

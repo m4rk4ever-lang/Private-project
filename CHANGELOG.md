@@ -116,6 +116,11 @@ Indeling per versie:
   Tithe Farm, Mage Training Arena, en in combat-gear bij Castle Wars, Soul Wars, Pest Control,
   Barbarian Assault, Nightmare Zone en Shades of Mort'ton. Waar al bots zijn, komen er meer bij.
   Ze blijven in de lobby, bij Wintertodt in de veilige gang. Echt meespelen volgt per minigame.
+- **Bots praten:** in de buurt van een speler zegt een bot af en toe iets dat past bij waar hij
+  is en wat hij doet: handelspraat bij de GE, "Light the brazier!" bij Wintertodt, "Rock stolen
+  lol" in een mijn. Na een eigen level-up meldt een bot dat soms, zeg je "hi" dan groet een bot
+  terug, en level jij in de buurt van bots, dan zegt er een "Gz". Alleen bots die je kunt zien
+  praten, met rustpauzes zodat het niet spamt. De zinnen staan in `chatter.json`.
 - **Bots spelen Wintertodt echt mee:** ze kiezen een hoek, hakken bruma roots, voeren die aan
   hun brazier voor punten, repareren een kapotte brazier en steken een gedoofde aan. Ze nemen
   een tinderbox, hammer en rejuvenation potions mee, drinken als ze het koud krijgen en zoeken

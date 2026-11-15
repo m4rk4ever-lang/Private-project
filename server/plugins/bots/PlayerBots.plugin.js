@@ -1,4 +1,5 @@
 const path = require("path");
+const { startChatter } = require("./brain/Chatter.PlayerBots");
 const { initPvpTierLoadouts } = require("./behaviours/pvp/PvpTierLoadouts.PlayerBots");
 const { GameConstants } = require("../../src/main/typescript/elvarg/game/GameConstants");
 const { Wilderness } = require("../../src/main/typescript/elvarg/game/content/wilderness/Wilderness");
@@ -276,6 +277,9 @@ module.exports = {
       world: boot.brainWorld,
       resetMovementState,
     });
+
+    // Bots talk in public chat where a player can see them (brain/Chatter.PlayerBots.js).
+    startChatter(api, boot.runtime);
 
     registerBotStatusInteractions({
       api,
