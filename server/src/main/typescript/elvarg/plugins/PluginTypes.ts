@@ -1379,6 +1379,8 @@ export interface PluginApi {
    * With a default, a value equal to it isn't saved, and a save without the key loads it.
    */
   persistAttribute(key: string, defaultValue?: unknown): void;
+  /** Every persisted attribute back to a new account's (default or unset), except `keep`. */
+  resetPersistentAttributes(player: any, keep?: Iterable<string>): void;
   setPlayerPersistence(persistence: PlayerPersistence): void;
   setExperienceRate(rate: number): void;
   /**

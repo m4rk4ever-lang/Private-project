@@ -75,7 +75,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
-- Alle 15 avonturiers beginnen opnieuw op level 1 (generatie 8), in Lumbridge met het starterspakket van Tutorial Island. Ze worden nu ook echt naar Lumbridge teruggezet.
+- Alle 15 avonturiers beginnen opnieuw op level 1 (generatie 9), in Lumbridge met het starterspakket van Tutorial Island. Ze worden nu ook echt naar Lumbridge teruggezet, en hun hele savedata gaat terug naar die van een nieuw account: ook de Slayer-taak, diary-taken, minigame-standen en cooldowns.
 - Gereedschap dat de volgende klus niet gebruikt (hamer, pickaxe, chisel, messen), zetten avonturiers op de bank. Hebben ze het later nodig, dan halen ze het daar weer op in plaats van een nieuwe te kopen.
 - Avonturiers kiezen bij het vechten niet altijd de dichtstbijzijnde plek, maar een van de beste paar plekken voor hun level, met een voorkeur voor sterkere monsters. Zo zie je ze op meer plekken dan bij de ratten en mannen van Lumbridge.
 - Avonturiers die met pijl en boog of met spells vechten, trainen ook Defence als die achterloopt: longrange (Ranged- en Defence-XP) of defensief casten (Magic- en Defence-XP).

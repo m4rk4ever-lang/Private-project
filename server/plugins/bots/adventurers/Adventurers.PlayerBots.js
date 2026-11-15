@@ -970,6 +970,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     for (const quest of QuestRuntime.getRegisteredQuests()) {
       if (quest.getStage(player) !== 0) quest.setStage(player, 0);
     }
+    // Every other saved thing back to a new account's (Slayer task, diary tasks, minigame states,
+    // cooldowns ...): nothing of the old save carries over. Its honesty mark goes back on.
+    api.resetPersistentAttributes?.(player);
+    markHonest(player);
     player.setAttribute(QuestRuntime.QUEST_POINTS_ATTRIBUTE, 0);
     player.setAttribute(LOG_ATTRIBUTE, []);
     player.setAttribute(GOAL_ATTRIBUTE, null);

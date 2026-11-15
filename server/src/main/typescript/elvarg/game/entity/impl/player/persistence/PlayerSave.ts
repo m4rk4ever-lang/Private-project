@@ -72,6 +72,19 @@ export class PlayerSave {
         }
     }
 
+    /**
+     * Every persisted attribute back to what a new account starts with (its default, or unset),
+     * except `keep`: a character started over keeps nothing of its old save.
+     */
+    public static resetPersistentAttributes(player: Player, keep: Iterable<string> = []): void {
+        const kept = new Set(keep);
+        for (const key of PlayerSave.persistentAttributeKeys) {
+            if (kept.has(key)) continue;
+            const value = PlayerSave.attributeDefaults.get(key);
+            player.setAttribute(key, value === undefined ? undefined : JSON.parse(value));
+        }
+    }
+
     /** Every persisted attribute the player doesn't have starts at its default; a new account has no save to load them. */
     public static applyAttributeDefaults(player: Player): void {
         for (const [key, value] of PlayerSave.attributeDefaults) {
