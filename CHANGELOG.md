@@ -21,6 +21,11 @@ Indeling per versie:
 - Het account **Mark** logt in een codespace automatisch in als **owner**.
 - Nieuwe instelling `OWNER_USERNAME` in `.env`: deze accounts loggen in als owner
   (meerdere namen met komma's).
+- **Staffzone** (`::staffzone`, alleen owner en developer): een privé-kopie van de schatkamer
+  van Tombs of Amascut, gedeeld door alle staff. Met vier gratis staffwinkels (wapens, armour,
+  voorraad, skilling), een bankier en een trainingsdummy. Je hitpoints, prayer, special attack
+  en run-energie blijven er vol. Nog een keer `::staffzone` brengt je terug.
+- `::allquests` (owner): rondt alle quests in één keer af, met beloningen en questpunten.
 
 ### Gewijzigd
 - Nieuwe spelers starten in Lumbridge in plaats van Edgeville. `::home` gaat ook naar Lumbridge.

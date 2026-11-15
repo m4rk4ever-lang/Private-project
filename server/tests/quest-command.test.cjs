@@ -62,3 +62,13 @@ test("names: a partial name must match one quest", () => {
   run(player, "quest");
   assert.match(player.messages.at(-1), /^Usage/);
 });
+
+test("::allquests completes every quest at once with their points, and then says so", () => {
+  const player = createPlayer();
+  QuestCommand._test.allQuestsCommand({ player, parts: ["allquests"] });
+  for (const quest of QuestRuntime.getRegisteredQuests()) assert.ok(quest.isComplete(player), quest.name);
+  assert.equal(player.getAttribute("quest.points"), 7);
+  assert.equal(player.messages.at(-1), "Completed 2 quests.");
+  QuestCommand._test.allQuestsCommand({ player, parts: ["allquests"] });
+  assert.equal(player.messages.at(-1), "You have already completed every quest.");
+});

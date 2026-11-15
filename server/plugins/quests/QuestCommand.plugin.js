@@ -7,6 +7,8 @@
  *   ::quest <name> reset       back to not started
  *   ::quest <name> <stage>     set the stage
  *
+ *   ::allquests                complete every quest at once for yourself (owner)
+ *
  * <name> is a quest's name or key, any case; part of a name works when only one quest matches
  * ("grand tree"). Quest points follow a quest set below or above its completion stage.
  */
@@ -75,11 +77,35 @@ function questCommand({ player, parts }) {
   return true;
 }
 
+/**
+ * Completes every quest the player hasn't, as a quest pack does: rewards and points, but no
+ * scroll or message per quest, then one summary.
+ */
+function allQuestsCommand({ player }) {
+  let completed = 0;
+  const failed = [];
+  for (const quest of QuestRuntime.getRegisteredQuests()) {
+    if (quest.isComplete(player)) continue;
+    try {
+      if (quest.complete(player, { scroll: false, announce: false })) completed++;
+    } catch (error) {
+      failed.push(quest.name);
+      console.warn(`[quest] ::allquests could not complete ${quest.name}:`, error);
+    }
+  }
+  player.sendMessage(completed === 0 && failed.length === 0
+    ? "You have already completed every quest."
+    : `Completed ${completed} quest${completed === 1 ? "" : "s"}.`);
+  if (failed.length > 0) player.sendMessage(`Could not complete: ${failed.slice(0, 5).join(", ")}${failed.length > 5 ? ", ..." : ""}.`);
+  return true;
+}
+
 module.exports = {
   name: "QuestCommand",
   description: "Adds the admin ::quest command to show, set, complete or reset a player's quest stage, for testing quest-gated content.",
   register(api) {
     api.registerCommand("quest", questCommand, PlayerRights.ADMINISTRATOR, "Show or set a quest's progress: ::quest <name> [complete|reset|<stage>]");
+    api.registerCommand("allquests", allQuestsCommand, PlayerRights.OWNER, "Complete every quest at once");
   },
-  _test: { questCommand, findQuests },
+  _test: { questCommand, findQuests, allQuestsCommand },
 };
