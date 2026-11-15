@@ -49,6 +49,8 @@ function isReady(quest, adventurer) {
 function trainingOptions(adventurer) {
   const options = Object.entries(TRAINABLE).map(([skill, mode]) => ({ mode, skill, level: adventurer.levels[skill] ?? 1 }));
   options.push({ mode: COMBAT, skill: "COMBAT", level: adventurer.combat });
+  // Agility: laps on the best course its level allows (adventurers.json agilityCourses).
+  options.push({ mode: "agility", skill: "AGILITY", level: adventurer.levels.AGILITY ?? 1 });
   if ((adventurer.levels.FIREMAKING ?? 1) >= WINTERTODT_LEVEL) {
     options.push({ mode: "wintertodt", skill: "FIREMAKING", level: adventurer.levels.FIREMAKING });
   }

@@ -276,6 +276,19 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (plan.mode.startsWith("buy_")) {
       return startBuyTraining(entry, plan, nowMs);
     }
+    if (plan.mode === "agility") {
+      const level = levelOf(player, "AGILITY");
+      const course = (data.agilityCourses ?? []).find((entry) => level >= entry.level);
+      if (!course || !registry?.byId?.get(`agility_${course.course}`)) return false;
+      startActivity(player, `agility_${course.course}`, { home: course, nowMs });
+      walkTo(entry, course, { reason: "agility", replan: false });
+      entry.activity = `agility_${course.course}`;
+      entry.phase = "training";
+      entry.plan = plan;
+      entry.until = nowMs + randomBetween(data.trainMinutes, random) * 60_000;
+      note(player, `Loopt rondjes op de ${course.name}.`);
+      return true;
+    }
     if (plan.mode === "wintertodt") {
       startActivity(player, "wintertodt", { home: WINTERTODT, nowMs });
       walkTo(entry, { ...WINTERTODT, name: "Wintertodt" }, { reason: "wintertodt", replan: false });

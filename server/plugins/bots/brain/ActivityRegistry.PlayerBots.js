@@ -19,6 +19,7 @@ const { createSmeltAction } = require("./actions/Smelt.PlayerBots");
 const { createSmithAction } = require("./actions/Smith.PlayerBots");
 const { createFletchAction } = require("./actions/Fletch.PlayerBots");
 const { createMakeAction } = require("./actions/Make.PlayerBots");
+const { createRunCourseAction } = require("./actions/RunCourse.PlayerBots");
 const { createTrainCombatAction } = require("./actions/TrainCombat.PlayerBots");
 const { createPvpCombatAction } = require("./actions/PvpCombat.PlayerBots");
 const { createWanderAction } = require("./actions/Wander.PlayerBots");
@@ -192,6 +193,9 @@ function createAction(spec, world) {
   }
   if (spec.type === "smith") {
     return createSmithAction(spec, world);
+  }
+  if (spec.type === "runCourse") {
+    return createRunCourseAction(spec, world);
   }
   if (spec.type === "make") {
     return createMakeAction({

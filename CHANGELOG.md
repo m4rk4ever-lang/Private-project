@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Avonturiers trainen Agility: ze lopen rondjes op de beste course die hun level toelaat (Gnome Stronghold tot Seers' Village Rooftop), via de echte obstakels met slagingskans, vallen, XP en marks of grace. Marks rapen ze op en bewaren ze.
 - Avonturiers hebben steeds een eigen doel, zoals "20 Attack voor een mithril scimitar", daarna "1.500 gp" om hem te kopen, Firemaking 50 voor Wintertodt of geld voor een amulet of glory. Het doel stuurt wat ze trainen; staat het op sparen, dan kiezen ze vaker wat geld oplevert en kopen ze minder materialen. Gehaalde en nieuwe doelen staan in hun dagboek, het huidige doel op de avonturierspagina. De vaste favoriete skills zijn weg.
 - Bankstanders werken nu echt: ze halen hun mes of chisel en een inventaris logs of edelstenen uit hun eigen bank, maken het beste wat hun level toelaat via de echte menu's (met XP), en zetten de producten terug. Hebben ze niets meer om te maken, dan staan ze gewoon. Hun gegenereerde account heeft een voorraad om mee te beginnen.
 - Trainen met gekochte materialen werkt nu ook voor Crafting (edelstenen slijpen met een chisel), Cooking (rauwe vis bakken in de keuken van Lumbridge) en Herblore (unfinished potions met hun ingrediënt, pas na Druidic Ritual). Bots maken dit via de echte menu's van het spel, met het beste product dat hun level toelaat.
