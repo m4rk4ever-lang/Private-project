@@ -48,6 +48,37 @@ function skillsKey(player) {
   return `${manager.getTotalLevel?.()}:${Math.floor(manager.getTotalExp?.() ?? 0)}:${player.getHitpoints?.()}`;
 }
 
+/**
+ * The followed player's quests: { open: ["Rune Mysteries (stage 3)"], done, total }. The quest tab
+ * itself is not mirrored: its varps are the watcher's own quest state on the server too.
+ */
+function questsOf(target) {
+  let quests = [];
+  try {
+    quests = require("../../quests/QuestRuntime").getRegisteredQuests();
+  } catch {
+    return null;
+  }
+  const open = [];
+  let done = 0;
+  for (const quest of quests) {
+    if (quest.isComplete?.(target)) done += 1;
+    else if (quest.isStarted?.(target)) open.push(`${quest.name} (stage ${quest.getStage(target)})`);
+  }
+  return { open, done, total: quests.length };
+}
+
+/** The quests in the watcher's chat: when it starts following, and when they change. */
+function showQuests(player, state) {
+  const quests = questsOf(state.target);
+  if (!quests) return;
+  const key = `${quests.done}:${quests.open.join("|")}`;
+  if (key === state.shownQuests) return;
+  state.shownQuests = key;
+  player.sendMessage(`Quests van ${nameOf(state.target)}: ${quests.done}/${quests.total} voltooid. `
+    + (quests.open.length > 0 ? `Bezig: ${quests.open.join(", ")}.` : "Geen quest bezig."));
+}
+
 /** The bot's inventory and stats in the watcher's tabs, when they changed. */
 function mirror(player, state) {
   const target = state.target;
@@ -71,6 +102,11 @@ function mirror(player, state) {
   if (skills !== state.shownSkills) {
     sender.sendSkillsSnapshotOf?.(target);
     state.shownSkills = skills;
+  }
+  // Quests are looked at every few seconds (a stage changes rarely).
+  if (now - (state.questsAt ?? 0) > 3000) {
+    state.questsAt = now;
+    showQuests(player, state);
   }
 }
 
