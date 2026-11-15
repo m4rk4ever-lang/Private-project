@@ -1412,6 +1412,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
 
   function atExchange(player) {
     const entry = adventurers.get(player.getUsername?.());
+    fillEmptySlots(player, { fromBank: true });
     const bag = sortBag(player);
     dropJunk(player, bag.junk);
     // The exchange has its bank: what it keeps for later goes in there, not up for sale.
@@ -1447,12 +1448,47 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * (data.sellValue) or when earlier sales wait there. Small change (data.keepValue) stays.
    * True when it set off.
    */
+  /**
+   * An empty gear slot is filled from what it has (its bag, or its bank when it stands at one): a
+   * bronze dagger beats bare fists, a wooden shield beats none. Not a tool (axe, pickaxe), a bow
+   * or a staff (those are its other ways of fighting), nor arrows. Of several, the dearest.
+   */
+  function fillEmptySlots(player, { fromBank = false } = {}) {
+    const equipment = player.getEquipment().getItems() ?? [];
+    const skip = new Set([...Object.values(Shopping.gear.tools ?? {}).flat(), ...(Shopping.gear.styles?.ranged?.weapon ?? []),
+      ...(Shopping.gear.styles?.magic?.weapon ?? [])].map((entry) => Shopping.idOf(core, entry.item)).filter(Number.isInteger));
+    const ammoSlot = core.Equipment?.AMMUNITION_SLOT;
+    const skillByIndex = new Map(core.Skill.values().map((skill) => [skill.getIndex(), skill]));
+    const mayWear = (definition) => (definition.getRequirements?.() ?? []).every((needed, index) =>
+      !(needed > 1) || player.getSkillManager().getMaxLevel(skillByIndex.get(index)) >= needed);
+    const best = new Map();
+    const consider = (id) => {
+      if (!(id > 0) || skip.has(id)) return;
+      const definition = core.ItemDefinition.forId(id);
+      const slot = definition?.getEquipmentType?.()?.getSlot?.();
+      if (!Number.isInteger(slot) || slot < 0 || slot === ammoSlot || equipment[slot]?.getId?.() > 0) return;
+      if (definition.isNoted?.() || !mayWear(definition)) return;
+      const value = Value.itemValue(core, id, 1);
+      if (!best.has(slot) || value > best.get(slot).value) best.set(slot, { id, value });
+    };
+    for (const item of player.getInventory().getItems() ?? []) consider(item?.getId?.() ?? -1);
+    if (fromBank) for (const bank of player.getBanks?.() ?? []) for (const item of bank?.getItems?.() ?? []) consider(item?.getId?.() ?? -1);
+    const worn = [];
+    for (const { id } of best.values()) {
+      if (player.getInventory().getAmount(id) <= 0 && !(fromBank && withdraw(player, id, 1) > 0)) continue;
+      if (Shopping.wear(player, core, id)) worn.push(itemName(id));
+    }
+    if (worn.length > 0) note(player, `Trekt aan wat hij heeft: ${worn.join(", ").toLowerCase()}.`, "activity");
+    return worn;
+  }
+
   function trade(entry) {
     const { player } = entry;
     const rules = { levelOf: (skill) => levelOf(player, skill), questDone: questDone(player) };
     for (const name of Trade.wearBest(player, core, rules)) {
       note(player, `Draagt nu ${name.toLowerCase().replace(/_/g, " ")} (gevonden).`, "activity");
     }
+    fillEmptySlots(player);
     // Junk goes at once, wherever it is.
     dropJunk(player, sortBag(player).junk);
     const keep = Trade.keepIds(player, core, { isFood });
@@ -1480,6 +1516,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       reason: "bank",
       urgent,
       arrive: (banker) => {
+        // What it may wear from its bank goes on first, so it is not banked with the rest.
+        fillEmptySlots(banker, { fromBank: true });
         const stored = [...deposit(banker, Trade.goodsToSell(banker, core, Trade.keepIds(banker, core, { isFood }), { isFood, worthless: true })),
           ...bankUnusedSupplies(entry, banker), ...bankUnusedTools(entry, banker)];
         if (stored.length > 0) note(banker, `Zet op de bank in ${bank.name ?? bank.id}: ${stored.slice(0, 5).map((good) => itemName(good.itemId)).join(", ")}${stored.length > 5 ? ` en ${stored.length - 5} meer` : ""}. Bruikbaars bewaart hij; de rest verkoopt hij later op de GE.`, "activity");

@@ -93,6 +93,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers vochten met lege handen: hun bronze dagger en wooden shield gingen bij de eerste bankbeurt de bank in. Nu trekken ze aan wat ze hebben voor een lege plek (uit de tas, of uit de bank als ze daar staan), en met lege handen kopen ze eerst een wapen voordat ze gereedschap kopen.
 - Bots bleven soms minutenlang heen en weer lopen tussen twee punten (bijvoorbeeld bij de trap van het kasteel van Lumbridge): vlak bij het doel lieten ze hun route los, liepen tegen een muur en pakten een oude route van een andere bot die weer terugleidde. Nu volgen ze hun route tot het eind, en plannen ze vanaf hun eigen plek opnieuw als die doodloopt.
 - Een quest met een NPC op een andere verdieping lukt: de bot loopt zelf naar de juiste trap en klimt.
 - De Construction-plugin startte niet (een ontbrekende handler voor huisbezoek), waardoor huizen en house parties niet werkten.

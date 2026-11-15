@@ -109,8 +109,13 @@ function shoppingList(player, core, { levelOf, questDone, modes = [], exchange =
     consider(gear.tools.pickaxe);
     consider(gear.tools.hammer ?? []);
   }
+  // Bare-handed first buys a weapon, before tools or armour; otherwise the cheapest first.
+  const weaponSlot = core.Equipment?.WEAPON_SLOT;
+  const unarmed = !((player.getEquipment().getItems() ?? [])[weaponSlot]?.getId?.() > 0);
+  const isWeapon = (want) => unarmed && Object.values(gear.slots).some((list, index) => Object.keys(gear.slots)[index] === "weapon"
+    && list.some((entry) => idOf(core, entry.item) === want.itemId));
   const bought = [];
-  for (const want of wants.sort((a, b) => a.price - b.price)) {
+  for (const want of wants.sort((a, b) => (isWeapon(b) ? 1 : 0) - (isWeapon(a) ? 1 : 0) || a.price - b.price)) {
     if (want.price > budget) continue;
     budget -= want.price;
     bought.push(want);
