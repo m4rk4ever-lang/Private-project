@@ -65,6 +65,8 @@ Indeling per versie:
   iedereen nu ook als member in de skills-tab en de questlijst (op een members-wereld).
 
 ### Gewijzigd
+- De README is herschreven voor Realm of Eeshwar: spelen, bijwerken, staff-commands, backups en
+  een link naar deze changelog.
 - Nieuwe spelers starten in Lumbridge in plaats van Edgeville. `::home` gaat ook naar Lumbridge.
 
 - **Bots terug, als levendige wereld:** 131 bots die hakken, minen, vissen en tegen monsters vechten,

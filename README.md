@@ -1,79 +1,61 @@
-# TSPS - TypeScript RuneScape Private Server
+# Realm of Eeshwar
 
-A browser-based Old School RuneScape private server with a TypeScript/WebGL client and TypeScript game server.
+Een eigen Old School-wereld: server en client in TypeScript, te spelen in de browser.
 
-In game, `::home` teleports to the world's configured spawn using the usual teleport restrictions.
-`::staff` shows online staff and their ranks in a scroll. Press `Ctrl+;` to open `::teleports`
-or `Ctrl+/` to open `::commands` while playing; page text fields keep their normal keyboard behavior.
+Wat er veranderd is, staat in de **[CHANGELOG](CHANGELOG.md)**.
 
-## Packages
+## Spelen
 
-- [`client/`](client/) — browser client (Forked from [xRSPS](https://github.com/xrsps/xrsps-typescript))
-- [`server/`](server/) — game server (Official continuation of our [Elvarg](https://github.com/RSPSApp/elvarg-rsps) fork - Ported to TypeScript)
+1. Open de repo in een **GitHub Codespace** (groene knop **Code** > **Codespaces**).
+2. Wacht tot de terminal `Compiled successfully` laat zien. De eerste keer duurt dat 10 tot 15 minuten.
+3. Het spel opent in een nieuw tabblad. Log in met een naam en wachtwoord; het account wordt dan aangemaakt.
 
-## Quick start
+De eerste keer laden downloadt de game-cache naar je browser. Daarna laden plekken direct.
+Gebruik Chrome of Edge. Meer uitleg en hulp bij problemen: [.devcontainer/README.md](.devcontainer/README.md).
 
-Install [Node.js 22.16 or later](https://nodejs.org/en/download) first. No separate Yarn or Corepack installation is needed.
+Lokaal draaien (Node 22): `npm run setup`, daarna `yarn start` en open http://localhost:3000.
 
-From the repository root:
+## Bijwerken
 
-```bash
-npm run setup
-yarn start
-```
+Typ `update` in een terminal van de codespace. Het spel stopt, de nieuwste versie wordt opgehaald,
+nieuwe onderdelen worden geïnstalleerd als dat nodig is en het spel start weer.
 
-Open <http://localhost:3000>. The first start downloads the game cache automatically.
+## Staff
 
-If setup is interrupted, run `npm run setup` again.
+Het account **Mark** logt in als owner (instelling `OWNER_USERNAME` in `.env`).
 
-Running several branches at once, one worktree each on its own ports: see [docs/worktrees.md](docs/worktrees.md).
+| Command | Wat het doet |
+| --- | --- |
+| `::staffzone` | Naar de staffzone en weer terug (owner en developer) |
+| `::allquests` | Alle quests, miniquests en achievement diaries voltooid, zonder beloningen |
+| `::quest <naam>` | De stand van een quest bekijken of aanpassen |
+| `::diary <naam>` | De stand van een achievement diary bekijken, voltooien of resetten |
 
-### Local world settings
+## Wereld
 
-Create `server/data/definitions/world.local.json` with the settings you want to override from
-`world.json`; omitted settings keep their shipped values. This file is gitignored, so local
-customizations survive updates without changing tracked files. Restart the server after edits.
-Every setting is listed in [docs/world-configuration.md](docs/world-configuration.md).
+- **Getrapte XP-rate** per skill: x25 tot level 49, x15 tot 79, x10 tot 89, daarna x5.
+- **Bots:** zo'n 144 bots die hakken, minen, vissen en vechten, met een vaste thuisbasis per
+  activiteit. Ze reizen door de wereld, hangen rond bij de Grand Exchange en de banken, en
+  high-level bots staan bij raids en bosses.
+- **Loot beam op waarde:** in de instellingen van de plugin Ground Items, met een schuifbalk.
 
-### Optional: Java sidecars
+## Saves en backups
 
-Two optional local services are Java; neither is needed to run the server.
+- Elk uur (alleen als er iets veranderd is) gaat een backup van alle saves naar `server/data/backups`.
+- Eens per week gaat de nieuwste backup naar de branch `saves` op GitHub. Dat gebeurt alleen als
+  deze repo privé is.
 
-| Command | What it enables | Setup |
-| --- | --- | --- |
-| `yarn bridge` | the in-game Quest Helper panel, from the upstream Java helper | **Java 21**, then the one-time build in [`tools/quest-helper-bridge`](tools/quest-helper-bridge/README.md) |
-| `yarn gateway` | the official OSRS client through RSProx, playing on this server | [`runelite-gateway/README.md`](runelite-gateway/README.md) |
+## Mappen
 
-The bridge and server need the same `QUEST_HELPER_TOKEN` (at least 24 characters) in `.env`.
-Without it, the panel reports that the server token is missing. Tutorial Island and Recipe for
-Disaster still work because the server answers those itself. `QUEST_HELPER_URL` can point the
-server at a bridge outside loopback, such as `http://quest-helper:16471`; it must be an HTTP(S)
-URL without credentials, query parameters or a fragment. The default is
-`http://127.0.0.1:${QUEST_HELPER_PORT:-16471}`.
+| Map | Inhoud |
+| --- | --- |
+| `server/` | De gameserver. Content zit in `server/plugins/`, wereldinstellingen in `server/data/definitions/world.json` |
+| `client/` | De browserclient |
+| `scripts/` | `update` en de backup-scripts |
+| `.devcontainer/` | De Codespace-instellingen |
 
-## Publish your world
+Regels voor wie aan de code werkt: [AGENTS.md](AGENTS.md) en [server/AGENTS.md](server/AGENTS.md).
 
-Create a server token at [RSPS.app](https://rsps.app/) under **Settings → Server tokens**, then add it to `.env` in the repository root:
+## Licentie
 
-```dotenv
-WEBRTC_WORLD_ID=my-world
-WEBRTC_WORLD_TOKEN=paste-your-token-here
-```
-
-Set `"name": "My World"` in `server/data/definitions/world.local.json` to choose the display name; it defaults to `Old School RuneScape`. This name is used by the login page, World list, welcome messages and bank title. The list also shows the `description` (up to 120 characters) and `spawn` from [`server/data/definitions/world.json`](server/data/definitions/world.json).
-
-Run `yarn start`. Your world appears in the World list once it registers. Keep the token private.
-
-## Links
-
-- [Discord](https://discord.com/invite/TCTDGVzejn) — questions, help and development chat
-- [Progress](https://rsps.app/progress) — how much of OSRS is implemented, by category
-- [Host a world](https://rsps.app/host)
-
-## Credits
-
-We want to thank Astrul/[@Lerl](https://github.com/Lerl), Detuks/[@Reinismu](https://github.com/Reinismu), Kraken/[@UnhealthyKraken](https://github.com/UnhealthyKraken), Vexus/[@Bandit-HaxUnit](https://github.com/Bandit-HaxUnit), [@xrsps](https://github.com/xrsps) and all the contributors of both the legacy Java project and the TypeScript continuation.
-
-## Legal
-
-This fan project is not affiliated with Jagex Ltd. Old School RuneScape and related assets and trademarks belong to their respective owners.
+Zie [LICENSE](LICENSE).
