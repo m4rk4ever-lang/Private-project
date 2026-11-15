@@ -1726,6 +1726,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       return {
         name: entry.name,
         clan: Clans.clanOf(data, entry.name)?.name ?? null,
+        emblem: Clans.clanOf(data, entry.name)?.emblem ?? null,
         leader: Clans.clanOf(data, entry.name)?.leader === entry.name,
         online,
         combat: online ? player.getSkillManager().getCombatLevel() : null,

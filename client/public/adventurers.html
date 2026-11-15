@@ -75,6 +75,8 @@
   .view button { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 4px 12px; cursor: pointer; font-size: 13px; }
   .view button.on { border-color: var(--gold); color: var(--gold); }
   .clan-head { grid-column: 1 / -1; margin: 10px 0 -4px; color: var(--gold); font-size: 16px; display: flex; gap: 12px; align-items: baseline; }
+  .emblem { display: inline-block; vertical-align: -6px; margin-right: 6px; }
+  .emblem.big { vertical-align: -10px; }
   .clan-head small { color: var(--muted); font-size: 12px; }
   .follow { margin-left: auto; font-size: 12px; background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 2px 8px; cursor: pointer; }
 </style>
@@ -171,7 +173,7 @@
     }
     if (clans.size === 0) return "";
     const rows = [...clans.values()].sort((x, y) => y.score - x.score).map((c, i) => `<tr><td class="${i === 0 ? "medal" : ""}">#${i + 1}</td>
-      <td><b>${esc(c.name)}</b></td><td>${esc(c.leader ?? "-")}</td><td>${c.members}</td><td>${c.score}</td><td>${c.total}</td><td>${gp(c.wealth)}</td></tr>`).join("");
+      <td>${emblem(emblemOf(c.name))}<b>${esc(c.name)}</b></td><td>${esc(c.leader ?? "-")}</td><td>${c.members}</td><td>${c.score}</td><td>${c.total}</td><td>${gp(c.wealth)}</td></tr>`).join("");
     return `<h2>Clanrace</h2><table><tr><th></th><th>Clan</th><th>Leider</th><th>Leden</th><th>Score</th><th>Totaal</th><th>Bezit</th></tr>${rows}</table>`;
   }
   function ranking(list) {
@@ -196,7 +198,7 @@
     return `<section class="card">
       <div class="top">
         <div class="name"><span class="rank">#${adventurer.rank}</span><span class="dot ${adventurer.online ? "on" : ""}"></span>${esc(adventurer.name)}
-          ${adventurer.clan ? `<span class="tag">${esc(adventurer.clan)}${adventurer.leader ? " · leider" : ""}</span>` : ""}
+          ${adventurer.clan ? `<span class="tag">${emblem(adventurer.emblem, 14)}${esc(adventurer.clan)}${adventurer.leader ? " · leider" : ""}</span>` : ""}
           ${adventurer.group ? '<span class="tag">samen</span>' : ""}
           <button class="follow" data-follow="${esc(adventurer.name)}" title="Kopieert ::volg ${esc(adventurer.name)}">Volg</button></div>
         <div class="stats">
@@ -218,6 +220,23 @@
   }
 
   let last = null;
+  /** The clan's logo: a shield in its colour with its symbol (adventurers.json clans[].emblem). */
+  const SYMBOLS = {
+    axe: '<path d="M16 9 L16 27" stroke="#f3e6c4" stroke-width="2.4" stroke-linecap="round"/><path d="M16 10 C22 9 25 13 24 18 C21 16 18 16 16 17 Z" fill="#f3e6c4"/>',
+    skull: '<circle cx="16" cy="15" r="6.5" fill="#f3e6c4"/><rect x="12.5" y="19" width="7" height="5" rx="1" fill="#f3e6c4"/><circle cx="13.5" cy="15" r="1.7" fill="#2b2b2b"/><circle cx="18.5" cy="15" r="1.7" fill="#2b2b2b"/>',
+    star: '<path d="M16 7 L18.6 13.4 L25.4 13.6 L20 17.8 L22 24.4 L16 20.5 L10 24.4 L12 17.8 L6.6 13.6 L13.4 13.4 Z" fill="#f3e6c4"/>',
+    crown: '<path d="M8 22 L8 12 L12 16 L16 9 L20 16 L24 12 L24 22 Z" fill="#f3e6c4"/>',
+    sword: '<path d="M16 6 L18 9 L18 21 L14 21 L14 9 Z M11 21 L21 21 L21 23 L11 23 Z M15 23 L17 23 L17 27 L15 27 Z" fill="#f3e6c4"/>',
+  };
+  function emblem(e, size = 22) {
+    if (!e) return "";
+    const color = /^#[0-9a-f]{6}$/i.test(e.color ?? "") ? e.color : "#777";
+    return `<svg class="emblem${size > 24 ? " big" : ""}" width="${size}" height="${Math.round(size * 1.15)}" viewBox="0 0 32 37" aria-hidden="true">`
+      + `<path d="M3 3 L29 3 L29 18 C29 27 22 32 16 35 C10 32 3 27 3 18 Z" fill="${color}" stroke="#d6b25e" stroke-width="2"/>`
+      + `${SYMBOLS[e.symbol] ?? ""}</svg>`;
+  }
+  const emblemOf = (name) => last?.adventurers?.find((a) => a.clan === name)?.emblem ?? null;
+
   // "clan": the cards in their clans (best clan first, leader first); "rank": one ranking.
   let view = "clan";
   try { view = localStorage.getItem("adventurers:view") || "clan"; } catch {}
@@ -243,7 +262,7 @@
   function viewButtons(list) {
     const clans = byClan(list).map((clan) => clan.name);
     const buttons = [["clan", "Per clan"], ["rank", "Ranglijst"], ...clans.map((name) => [`clan:${name}`, name])];
-    return buttons.map(([key, label]) => `<button data-view="${esc(key)}" class="${key === view ? "on" : ""}">${esc(label)}</button>`).join("");
+    return buttons.map(([key, label]) => `<button data-view="${esc(key)}" class="${key === view ? "on" : ""}">${key.startsWith("clan:") ? emblem(emblemOf(label), 16) : ""}${esc(label)}</button>`).join("");
   }
 
   function render() {
@@ -254,7 +273,7 @@
     document.getElementById("ranking").innerHTML = ranking(list);
     document.getElementById("cards").innerHTML = view === "rank"
       ? list.map(card).join("")
-      : byClan(list).map((clan, index) => `<h2 class="clan-head">${only ? "" : `#${index + 1} `}${esc(clan.name)}<small>score ${clan.score} · totaal ${clan.total}</small></h2>${clan.members.map(card).join("")}`).join("");
+      : byClan(list).map((clan, index) => `<h2 class="clan-head">${emblem(emblemOf(clan.name), 30)}${only ? "" : `#${index + 1} `}${esc(clan.name)}<small>score ${clan.score} · totaal ${clan.total}</small></h2>${clan.members.map(card).join("")}`).join("");
   }
   document.addEventListener("click", async (event) => {
     const pick = event.target.closest("#view button");
