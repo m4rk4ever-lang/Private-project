@@ -297,6 +297,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const started = errands.go(run, to, {
       reason,
       arrive: (player) => {
+        entry.errand = null;
         try {
           arrive(player);
         } finally {
@@ -304,6 +305,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         }
       },
       fail: (player) => {
+        entry.errand = null;
         note(player, `Kwam niet bij ${placeName(to)}: de weg was versperd.`, "activity");
         // That place is out for a while; the next bank or shop is still fine.
         (entry.blockedPlaces ??= new Map()).set(placeKey(to), now() + BLOCKED_MS);
@@ -314,6 +316,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       },
     });
     if (!started) return false;
+    // What the page shows while it walks.
+    entry.errand = { to: placeName(to), reason, since: now() };
     if (replan) {
       entry.phase = "errand";
       entry.until = Infinity;
@@ -584,9 +588,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const started = plan.kind === "quest" ? startQuest(entry, plan)
         : plan.kind === "boss" ? startBoss(entry, plan, nowMs)
         : startTraining(entry, plan, nowMs);
-      if (started) return;
+      if (started) {
+        entry.idleReason = null;
+        return;
+      }
       if (plan.mode) exclude.add(plan.mode);
     }
+    entry.idleReason = `kon ${[...exclude].map((mode) => mode.replace(/_/g, " ")).join(", ") || "niets"} niet starten`;
+    world.log?.("adventurer_idle", { name: entry.name, tried: [...exclude] });
     entry.until = nowMs + 15_000;
   }
 
@@ -1336,6 +1345,23 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   }
 
   /** What the page and ::adventurers show. */
+  const ERRAND_REASONS = {
+    bank: "om te banken", exchange: "om te verkopen en kopen", shop: "om te kopen", withdraw: "om spullen van de bank te halen",
+    buy_materials: "om materialen te kopen", slayer: "voor een Slayer-taak", training: "om te trainen", station: "om te trainen",
+  };
+
+  /** What it is doing now, in words, for the page. */
+  function doingText(entry) {
+    if (entry.phase === "errand" && entry.errand) {
+      const minutes = Math.floor((now() - entry.errand.since) / 60_000);
+      return `Loopt naar ${entry.errand.to} ${ERRAND_REASONS[entry.errand.reason] ?? ""}${minutes > 0 ? ` (${minutes} min onderweg)` : ""}`.replace(/ +/g, " ").trim();
+    }
+    if (entry.phase === "waiting") return entry.resume ? "Wacht op zijn bod op de GE" : "Wacht even (geen bank bereikbaar)";
+    if (entry.phase === "boss") return `Boss: ${entry.plan?.boss?.name}`;
+    if (entry.plan) return `Training: ${String(entry.activity).replace(/_/g, " ")} (${entry.plan.reason})`;
+    return entry.idleReason ? `Zoekt iets om te doen: ${entry.idleReason}` : "Begint";
+  }
+
   function report() {
     return [...adventurers.values()].map((entry) => {
       const { player } = entry;
@@ -1363,8 +1389,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         questsTotal: questList().length,
         goal: online ? Goals.describe(player.getAttribute(GOAL_ATTRIBUTE) ?? null) : null,
         skills,
-        doing: entry.phase === "boss" ? `Boss: ${entry.plan?.boss?.name}`
-          : entry.plan ? `Training: ${String(entry.activity).replace(/_/g, " ")} (${entry.plan.reason})` : "Begint",
+        doing: doingText(entry),
         group: entry.group === true,
         until: entry.until,
         location: online ? describeLocation(player) : null,
