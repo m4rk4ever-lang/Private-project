@@ -90,4 +90,10 @@ function nextLeg(here, goal, avoid = null, source = null) {
   return best.first;
 }
 
-module.exports = { nextLeg, build, DIRECT_TILES, AT_HUB_TILES };
+/** A hub by its key, or null. */
+function hub(key, source = null) {
+  const { hubs } = source ? build(source) : (graph ??= build());
+  return hubs.get(key) ?? null;
+}
+
+module.exports = { nextLeg, hub, build, DIRECT_TILES, AT_HUB_TILES };

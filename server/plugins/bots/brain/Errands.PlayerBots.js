@@ -22,6 +22,8 @@ const clearMovementRequest = (...args) => navigation().clearMovementRequest(...a
 
 /** Close enough to do the business. */
 const ARRIVE_TILES = 3;
+/** A floor up or down counts as this many tiles of progress. */
+const FLOOR_TILES = 20;
 /** Not a step closer for this long: the way is blocked, give up. */
 const STALL_MS = 60_000;
 /** No errand takes longer than this. */
@@ -31,6 +33,8 @@ const TELEPORT_SAVES = 150;
 /** The spells a bot may cast for an errand: none behind a quest, none into the Wilderness or a house. */
 const ERRAND_SPELLS = new Set(["varrock teleport", "lumbridge teleport", "falador teleport", "camelot teleport"]);
 const TELEPORT_MS = 3600;
+/** The home teleport's long cast: it lands on tick 24 (HomeTeleportSequence), a little more to be sure. */
+const HOME_TELEPORT_MS = 16_000;
 
 function distance(a, b) {
   return Math.max(Math.abs(a.getX() - b.x), Math.abs(a.getY() - b.y));
@@ -117,7 +121,24 @@ function bestTeleport(core, player, to, { jewelleryData = null } = {}) {
 }
 
 function createErrands({ now = () => Date.now(), log = () => {}, core = null, move = requestMovement, clear = clearMovementRequest,
-  useItem = null } = {}) {
+  useItem = null, emit = null } = {}) {
+  /**
+   * The free home teleport (Lumbridge on the standard spellbook), when it saves a long walk and its
+   * 30-minute cooldown has passed: cast through its plugin ("home-teleport:cast"), so the cooldown,
+   * the combat check and the long animation are the game's own. False when it does not go off.
+   */
+  function homeTeleport(player, to) {
+    if (!emit) return false;
+    const check = { player, check: true, ready: false, destination: null };
+    emit("home-teleport:cast", check);
+    if (!check.ready || !check.destination) return false;
+    const here = player.getLocation();
+    if ((to.z ?? 0) !== 0 || distance(here, to) - Math.max(Math.abs(check.destination.x - to.x), Math.abs(check.destination.y - to.y)) < TELEPORT_SAVES) return false;
+    const cast = { player, started: false };
+    emit("home-teleport:cast", cast);
+    return cast.started === true;
+  }
+
   const errands = new Map();
 
   /**
@@ -143,6 +164,13 @@ function createErrands({ now = () => Date.now(), log = () => {}, core = null, mo
       errand.bestAt = errand.walkFrom;
       log("bot_errand_teleport", { username: player.getUsername?.() ?? null, kind: spell.kind, to: spell.name, reason });
       errand.teleport = spell;
+      return true;
+    }
+    if (homeTeleport(player, to)) {
+      errand.walkFrom = nowMs + HOME_TELEPORT_MS;
+      errand.bestAt = errand.walkFrom;
+      errand.teleport = { kind: "home" };
+      log("bot_errand_teleport", { username: player.getUsername?.() ?? null, kind: "home", reason });
       return true;
     }
     move(player, to.x, to.y, { nowMs, z: to.z ?? 0, reason: `brain_${reason}`, state: entry.state ?? undefined });
@@ -174,8 +202,12 @@ function createErrands({ now = () => Date.now(), log = () => {}, core = null, mo
         errand.walking = true;
         move(player, errand.to.x, errand.to.y, { nowMs, z: errand.to.z ?? 0, reason: `brain_${errand.reason}`, state: errand.entry.state ?? undefined });
       }
-      const away = player.getLocation().getZ() === (errand.to.z ?? 0) ? distance(player.getLocation(), errand.to) : Infinity;
-      if (away <= ARRIVE_TILES) {
+      // Progress on another floor counts too (walking to the stairs): the distance on the map plus
+      // a step per floor, so a walk to Lumbridge castle's first floor is not called stuck before the
+      // stairs. Arriving takes the right floor.
+      const floors = Math.abs(player.getLocation().getZ() - (errand.to.z ?? 0));
+      const away = distance(player.getLocation(), errand.to) + floors * FLOOR_TILES;
+      if (floors === 0 && away <= ARRIVE_TILES) {
         end(player, errand, true);
         continue;
       }
@@ -206,6 +238,7 @@ function errandsFor(api) {
   if (shared) return shared;
   shared = createErrands({
     log: (message, extra) => api?.log?.(message, extra),
+    emit: api?.emitCustomEvent ? (name, payload) => api.emitCustomEvent(name, payload) : null,
     core: api?.core ?? null,
     // An inventory item's option, as a click sends it (a tablet's Break, a glory's Rub submenu).
     useItem: (player, slot, option, subOpId) => {

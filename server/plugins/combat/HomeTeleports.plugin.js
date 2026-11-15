@@ -104,20 +104,25 @@ function castHomeTeleport(event) {
     return;
   }
   if (op !== 1) return;
+  castHome(player, home);
+}
+
+/** The cast itself: cooldown, members, the teleport's own checks, then the long sequence. False when refused. */
+function castHome(player, home) {
   const left = minutesLeft(Number(player.getAttribute(LAST_HOME_TELEPORT_ATTRIBUTE)), cooldownMinutes());
   if (left > 0) {
     player.sendMessage(`You need to wait another ${left} minutes to cast this spell.`);
-    return;
+    return false;
   }
   if (home.members !== false && !core.WorldDefinition.isMembersWorld()) {
     player.sendMessage("You need to be on a members' world to use this spell.");
-    return;
+    return false;
   }
   const destination = destinationFor(home);
-  if (!core.TeleportHandler.checkReqs(player, destination)) return;
+  if (!core.TeleportHandler.checkReqs(player, destination)) return false;
   if (core.CombatFactory.inCombat(player)) {
     player.sendMessage("You can't use this spell during combat.");
-    return;
+    return false;
   }
   core.TeleportHandler.confirm(player, destination, () => {
     if (core.CombatFactory.inCombat(player)) {
@@ -130,6 +135,24 @@ function castHomeTeleport(event) {
       player.getPacketSender().sendConfig(LAST_HOME_TELEPORT_VARP, clientMinute(minute));
     });
   });
+  return true;
+}
+
+/**
+ * "home-teleport:cast" { player, started }: casts the player's spellbook's home teleport as its
+ * spell button does (bots: an errand home). `started` is set when it went off; `ready` tells
+ * whether the cooldown has passed without casting ({ player, check: true }).
+ */
+function castByEvent(event) {
+  const book = event.player?.getSpellbook?.();
+  const books = core.MagicSpellbook ?? {};
+  const home = HOMES.get(book && book === books.ANCIENT ? "edgeville home teleport" : book && book === books.LUNAR ? "lunar home teleport"
+    : book && book === books.ARCEUUS ? "arceuus home teleport" : "lumbridge home teleport");
+  const left = minutesLeft(Number(event.player.getAttribute(LAST_HOME_TELEPORT_ATTRIBUTE)), cooldownMinutes());
+  event.ready = left <= 0;
+  event.destination = { x: home.x, y: home.y, z: 0 };
+  if (event.check || !event.ready) return;
+  event.started = castHome(event.player, home);
 }
 
 const toggles = (player) => Number(player.getAttribute(TOGGLES_ATTRIBUTE) ?? 1);
@@ -204,6 +227,7 @@ module.exports = {
     api.persistAttribute(UNLOCKED_ATTRIBUTE, 0);
     api.persistAttribute(TOGGLES_ATTRIBUTE, 1);
     api.onInterfaceActionClick(castHomeTeleport);
+    api.onCustomEvent("home-teleport:cast", castByEvent);
     api.onInterfaceActionClick(toggleAnimation);
     api.onItemAction("Twisted teleport scroll", { Read: readScroll });
     api.onItemAction("Trailblazer teleport scroll", { Read: readScroll });

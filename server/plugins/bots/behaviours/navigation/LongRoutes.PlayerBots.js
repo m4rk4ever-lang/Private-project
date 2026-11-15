@@ -147,7 +147,12 @@ function nextWaypoint(player, request, nowMs = Date.now()) {
     return null;
   }
   // Too far to plan in one go: the walk goes hub to hub (TravelHubs), a planned leg at a time.
-  const leg = TravelHubs.nextLeg(here, goal, request.badHubs);
+  // The hub it set out for stays the leg until it is reached: re-picked at every step, the leg
+  // jumped from hub to hub as the bot moved, each time a new plan, until it walked into a hill.
+  const held = request.legKey ? TravelHubs.hub(request.legKey) : null;
+  const keep = held && chebyshev(here, goal) > TravelHubs.DIRECT_TILES
+    && chebyshev(here, held) > TravelHubs.AT_HUB_TILES && !request.badHubs?.has?.(held.key);
+  const leg = keep ? held : TravelHubs.nextLeg(here, goal, request.badHubs);
   if ((leg?.key ?? null) !== (request.legKey ?? null)) {
     request.legKey = leg?.key ?? null;
     request.route = undefined;

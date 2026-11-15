@@ -14,6 +14,8 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Avonturiers doen echt quests, stap voor stap zoals een speler: naar de NPC lopen (ook trappen op en via ladders een kelder in), Talk-to en de dialoog doorklikken, waarbij ze de juiste antwoorden kiezen. De quest zelf zet de stages en geeft de beloningen. De eerste is Rune Mysteries (Runecraft). Ze beginnen alleen aan een quest waarvan ze alle eisen halen. Lukt een stap niet, dan leggen ze de quest een uur weg. Owners kunnen een quest starten met `::advquest <naam>:<quest>`.
+- Bots gebruiken de home teleport (Lumbridge) voor een lange wandeling: de echte spreuk met de lange animatie en de cooldown van 30 minuten.
 - De avonturierspagina toont de avonturiers per clan (beste clan eerst, de leider bovenaan), met een knop om terug te gaan naar één ranglijst. De keuze wordt onthouden.
 - Lange tochten voor bots lopen via een netwerk van tussenstops (steden en kruisingen, met routes die in het spel gecontroleerd zijn). Zo komen ze ook ver weg, bijvoorbeeld van Lumbridge naar de Agility-course in de Gnome Stronghold, in plaats van tegen de eerste muur of rivier te blijven staan.
 - Avonturiers onthouden hun lopende klus: bij het begin van een klus en daarna elke 3 minuten wordt één regel per avonturier overschreven (wat, waarom, hoe lang nog) en opgeslagen. Na een herstart pakken ze die klus weer op voor de tijd die nog over was, in plaats van opnieuw te beginnen. Een opgeslagen klus van meer dan 6 uur oud vervalt.
@@ -73,6 +75,8 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Alle 15 avonturiers beginnen opnieuw op level 1 (generatie 8), in Lumbridge met het starterspakket van Tutorial Island. Ze worden nu ook echt naar Lumbridge teruggezet.
+- Gereedschap dat de volgende klus niet gebruikt (hamer, pickaxe, chisel, messen), zetten avonturiers op de bank. Hebben ze het later nodig, dan halen ze het daar weer op in plaats van een nieuwe te kopen.
 - Avonturiers kiezen bij het vechten niet altijd de dichtstbijzijnde plek, maar een van de beste paar plekken voor hun level, met een voorkeur voor sterkere monsters. Zo zie je ze op meer plekken dan bij de ratten en mannen van Lumbridge.
 - Avonturiers die met pijl en boog of met spells vechten, trainen ook Defence als die achterloopt: longrange (Ranged- en Defence-XP) of defensief casten (Magic- en Defence-XP).
 - Avonturiers gaan pas naar de Canifis Rooftop na Priest in Peril, en kiezen een course die onlangs onbereikbaar bleek even niet.
@@ -83,6 +87,8 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Een wandeling naar een andere verdieping (zoals de eerste verdieping van het kasteel van Lumbridge) gaf de bot na een minuut op voordat hij bij de trap was.
+- Op lange tochten hield de bot zijn tussenstop niet vast: bij elke stap koos hij een andere, plande hij opnieuw en liep hij vast. Nu loopt hij door tot de gekozen tussenstop bereikt is.
 - Zakkenrollen door bots werkt: ze zochten hun doelwit in een lijst die alleen een echte client vult, vonden nooit een man of vrouw en kregen dus geen XP of buit. Nu zoeken ze in de wereld om zich heen.
 - Bots klikken na een level-up door de pop-up heen (na 1 tot 3 seconden, zoals een speler) en gaan verder met wat ze deden, in plaats van stil te blijven staan.
 - Avonturiers schakelen over op melee als hun pijlen of runes op zijn, in plaats van met lege handen door te gaan.

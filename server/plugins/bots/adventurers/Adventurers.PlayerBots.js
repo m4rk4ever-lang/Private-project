@@ -38,6 +38,9 @@ const GENERATION_ATTRIBUTE = "adventurers:generation";
 const TASK_ATTRIBUTE = "adventurers:task";
 const TASK_SAVE_MS = 3 * 60_000;
 const Tasks = require("./Tasks.PlayerBots");
+const { createQuestPlay } = require("./QuestPlay.PlayerBots");
+/** A quest a bot could not finish is put aside this long. */
+const QUEST_ASIDE_MS = 60 * 60_000;
 const Shopping = require("./Shopping.PlayerBots");
 const Trade = require("./Trade.PlayerBots");
 const Slayer = require("./Slayer.PlayerBots");
@@ -114,6 +117,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   });
   /** name -> { name, player, phase, until, plan, startedAt } */
   const adventurers = new Map();
+  // Quests played for real (QuestPlay.PlayerBots.js): walk, Talk-to, answer.
+  const questPlay = createQuestPlay({
+    core, world, now,
+    walkTo: (entry, to, options) => walkTo(entry, to, options),
+    note: (player, text, type) => note(player, text, type),
+    quests: () => QuestRuntime.getRegisteredQuests(),
+  });
 
   // Quests only get added (at boot); the map is rebuilt when their number changes.
   let questIndex = { size: -1, map: new Map() };
@@ -171,7 +181,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       styles: fightingStyles(player),
       slayer: slayerView(player),
       // Only quests a bot can really play (none yet): nothing is simulated.
-      available: new Set(questList().filter((quest) => quest.playthrough === true && registered.has(normalize(quest.name)))
+      available: new Set(questList().filter((quest) => (quest.playthrough === true || questPlay.has(quest.name))
+        && registered.has(normalize(quest.name)) && !questAside(player, quest.name))
         .map((quest) => quest.name)),
     };
   }
@@ -297,6 +308,70 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
     if (style === "magic") return held("AIR_RUNE") >= SUPPLY_MIN && held("MIND_RUNE") >= SUPPLY_MIN;
     return true;
+  }
+
+  /**
+   * The tools a job uses: { any: [...] } (one of them: the best axe or pickaxe it has) and
+   * { all: [...] } (each: a fishing rod and its feathers). Names as in adventurer-gear.json.
+   */
+  function toolsFor(mode, activityId = null, skill = null) {
+    const gear = Shopping.gear;
+    const names = (list) => (list ?? []).map((entry) => entry.item);
+    const bySkill = { FIREMAKING: ["TINDERBOX"], SMITHING: ["HAMMER"], FLETCHING: ["KNIFE"], CRAFTING: ["CHISEL", "NEEDLE"] };
+    if (mode === "woodcutting") return { any: names(gear.tools.axe), all: [] };
+    if (mode === "mining") return { any: names(gear.tools.pickaxe), all: [] };
+    if (mode === "fishing") return { any: [], all: gear.fishingTools[activityId] ?? [] };
+    if (String(mode).startsWith("buy_") || mode === "wintertodt") {
+      const recipe = data.buyToTrain?.[skill];
+      return { any: recipe?.tool ? [recipe.tool] : bySkill[skill] ?? [], all: [] };
+    }
+    return { any: [], all: [] };
+  }
+
+  /** Tools the job needs that are in its bank and not on it: [itemId], best first. */
+  function toolsInBank(player, mode, activityId = null, skill = null) {
+    const { any, all } = toolsFor(mode, activityId, skill);
+    const fetch = [];
+    const ids = (list) => list.map((name) => Shopping.idOf(core, name)).filter(Number.isInteger);
+    const anyIds = ids(any);
+    if (anyIds.length > 0 && !anyIds.some((id) => Shopping.owns(player, id))) {
+      const best = anyIds.find((id) => banked(player, id) > 0);
+      if (best !== undefined) fetch.push(best);
+    }
+    for (const id of ids(all)) if (!Shopping.owns(player, id) && banked(player, id) > 0) fetch.push(id);
+    return fetch;
+  }
+
+  /** To the nearest bank for the job's tools, then the job again (its saved-task resume). */
+  function fetchTools(entry, plan, ids) {
+    const bank = nearestBank(entry.player, entry);
+    if (!bank) return false;
+    return walkTo(entry, { ...bank, name: bank.name ?? bank.id }, {
+      reason: "withdraw",
+      arrive: (banker) => {
+        let got = 0;
+        for (const id of ids) got += withdraw(banker, id, 1000);
+        if (got > 0) {
+          note(banker, `Haalt zijn ${ids.map(itemName).join(" en ").toLowerCase()} van de bank.`, "activity");
+          entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, remainingMs: 0, savedAt: now() };
+        }
+      },
+    });
+  }
+
+  /** At a bank: tools the job does not use go in (no hammer and pickaxes along for net fishing). */
+  function bankUnusedTools(entry, banker, plan = entry.plan) {
+    const needed = new Set(Object.values(toolsFor(plan?.mode, entry.activity, plan?.skill)).flat()
+      .map((name) => Shopping.idOf(core, name)).filter(Number.isInteger));
+    const all = [...Object.values(Shopping.gear.tools ?? {}).flat().map((entry) => entry.item),
+      ...Object.values(Shopping.gear.fishingTools ?? {}).flat(), "TINDERBOX", "HAMMER", "CHISEL", "NEEDLE", "KNIFE"];
+    const goods = [];
+    for (const id of new Set(all.map((name) => Shopping.idOf(core, name)).filter(Number.isInteger))) {
+      if (needed.has(id)) continue;
+      const amount = banker.getInventory().getAmount(id);
+      if (amount > 0) goods.push({ itemId: id, amount });
+    }
+    return deposit(banker, goods);
   }
 
   /**
@@ -464,6 +539,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         if (food && Shopping.coinsOf(player) >= Shopping.estimatedPrice(core, food.itemId, food.amount)
             && shopFor(entry, food.itemId, food.name, food.amount)) return true;
       }
+      // Its axe, pickaxe, net or rod at the bank: fetched first, in person.
+      const bankedTools = toolsInBank(player, plan.mode, id);
+      if (bankedTools.length > 0) return fetchTools(entry, plan, bankedTools);
       // Fishing needs its net, rod or harpoon: bought first (a walk to the shop), or no fishing now.
       const tool = Shopping.missingTools(player, core, id)[0];
       if (tool) return shopFor(entry, tool.itemId, tool.name, tool.name === "FEATHER" || tool.name === "FISHING_BAIT" ? 200 : 1);
@@ -492,7 +570,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const buy = buyPlan(player, plan.skill);
     if (!buy) return false;
     const toolId = buy.recipe.tool ? Shopping.idOf(core, buy.recipe.tool) : null;
-    if (Number.isInteger(toolId) && !Shopping.owns(player, toolId)) return shopFor(entry, toolId, buy.recipe.tool, 1);
+    if (Number.isInteger(toolId) && !Shopping.owns(player, toolId)) {
+      // Its knife or hammer at the bank: fetched there, not bought again.
+      if (banked(player, toolId) > 0) return fetchTools(entry, plan, [toolId]);
+      return shopFor(entry, toolId, buy.recipe.tool, 1);
+    }
     entry.plan = plan;
     if (buy.materials.every((id) => player.getInventory().getAmount(id) > 0)) {
       const station = buy.recipe.station ?? null;
@@ -565,8 +647,44 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * (snapshot().available is empty); when one is, it starts here.
    */
   function startQuest(entry, plan) {
-    note(entry.player, `${plan.quest.name} heeft nog geen bot-playthrough; overgeslagen.`, "quest");
-    return false;
+    if (!questPlay.start(entry, plan.quest.name, now())) {
+      note(entry.player, `${plan.quest.name} heeft nog geen bot-playthrough; overgeslagen.`, "quest");
+      return false;
+    }
+    entry.phase = "quest";
+    entry.plan = plan;
+    entry.activity = null;
+    entry.until = Infinity;
+    note(entry.player, `Begint aan de quest ${plan.quest.name}.`, "quest");
+    return true;
+  }
+
+  /** A quest it could not finish lately (an NPC it could not find, a stuck walk). */
+  function questAside(player, name) {
+    const entry = adventurers.get(player.getUsername?.());
+    return (entry?.questsAside?.get(name) ?? 0) > now();
+  }
+
+  /** The quest's planning tick: walking, climbing, talking; done or put aside. */
+  function questTick(entry, nowMs) {
+    const run = entry.questRun;
+    // Its job's brain rests meanwhile (it would walk back to its fishing spot mid-talk); an
+    // errand walk drives it on its own and leaves it unpaused when it ends.
+    const brain = runtimeEntry(entry.player)?.brain;
+    const busy = errands.busy(entry.player);
+    if (brain && !busy) brain.paused = true;
+    const result = questPlay.tick(entry, nowMs, { busy });
+    if (result === "running") return;
+    if (brain) brain.paused = false;
+    entry.questRun = null;
+    if (result === "done") {
+      note(entry.player, `Quest voltooid: ${run.name}!`, "quest");
+    } else {
+      (entry.questsAside ??= new Map()).set(run.name, nowMs + QUEST_ASIDE_MS);
+      note(entry.player, `Legt ${run.name} even weg (stap ${run.step + 1} lukte niet).`, "quest");
+    }
+    entry.phase = "new";
+    entry.until = 0;
   }
 
   /** Adventurers whose stretch is over or nearly so, and that are online: free to join a group. */
@@ -802,6 +920,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         entry.buying = null;
         entry.until = 0;
       }
+      if (entry.phase === "quest" && entry.questRun) {
+        questTick(entry, nowMs);
+        rememberTask(entry, nowMs);
+        continue;
+      }
       if (stuck(entry, nowMs)) {
         note(entry.player, `Kon bij ${String(entry.activity ?? "zijn klus").replace(/_/g, " ")} niets doen; kiest iets anders.`, "activity");
         entry.until = 0;
@@ -814,6 +937,18 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       // A full bag ends the stretch: off to sell (trade()), as a player banks or sells.
       if (nowMs >= entry.until || (entry.phase === "training" && entry.player.getInventory().getFreeSlots() === 0)) next(entry, nowMs);
       rememberTask(entry, nowMs);
+    }
+  }
+
+  /** Every tick: an adventurer on a quest answers its open dialogue (about every other tick). */
+  function talkTick() {
+    for (const entry of adventurers.values()) {
+      if (!entry.questRun || !entry.player?.isRegistered?.() || random() < 0.4) continue;
+      try {
+        questPlay.talkTick(entry);
+      } catch (error) {
+        world.log?.("adventurer_quest_talk_failed", { name: entry.name, error: String(error?.message ?? error) });
+      }
     }
   }
 
@@ -850,6 +985,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     player.getInventory().refreshItems?.();
     player.getEquipment().refreshItems?.();
     player.setAttribute(GENERATION_ATTRIBUTE, data.generation ?? 1);
+    // A new account starts in Lumbridge, wherever the old one was.
+    const start = data.spawn;
+    player.moveTo?.(new core.Location(start.x, start.y, start.z ?? 0));
     note(player, "Een nieuw avontuur begint in Lumbridge, met alleen de spullen van Tutorial Island.");
   }
 
@@ -1250,7 +1388,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const bag = sortBag(player);
     dropJunk(player, bag.junk);
     // The exchange has its bank: what it keeps for later goes in there, not up for sale.
-    const stored = [...deposit(player, bag.keep), ...(entry ? bankUnusedSupplies(entry, player) : [])];
+    const stored = [...deposit(player, bag.keep), ...(entry ? [...bankUnusedSupplies(entry, player), ...bankUnusedTools(entry, player)] : [])];
     if (stored.length > 0) note(player, `Bewaart op de bank: ${stored.map((good) => itemName(good.itemId)).join(", ")}.`, "activity");
     const pulled = withdrawToSell(player);
     const goods = Trade.goodsToSell(player, core, Trade.keepIds(player, core, { isFood }), { isFood });
@@ -1316,7 +1454,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       urgent,
       arrive: (banker) => {
         const stored = [...deposit(banker, Trade.goodsToSell(banker, core, Trade.keepIds(banker, core, { isFood }), { isFood, worthless: true })),
-          ...bankUnusedSupplies(entry, banker)];
+          ...bankUnusedSupplies(entry, banker), ...bankUnusedTools(entry, banker)];
         if (stored.length > 0) note(banker, `Zet op de bank in ${bank.name ?? bank.id}: ${stored.slice(0, 5).map((good) => itemName(good.itemId)).join(", ")}${stored.length > 5 ? ` en ${stored.length - 5} meer` : ""}. Bruikbaars bewaart hij; de rest verkoopt hij later op de GE.`, "activity");
       },
     });
@@ -1489,7 +1627,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   /** What the page and ::adventurers show. */
   const ERRAND_REASONS = {
     bank: "om te banken", exchange: "om te verkopen en kopen", shop: "om te kopen", withdraw: "om spullen van de bank te halen",
-    buy_materials: "om materialen te kopen", slayer: "voor een Slayer-taak", training: "om te trainen", station: "om te trainen",
+    buy_materials: "om materialen te kopen", slayer: "voor een Slayer-taak", training: "om te trainen", station: "om te trainen", quest: "voor een quest",
   };
 
   /** What it is doing now, in words, for the page. */
@@ -1500,6 +1638,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
     if (entry.phase === "waiting") return entry.resume ? "Wacht op zijn bod op de GE" : "Wacht even (geen bank bereikbaar)";
     if (entry.phase === "boss") return `Boss: ${entry.plan?.boss?.name}`;
+    if (entry.phase === "quest" && entry.questRun) return `Quest: ${entry.questRun.name} (stap ${entry.questRun.step + 1})`;
     if (entry.plan) return `Training: ${String(entry.activity).replace(/_/g, " ")} (${entry.plan.reason})`;
     return entry.idleReason ? `Zoekt iets om te doen: ${entry.idleReason}` : "Begint";
   }
@@ -1547,7 +1686,16 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       .map((entry, index) => ({ ...entry, rank: index + 1 }));
   }
 
-  return { adventurers, spawn, tick, onLevelUp, onDrops, onNpcDeath, report, next, startGroup, acquire };
+  /** Owner test hook: starts a quest with a playthrough for this adventurer now. */
+  function forceQuest(name, questName) {
+    const entry = adventurers.get(name);
+    if (!entry?.player?.isRegistered?.() || !questPlay.has(questName)) return false;
+    errands.errands?.delete?.(entry.player);
+    entry.questsAside?.delete(questName);
+    return startQuest(entry, { kind: "quest", quest: { name: questName } });
+  }
+
+  return { adventurers, spawn, tick, talkTick, forceQuest, onLevelUp, onDrops, onNpcDeath, report, next, startGroup, acquire };
 }
 
 /** Starts the adventurers on server start; serves /api/adventurers and the commands. */
@@ -1594,12 +1742,25 @@ function startAdventurers({ api, runtime, world, registry }) {
     player.sendMessage(`Je staat bij ${entry.name}.`);
     return true;
   }, rights.OWNER, "Go to an adventurer bot: ::adventurer <name>");
+  api.registerCommand("advquest", ({ player, parts }) => {
+    const [name, quest] = parts.slice(1).join(" ").split(":").map((part) => part.trim());
+    const entry = [...manager.adventurers.values()].find((a) => a.name.toLowerCase() === String(name).toLowerCase());
+    player.sendMessage(entry && manager.forceQuest(entry.name, quest)
+      ? `${entry.name} begint aan ${quest}.`
+      : "Gebruik: ::advquest <naam>:<quest met een bot-playthrough>.");
+    return true;
+  }, rights.OWNER, "Start a quest with a bot playthrough for an adventurer: ::advquest <name>:<quest>");
   api.onServerStartup?.(() => setTimeout(() => {
     manager.spawn();
     const { Task } = api.core;
     api.getTaskManager().submit(new (class extends Task {
       constructor() { super(CHECK_TICKS, "adventurers", false); }
       execute() { manager.tick(); }
+    })());
+    // Dialogue is clicked through a tick or so at a time, as a player reads it.
+    api.getTaskManager().submit(new (class extends Task {
+      constructor() { super(1, "adventurers-talk", false); }
+      execute() { manager.talkTick(); }
     })());
   }, 5000));
   return manager;

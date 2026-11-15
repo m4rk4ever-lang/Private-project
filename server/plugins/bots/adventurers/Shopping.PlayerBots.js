@@ -69,6 +69,11 @@ function owns(player, itemId) {
   return (player.getEquipment().getItems() ?? []).some((item) => item?.getId?.() === itemId);
 }
 
+/** Owns it on it or in its bank: no second one is bought for a tool left at the bank. */
+function ownsAnywhere(player, itemId) {
+  return owns(player, itemId) || (player.getBanks?.() ?? []).some((bank) => (bank?.getAmount?.(itemId) ?? 0) > 0);
+}
+
 /** Whether the adventurer meets an entry's skill level and quests. */
 function allowed(entry, { levelOf, questDone }) {
   if (levelOf(entry.skill) < (entry.level ?? 1)) return false;
@@ -87,7 +92,7 @@ function shoppingList(player, core, { levelOf, questDone, modes = [], exchange =
     for (const entry of list) {
       if (!allowed(entry, { levelOf, questDone })) continue;
       const itemId = idOf(core, entry.item);
-      if (!Number.isInteger(itemId) || owns(player, itemId)) return; // has the best it may use
+      if (!Number.isInteger(itemId) || ownsAnywhere(player, itemId)) return; // has the best it may use
       // From a shop, or (exchange) at the Grand Exchange at a little over its guide price.
       const guide = Number(core.ItemDefinition?.forId?.(itemId)?.getGrandExchangeValue?.() ?? 0);
       if (exchange ? !(guide > 0) : shopsSelling(itemId).length === 0) continue;
@@ -117,7 +122,7 @@ function shoppingList(player, core, { levelOf, questDone, modes = [], exchange =
 function missingTools(player, core, activityId) {
   return (gear.fishingTools[activityId] ?? [])
     .map((name) => ({ name, itemId: idOf(core, name) }))
-    .filter((tool) => Number.isInteger(tool.itemId) && !owns(player, tool.itemId));
+    .filter((tool) => Number.isInteger(tool.itemId) && !ownsAnywhere(player, tool.itemId));
 }
 
 /** Food to buy when it carries none: the best its Hitpoints suit, sold somewhere. */
@@ -165,5 +170,6 @@ function wear(player, core, itemId) {
 }
 
 module.exports = {
+  ownsAnywhere,
   shopsSelling, nearestShop, shoppingList, missingTools, foodToBuy, buy, wear, coinsOf, owns, estimatedPrice, allowed, idOf, gear, COINS,
 };
