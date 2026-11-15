@@ -2,33 +2,19 @@
 
 /**
  * Bots travel the world: when a bot's rotation switches activity (bot-sites.json
- * `switchMinutes`), it may teleport elsewhere, so bots turn up all over the world rather than
+ * `switchMinutes`), it may travel elsewhere, so bots turn up all over the world rather than
  * only around their spawn site. Two kinds of places, from data/travel-destinations.json:
  *
  * - destinations, where the new activity can be done: picked among those that offer its mode
  *   and suit the bot's level (the skill for a skilling mode, the combat level for combat
- *   training), weighted. The activity then walks to the nearest tree, rock, fishing spot or
- *   monster cluster as usual, and a skiller changes clothes for the job (dressForMode).
+ *   training), and walked to through the bot navigation system;
  * - hangouts (with `hangoutChance`), busy places where players gather: the Grand Exchange, the
  *   main banks, and for high-level bots the raid and boss entrances, where they stand in their
  *   combat gear. A hangout replaces the activity: the bot roams there until its next switch.
  *
- * Every bot has a home hub per activity, one that fits it: Catherby or Seers for a fisher,
- * Falador or Al Kharid for a miner, the Grand Exchange for anyone, Prifddinas from combat 90.
- * The hub is fixed by the bot's name, so the same bot keeps the same hubs. Between activities it
- * usually goes back to its own hub (`ownHubChance`), and it prefers destinations near it.
- *
- * At a busy bank (`bankstand`) a bot may stand by the booths fletching, mixing potions or
- * crafting (bankstandChance) instead of walking around.
- *
- * Minigames (`minigameChance`): a bot that meets a game's requirements goes to its lobby,
- * dressed for it (Pyromancer at Wintertodt, combat gear at Castle Wars) and stays within the
- * lobby's bounds. A game that already has bots draws more, so they gather in groups, up to
- * `maxGroup`. `play` names the game's own bot code that will take them into the game itself.
- *
- * The bot arrives with the normal teleport and its home moves there. Only skilling and
- * combat-training bots travel; PvP bots and bots in a fight or the Wilderness stay put, and no
- * place is in the Wilderness.
+ * Player bots must not be moved with TeleportHandler.teleport: that bypasses the real spell,
+ * tablet and jewellery requirements. A real bot uses the same long-route walking system as an
+ * errand. A non-bot caller may still use the legacy direct travel fallback.
  */
 const data = require("../data/travel-destinations.json");
 
@@ -38,7 +24,7 @@ const MODE_SKILL = Object.freeze({
   fishing: "FISHING",
   thieving: "THIEVING",
 });
-/** How far from where it stands a place must be to be worth the teleport. */
+/** How far from where it stands a place must be to be worth travelling to. */
 const MIN_TRAVEL_TILES = 30;
 /** Bots at a place before its weight halves (1 / (1 + bots / cap)). */
 const OCCUPANCY_SOFT_CAP = 3;
@@ -139,9 +125,9 @@ function nearHub(place, hub) {
 }
 
 /**
- * Returns `travel(player, state, activity, nowMs)`: teleports the bot to a fitting place (with
- * `chance`) and moves its home there. Returns the place ({ ...place, hangout: true } for a
- * hangout, where the caller lets the bot roam), or null when it stays.
+ * Returns `travel(player, state, activity, nowMs)`: picks a place for the activity and sends a
+ * player bot there via real walking. Returns the place ({ ...place, hangout: true } for a hangout,
+ * where the caller lets the bot roam), or null when it stays.
  */
 function createTravel({
   core, log = () => {}, dress = null, equipCombatGear = null, moveTo = null,
@@ -151,7 +137,7 @@ function createTravel({
   ownHubChance = data.ownHubChance ?? 0, nearHubBonus = data.nearHubBonus ?? 1,
   bankstandChance = data.bankstandChance ?? 0, minigameChance = data.minigameChance ?? 0,
   wear = null,
-  /** For honest bots: whether a place's `requires` (quests, skills) is met; others go anywhere. */
+  /** For honest bots: whether a place's `requires` (quests, skills) is met. */
   meets = null,
 } = {}) {
   function stayFor(activityId) {
@@ -233,8 +219,14 @@ function createTravel({
     settle(name, place.minigame ? null : place.id);
     const target = new core.Location(place.x, place.y, place.z ?? 0);
     if (moveTo) {
-      // Its own way there (an adventurer walks: Errands.PlayerBots.js).
       moveTo(player, place);
+    } else if (player.isPlayerBot?.() === true) {
+      // World bots used to call TeleportHandler.teleport directly here. That is a free,
+      // requirement-bypassing move (no spell level, runes, tablet, or charges) and also skipped
+      // pathfinding entirely. Use their regular brain navigation so they genuinely walk there.
+      require("../behaviours/navigation/Navigation.PlayerBots").requestMovement(player, place.x, place.y, {
+        nowMs, z: place.z ?? 0, reason: "brain_travel", basicPather: true, state,
+      });
     } else if (core.TeleportHandler?.teleport && core.TeleportType?.NORMAL) {
       core.TeleportHandler.teleport(player, target, core.TeleportType.NORMAL, false);
     } else {
