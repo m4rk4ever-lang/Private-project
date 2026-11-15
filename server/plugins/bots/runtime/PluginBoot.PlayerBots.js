@@ -1,3 +1,4 @@
+const { createTravel } = require("../brain/Travel.PlayerBots");
 const { GameConstants } = require("../../../src/main/typescript/elvarg/game/GameConstants");
 const { Misc } = require("../../../src/main/typescript/elvarg/util/Misc");
 const { createTraversalAssist } = require("../lib/TraversalAssist.PlayerBots");
@@ -121,6 +122,7 @@ function bootPlayerBotsRuntime(options = {}) {
       Smithing.isSmeltingActive?.(player) === true,
     log: (message, extra) => botApi.log(message, extra),
   };
+  brainWorld.travel = createTravel({ core: botApi.core, log: brainWorld.log });
 
   // One pvp engine for the brain activities and reactive overlays.
   const pvpController = new PvpController(botStatesByName, botApi, {

@@ -50,9 +50,15 @@ Indeling per versie:
 ### Gewijzigd
 - Nieuwe spelers starten in Lumbridge in plaats van Edgeville. `::home` gaat ook naar Lumbridge.
 
-- **Bots terug, als levendige wereld:** 126 bots in Lumbridge, Varrock, Falador en Draynor die
-  hakken, minen, vissen en tegen monsters vechten, elk met een eigen naam, level en uitrusting.
-  Elke bot wisselt om de 15 tot 25 minuten van activiteit. De PvP-bots bij Edgeville blijven uit.
+- **Bots terug, als levendige wereld:** 131 bots die hakken, minen, vissen en tegen monsters vechten,
+  elk met een eigen naam, level en uitrusting. Ze starten in Lumbridge, Draynor, Varrock, Falador,
+  Catherby en Seers' Village en wisselen om de 15 tot 25 minuten van activiteit. Bij zo'n wissel
+  reizen ze vaak (6 op de 10 keer) naar een van 32 plekken in de wereld waar die activiteit kan,
+  passend bij hun level: van Lumbridge tot de Slayer Tower, de Woodcutting Guild en Piscarilius.
+  De PvP-bots bij Edgeville blijven uit.
+- **High-level bots:** twee nieuwe groepen, masters (level 80+) en legends (90+). Zij hakken magic
+  trees en redwoods, minen adamantite en runite, vangen sharks en anglerfish, en vechten in Barrows-,
+  Bandos- en Armadyl-gear met wapens als de whip, godswords en de Ghrazi rapier.
 
 ## [0.1.0] - 15-11-2026
 

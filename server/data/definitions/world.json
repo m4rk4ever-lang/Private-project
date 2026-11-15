@@ -22,12 +22,43 @@
           25
         ],
         "bots": {
-          "woodcutting": 10,
-          "mining": 8,
-          "fishing": 10,
+          "woodcutting": {
+            "novices": 4,
+            "intermediates": 3
+          },
+          "mining": {
+            "novices": 3,
+            "intermediates": 3
+          },
+          "fishing": {
+            "novices": 4,
+            "intermediates": 3
+          },
           "combat_training": {
-            "novices": 8,
-            "intermediates": 6
+            "novices": 6,
+            "intermediates": 4
+          }
+        }
+      },
+      "draynor": {
+        "enabled": true,
+        "x": 3093,
+        "y": 3244,
+        "switchMinutes": [
+          15,
+          25
+        ],
+        "bots": {
+          "woodcutting": {
+            "intermediates": 3,
+            "advanced": 3
+          },
+          "fishing": {
+            "intermediates": 4,
+            "advanced": 4
+          },
+          "combat_training": {
+            "intermediates": 4
           }
         }
       },
@@ -41,13 +72,16 @@
         ],
         "bots": {
           "woodcutting": {
+            "advanced": 3,
+            "experts": 3
+          },
+          "mining": {
+            "advanced": 3,
+            "experts": 3
+          },
+          "combat_training": {
             "advanced": 5,
             "experts": 5
-          },
-          "mining": 10,
-          "combat_training": {
-            "intermediates": 6,
-            "advanced": 6
           }
         }
       },
@@ -60,27 +94,62 @@
           25
         ],
         "bots": {
-          "mining": 12,
-          "woodcutting": 6,
+          "mining": {
+            "experts": 4,
+            "masters": 4
+          },
+          "woodcutting": {
+            "experts": 3,
+            "masters": 3
+          },
           "combat_training": {
-            "intermediates": 6,
-            "advanced": 6
+            "experts": 5,
+            "masters": 5
           }
         }
       },
-      "draynor": {
+      "catherby": {
         "enabled": true,
-        "x": 3093,
-        "y": 3244,
+        "x": 2809,
+        "y": 3436,
         "switchMinutes": [
           15,
           25
         ],
         "bots": {
-          "woodcutting": 8,
-          "fishing": 10,
+          "fishing": {
+            "experts": 4,
+            "masters": 4,
+            "legends": 2
+          },
+          "woodcutting": {
+            "masters": 3
+          },
           "combat_training": {
-            "novices": 4
+            "masters": 3,
+            "legends": 3
+          }
+        }
+      },
+      "seers": {
+        "enabled": true,
+        "x": 2727,
+        "y": 3492,
+        "switchMinutes": [
+          15,
+          25
+        ],
+        "bots": {
+          "woodcutting": {
+            "masters": 4,
+            "legends": 3
+          },
+          "mining": {
+            "masters": 3,
+            "legends": 3
+          },
+          "combat_training": {
+            "legends": 5
           }
         }
       }

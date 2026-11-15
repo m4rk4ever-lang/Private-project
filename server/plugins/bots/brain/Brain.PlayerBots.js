@@ -247,6 +247,8 @@ class BotBrain {
       from: frame.behaviour.id,
       to: next.id,
     });
+    // The new activity may be done elsewhere: the bot can travel there first (Travel.PlayerBots.js).
+    this.world?.travel?.(this.player, this.ensureState(), next, nowMs);
     this.pushRoot(next, nowMs);
   }
 
