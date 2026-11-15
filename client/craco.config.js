@@ -87,6 +87,16 @@ module.exports = {
                 loader: "ts-shader-loader",
             };
 
+            // Reading the source maps of every library costs dev-server memory and start time,
+            // and only helps when stepping into library code. Our own code keeps its maps.
+            if (webpackConfig.mode === "development") {
+                for (const rule of webpackConfig.module.rules) {
+                    if (rule?.enforce === "pre" && String(rule.loader ?? "").includes("source-map-loader")) {
+                        rule.exclude = [rule.exclude, /node_modules/].filter(Boolean);
+                    }
+                }
+            }
+
             for (const rule of webpackConfig.module.rules) {
                 if (
                     rule &&

@@ -86,6 +86,10 @@ Indeling per versie:
   iedereen nu ook als member in de skills-tab en de questlijst (op een members-wereld).
 
 ### Gewijzigd
+- De server start in ontwikkelmodus ongeveer twee keer zo snel en gebruikt zo'n 450 MB minder geheugen.
+  Typefouten zoek je voortaan met `yarn --cwd server typecheck`.
+- De ontwikkel-client leest geen bronkaarten van bibliotheken meer: sneller opstarten, minder geheugen.
+- De avonturierspagina vraagt de server minder vaak om een nieuw overzicht.
 - De README is herschreven voor Realm of Eeshwar: spelen, bijwerken, terminal- en staff-commands,
   backups en een link naar deze changelog.
 - Nieuwe spelers starten in Lumbridge in plaats van Edgeville. `::home` gaat ook naar Lumbridge.

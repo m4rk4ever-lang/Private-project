@@ -70,10 +70,16 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   /** name -> { name, player, phase, until, plan, startedAt } */
   const adventurers = new Map();
 
+  // Quests only get added (at boot); the map is rebuilt when their number changes.
+  let questIndex = { size: -1, map: new Map() };
   function questsByName() {
-    const map = new Map();
-    for (const quest of QuestRuntime.getRegisteredQuests()) map.set(normalize(quest.name), quest);
-    return map;
+    const quests = QuestRuntime.getRegisteredQuests();
+    if (questIndex.size !== quests.length) {
+      const map = new Map();
+      for (const quest of quests) map.set(normalize(quest.name), quest);
+      questIndex = { size: quests.length, map };
+    }
+    return questIndex.map;
   }
 
   function journal(player) {
@@ -494,6 +500,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
 }
 
 /** Starts the adventurers on server start; serves /api/adventurers and the commands. */
+const REPORT_CACHE_MS = 2000;
+
 function startAdventurers({ api, runtime, world, registry }) {
   api.persistAttribute(LOG_ATTRIBUTE, []);
   api.persistAttribute(GENERATION_ATTRIBUTE, 0);
@@ -501,7 +509,14 @@ function startAdventurers({ api, runtime, world, registry }) {
   api.onPlayerLevelUp(manager.onLevelUp);
   api.onCustomEvent("npc-drops:roll", manager.onDrops);
   api.onNpcDeath(manager.onNpcDeath);
-  api.registerContentEndpoint("adventurers", () => ({ updated: Date.now(), adventurers: manager.report() }));
+  // Every open page asks every 5 s; one report serves them all for 2 s.
+  let cached = null;
+  api.registerContentEndpoint("adventurers", () => {
+    if (!cached || Date.now() - cached.updated > REPORT_CACHE_MS) {
+      cached = { updated: Date.now(), adventurers: manager.report() };
+    }
+    return cached;
+  });
   const rights = api.core.PlayerRights;
   api.registerCommand("adventurers", ({ player }) => {
     for (const a of manager.report()) {

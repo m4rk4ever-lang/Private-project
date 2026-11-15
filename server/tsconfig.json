@@ -18,6 +18,9 @@
         "experimentalDecorators": true,
         "downlevelIteration": true
     },
+    "ts-node": {
+        "transpileOnly": true
+    },
     "include": [
         "./src"
     ],
