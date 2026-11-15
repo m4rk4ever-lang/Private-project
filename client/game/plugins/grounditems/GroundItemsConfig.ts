@@ -260,6 +260,26 @@ export const GroundItemsConfig = ConfigGroup(
             enum: names<LootbeamStyle>("LIGHT", "MODERN"),
             default: "MODERN",
         }),
+        // Realm of Eeshwar: a loot beam over any drop worth at least a chosen amount, set with a
+        // slider, besides RuneLite's tier setting above.
+        lootbeamByValue: ConfigItem({
+            name: "Lootbeam by value",
+            description: "Shows a lootbeam over your drops worth at least the value below.",
+            position: 33,
+            default: true,
+        }),
+        lootbeamMinValue: ConfigItem({
+            name: "Lootbeam value",
+            description: "The lowest value (in coins) of a drop that gets a lootbeam.",
+            position: 34,
+            units: "gp",
+            range: { min: 0 },
+            slider: [
+                1_000, 5_000, 10_000, 25_000, 50_000, 100_000, 250_000, 500_000,
+                1_000_000, 2_500_000, 5_000_000, 10_000_000, 50_000_000, 100_000_000,
+            ],
+            default: 100_000,
+        }),
         hotkey: ConfigItem<Keybind>({
             name: "Hotkey",
             description: "Configures the hotkey used by the Ground Items plugin.",

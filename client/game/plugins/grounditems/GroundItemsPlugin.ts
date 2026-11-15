@@ -556,7 +556,8 @@ export class GroundItemsPlugin extends Plugin {
         const c = this.config;
         const forHighlighted = c.showLootbeamForHighlighted() === true;
         const tier = c.showLootbeamTier();
-        if (!forHighlighted && tier === "OFF") {
+        const byValue = c.lootbeamByValue() === true;
+        if (!forHighlighted && !byValue && tier === "OFF") {
             this.lootbeams.remove(key);
             return;
         }
@@ -575,6 +576,13 @@ export class GroundItemsPlugin extends Plugin {
             // An explicit hide wins over a value highlight.
             if (listResult === HIDDEN) continue;
             price = Math.max(price, valueByMode(this.settings.valueCalculationMode, stackGePrice(item), stackHaPrice(item)));
+        }
+        const minValue = Number(c.lootbeamMinValue());
+        if (byValue && price > 0 && Number.isFinite(minValue) && price >= minValue) {
+            // The colour of the highest value tier it reaches, else the low tier's.
+            const check = this.settings.priceChecks.find((candidate) => price > candidate.price);
+            this.lootbeams.set(key, tile, check?.color ?? (Number(c.lowValueColor()) >>> 0), style);
+            return;
         }
         const tierPrice = tierValue(tier, this.tierPrices());
         if (tierPrice !== undefined) {

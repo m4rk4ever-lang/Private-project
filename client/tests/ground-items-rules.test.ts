@@ -181,3 +181,13 @@ assert.equal(shouldDisplayItem("ALL", 2, 1), true);
 }
 
 console.log("ground items rules tests passed");
+
+// --- Realm of Eeshwar: lootbeam by value, set with a slider ----------------------------------------
+{
+    const items = GroundItemsConfig.items as any;
+    assert.equal(items.lootbeamByValue.default, true);
+    assert.equal(items.lootbeamMinValue.default, 100_000);
+    const snaps: number[] = items.lootbeamMinValue.slider;
+    assert.ok(snaps.includes(items.lootbeamMinValue.default), "the default is on the slider");
+    assert.ok(snaps.every((snap, i) => i === 0 || snap > snaps[i - 1]), "slider snaps increase");
+}

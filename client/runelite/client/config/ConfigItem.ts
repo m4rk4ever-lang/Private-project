@@ -29,6 +29,11 @@ export interface ConfigItemDef<T = unknown> {
     range?: { min?: number; max?: number };
     /** Step of a number field; whole numbers unless set (RuneLite's `double` items). */
     step?: number;
+    /**
+     * A slider beside a number field that snaps to these values, in increasing order (a value
+     * between two snaps shows at the lower one). The field still takes any number.
+     */
+    slider?: number[];
     /** Enum values shown as a dropdown, in declaration order. */
     enum?: Record<string, unknown>;
     /** What the dropdown shows for each enum name (RuneLite's enum toString), when not the name. */

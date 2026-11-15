@@ -717,3 +717,11 @@
     flex: 0 0 auto;
     image-rendering: pixelated;
 }
+
+/* A number setting's snapping slider (ConfigItem `slider`), above its number field. */
+.rl-sidebar-field input.rl-sidebar-slider-input {
+    padding: 0;
+    border: none;
+    background: transparent;
+    accent-color: var(--rl-orange);
+}

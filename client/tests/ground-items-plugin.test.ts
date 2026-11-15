@@ -80,6 +80,8 @@ const objMenu = (itemId: number, option: string, actionIndex: number | undefined
 async function main(): Promise<void> {
     const config = inject(ConfigManager);
     const set = (key: string, value: unknown) => config.setConfigValue(GroundItemsConfig, key as any, value);
+    // RuneLite's behaviour first; our value beam is checked on its own below.
+    set("lootbeamByValue", false);
     const plugin = new GroundItemsPlugin(client);
     assert.equal(plugin.isEnabled(), false, "ground item overlays are opt-in");
     plugin.setEnabledState(true);
@@ -332,6 +334,17 @@ async function main(): Promise<void> {
     assert.equal(beamAt(3202, 3202)?.color, 0xffff9600, "1.5M whip stack over the HIGH tier: high colour beam");
     assert.equal(beamAt(3201, 3201), undefined, "nothing valuable");
     assert.ok(spawned.length > 0 && spawned.every((e) => e.loop === true));
+    // Lootbeam by value: any drop worth at least the slider's value.
+    set("lootbeamByValue", true);
+    set("lootbeamMinValue", 1);
+    changed();
+    assert.ok(beamAt(3201, 3201), "worth at least 1 coin: a beam");
+    set("lootbeamMinValue", 100_000_000);
+    changed();
+    assert.equal(beamAt(3201, 3201), undefined, "below the value: no beam");
+    assert.equal(beamAt(3202, 3202)?.color, 0xffff9600, "the tier beam still shows");
+    set("lootbeamByValue", false);
+    changed();
     set("showLootbeamForHighlighted", true);
     changed();
     assert.equal(beamAt(3201, 3201)?.color, 0xffaa00ff, "a highlighted item's beam");

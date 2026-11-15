@@ -194,9 +194,26 @@ function ConfigField({
     }
 
     if (typeof item.default === "number") {
+        const snaps = item.slider;
+        const current = Number(value);
+        // The highest snap at or below the value.
+        const snapIndex = snaps ? Math.max(0, snaps.reduce((found, snap, index) => (snap <= current ? index : found), 0)) : 0;
         return (
             <label className="rl-sidebar-field">
                 {label}
+                {snaps && snaps.length > 1 ? (
+                    <input
+                        className="rl-sidebar-slider-input"
+                        type="range"
+                        min={0}
+                        max={snaps.length - 1}
+                        step={1}
+                        aria-label={`${label} slider`}
+                        title={current.toLocaleString()}
+                        value={snapIndex}
+                        onChange={(event) => update(snaps[Number(event.target.value)] ?? item.default)}
+                    />
+                ) : null}
                 <input
                     type="number"
                     min={item.range?.min}

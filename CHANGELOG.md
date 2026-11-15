@@ -80,6 +80,9 @@ Indeling per versie:
   cape), keuze uit 50 team capes, cloaks, hoeden en kostuums, skilling-outfits (Lumberjack,
   Prospector, Angler, Graceful) vanaf gevorderd niveau, en een skillcape bij 99. Na het reizen
   kleedt een skiller zich om voor zijn nieuwe klus.
+- **Loot beam op waarde:** in de instellingen van de plugin **Ground Items** stel je met een
+  schuifbalk in vanaf welke waarde een drop een loot beam krijgt (1k tot 100m, standaard 100k).
+  Aan of uit met "Lootbeam by value". De kleur volgt de waardegrenzen van Ground Items.
 - **Maxed bots:** 13 extra bots bij de Grand Exchange, waarvan 10 maxed (alles 99, combat 126)
   in max gear: Torva, Masori en Ancestral, met de Scythe of Vitur, Twisted bow en Kodai wand.
   Opgeladen wapens zijn echt opgeladen. Meestal dragen ze een max cape. Nu 144 bots.
