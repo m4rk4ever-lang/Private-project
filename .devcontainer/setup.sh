@@ -25,11 +25,13 @@ if [ -n "${CODESPACE_NAME:-}" ]; then
   touch .env
   # Replace earlier codespace values, keep anything else in .env.
   sed -i '/^REACT_APP_DEFAULT_\(WS_URL\|SERVER_ADDRESS\|SERVER_SECURE\|SERVER_NAME\)=/d' .env
+  sed -i '/^REACT_APP_FULL_CACHE=/d' .env
   cat >> .env <<EOF
 REACT_APP_DEFAULT_WS_URL=wss://${host}
 REACT_APP_DEFAULT_SERVER_ADDRESS=${host}
 REACT_APP_DEFAULT_SERVER_SECURE=true
 REACT_APP_DEFAULT_SERVER_NAME=Realm of Eeshwar
+REACT_APP_FULL_CACHE=1
 EOF
   echo "Client points at wss://${host}"
 fi

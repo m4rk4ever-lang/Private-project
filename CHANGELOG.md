@@ -48,6 +48,9 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Opgelost
+- In een codespace laden de graphics op een nieuwe plek niet langer traag. De client haalt de
+  hele game-cache bij de eerste keer laden in één keer binnen en bewaart die in je browser.
+  Die eerste keer duurt wat langer, daarna komen er geen graphics meer over het netwerk.
 - Combat-bots kozen hun uitrusting met een zwakke hash, waardoor bots met bijna gelijke namen
   vaak hetzelfde droegen. Elke bot houdt zijn eigen vaste uitrusting, maar de spreiding is nu echt
   willekeurig, en beginners dragen nog maar de helft van de tijd een cape.

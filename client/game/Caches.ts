@@ -282,8 +282,17 @@ function isPrefetchDisabled(): boolean {
     }
 }
 
-/** `?fullCache=1` forces the legacy full-download path. */
+/**
+ * `?fullCache=1` forces the legacy full-download path. REACT_APP_FULL_CACHE=1 makes it the
+ * default where every request is slow (a GitHub Codespace: each one goes through GitHub's port
+ * forwarding): the whole cache downloads once into the browser, after which no graphics come over
+ * the network. Not on Safari (it does not keep the full file, so it would download every
+ * session) or a low-end device (the full file stays in memory).
+ */
 export function isFullCacheForced(): boolean {
+    if (process.env.REACT_APP_FULL_CACHE === "1" && !isLowEndDevice && !isSafari && !isIos) {
+        return true;
+    }
     try {
         const loc = (globalThis as { location?: Location }).location;
         if (!loc) {
