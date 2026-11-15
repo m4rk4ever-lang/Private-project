@@ -130,6 +130,10 @@ Indeling per versie:
   hebben, en ze dragen alleen wat hun level en quests toestaan (rune platebody pas na Dragon
   Slayer I). Hun geld verdienen ze door wat ze verzamelen te verkopen. Aankopen staan in het
   logboek. Zelf maken (smithing, fletching, koken) en loot oppakken volgen nog.
+- Avonturiers gaan alleen naar plekken waar hun quests en levels het toelaten: Prifddinas na
+  Song of the Elves, Varlamore na Children of the Sun, Morytania na Priest in Peril, de guilds
+  vanaf hun level. Voor ze gaan vechten kopen ze food als ze niets bij zich hebben en het geld
+  hebben.
 - **Bots verspreiden zich:** een plek waar al bots zijn, wordt minder vaak gekozen, en de meeste
   bots gaan bij het opstarten meteen naar een plek waar hun klus kan, in plaats van allemaal
   naar de dichtstbijzijnde mijn of boom. De trek naar de eigen hub is zwakker.

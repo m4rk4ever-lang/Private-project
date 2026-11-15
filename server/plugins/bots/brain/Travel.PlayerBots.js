@@ -149,6 +149,8 @@ function createTravel({
   ownHubChance = data.ownHubChance ?? 0, nearHubBonus = data.nearHubBonus ?? 1,
   bankstandChance = data.bankstandChance ?? 0, minigameChance = data.minigameChance ?? 0,
   wear = null,
+  /** For honest bots: whether a place's `requires` (quests, skills) is met; others go anywhere. */
+  meets = null,
 } = {}) {
   function stayFor(activityId) {
     const [min, max] = data.stayMinutes?.[activityId] ?? data.stayMinutes?.roam ?? [3, 6];
@@ -204,7 +206,7 @@ function createTravel({
       if (hub && random() < ownHubChance && farEnough(hub, here)) {
         place = { ...hub, hangout: true };
       } else {
-        const hangouts = hangoutsFor(combatLevel, here);
+        const hangouts = hangoutsFor(combatLevel, here).filter((option) => !meets || meets(player, option.requires));
         if (hangouts.length > 0) {
           place = { ...pickWeighted(hangouts, random, (option) => (option.weight ?? 1) * crowding(option)), hangout: true };
         }
@@ -220,7 +222,7 @@ function createTravel({
       if (place) place.stayMs = stayFor(place.activity);
     }
     if (!place) {
-      const options = destinationsFor(mode, level, here);
+      const options = destinationsFor(mode, level, here).filter((option) => !meets || meets(player, option.requires));
       if (options.length === 0) return null;
       place = pickWeighted(options, random,
         (option) => (option.weight ?? 1) * (nearHub(option, hub) ? nearHubBonus : 1) * crowding(option));

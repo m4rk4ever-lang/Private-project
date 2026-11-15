@@ -264,3 +264,15 @@ test("bots spread: a place that already has bots is picked less", () => {
   assert.ok(most <= 25, `one place got ${most} of 60`);
   assert.equal([...travel.occupancy.values()].reduce((sum, set) => sum + set.size, 0), 60);
 });
+
+test("an honest bot keeps to the places its quests and levels allow", () => {
+  const { core, player } = harness({ level: 99, name: "Honest" });
+  const blocked = new Set();
+  const travel = createTravel({ core, random: Math.random, chance: 1, hangoutChance: 0, minigameChance: 0,
+    meets: (bot, requires) => { if (requires) blocked.add(JSON.stringify(requires)); return !requires; } });
+  for (let i = 0; i < 80; i++) {
+    const place = travel(player, {}, { mode: "woodcutting" }, 0);
+    assert.ok(!place.requires, place.id);
+  }
+  assert.ok(data.destinations.some((place) => place.id === "woodcutting_guild" && place.requires));
+});

@@ -62,6 +62,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     hangoutChance: 0,
     minigameChance: 0,
     random,
+    // Adventurers only go where their quests and levels let them.
+    meets: (player, requires) => !requires || (
+      (requires.quests ?? []).every((name) => questsByName().get(normalize(name))?.isComplete(player) === true)
+      && Object.entries(requires.skills ?? {}).every(([skill, level]) => (core.Skill[skill] ? player.getSkillManager().getMaxLevel(core.Skill[skill]) : 0) >= level)),
   });
   /** name -> { name, player, phase, until, plan, startedAt } */
   const adventurers = new Map();
@@ -140,6 +144,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     } else {
       const level = plan.mode === "combat_training" ? view.combat : view.levels[plan.skill] ?? 1;
       const id = bestActivity(plan.mode, level, definitions);
+      // Fighting on an empty stomach is how adventurers die: food first, if it can buy some.
+      if (plan.mode === "combat_training" && !carriesFood(player)) {
+        const food = Shopping.foodToBuy(player, core, levelOf(player, "HITPOINTS"));
+        if (food && Shopping.coinsOf(player) >= Shopping.estimatedPrice(core, food.itemId, food.amount)) {
+          shopFor(player, food.itemId, food.name, food.amount);
+        }
+      }
       // Fishing needs its net, rod or harpoon: bought first, or no fishing this time.
       for (const tool of Shopping.missingTools(player, core, id)) {
         if (!shopFor(player, tool.itemId, tool.name, tool.name === "FEATHER" || tool.name === "FISHING_BAIT" ? 200 : 1)) return false;
@@ -319,6 +330,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     player.getEquipment().refreshItems?.();
     player.setAttribute(GENERATION_ATTRIBUTE, data.generation ?? 1);
     note(player, "Een nieuw avontuur begint in Lumbridge, met alleen de spullen van Tutorial Island.");
+  }
+
+  function carriesFood(player) {
+    const Food = require("../../items/Food.plugin");
+    return (player.getInventory().getItems() ?? []).some((item) => item && Food.isFoodItem(item.getId()));
   }
 
   function levelOf(player, skillName) {
