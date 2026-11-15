@@ -41,14 +41,17 @@ Indeling per versie:
   pluginlijst gebruiken de nieuwe naam in plaats van "Old School RuneScape" en "RSPS.app".
 
 ### Opgelost
+- `update` stopt het spel nu ook als een proces blijft hangen: het zoekt wat de poorten bezet
+  houdt, wacht tot 20 seconden en stopt het daarna geforceerd.
 - Account Management toont "Membership: Unlimited" in plaats van "None". De client behandelt
   iedereen nu ook als member in de skills-tab en de questlijst (op een members-wereld).
 
 ### Gewijzigd
 - Nieuwe spelers starten in Lumbridge in plaats van Edgeville. `::home` gaat ook naar Lumbridge.
 
-### Verwijderd
-- De bots (nepspelers) staan uit. Je bent alleen in je wereld, op eventuele echte spelers na.
+- **Bots terug, als levendige wereld:** 126 bots in Lumbridge, Varrock, Falador en Draynor die
+  hakken, minen, vissen en tegen monsters vechten, elk met een eigen naam, level en uitrusting.
+  Elke bot wisselt om de 15 tot 25 minuten van activiteit. De PvP-bots bij Edgeville blijven uit.
 
 ## [0.1.0] - 15-11-2026
 

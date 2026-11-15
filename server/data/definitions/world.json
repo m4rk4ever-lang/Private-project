@@ -1,6 +1,91 @@
 {
   "name": "Realm of Eeshwar",
-  "plugins": { "PlayerBots": false },
+  "plugins": {},
+  "pluginConfig": {
+    "PlayerBots:sites": {
+      "edge_low": {
+        "enabled": false
+      },
+      "edge_mid": {
+        "enabled": false
+      },
+      "edge_mains": {
+        "enabled": false
+      },
+      "varrock_ditch": {
+        "enabled": false
+      },
+      "lumbridge": {
+        "enabled": true,
+        "switchMinutes": [
+          15,
+          25
+        ],
+        "bots": {
+          "woodcutting": 10,
+          "mining": 8,
+          "fishing": 10,
+          "combat_training": {
+            "novices": 8,
+            "intermediates": 6
+          }
+        }
+      },
+      "varrock": {
+        "enabled": true,
+        "x": 3213,
+        "y": 3428,
+        "switchMinutes": [
+          15,
+          25
+        ],
+        "bots": {
+          "woodcutting": {
+            "advanced": 5,
+            "experts": 5
+          },
+          "mining": 10,
+          "combat_training": {
+            "intermediates": 6,
+            "advanced": 6
+          }
+        }
+      },
+      "falador": {
+        "enabled": true,
+        "x": 2965,
+        "y": 3380,
+        "switchMinutes": [
+          15,
+          25
+        ],
+        "bots": {
+          "mining": 12,
+          "woodcutting": 6,
+          "combat_training": {
+            "intermediates": 6,
+            "advanced": 6
+          }
+        }
+      },
+      "draynor": {
+        "enabled": true,
+        "x": 3093,
+        "y": 3244,
+        "switchMinutes": [
+          15,
+          25
+        ],
+        "bots": {
+          "woodcutting": 8,
+          "fishing": 10,
+          "combat_training": {
+            "novices": 4
+          }
+        }
+      }
+    }
+  },
   "description": "",
   "experienceMultiplier": 1,
   "spawn": {
