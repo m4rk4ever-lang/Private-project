@@ -97,3 +97,39 @@ test("a drop for an empty slot is picked up and worn, whatever it is worth", () 
   equipment[0] = { getId: () => 1153 };
   assert.equal(Loot.lootNear(core, player, { valueOf: () => 2 }), null, "with a helm on, a cheap hat stays");
 });
+
+test("charged jewellery and tablets teleport only to their own places, and only when it saves a walk", () => {
+  const GLORY_4 = 1712;
+  const VARROCK_TAB = 8007;
+  const core = {
+    Skill: { MAGIC: "MAGIC" },
+    ItemIdentifiers: { VARROCK_TELEPORT: VARROCK_TAB, LUMBRIDGE_TELEPORT: 8008, FALADOR_TELEPORT: 8009, CAMELOT_TELEPORT: 8010 },
+    SpellTeleports: { getTeleportDestinations: () => [
+      { name: "varrock teleport", spellbook: "NORMAL", level: 25, runes: [], destination: loc(3213, 3424) },
+    ] },
+  };
+  const bag = (ids) => ids.map((id) => ({ getId: () => id, getAmount: () => 1 }));
+  const player = (x, y, ids) => ({
+    getLocation: () => loc(x, y), getSpellbook: () => "ANCIENT",
+    getSkillManager: () => ({ getCurrentLevel: () => 1 }),
+    getInventory: () => ({ getItems: () => bag(ids), getAmount: () => 0 }),
+  });
+  const jewelleryData = [
+    { key: "glory", charged: [[GLORY_4, 4]], spent: 1704, destinations: [
+      { label: "Edgeville", tile: [3087, 3496, 0] }, { label: "Karamja", tile: [2918, 3176, 0] },
+      { label: "Draynor Village", tile: [3105, 3251, 0] }, { label: "Al Kharid", tile: [3293, 3163, 0] }] },
+    { key: "slayer", charged: [[11866, 8]], destinations: [{ label: "Slayer Tower", tile: [3429, 3538, 0], quest: { key: "priest_in_peril" } }] },
+  ];
+  // Far south in the desert, to Draynor bank: the glory's Draynor Village (its third, Rub submenu 3).
+  const glory = bestTeleport(core, player(3300, 2800, [GLORY_4]), { x: 3092, y: 3245 }, { jewelleryData });
+  assert.equal(glory?.kind, "jewellery");
+  assert.equal(glory?.name, "Draynor Village");
+  assert.equal(glory?.slot, 0);
+  assert.equal(glory?.index, 3);
+  assert.equal(bestTeleport(core, player(3300, 2800, [11866]), { x: 3429, y: 3530 }, { jewelleryData }), null, "a quest-locked destination is never used");
+  // To the Grand Exchange: a Varrock tablet (the spell is on another book here).
+  const tab = bestTeleport(core, player(2800, 3200, [VARROCK_TAB]), { x: 3164, y: 3487 });
+  assert.equal(tab?.kind, "tablet");
+  // An uncharged glory takes it nowhere.
+  assert.equal(bestTeleport(core, player(3300, 2800, [1704]), { x: 3092, y: 3245 }, { jewelleryData }), null);
+});

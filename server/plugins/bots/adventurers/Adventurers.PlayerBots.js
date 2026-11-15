@@ -37,6 +37,8 @@ const GROUP_MAX = 5;
 const Value = require("../../interface/ValueWarning");
 const COINS = 995;
 const CHECK_TICKS = 10;
+/** No XP and no step for this long while training: it is stuck, it picks something else. */
+const STUCK_MS = 2 * 60_000;
 const WINTERTODT = travelData.minigames.find((game) => game.id === "wintertodt");
 
 function normalize(name) {
@@ -304,14 +306,21 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const busyModes = new Set([...adventurers.values()]
       .filter((other) => other !== entry && other.phase === "training")
       .map((other) => other.plan?.mode).filter(Boolean));
-    const plan = chooseNext(view, questList(), {
-      available: view.available, questChance: data.questChance, bosses: data.bosses, bossChance: data.bossChance, random,
-      focus: data.focus?.[entry.name] ?? {}, busyModes,
-    });
-    const started = plan.kind === "quest" ? startQuest(entry, plan)
-      : plan.kind === "boss" ? startBoss(entry, plan, nowMs)
-      : startTraining(entry, plan, nowMs);
-    if (!started) entry.until = nowMs + 60_000;
+    // When a pick cannot start (no tool to buy near, no place), the next pick goes at once:
+    // an adventurer does not stand about waiting.
+    const exclude = new Set();
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const plan = chooseNext(view, questList(), {
+        available: view.available, questChance: data.questChance, bosses: data.bosses, bossChance: attempt === 0 ? data.bossChance : 0, random,
+        focus: data.focus?.[entry.name] ?? {}, busyModes, exclude,
+      });
+      const started = plan.kind === "quest" ? startQuest(entry, plan)
+        : plan.kind === "boss" ? startBoss(entry, plan, nowMs)
+        : startTraining(entry, plan, nowMs);
+      if (started) return;
+      if (plan.mode) exclude.add(plan.mode);
+    }
+    entry.until = nowMs + 15_000;
   }
 
   /** A valuable drop (data.dropValue coins or more) from an adventurer's kill, for the drop log. */
@@ -342,6 +351,23 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     note(killer, `${definition.getName()} (level ${level}) verslagen.`, "boss");
   }
 
+  /**
+   * Standing about: training, but no XP and not a step for two minutes (its job found nothing
+   * to do there). Then it picks something else instead of waiting out the stretch.
+   */
+  function stuck(entry, nowMs) {
+    if (entry.phase !== "training" && entry.phase !== "boss") return false;
+    if (errands.busy(entry.player)) return false;
+    const at = entry.player.getLocation();
+    const mark = `${at.getX()},${at.getY()},${at.getZ()}:${Math.floor(entry.player.getSkillManager().getTotalExp?.() ?? 0)}`;
+    if (mark !== entry.lastMark) {
+      entry.lastMark = mark;
+      entry.lastMarkAt = nowMs;
+      return false;
+    }
+    return nowMs - (entry.lastMarkAt ?? nowMs) > STUCK_MS;
+  }
+
   /** Every change in what it wears goes in its journal, so where each piece came from can be followed. */
   function watchGear(entry) {
     const worn = (entry.player.getEquipment().getItems() ?? []).filter((item) => item && item.getId() > 0).map((item) => item.getId());
@@ -359,6 +385,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     for (const entry of adventurers.values()) {
       if (!entry.player?.isRegistered?.()) continue;
       watchGear(entry);
+      if (stuck(entry, nowMs)) {
+        note(entry.player, `Kon bij ${String(entry.activity ?? "zijn klus").replace(/_/g, " ")} niets doen; kiest iets anders.`, "activity");
+        entry.until = 0;
+      }
       // A full bag ends the stretch: off to sell (trade()), as a player banks or sells.
       if (nowMs >= entry.until || (entry.phase !== "new" && entry.player.getInventory().getFreeSlots() === 0)) next(entry, nowMs);
     }

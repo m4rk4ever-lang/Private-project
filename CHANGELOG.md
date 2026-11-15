@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Bots teleporteren ook met teleport tablets en geladen sieraden (glory, games necklace, ring of dueling en meer), alleen naar de bestemmingen van dat sieraad en zonder bestemmingen achter een quest of in de Wilderness. Een tablet wordt opgebruikt, een sieraad verliest een lading.
 - House parties: een bot met een hoog Construction-level heeft een huis met kapel en gilded altar, houdt de wierookbranders aan en adverteert zijn huis in Rimmington. Vechtende bots sparen dan hun botten en offeren ze daar (350% Prayer-XP). Uit te zetten met `HOUSE_PARTY=0`.
 - Bots maken zelf iets van hun grondstoffen: mijners smelten hun erts en smeden de staven op een aambeeld tot het beste wat hun Smithing-level toelaat, houthakkers fletchen hun logs met een mes, vissers koken hun vangst en banken die. Zonder hamer of mes, of met te laag level, verkopen ze het.
 - Elke wereldbot krijgt bij het starten een eigen account alsof hij al speelde: gereedschap en uitrusting bij zijn levels, eten, coins en een bank met wat grondstoffen. Daarna speelt hij eerlijk: hij raapt loot op, verkoopt op de GE en koopt eten en gereedschap met zijn eigen coins. Uit te zetten met `BOT_GENERATED_ACCOUNTS=0`.
@@ -59,6 +60,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Opgelost
+- Avonturiers stonden soms minutenlang stil: als een keuze niet kon starten (geen gereedschap in de buurt te koop) wachtten ze een minuut. Nu kiezen ze meteen iets anders, en wie twee minuten geen XP haalt en niet beweegt, kiest ook iets anders.
 - Eerlijke bots konden alsnog gratis uitrusting krijgen (zoals een iron full helm) wanneer ze van klus wisselden. Ze worden nu ook als eerlijk herkend als hun klus opnieuw start. Avonturiers kopen ook alleen nog in winkels in de buurt, niet overal op de kaart. De avonturiers beginnen daarom nog één keer opnieuw.
 - Het dagboek van een avonturier toont elke wijziging in zijn uitrusting, zodat je kunt nagaan waar een stuk vandaan komt.
 - Avonturiers kregen bij het reizen nog vakkleding, capes en ringen (zoals de Explorer's ring) aangetrokken die ze nooit verdiend hadden. Dat kan niet meer bij eerlijke bots; de avonturiers beginnen daarom nog één keer opnieuw.

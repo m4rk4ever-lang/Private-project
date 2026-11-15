@@ -5,9 +5,13 @@
  * does its business there, and goes back to its job. Its brain waits meanwhile; this walks it,
  * a leg at a time, through the brain's own long-route navigation (LongRoutes.PlayerBots.js).
  * No free teleports: a far errand takes the time the walk takes, so bots only go when it is
- * worth it (Upkeep, Adventurers decide that). A bot that can cast a teleport (its Magic level,
- * the runes in its bag, the standard spellbook) uses it when it saves a long walk: cast through
- * the game's own spell, runes and all, then it walks the rest.
+ * worth it (Upkeep, Adventurers decide that). A bot that can teleport uses it when it saves a
+ * long walk, through the game's own code so the costs are real:
+ * - a spell: its Magic level, the runes in its bag, the standard spellbook;
+ * - a tablet it carries (used up);
+ * - charged jewellery it carries (a glory to Draynor, a games necklace to Burthorpe...), only to
+ *   that piece's own destinations, one charge each; none behind a quest or other unlock.
+ * Then it walks the rest.
  *
  * After the business the brain takes over again where the bot stands; its job walks it back.
  */
@@ -32,30 +36,88 @@ function distance(a, b) {
   return Math.max(Math.abs(a.getX() - b.x), Math.abs(a.getY() - b.y));
 }
 
+/** Tablets by the spell they hold (they land where the spell does). */
+const TABLETS = Object.freeze({
+  VARROCK_TELEPORT: "varrock teleport", LUMBRIDGE_TELEPORT: "lumbridge teleport",
+  FALADOR_TELEPORT: "falador teleport", CAMELOT_TELEPORT: "camelot teleport",
+});
+
+/** No teleport into the Wilderness for an errand. */
+function inWilderness(x, y) {
+  return x >= 2944 && x <= 3392 && y >= 3520 && y <= 3968;
+}
+
+/** Charged jewellery's errand destinations: itemId -> [{ label, tile, index }]. */
+let jewellery = null;
+function jewelleryDestinations(source = null) {
+  if (jewellery && !source) return jewellery;
+  let pieces = source ?? [];
+  if (!source) {
+    try {
+      pieces = require("../../items/Teleports.Jewellery").JEWELLERY ?? [];
+    } catch {
+      pieces = [];
+    }
+  }
+  jewellery = new Map();
+  const byKey = new Map(pieces.map((piece) => [piece.key, piece]));
+  for (const piece of pieces) {
+    const destinations = piece.destinations ?? byKey.get(piece.destinationsFrom)?.destinations ?? [];
+    const usable = destinations
+      .map((destination, index) => ({ ...destination, index: index + 1 }))
+      .filter((destination) => Array.isArray(destination.tile) && !destination.quest && !destination.kourend
+        && !destination.colosseumRank && !destination.unlock && !destination.requires
+        && !inWilderness(destination.tile[0], destination.tile[1]) && (destination.tile[2] ?? 0) === 0);
+    for (const [itemId, charges] of piece.charged ?? []) {
+      if (Number.isInteger(itemId) && charges > 0 && usable.length > 0) jewellery.set(itemId, usable);
+    }
+  }
+  return jewellery;
+}
+
 /** Whether it carries every rune a spell takes. */
 function carriesRunes(player, runes) {
   const inventory = player.getInventory();
   return (runes ?? []).every((rune) => inventory.getAmount(rune.getId()) >= rune.getAmount());
 }
 
-/** The castable errand teleport that lands nearest `to`, if it saves a long walk; else null. */
-function bestTeleport(core, player, to) {
+/**
+ * The teleport it can use that lands nearest `to`, if it saves a long walk; else null.
+ * { kind: "spell", name } | { kind: "tablet", slot } | { kind: "jewellery", slot, index, label }.
+ */
+function bestTeleport(core, player, to, { jewelleryData = null } = {}) {
   const spells = core?.SpellTeleports?.getTeleportDestinations?.() ?? [];
   const here = player.getLocation();
   const walk = distance(here, to);
   const magic = player.getSkillManager?.()?.getCurrentLevel?.(core.Skill?.MAGIC) ?? 1;
   let best = null;
+  const consider = (option, x, y) => {
+    const after = Math.max(Math.abs(x - to.x), Math.abs(y - to.y));
+    if (walk - after >= TELEPORT_SAVES && (!best || after < best.after)) best = { ...option, after };
+  };
+  const landing = new Map(spells.map((spell) => [spell.name, spell.destination]));
   for (const spell of spells) {
     if (!ERRAND_SPELLS.has(spell.name) || spell.spellbook !== player.getSpellbook?.()) continue;
     if (magic < spell.level || !carriesRunes(player, spell.runes)) continue;
-    const land = spell.destination;
-    const after = Math.max(Math.abs(land.getX() - to.x), Math.abs(land.getY() - to.y));
-    if (walk - after >= TELEPORT_SAVES && (!best || after < best.after)) best = { name: spell.name, after };
+    consider({ kind: "spell", name: spell.name }, spell.destination.getX(), spell.destination.getY());
   }
+  const items = player.getInventory().getItems?.() ?? [];
+  items.forEach((item, slot) => {
+    const id = item?.getId?.() ?? -1;
+    if (!(id > 0)) return;
+    for (const [key, spellName] of Object.entries(TABLETS)) {
+      const land = landing.get(spellName);
+      if (land && core.ItemIdentifiers?.[key] === id) consider({ kind: "tablet", slot, name: spellName }, land.getX(), land.getY());
+    }
+    for (const destination of (jewelleryData ? jewelleryDestinations(jewelleryData) : jewelleryDestinations()).get(id) ?? []) {
+      consider({ kind: "jewellery", slot, index: destination.index, name: destination.label }, destination.tile[0], destination.tile[1]);
+    }
+  });
   return best;
 }
 
-function createErrands({ now = () => Date.now(), log = () => {}, core = null, move = requestMovement, clear = clearMovementRequest } = {}) {
+function createErrands({ now = () => Date.now(), log = () => {}, core = null, move = requestMovement, clear = clearMovementRequest,
+  useItem = null } = {}) {
   const errands = new Map();
 
   /**
@@ -72,11 +134,15 @@ function createErrands({ now = () => Date.now(), log = () => {}, core = null, mo
     clear(player);
     const spell = core ? bestTeleport(core, player, to) : null;
     if (spell) {
-      // Cast as a player casts it (level, runes and XP through the spell itself); walk after landing.
-      core.SpellTeleports.handleSelf(player, spell.name);
+      // As a player does it: the spell (level, runes, XP), a tablet broken (used up), jewellery
+      // rubbed to one of its own destinations (a charge). Then it walks from where it lands.
+      if (spell.kind === "spell") core.SpellTeleports.handleSelf(player, spell.name);
+      else if (spell.kind === "tablet") useItem?.(player, spell.slot, "Break");
+      else useItem?.(player, spell.slot, "Rub", spell.index);
       errand.walkFrom = nowMs + TELEPORT_MS;
       errand.bestAt = errand.walkFrom;
-      log("bot_errand_teleport", { username: player.getUsername?.() ?? null, spell: spell.name, reason });
+      log("bot_errand_teleport", { username: player.getUsername?.() ?? null, kind: spell.kind, to: spell.name, reason });
+      errand.teleport = spell;
       return true;
     }
     move(player, to.x, to.y, { nowMs, z: to.z ?? 0, reason: `brain_${reason}`, state: entry.state ?? undefined });
@@ -138,7 +204,19 @@ let shared = null;
 /** One errand runner for every bot, ticked every tick (PlayerBots.plugin.js starts it). */
 function errandsFor(api) {
   if (shared) return shared;
-  shared = createErrands({ log: (message, extra) => api?.log?.(message, extra), core: api?.core ?? null });
+  shared = createErrands({
+    log: (message, extra) => api?.log?.(message, extra),
+    core: api?.core ?? null,
+    // An inventory item's option, as a click sends it (a tablet's Break, a glory's Rub submenu).
+    useItem: (player, slot, option, subOpId) => {
+      const item = player.getInventory().getItems()[slot];
+      if (!item || !(item.getId() > 0) || !api?.emitItemAction) return false;
+      return api.emitItemAction({
+        player, interfaceId: api.core.Inventory.INTERFACE_ID, item, itemId: item.getId(), slot, clickType: 1, option,
+        ...(Number.isInteger(subOpId) ? { subOpId } : {}), handled: false,
+      });
+    },
+  });
   if (api?.getTaskManager) {
     const { Task } = api.core;
     api.getTaskManager().submit(new (class extends Task {

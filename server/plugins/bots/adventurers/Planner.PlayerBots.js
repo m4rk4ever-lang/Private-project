@@ -64,7 +64,7 @@ function bossesFor(adventurer, bosses = []) {
 
 function chooseNext(adventurer, quests, {
   available = null, questChance = 0.45, bosses = [], bossChance = 0, random = Math.random,
-  focus = {}, busyModes = new Set(),
+  focus = {}, busyModes = new Set(), exclude = new Set(),
 } = {}) {
   const open = quests.filter((quest) => !adventurer.done.has(quest.name) && (!available || available.has(quest.name)));
   const fightable = bossesFor(adventurer, bosses);
@@ -75,7 +75,9 @@ function chooseNext(adventurer, quests, {
   if (ready.length > 0 && random() < questChance) {
     return { kind: "quest", quest: ready[0] };
   }
-  const options = trainingOptions(adventurer);
+  // Modes that could not start just now (no tool, no place) are left out of this pick.
+  const options = trainingOptions(adventurer).filter((option) => !exclude.has(option.mode));
+  if (options.length === 0) return { kind: "train", mode: COMBAT, skill: "COMBAT", reason: "loot en levels" };
   // What the nearest quest that is not ready still needs, and that the bots can train.
   for (const quest of open) {
     if (isReady(quest, adventurer)) continue;
