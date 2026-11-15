@@ -270,7 +270,6 @@
   },
   "banks": [
     { "id": "draynor_bank", "name": "Draynor", "x": 3092, "y": 3245, "z": 0 },
-    { "id": "al_kharid_bank", "name": "Al Kharid", "x": 3270, "y": 3167, "z": 0 },
     { "id": "varrock_west_bank", "name": "Varrock West", "x": 3185, "y": 3440, "z": 0 },
     { "id": "varrock_east_bank", "name": "Varrock East", "x": 3253, "y": 3420, "z": 0 },
     { "id": "edgeville_bank", "name": "Edgeville", "x": 3094, "y": 3493, "z": 0 },

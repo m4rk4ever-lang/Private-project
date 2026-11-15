@@ -66,6 +66,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Opgelost
+- Bots liepen lang met een volle inventaris rond. Gebakken vis telde als eten en werd nooit gebankt, wereldbots kwamen pas na minuten aan de beurt, en het enige alternatief was de verre GE. Nu: eten boven de 10 stuks gaat naar de bank, bots met een volle tas komen eerst aan de beurt en lopen naar de dichtstbijzijnde bank, en lukt niets anders dan laten ze de lading vallen. Al Kharid staat niet meer op de banklijst (de tolpoort).
 - Zakkenrollende bots bleven aan de verkeerde kant van een muur of heg staan bij een doelwit dat ze niet konden bereiken. Zo'n doelwit slaan ze nu een minuut over en ze kiezen er een die wel bereikbaar is.
 - Avonturiers kregen nog op drie manieren iets wat ze niet verdienden: een PvP-uitrusting als ze niets aan hadden (de iron scimitar na een reset), coins voor tolpoorten, en het geld van GE-verkopen uit hun vorige start. Alle drie zijn dicht, en de avonturiers beginnen daarom nog één keer opnieuw. Ze hebben nu ook een eigen tinderbox nodig om vuur te maken.
 - Krijgt een avonturier toch een draagbaar item zonder koop, vondst of eigen werk, dan staat er 'Onverklaard' in zijn dagboek en in de serverlog, zodat de oorzaak gevonden kan worden.

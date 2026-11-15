@@ -47,7 +47,10 @@ function createChooseAction(spec, compileAction) {
       let roll = Math.random() * total;
       return useful.find((option) => (roll -= option.weight) < 0) ?? useful[useful.length - 1];
     }
-    return options.find((option) => option.actions.some((step) => step.id === "sellItems")) ?? null;
+    return options.find((option) => option.actions.some((step) => step.id === "sellItems"))
+      // Nothing better works (no bank, no store, no tool): it drops the load rather than stand
+      // about with a full bag.
+      ?? options.find((option) => option.actions.some((step) => step.id === "dropItems")) ?? null;
   }
 
   const action = {

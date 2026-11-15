@@ -96,12 +96,31 @@ function keepIds(player, core, { isFood = () => false } = {}) {
   return keep;
 }
 
-/** What it would sell: [{ itemId, amount, value }], tradeable items it does not keep. */
-function goodsToSell(player, core, keep) {
+/** Food it carries for itself; more than this (a bag of fish it caught and cooked) is stock. */
+const FOOD_CARRY = 10;
+
+/**
+ * What it would bank or sell: [{ itemId, amount, value }], tradeable items it does not keep, and
+ * food beyond what it carries for itself (cooked fish fill a bag too).
+ */
+function goodsToSell(player, core, keep, { isFood = null } = {}) {
   const totals = new Map();
+  const food = new Map();
   for (const item of player.getInventory().getItems() ?? []) {
-    if (!item || !(item.getId() > 0) || keep.has(item.getId())) continue;
+    if (!item || !(item.getId() > 0)) continue;
+    if (isFood?.(item.getId())) {
+      food.set(item.getId(), (food.get(item.getId()) ?? 0) + item.getAmount());
+      continue;
+    }
+    if (keep.has(item.getId())) continue;
     totals.set(item.getId(), (totals.get(item.getId()) ?? 0) + item.getAmount());
+  }
+  // The best food stays (the most of one kind first), up to FOOD_CARRY pieces in all.
+  let carry = FOOD_CARRY;
+  for (const [id, amount] of [...food].sort((a, b) => b[1] - a[1])) {
+    const kept = Math.min(amount, carry);
+    carry -= kept;
+    if (amount > kept) totals.set(id, amount - kept);
   }
   return [...totals].map(([itemId, amount]) => ({ itemId, amount, value: Value.itemValue(core, itemId, amount) }))
     .filter((good) => good.value > 0)

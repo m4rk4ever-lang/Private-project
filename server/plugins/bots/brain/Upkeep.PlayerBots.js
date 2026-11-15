@@ -61,7 +61,7 @@ function createUpkeep({ core, runtime, emit, isFood, errands, now = () => Date.n
         if (item && /bones$/i.test(String(core.ItemDefinition?.forId?.(item.getId())?.getName?.() ?? ""))) keep.add(item.getId());
       }
     }
-    const goods = Trade.goodsToSell(player, core, keep);
+    const goods = Trade.goodsToSell(player, core, keep, { isFood });
     const worth = goods.reduce((sum, good) => sum + good.value, 0);
     const want = { goods: [], buy: [] };
     // A full bag of things to sell (its made bows, platebodies or loot), or a valuable load.
@@ -75,10 +75,12 @@ function createUpkeep({ core, runtime, emit, isFood, errands, now = () => Date.n
       const best = toolList.find((entry) => !(entry.quests?.length) && levelOf(player, entry.skill) >= (entry.level ?? 1));
       if (best) want.buy.push({ itemId: Shopping.idOf(core, best.item), amount: 1 });
     }
-    // From far away (Kourend, the desert) the walk is not worth a bag of goods: its job sells at
-    // a nearby store or drops instead. Food and tools it does need, so for those it still goes.
+    // From far away (Kourend, the desert) the walk to the exchange is not worth a bag of goods,
+    // unless a bank is near: then it banks them. Food and tools it does need, so for those it goes.
     const at = player.getLocation();
-    if (Math.max(Math.abs(at.getX() - GRAND_EXCHANGE.x), Math.abs(at.getY() - GRAND_EXCHANGE.y)) > FAR_TILES) want.goods = [];
+    const bank = nearestBank(player);
+    if (Math.max(Math.abs(at.getX() - GRAND_EXCHANGE.x), Math.abs(at.getY() - GRAND_EXCHANGE.y)) > FAR_TILES
+        && !(bank && bank.away <= FAR_TILES)) want.goods = [];
     const waiting = Trade.finishedOffers(player, emit) > 0;
     if (!waiting && want.goods.length === 0 && want.buy.length === 0) return null;
     return want;
@@ -93,17 +95,53 @@ function createUpkeep({ core, runtime, emit, isFood, errands, now = () => Date.n
     log("bot_upkeep", { username: player.getUsername?.() ?? null, collectedCoins, sold: offered.length, bought: bought.length });
   }
 
+  /** The nearest bank of the adventurers' list (Draynor, Varrock, Falador, Seers...), with distance. */
+  function nearestBank(player) {
+    const at = player.getLocation();
+    let best = null;
+    for (const bank of require("../data/adventurers.json").banks ?? []) {
+      const away = Math.max(Math.abs(bank.x - at.getX()), Math.abs(bank.y - at.getY()));
+      if (!best || away < best.away) best = { ...bank, away };
+    }
+    return best;
+  }
+
+  /** Its goods into its own bank, at a bank: it sells them another time, or uses them. */
+  function bankGoods(player) {
+    const keep = Trade.keepIds(player, core, { isFood });
+    const inventory = player.getInventory();
+    for (const good of Trade.goodsToSell(player, core, keep, { isFood })) {
+      const held = Math.min(good.amount, inventory.getAmount(good.itemId));
+      const bank = player.getBank?.(core.Bank?.getTabForItem?.(player, good.itemId) ?? 0);
+      if (!bank || held <= 0) continue;
+      bank.add(new core.Item(good.itemId, held), false);
+      inventory.deleteNumber(good.itemId, held);
+    }
+    inventory.refreshItems?.();
+    log("bot_upkeep_bank", { username: player.getUsername?.() ?? null });
+  }
+
   function startTrip(entry, want) {
+    // Only a full bag to empty, and a bank nearer than the exchange: to the bank.
+    const bank = want.buy.length === 0 ? nearestBank(entry.player) : null;
+    const at = entry.player.getLocation();
+    const toExchange = Math.max(Math.abs(at.getX() - GRAND_EXCHANGE.x), Math.abs(at.getY() - GRAND_EXCHANGE.y));
+    if (bank && bank.away + 40 < toExchange && Trade.finishedOffers(entry.player, emit) === 0) {
+      return errands.go(entry, bank, { reason: "upkeep_bank", arrive: (player) => bankGoods(player) });
+    }
     // What it needs may change on the way (a full bag of ores): looked at again on arrival.
     return errands.go(entry, GRAND_EXCHANGE, { reason: "upkeep", arrive: (player) => deal(player, needs(player, entry.brain?.currentRoot?.()?.mode ?? null, true) ?? want) });
   }
 
   /** The next few honest world bots (not adventurers, not in a trip, not in PvP). */
   function check(nowMs) {
-    const entries = [...(runtime.entriesByUsername?.values?.() ?? [])];
-    if (entries.length === 0) return;
-    for (let looked = 0; looked < Math.min(PER_CHECK, entries.length); looked += 1) {
-      const entry = entries[cursor++ % entries.length];
+    const all = [...(runtime.entriesByUsername?.values?.() ?? [])];
+    if (all.length === 0) return;
+    // A full bag first, whoever it is: a bot should not walk about with one for minutes.
+    const full = all.filter((entry) => entry?.player?.getInventory?.()?.getFreeSlots?.() === 0);
+    const entries = [...full, ...all];
+    for (let looked = 0; looked < Math.min(PER_CHECK + full.length, entries.length); looked += 1) {
+      const entry = looked < full.length ? entries[looked] : all[cursor++ % all.length];
       const player = entry?.player;
       const state = entry?.state;
       // A paused brain is already away (at a house party, HouseParty.PlayerBots.js).

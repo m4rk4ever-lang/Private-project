@@ -762,7 +762,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
 
   /** Its bag sorted: to bank (useful), to sell, and junk to drop. */
   function sortBag(player) {
-    const goods = Trade.goodsToSell(player, core, Trade.keepIds(player, core, { isFood }));
+    const goods = Trade.goodsToSell(player, core, Trade.keepIds(player, core, { isFood }), { isFood });
     const keep = [];
     const sell = [];
     for (const good of goods) {
@@ -897,7 +897,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const stored = deposit(player, bag.keep);
     if (stored.length > 0) note(player, `Bewaart op de bank: ${stored.map((good) => itemName(good.itemId)).join(", ")}.`, "activity");
     const pulled = withdrawToSell(player);
-    const goods = Trade.goodsToSell(player, core, Trade.keepIds(player, core, { isFood }));
+    const goods = Trade.goodsToSell(player, core, Trade.keepIds(player, core, { isFood }), { isFood });
     const { collectedCoins, offered } = Trade.sellAtExchange(player, core, emit, goods);
     if (collectedCoins > 0) {
       note(player, `Haalt ${collectedCoins.toLocaleString("nl-NL")} gp op bij de Grand Exchange.`, "activity");
@@ -927,7 +927,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
     // Junk goes at once, wherever it is.
     dropJunk(player, sortBag(player).junk);
-    const goods = Trade.goodsToSell(player, core, Trade.keepIds(player, core, { isFood }));
+    const goods = Trade.goodsToSell(player, core, Trade.keepIds(player, core, { isFood }), { isFood });
     const worth = goods.reduce((sum, good) => sum + good.value, 0);
     const full = player.getInventory().getFreeSlots() <= (data.fullSlots ?? 4);
     const waiting = Trade.finishedOffers(player, emit) > 0;
@@ -939,7 +939,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return walkTo(entry, { ...bank, name: bank.name ?? bank.id }, {
       reason: "bank",
       arrive: (banker) => {
-        const stored = deposit(banker, Trade.goodsToSell(banker, core, Trade.keepIds(banker, core, { isFood })));
+        const stored = deposit(banker, Trade.goodsToSell(banker, core, Trade.keepIds(banker, core, { isFood }), { isFood }));
         if (stored.length > 0) note(banker, `Zet op de bank in ${bank.name ?? bank.id}: ${stored.slice(0, 5).map((good) => itemName(good.itemId)).join(", ")}${stored.length > 5 ? ` en ${stored.length - 5} meer` : ""}. Bruikbaars bewaart hij; de rest verkoopt hij later op de GE.`, "activity");
       },
     });
