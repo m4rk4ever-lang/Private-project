@@ -7,33 +7,37 @@ cd "$(dirname "$0")/.."
 
 echo "[update] Spel stoppen..."
 PORTS_RE=':(3000|43594|49600) '
-# The node processes listening on the game's ports (client, game server, admin panel).
+# Codespaces allow sudo without a password: it sees and stops processes of other users too
+# (a game started by the codespace itself shows up as "process information unavailable").
+SUDO=""
+if sudo -n true 2>/dev/null; then SUDO="sudo -n"; fi
+# The processes listening on the game's ports (client, game server, admin panel).
 port_pids() {
-  ss -ltnpH 2>/dev/null | grep -E "$PORTS_RE" | grep -oE 'pid=[0-9]+' | cut -d= -f2 | sort -u
+  $SUDO ss -ltnpH 2>/dev/null | grep -E "$PORTS_RE" | grep -oE 'pid=[0-9]+' | cut -d= -f2 | sort -u
 }
 ports_busy() {
   ss -ltnH 2>/dev/null | grep -qE "$PORTS_RE"
 }
 # First by name: the game's own processes (server panel, its nodemon and server, the client),
 # never this script; then whatever still listens on the ports.
-pkill -f "scripts/local-panel.cjs" 2>/dev/null
-pkill -f "nodemon" 2>/dev/null
-pkill -f "elvarg/Server.ts" 2>/dev/null
-pkill -f "craco.js start" 2>/dev/null
-pkill -f "concurrently.*--names server,client" 2>/dev/null
-for pid in $(port_pids); do kill "$pid" 2>/dev/null; done
+$SUDO pkill -f "scripts/local-panel.cjs" 2>/dev/null
+$SUDO pkill -f "nodemon" 2>/dev/null
+$SUDO pkill -f "elvarg/Server.ts" 2>/dev/null
+$SUDO pkill -f "craco.js start" 2>/dev/null
+$SUDO pkill -f "concurrently.*--names server,client" 2>/dev/null
+for pid in $(port_pids); do $SUDO kill "$pid" 2>/dev/null; done
 # The server saves everyone before it stops: give it up to 20 seconds, then force it.
 for _ in $(seq 1 20); do
   ports_busy || break
   sleep 1
 done
 if ports_busy; then
-  for pid in $(port_pids); do kill -9 "$pid" 2>/dev/null; done
+  for pid in $(port_pids); do $SUDO kill -9 "$pid" 2>/dev/null; done
   sleep 2
 fi
 if ports_busy; then
   echo "[update] Er draait nog iets op poort 3000, 43594 of 49600 dat ik niet kan stoppen:"
-  ss -ltnp 2>/dev/null | grep -E "$PORTS_RE"
+  $SUDO ss -ltnp 2>/dev/null | grep -E "$PORTS_RE"
   echo "[update] Stuur deze regels door, dan zoek ik uit wat het is."
   exit 1
 fi
