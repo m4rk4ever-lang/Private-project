@@ -24,6 +24,9 @@ const { dressForMode } = require("../brain/SiteSpawner.PlayerBots");
 const travelData = require("../data/travel-destinations.json");
 
 const LOG_ATTRIBUTE = "adventurers:journal";
+/** Which start an adventurer belongs to; a lower one than data.generation starts it over. */
+const GENERATION_ATTRIBUTE = "adventurers:generation";
+const Shopping = require("./Shopping.PlayerBots");
 /** A companion joins a group if its own stretch ends within this. */
 const GROUP_JOIN_WINDOW_MS = 4 * 60_000;
 const GROUP_MAX = 5;
@@ -137,6 +140,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     } else {
       const level = plan.mode === "combat_training" ? view.combat : view.levels[plan.skill] ?? 1;
       const id = bestActivity(plan.mode, level, definitions);
+      // Fishing needs its net, rod or harpoon: bought first, or no fishing this time.
+      for (const tool of Shopping.missingTools(player, core, id)) {
+        if (!shopFor(player, tool.itemId, tool.name, tool.name === "FEATHER" || tool.name === "FISHING_BAIT" ? 200 : 1)) return false;
+      }
       const activity = id ? registry?.byId?.get(id) ?? null : null;
       if (!activity) return false;
       travel(player, stateOf(player), activity, nowMs);
@@ -237,6 +244,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
 
   function next(entry, nowMs) {
     if (entry.phase === "quest") finishQuest(entry);
+    upgrade(entry.player);
     entry.group = false;
     if (random() < (data.groupChance ?? 0.3) && startGroup(entry, nowMs)) return;
     const view = snapshot(entry.player);
@@ -285,6 +293,68 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
   }
 
+  /** Back to a new account: level 1 (10 Hitpoints), no items, no quests, an empty journal. */
+  function startOver(player) {
+    const { SkillManager } = core;
+    const skills = player.getSkillManager();
+    for (const skill of core.Skill.values()) {
+      const level = skill === core.Skill.HITPOINTS ? 10 : 1;
+      skills.setCurrentLevel(skill, level, false).setMaxLevels(skill, level, false)
+        .setExperience(skill, SkillManager.getExperienceForLevel(level));
+    }
+    player.getInventory().resetItems();
+    player.getEquipment().resetItems();
+    for (const bank of player.getBanks?.() ?? []) bank?.resetItems?.();
+    for (const quest of QuestRuntime.getRegisteredQuests()) {
+      if (quest.getStage(player) !== 0) quest.setStage(player, 0);
+    }
+    player.setAttribute(QuestRuntime.QUEST_POINTS_ATTRIBUTE, 0);
+    player.setAttribute(LOG_ATTRIBUTE, []);
+    // What every new account gets on Tutorial Island.
+    for (const [name, amount] of Shopping.gear.starterKit) {
+      const id = Shopping.idOf(core, name);
+      if (Number.isInteger(id)) player.getInventory().add(new core.Item(id, amount));
+    }
+    player.getInventory().refreshItems?.();
+    player.getEquipment().refreshItems?.();
+    player.setAttribute(GENERATION_ATTRIBUTE, data.generation ?? 1);
+    note(player, "Een nieuw avontuur begint in Lumbridge, met alleen de spullen van Tutorial Island.");
+  }
+
+  function levelOf(player, skillName) {
+    const skill = core.Skill[skillName];
+    return skill ? player.getSkillManager().getMaxLevel(skill) : 1;
+  }
+
+  function questDone(player) {
+    const quests = questsByName();
+    return (name) => quests.get(normalize(name))?.isComplete(player) === true;
+  }
+
+  /** Goes to the shop's keeper and buys, through the shop itself. True when it got the item. */
+  function shopFor(player, itemId, name, amount = 1) {
+    const at = player.getLocation();
+    const shop = Shopping.nearestShop(itemId, { x: at.getX(), y: at.getY() });
+    if (!shop) return false;
+    teleport(player, { x: shop.keeper.x + 1, y: shop.keeper.y, z: shop.keeper.z });
+    const coinsBefore = Shopping.coinsOf(player);
+    const got = Shopping.buy(player, core, shop.shopId, itemId, amount);
+    if (got <= 0) return false;
+    const paid = coinsBefore - Shopping.coinsOf(player);
+    note(player, `Gekocht: ${got > 1 ? `${got} x ` : ""}${name.toLowerCase().replace(/_/g, " ")} bij ${shop.name} (${paid.toLocaleString("nl-NL")} gp).`, "activity");
+    return true;
+  }
+
+  /** Better gear and tools it can afford now, bought and worn before its next stretch. */
+  function upgrade(player) {
+    const list = Shopping.shoppingList(player, core, {
+      levelOf: (skill) => levelOf(player, skill), questDone: questDone(player), modes: ["woodcutting", "mining"],
+    });
+    for (const want of list) {
+      if (shopFor(player, want.itemId, want.name)) Shopping.wear(player, core, want.itemId);
+    }
+  }
+
   function spawn() {
     const at = data.spawn;
     for (const name of data.names) {
@@ -297,7 +367,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       bot.setDisplayName?.(name);
       bot.getUpdateFlag?.()?.flag?.(core.Flag?.APPEARANCE);
       adventurers.set(name, { name, player: bot, phase: "new", until: 0, plan: null, activity: null });
-      if (journal(bot).length === 0) note(bot, "Een nieuw avontuur begint in Lumbridge.");
+      // Honest: no conjured gear, tools, food or bait; it buys, finds or makes what it uses.
+      const state = runtime.botStatesByName?.get?.(name);
+      if (state) state.honest = true;
+      if (Number(bot.getAttribute(GENERATION_ATTRIBUTE) ?? 0) < (data.generation ?? 1)) startOver(bot);
     }
   }
 
@@ -407,6 +480,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
 /** Starts the adventurers on server start; serves /api/adventurers and the commands. */
 function startAdventurers({ api, runtime, world, registry }) {
   api.persistAttribute(LOG_ATTRIBUTE, []);
+  api.persistAttribute(GENERATION_ATTRIBUTE, 0);
   const manager = createAdventurers({ api, runtime, world, registry });
   api.onPlayerLevelUp(manager.onLevelUp);
   api.onCustomEvent("npc-drops:roll", manager.onDrops);

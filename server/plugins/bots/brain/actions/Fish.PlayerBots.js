@@ -183,7 +183,7 @@ function createFishAction(spec, world) {
           waitSince: bot.siteWaitSince ? nowMs - bot.siteWaitSince : 0,
         });
       }
-      if (baitId !== null && inventory.getAmount(baitId) < baitAmount / 2) {
+      if (baitId !== null && !ctx.state?.honest && inventory.getAmount(baitId) < baitAmount / 2) {
         inventory.adds(baitId, baitAmount - inventory.getAmount(baitId));
       }
       if (Fishing.isFishingActive(player)) {

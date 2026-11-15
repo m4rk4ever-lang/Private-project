@@ -19,6 +19,8 @@ function createEnsureItemAction(spec) {
       if (missing <= 0) {
         return "success";
       }
+      // An honest bot (an adventurer) has what it bought or found, nothing more.
+      if (ctx.state?.honest) return "failed";
       inventory.adds(itemId, missing);
       return inventory.getAmount(itemId) >= amount ? "success" : "failed";
     },

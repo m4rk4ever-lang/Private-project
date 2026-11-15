@@ -124,6 +124,12 @@ Indeling per versie:
   opgeslagen. Quests zonder uitgewerkte playthrough worden gesimuleerd (ze gaan naar het begin
   van de quest, blijven daar een tijdje, en krijgen de normale beloning); dat staat er altijd bij.
   Af en toe doen ze iets samen: Wintertodt, of trainen op dezelfde plek.
+- **Avonturiers spelen eerlijk:** ze krijgen niets meer cadeau. Alle vijf zijn opnieuw begonnen
+  met alleen de spullen van Tutorial Island. Wapens, armour en tools kopen ze bij een echte
+  winkel in de wereld (met de echte voorraad en prijs, van hun eigen geld), food moeten ze zelf
+  hebben, en ze dragen alleen wat hun level en quests toestaan (rune platebody pas na Dragon
+  Slayer I). Hun geld verdienen ze door wat ze verzamelen te verkopen. Aankopen staan in het
+  logboek. Zelf maken (smithing, fletching, koken) en loot oppakken volgen nog.
 - **Bots verspreiden zich:** een plek waar al bots zijn, wordt minder vaak gekozen, en de meeste
   bots gaan bij het opstarten meteen naar een plek waar hun klus kan, in plaats van allemaal
   naar de dichtstbijzijnde mijn of boom. De trek naar de eigen hub is zwakker.

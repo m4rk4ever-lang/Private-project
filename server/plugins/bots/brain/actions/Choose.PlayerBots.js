@@ -30,7 +30,9 @@ function createChooseAction(spec, compileAction) {
       const bot = stateFor(ctx.player);
       if (!bot.option) {
         let roll = Math.random() * totalWeight;
-        bot.option = options.find((option) => (roll -= option.weight) < 0) ?? options[options.length - 1];
+        // An honest bot (an adventurer) sells its produce: that is its income.
+        const selling = ctx.state?.honest ? options.find((option) => option.actions.some((step) => step.id === "sellItems")) : null;
+        bot.option = selling ?? options.find((option) => (roll -= option.weight) < 0) ?? options[options.length - 1];
         bot.index = 0;
       }
       const step = current(bot);

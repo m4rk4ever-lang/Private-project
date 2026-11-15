@@ -151,7 +151,8 @@ function createWintertodtAction(spec = {}, world = {}) {
           load: load[0] + Math.floor(random() * (load[1] - load[0] + 1)),
           walkStarted: 0,
         };
-        packUp(player, wt);
+        // An honest bot (an adventurer) brings what it has.
+        if (!state.honest) packUp(player, wt);
       }
       const bot = state.wintertodt;
       // Busy chopping, feeding, lighting or fixing: the plugin's own action runs.

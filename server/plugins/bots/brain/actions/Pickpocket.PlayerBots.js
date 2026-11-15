@@ -80,12 +80,14 @@ function createPickpocketAction(spec = {}, world = {}) {
     return count;
   }
 
-  function eatIfHurt(player) {
+  function eatIfHurt(player, honest = false) {
     const max = player.getSkillManager?.()?.getMaxLevel?.(world.core.Skill.HITPOINTS) ?? 10;
     if (player.getHitpoints() / Math.max(1, max) >= LOW_HITPOINTS) return false;
     const id = foodId();
     const inventory = player.getInventory();
     if (!Number.isInteger(id) || inventory.getAmount(id) <= 0) {
+      // An honest bot (an adventurer) eats only what it carries.
+      if (honest) return false;
       inventory.add(new world.core.Item(id, spec.foodAmount ?? FOOD.amount));
     }
     inventory.delete(id, 1);
@@ -103,7 +105,7 @@ function createPickpocketAction(spec = {}, world = {}) {
       const bot = (state.pickpocket ??= { nextAt: 0, walkStarted: 0 });
       if (nowMs < bot.nextAt) return "running";
       if (player.getTimers?.()?.getTicks?.(world.core.TimerKey?.STUN) > 0) return "running";
-      if (eatIfHurt(player)) {
+      if (eatIfHurt(player, state.honest === true)) {
         bot.nextAt = nowMs + ATTEMPT_MS;
         return "running";
       }

@@ -188,6 +188,8 @@ function createTrainCombatAction(spec, world) {
   }
 
   function prepare(player, state) {
+    // An honest bot (an adventurer) fights in what it owns and eats what it carries.
+    if (state?.honest) return false;
     let changed = false;
     const equipment = player.getEquipment();
     const manager = player.getSkillManager();
@@ -543,7 +545,7 @@ function createTrainCombatAction(spec, world) {
       // Food and runes are provisioned for training only: take them back, so a bot
       // switching to skilling has a free inventory (the next fight re-provisions).
       const inventory = ctx.player.getInventory?.();
-      for (const itemId of [...allFoodIds, ...(bot.runeIds ?? [])]) {
+      for (const itemId of ctx.state?.honest ? [] : [...allFoodIds, ...(bot.runeIds ?? [])]) {
         const amount = inventory?.getAmount(itemId) ?? 0;
         if (amount > 0) inventory.deleteNumber?.(itemId, amount);
       }
