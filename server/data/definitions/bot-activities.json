@@ -342,6 +342,8 @@
     },
     {"id":"pvp","mode":"pvp","capacity":64,"repeat":true,"failureCooldownSeconds":5,"actions":[{"type":"pvpCombat"}]},
     {"id":"pvp_engage","mode":"pvp","capacity":64,"repeat":false,"ephemeral":true,"failureCooldownSeconds":5,"actions":[{"type":"pvpCombat","exitWhenIdle":true}]},
+    {"id":"ge_trading","mode":"trading","capacity":256,"repeat":true,"failureCooldownSeconds":5,"fields":{"level":1},"actions":[{"type":"bankStand","trade":true,"radius":6}]},
+    {"id":"bank_skilling","mode":"bankskilling","capacity":256,"repeat":true,"failureCooldownSeconds":5,"fields":{"level":1},"actions":[{"type":"bankStand","radius":5}]},
     {"id":"wintertodt","mode":"minigame","capacity":64,"repeat":true,"failureCooldownSeconds":5,"actions":[{"type":"wintertodt"}]},
     {"id":"bankstand","mode":"bankstanding","capacity":1024,"repeat":true,"failureCooldownSeconds":5,"actions":[{"type":"bankStand"}]},
     {"id":"roam","mode":"roaming","capacity":1024,"repeat":true,"failureCooldownSeconds":5,"actions":[{"type":"wander"}]},

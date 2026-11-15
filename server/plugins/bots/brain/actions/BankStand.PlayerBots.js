@@ -10,6 +10,9 @@
  *
  * This shows the activity; it does not make products or give XP yet. That comes when the bot
  * uses the skill plugins (item on item) itself.
+ *
+ * With `trade` the bot is a trader at the Grand Exchange instead: it stands by the booths and
+ * clerks, now and then steps to another spot, as players waiting on offers do.
  */
 /** The bots' walking (loaded on first use, so the unit loads without the server's classes). */
 function walk(player, x, y, options) {
@@ -29,6 +32,8 @@ const STEP_MS = 1800;
 const BANK_PAUSE_EVERY = 14;
 const BANK_PAUSE_MS = [3000, 7000];
 const WALK_TIMEOUT_MS = 15_000;
+/** A trader moves to another spot every so often. */
+const TRADE_MOVE_MS = [60_000, 180_000];
 
 function randomInt(min, max, random) {
   return min + Math.floor(random() * (max - min + 1));
@@ -90,6 +95,13 @@ function createBankStandAction(spec = {}, world = {}) {
         return "running";
       }
       if (nowMs < stand.nextAt) return "running";
+      if (spec.trade) {
+        // Waiting on offers: stand, and after a while find another spot nearby.
+        if (stand.steps > 0) start(player, state, nowMs);
+        state.bankStand.steps = 1;
+        state.bankStand.nextAt = nowMs + randomInt(TRADE_MOVE_MS[0], TRADE_MOVE_MS[1], random);
+        return "running";
+      }
       const id = animationFor(stand.craft.animation);
       if (Number.isInteger(id) && world.core?.Animation) player.performAnimation(new world.core.Animation(id));
       stand.steps += 1;

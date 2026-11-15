@@ -44,3 +44,18 @@ test("bank standing plays the craft's animation again and again, with pauses", (
   action.stop({ state });
   assert.equal(state.bankStand, null);
 });
+
+test("a trader stands still and only now and then moves to another spot", () => {
+  const player = bot({});
+  const walks = [];
+  const action = createBankStandAction({ trade: true, radius: 6 }, { core, random: () => 0.5, requestMovement: (p, x, y) => walks.push({ x, y }) });
+  const state = { home: { x: 3164, y: 3486, z: 0 } };
+  let now = 0;
+  for (let i = 0; i < 100; i++) {
+    action.update({ player, state, nowMs: now });
+    now += 1800;
+  }
+  // 180 seconds: the first spot, then one or two moves; never an animation.
+  assert.ok(walks.length >= 2 && walks.length <= 4, String(walks.length));
+  assert.equal(player.animations.length, 0);
+});

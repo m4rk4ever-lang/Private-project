@@ -186,7 +186,13 @@ function createTravel({
         const hangouts = hangoutsFor(combatLevel, here);
         if (hangouts.length > 0) place = { ...pickWeighted(hangouts, random), hangout: true };
       }
-      if (place) place.activity = place.bankstand && random() < bankstandChance ? "bankstand" : "roam";
+      if (place?.activities) {
+        // A place says what bots do there (the Grand Exchange: mostly trading and bank standing).
+        const options = Object.entries(place.activities).map(([id, weight]) => ({ id, weight }));
+        place.activity = pickWeighted(options, random).id;
+      } else if (place) {
+        place.activity = place.bankstand && random() < bankstandChance ? "bankstand" : "roam";
+      }
     }
     if (!place) {
       const options = destinationsFor(mode, level, here);

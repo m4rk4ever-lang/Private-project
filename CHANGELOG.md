@@ -116,6 +116,10 @@ Indeling per versie:
   Tithe Farm, Mage Training Arena, en in combat-gear bij Castle Wars, Soul Wars, Pest Control,
   Barbarian Assault, Nightmare Zone en Shades of Mort'ton. Waar al bots zijn, komen er meer bij.
   Ze blijven in de lobby, bij Wintertodt in de veilige gang. Echt meespelen volgt per minigame.
+- **Grand Exchange als handelsplek:** de bots bij de GE lopen geen rondjes meer. Het is nu een
+  mix van alle levels die staan te handelen (wachten op hun offers en af en toe een plek
+  verder schuiven) en aan het bankstanden zijn. Bots die naar de GE reizen, doen meestal
+  hetzelfde.
 - **Bots praten:** in de buurt van een speler zegt een bot af en toe iets dat past bij waar hij
   is en wat hij doet: handelspraat bij de GE, "Light the brazier!" bij Wintertodt, "Rock stolen
   lol" in een mijn. Na een eigen level-up meldt een bot dat soms, zeg je "hi" dan groet een bot

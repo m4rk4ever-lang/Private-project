@@ -171,18 +171,22 @@
           25
         ],
         "bots": {
-          "combat_training": {
-            "experts": 6,
-            "maxed": 8
+          "trading": {
+            "novices": 2,
+            "intermediates": 3,
+            "advanced": 3,
+            "experts": 3,
+            "masters": 2,
+            "legends": 1,
+            "maxed": 2
           },
-          "woodcutting": {
-            "maxed": 4
-          },
-          "mining": {
-            "maxed": 4
-          },
-          "fishing": {
-            "maxed": 4
+          "bankskilling": {
+            "intermediates": 2,
+            "advanced": 3,
+            "experts": 3,
+            "masters": 2,
+            "legends": 1,
+            "maxed": 1
           }
         }
       }

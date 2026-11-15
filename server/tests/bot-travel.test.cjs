@@ -162,7 +162,8 @@ test("at a busy bank a bot may stand and craft instead of walking around", () =>
   const travel = createTravel({ core, random: () => 0, chance: 1, hangoutChance: 1, ownHubChance: 1, minigameChance: 0, bankstandChance: 1 });
   const place = travel(player, {}, { mode: "woodcutting" }, 0);
   assert.equal(place.hangout, true);
-  assert.equal(place.activity, place.bankstand ? "bankstand" : "roam");
+  if (place.activities) assert.ok(Object.keys(place.activities).includes(place.activity));
+  else assert.equal(place.activity, place.bankstand ? "bankstand" : "roam");
   assert.ok(data.hangouts.some((hangout) => hangout.bankstand && hangout.id === "grand_exchange"));
 });
 
@@ -225,4 +226,14 @@ test("company draws company, and a full lobby takes no more", () => {
 
 test("a low-level bot never ends up in a raid or boss lobby", () => {
   for (const place of hangoutsFor(40, null)) assert.ok(!place.combatGear, place.id);
+});
+
+test("at the Grand Exchange bots mostly trade and bank stand", () => {
+  const ge = data.hangouts.find((hangout) => hangout.id === "grand_exchange");
+  const weights = ge.activities;
+  assert.ok(weights.ge_trading + weights.bankstand > 0.8 * Object.values(weights).reduce((a, b) => a + b, 0));
+  const ids = require("../data/definitions/bot-activities.json").activities.map((activity) => activity.id);
+  for (const hangout of data.hangouts) {
+    for (const id of Object.keys(hangout.activities ?? {})) assert.ok(ids.includes(id), `${hangout.id}: ${id}`);
+  }
 });
