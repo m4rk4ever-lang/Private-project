@@ -30,6 +30,14 @@ const LOG_ATTRIBUTE = "adventurers:journal";
 const GOAL_ATTRIBUTE = "adventurers:goal";
 /** Which start an adventurer belongs to; a lower one than data.generation starts it over. */
 const GENERATION_ATTRIBUTE = "adventurers:generation";
+/**
+ * Its current job ({ kind, mode, skill, reason, style, bossId, activity, remainingMs, savedAt }),
+ * one record that is overwritten, never appended: when a job starts and every TASK_SAVE_MS while
+ * it runs. After a restart it takes the job up again with the time it had left.
+ */
+const TASK_ATTRIBUTE = "adventurers:task";
+const TASK_SAVE_MS = 3 * 60_000;
+const Tasks = require("./Tasks.PlayerBots");
 const Shopping = require("./Shopping.PlayerBots");
 const Trade = require("./Trade.PlayerBots");
 const Slayer = require("./Slayer.PlayerBots");
@@ -571,6 +579,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       return;
     }
     entry.group = false;
+    if (entry.savedTask && resumeTask(entry, nowMs)) {
+      entry.idleReason = null;
+      return;
+    }
     if (random() < (data.groupChance ?? 0.3) && startGroup(entry, nowMs)) return;
     const view = snapshot(entry.player);
     // What the others are doing now, so they spread over the skills instead of all mining.
@@ -724,6 +736,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       }
       // A full bag ends the stretch: off to sell (trade()), as a player banks or sells.
       if (nowMs >= entry.until || (entry.phase === "training" && entry.player.getInventory().getFreeSlots() === 0)) next(entry, nowMs);
+      rememberTask(entry, nowMs);
     }
   }
 
@@ -748,6 +761,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     player.setAttribute(QuestRuntime.QUEST_POINTS_ATTRIBUTE, 0);
     player.setAttribute(LOG_ATTRIBUTE, []);
     player.setAttribute(GOAL_ATTRIBUTE, null);
+    player.setAttribute(TASK_ATTRIBUTE, null);
     // What every new account gets on Tutorial Island.
     for (const [name, amount] of Shopping.gear.starterKit) {
       const id = Shopping.idOf(core, name);
@@ -1277,7 +1291,47 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         state.adventurer = true;
       }
       if (Number(bot.getAttribute(GENERATION_ATTRIBUTE) ?? 0) < (data.generation ?? 1)) startOver(bot);
+      adventurers.get(name).savedTask = Tasks.freshTask(bot.getAttribute?.(TASK_ATTRIBUTE), Date.now());
     }
+  }
+
+  /**
+   * Overwrites its saved job: at once for a new job, else at most every TASK_SAVE_MS. The save is
+   * written to disk too, so a server that is killed (not stopped) loses at most that much.
+   */
+  function rememberTask(entry, nowMs) {
+    const fresh = entry.plan !== entry.savedPlan;
+    if (!fresh && nowMs - (entry.taskSavedAt ?? 0) < TASK_SAVE_MS) return;
+    const record = Tasks.taskRecord(entry, nowMs, Date.now());
+    if (!record) return;
+    entry.savedPlan = entry.plan;
+    entry.taskSavedAt = nowMs;
+    entry.player.setAttribute(TASK_ATTRIBUTE, record);
+    try {
+      const persistence = core.GameConstants?.PLAYER_PERSISTENCE;
+      (persistence?.requestSave ?? persistence?.save)?.call(persistence, entry.player, "adventurer-task");
+    } catch (error) {
+      world.log?.("adventurer_task_save_failed", { name: entry.name, error: String(error?.message ?? error) });
+    }
+  }
+
+  /** After a restart: the saved job again, for the time it had left. False when it cannot. */
+  function resumeTask(entry, nowMs) {
+    const task = entry.savedTask;
+    entry.savedTask = null;
+    const plan = Tasks.planOf(task, data.bosses ?? []);
+    if (!plan) return false;
+    const started = plan.kind === "boss" ? startBoss(entry, plan, nowMs) : startTraining(entry, plan, nowMs);
+    if (!started) return false;
+    // An errand first (food, a tool, its supplies from the bank): the job waits until it is back.
+    if (entry.phase !== "training" && entry.phase !== "boss") {
+      if ((task.tries = (task.tries ?? 0) + 1) < 3) entry.savedTask = task;
+      return true;
+    }
+    // The same job, for what was left of it.
+    entry.until = nowMs + Tasks.resumeMs(task);
+    note(entry.player, `Pakt na de herstart zijn klus weer op: ${String(task.activity ?? plan.mode ?? "").replace(/_/g, " ")}.`, "activity");
+    return true;
   }
 
   function onLevelUp({ player, skill, newLevel }) {
@@ -1415,6 +1469,7 @@ function startAdventurers({ api, runtime, world, registry }) {
   api.persistAttribute(LOG_ATTRIBUTE, []);
   api.persistAttribute(GENERATION_ATTRIBUTE, 0);
   api.persistAttribute(GOAL_ATTRIBUTE, null);
+  api.persistAttribute(TASK_ATTRIBUTE, null);
   const manager = createAdventurers({ api, runtime, world, registry });
   api.onPlayerLevelUp(manager.onLevelUp);
   api.onCustomEvent("npc-drops:roll", manager.onDrops);
@@ -1462,4 +1517,4 @@ function startAdventurers({ api, runtime, world, registry }) {
   return manager;
 }
 
-module.exports = { createAdventurers, startAdventurers, unpackCoord, LOG_ATTRIBUTE };
+module.exports = { createAdventurers, startAdventurers, unpackCoord, LOG_ATTRIBUTE, TASK_ATTRIBUTE };

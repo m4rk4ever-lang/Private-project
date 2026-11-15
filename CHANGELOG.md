@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Avonturiers onthouden hun lopende klus: bij het begin van een klus en daarna elke 3 minuten wordt één regel per avonturier overschreven (wat, waarom, hoe lang nog) en opgeslagen. Na een herstart pakken ze die klus weer op voor de tijd die nog over was, in plaats van opnieuw te beginnen. Een opgeslagen klus van meer dan 6 uur oud vervalt.
 - Drie clans racen tegen elkaar, elk met 5 avonturiers: de Jorg Clan (leider Bekoek, met Jorgbot 1 t/m 4), de Patrick Clan (leider Slayed Soul, met Eeshwar en Patrickbot 1 t/m 3) en de Mark Clan (leider Call me Mark, met Kram539 en Markbot 1 t/m 3). De leider sticht de clan in het spel; de anderen worden lid. Alle 15 zijn te volgen met `::volg` en staan op de avonturierspagina, met bovenaan een clanrace (score, totaal level en bezit per clan).
 - Clangenoten geven elkaar materialen die ze echt over hebben: wie logs, staven of edelstenen nodig heeft om te trainen, krijgt die eerst uit de bank van een clangenoot (die houdt zelf 500 achter) voordat hij gaat kopen. Beide dagboeken melden het.
 - Avonturiers doen Slayer: ze lopen naar Turael (Burthorpe) of Spria (Draynor), krijgen een echte taak en vechten alleen tegen de monsters die meetellen, op de dichtstbijzijnde plek waar dat kan. Is de taak klaar, dan halen ze een nieuwe of doen iets anders. Taken in de Wilderness, in dungeons of met een afmaak-item (zoals ijskoelers) laten ze voorlopig liggen.
