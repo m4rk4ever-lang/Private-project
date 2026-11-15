@@ -116,6 +116,8 @@ Indeling per versie:
   Tithe Farm, Mage Training Arena, en in combat-gear bij Castle Wars, Soul Wars, Pest Control,
   Barbarian Assault, Nightmare Zone en Shades of Mort'ton. Waar al bots zijn, komen er meer bij.
   Ze blijven in de lobby, bij Wintertodt in de veilige gang. Echt meespelen volgt per minigame.
+- Bots lopen minder rondjes: rondhangen bij een bank, de GE of een lobby is nu een korte pauze
+  (2 tot 15 minuten) en gebeurt minder vaak. Daarna gaan ze weer aan het werk.
 - **Grand Exchange als handelsplek:** de bots bij de GE lopen geen rondjes meer. Het is nu een
   mix van alle levels die staan te handelen (wachten op hun offers en af en toe een plek
   verder schuiven) en aan het bankstanden zijn. Bots die naar de GE reizen, doen meestal

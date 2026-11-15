@@ -255,6 +255,8 @@ class BotBrain {
       ? this.registry?.byId?.get?.(place.activity ?? "roam") ?? this.registry?.byId?.get?.("roam")
       : null;
     this.pushRoot(stay ?? next, nowMs);
+    // A hangout stay is short (Travel's stayMinutes), then the rotation picks real work again.
+    if (stay && Number.isFinite(place?.stayMs)) this.switchAt = nowMs + place.stayMs;
   }
 
   startFrame(frame, nowMs) {

@@ -237,3 +237,15 @@ test("at the Grand Exchange bots mostly trade and bank stand", () => {
     for (const id of Object.keys(hangout.activities ?? {})) assert.ok(ids.includes(id), `${hangout.id}: ${id}`);
   }
 });
+
+test("a hangout is a short break: the bot goes back to work after a few minutes", () => {
+  const { core, player } = harness({ name: "Breaker" });
+  const travel = createTravel({ core, random: () => 0, chance: 1, hangoutChance: 1, ownHubChance: 1, minigameChance: 0, bankstandChance: 0 });
+  const place = travel(player, {}, { mode: "fishing" }, 0);
+  const [min, max] = data.stayMinutes[place.activity] ?? data.stayMinutes.roam;
+  assert.ok(place.stayMs >= min * 60_000 && place.stayMs <= max * 60_000, String(place.stayMs));
+  assert.ok(max <= 15, "nobody hangs around for a whole rotation");
+  // A destination for real work has no stay: the rotation's own switch time holds.
+  const work = createTravel({ core, random: () => 0, chance: 1, hangoutChance: 0, minigameChance: 0 })(player, {}, { mode: "fishing" }, 0);
+  assert.equal(work.stayMs, undefined);
+});

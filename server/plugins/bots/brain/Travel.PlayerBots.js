@@ -148,6 +148,10 @@ function createTravel({
   bankstandChance = data.bankstandChance ?? 0, minigameChance = data.minigameChance ?? 0,
   wear = null,
 } = {}) {
+  function stayFor(activityId) {
+    const [min, max] = data.stayMinutes?.[activityId] ?? data.stayMinutes?.roam ?? [3, 6];
+    return (min + random() * (max - min)) * 60_000;
+  }
   /** Who is at each minigame lobby now: game id -> usernames. */
   const attendance = new Map();
   function leaveMinigames(name) {
@@ -177,6 +181,7 @@ function createTravel({
         attendance.get(game.id).add(name);
         // `play`: the activity that plays the game (Wintertodt); else the bots wait in the lobby.
         place = { ...game, hangout: true, minigame: game.id, activity: game.play ?? "roam" };
+        if (!game.play) place.stayMs = stayFor("roam");
       }
     }
     if (!place && random() < hangoutChance) {
@@ -193,6 +198,8 @@ function createTravel({
       } else if (place) {
         place.activity = place.bankstand && random() < bankstandChance ? "bankstand" : "roam";
       }
+      // A hangout is a break between jobs, not a new job: the bot goes back to work after a while.
+      if (place) place.stayMs = stayFor(place.activity);
     }
     if (!place) {
       const options = destinationsFor(mode, level, here);
