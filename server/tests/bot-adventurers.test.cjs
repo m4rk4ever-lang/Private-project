@@ -10,9 +10,9 @@ function adventurer(levels = {}, extra = {}) {
   return { levels: { WOODCUTTING: 1, MINING: 1, FISHING: 1, THIEVING: 1, FIREMAKING: 1, ...levels }, combat: 3, questPoints: 0, done: new Set(), ...extra };
 }
 
-test("the quest path names real requirements, five adventurers with short names", () => {
+test("the quest path names real requirements, five adventurers with valid names", () => {
   assert.equal(data.names.length, 5);
-  for (const name of data.names) assert.ok(name.length <= 12, name);
+  for (const name of data.names) assert.match(name, /^[A-Za-z0-9 ]{1,12}$/, name);
   const names = new Set(data.quests.map((quest) => quest.name));
   for (const quest of data.quests) {
     for (const skill of Object.keys(quest.skills ?? {})) assert.match(skill, /^[A-Z]+$/, quest.name);

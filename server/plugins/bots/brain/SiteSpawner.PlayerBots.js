@@ -9,6 +9,7 @@ const { SkillManager } = require("../../../src/main/typescript/elvarg/game/conte
 const { Flag } = require("../../../src/main/typescript/elvarg/game/model/Flag");
 const { Item } = require("../../../src/main/typescript/elvarg/game/model/Item");
 const { Equipment } = require("../../../src/main/typescript/elvarg/game/model/container/impl/Equipment");
+const { assignIronMode } = require("./Ironmen.PlayerBots");
 const { ItemIdentifiers } = require("../../../src/main/typescript/elvarg/util/ItemIdentifiers");
 
 /**
@@ -315,6 +316,8 @@ function startBotSites(options = {}) {
       return false;
     }
     applyLevels(bot, site.levels);
+    // Some are Ironmen, Ultimates or Hardcores (Ironmen.PlayerBots.js).
+    assignIronMode(bot);
     applyOutfit(bot, site.outfit ?? outfitTier(site.levels), { mode: activity.mode });
     return attachBrain({
       runtime,

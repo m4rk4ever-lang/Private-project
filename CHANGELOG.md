@@ -118,7 +118,7 @@ Indeling per versie:
   Ze blijven in de lobby, bij Wintertodt in de veilige gang. Echt meespelen volgt per minigame.
 - Bots lopen minder rondjes: rondhangen bij een bank, de GE of een lobby is nu een korte pauze
   (2 tot 15 minuten) en gebeurt minder vaak. Daarna gaan ze weer aan het werk.
-- **Vijf avonturiers:** Sjors, Fenna, Daantje, Lotte en Joep beginnen als nieuw account in
+- **Vijf avonturiers:** Eeshwar, Call me Mark, Bekoek, Slayed Soul en Kram539 beginnen als nieuw account in
   Lumbridge en spelen zelf verder. Ze trainen naar de quests op hun pad (45 quests, van Cook's
   Assistant tot Dragon Slayer I), voltooien die en houden een logboek bij. Hun voortgang wordt
   opgeslagen. Quests zonder uitgewerkte playthrough worden gesimuleerd (ze gaan naar het begin
@@ -128,6 +128,11 @@ Indeling per versie:
   avonturier levels, combat, totaal, questpunten, wat hij doet en waar hij is, met logboeken
   voor skills, quests, bosses, drops (vanaf 10k) en activiteit. Ververst elke 5 seconden.
   In het spel: `::adventurers` voor een overzicht en `::adventurer <naam>` om erheen te gaan.
+- **Ironmen tussen de bots:** ongeveer 1 op de 10 bots is Ironman, 3 op de 100 Ultimate en 5 op de
+  100 Hardcore, met het icoontje bij hun naam. Hardcores kunnen sterven: af en toe overleeft
+  een vechtende Hardcore-bot een klap niet en wordt hij een gewone Ironman. Elke Hardcore-dood
+  (van een bot of een speler) wordt aan iedereen gemeld: "... has died as a Hardcore Ironman
+  with a total level of ...". De avonturiers zijn gewone accounts.
 - **Pickpocketen:** thieving-bots pickpocketen ook: men en women in Lumbridge, guards,
   knights of Ardougne, paladins en heroes in Ardougne. Ze wachten een stun uit, openen hun coin
   pouches en eten als ze geraakt zijn.

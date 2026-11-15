@@ -1,6 +1,7 @@
 const path = require("path");
 const { startChatter } = require("./brain/Chatter.PlayerBots");
 const { startAdventurers } = require("./adventurers/Adventurers.PlayerBots");
+const { startIronmen } = require("./brain/Ironmen.PlayerBots");
 const { initPvpTierLoadouts } = require("./behaviours/pvp/PvpTierLoadouts.PlayerBots");
 const { GameConstants } = require("../../src/main/typescript/elvarg/game/GameConstants");
 const { Wilderness } = require("../../src/main/typescript/elvarg/game/content/wilderness/Wilderness");
@@ -281,6 +282,8 @@ module.exports = {
 
     // Bots talk in public chat where a player can see them (brain/Chatter.PlayerBots.js).
     startChatter(api, boot.runtime);
+    // Hardcore Ironman deaths announced to everyone, and now and then a Hardcore bot falls.
+    startIronmen(api, boot.runtime);
     // Five named bots that play the game for good, shown at /api/adventurers.
     startAdventurers({ api, runtime: boot.runtime, world: boot.brainWorld, registry: boot.brainRegistry });
 
