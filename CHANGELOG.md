@@ -93,6 +93,8 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Bots bleven soms minutenlang heen en weer lopen tussen twee punten (bijvoorbeeld bij de trap van het kasteel van Lumbridge): vlak bij het doel lieten ze hun route los, liepen tegen een muur en pakten een oude route van een andere bot die weer terugleidde. Nu volgen ze hun route tot het eind, en plannen ze vanaf hun eigen plek opnieuw als die doodloopt.
+- Een quest met een NPC op een andere verdieping lukt: de bot loopt zelf naar de juiste trap en klimt.
 - De Construction-plugin startte niet (een ontbrekende handler voor huisbezoek), waardoor huizen en house parties niet werkten.
 - Avonturiers proberen niet meer naar Wintertodt te lopen: dat ligt in Kourend en is alleen per boot bereikbaar.
 - Avonturiers kiezen geen bestemmingen meer die ze te voet niet kunnen bereiken, zoals Kourend (alleen per boot), Morytania (achter Priest in Peril), eilanden en dungeons zonder route ernaartoe.

@@ -83,13 +83,13 @@ function sweep(nowMs) {
 }
 
 /** A route toward `goal` this player can follow from where it stands; undefined = try later. */
-function routeFor(player, here, goal, nowMs) {
+function routeFor(player, here, goal, nowMs, { fresh = false } = {}) {
   sweep(nowMs);
   // Honest bots do not pass a toll gate (DoorOpening): their routes are planned and shared
   // apart, or one would follow a route through the gate and stand in front of it.
   const goalKey = areaKey(goal.x, goal.y, goal.z) + routeClass(player);
   const plans = (routesByGoal.get(goalKey) ?? []).filter((plan) => nowMs - plan.at < ROUTE_TTL_MS);
-  for (const plan of plans) {
+  for (const plan of fresh ? [] : plans) {
     // Join at the furthest nearby waypoint actually walkable from here: a near one
     // across a fence would skip the gate.
     for (let index = plan.waypoints.length - 1; index >= 0; index -= 1) {
@@ -143,8 +143,18 @@ function nextWaypoint(player, request, nowMs = Date.now()) {
   // hop that needs a long detour round a fence).
   const distance = chebyshev(here, goal);
   const straightFailed = Number(request.noPathAttempts ?? 0) > 0 && distance > WAYPOINT_ARRIVE_TILES;
-  if (goal.z !== here.z || (distance <= LONG_ROUTE_MIN_TILES && !straightFailed)) {
+  // A planned route is followed to its end, also close to the goal: let go near the goal, the
+  // straight walk ran into the castle wall, a cached route walked it back out, and the bot went to
+  // and fro between the two for minutes.
+  const following = request.route && request.route.index < request.route.waypoints.length;
+  if (goal.z !== here.z || (distance <= LONG_ROUTE_MIN_TILES && !straightFailed && !following)) {
     return null;
+  }
+  // The route is walked and the last stretch still has no straight path: plan afresh from here,
+  // not by joining another bot's cached route (it may come from the other side).
+  if (straightFailed && request.route && !following) {
+    request.route = undefined;
+    request.fresh = true;
   }
   // Too far to plan in one go: the walk goes hub to hub (TravelHubs), a planned leg at a time.
   // The hub it set out for stays the leg until it is reached: re-picked at every step, the leg
@@ -159,7 +169,7 @@ function nextWaypoint(player, request, nowMs = Date.now()) {
   }
   const target = leg ? { x: leg.x, y: leg.y, z: leg.z } : goal;
   if (request.route === undefined) {
-    const route = routeFor(player, here, target, nowMs);
+    const route = routeFor(player, here, target, nowMs, { fresh: request.fresh === true });
     if (route === undefined) {
       return null; // planning budget spent this tick: straight-line now, plan next dispatch
     }
