@@ -396,6 +396,7 @@ After changing a plugin's `description` or `config`, run `yarn --cwd server worl
 | Key | Type | Default | Description |
 | --- | --- | --- | --- |
 | `SaveBackups:keep` | number (>= 1) | `48` | **Backups kept.** How many backups of data/saves to keep; the oldest go first. One is made each hour something changed. |
+| `SaveBackups:pushWeekly` | boolean | `true` | **Push backups weekly.** Once every 7 days, store the newest backup on the repository's saves branch (only while the repository is private). |
 
 #### Plugin area `quests` (`pluginConfig`)
 
@@ -939,7 +940,7 @@ This table lists bundled plugins that have a description. The world config page 
 | `Autosave` | Autosave | persistence | yes | Saves every online player every few minutes, spreading the saves over ticks so a mass login does not stall the server. |
 | `IndexedDbPlayerPersistence` | IndexedDbPlayerPersistence | persistence | yes | Stores player saves and hashed passwords in the browser's IndexedDB when the server runs inside a browser host. Does nothing elsewhere. |
 | `JsonPlayerPersistence` | JsonPlayerPersistence | persistence | yes | Saves each character as a JSON file under data/saves/characters. Skipped when the server runs inside a browser host. |
-| `SaveBackups` | SaveBackups | persistence | yes | Copies data/saves to data/backups every hour and when the server stops, only when something changed, keeping the newest 48 copies. |
+| `SaveBackups` | SaveBackups | persistence | yes | Copies data/saves to data/backups every hour and when the server stops, only when something changed, keeping the newest 48 copies; weekly the newest goes to the repository's saves branch. |
 | `SaveEvents` | SaveEvents | persistence | yes | Requests an immediate player save after important events: quest completions, reward-shop purchases, valuable discards and valuable drops. |
 | `SqlitePlayerPersistence` | SqlitePlayerPersistence | persistence | yes | Saves players to a SQLite database (data/saves/players.sqlite) and can import older JSON character saves. |
 | `QuestHelper` | OfflineQuestHelper | quests | yes | Runs the offline Quest Helper, answering the client's quest-helper plugin messages from the player's varps and the cache. |

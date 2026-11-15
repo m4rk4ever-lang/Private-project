@@ -61,3 +61,12 @@ test("only the newest `keep` backups stay", () => {
   assert.equal(left.length, 3);
   assert.ok(left[0].startsWith("2026-11-15T14"), left[0]);
 });
+
+test("the weekly push is due a week after the last one, and retried a day after a failed try", () => {
+  const { pushDue, PUSH_EVERY_MS, PUSH_RETRY_MS } = SaveBackups._test;
+  const now = Date.UTC(2026, 10, 22);
+  assert.equal(pushDue(now, 0, 0), true, "never pushed");
+  assert.equal(pushDue(now, now - PUSH_EVERY_MS + 1000, 0), false, "pushed less than a week ago");
+  assert.equal(pushDue(now, now - PUSH_EVERY_MS, 0), true);
+  assert.equal(pushDue(now, 0, now - PUSH_RETRY_MS + 1000), false, "tried less than a day ago");
+});

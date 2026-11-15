@@ -15,7 +15,8 @@ Gratis zit er per maand 120 core-uur in: 60 uur op deze 2-core machine.
 
 **Bijwerken naar de nieuwste versie:** typ `update` in een terminal. Het spel stopt, de nieuwste
 versie wordt opgehaald en het spel start weer. Backups van alle saves staan in `server/data/backups`
-(elk uur, als er iets veranderd is).
+(elk uur, als er iets veranderd is). Eens per week gaat de nieuwste ook naar de branch `saves`
+op GitHub, zodat je saves blijven bestaan als de codespace verdwijnt (alleen bij een privé-repo).
 
 **Opnieuw starten:** open je codespace via github.com/codespaces. Het spel start vanzelf.
 Gestopt met `Ctrl+C`? Typ `yarn start` in de terminal.

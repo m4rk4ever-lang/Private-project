@@ -37,6 +37,10 @@ Indeling per versie:
 - **Automatische backups** van alle saves in `server/data/backups`: elk uur en bij het stoppen van
   de server, alleen als er iets veranderd is. De laatste 48 blijven bewaard
   (instelling `SaveBackups:keep`).
+- **Wekelijkse backup naar GitHub:** hoogstens eens per 7 dagen, zolang de server draait, gaat de
+  nieuwste backup naar de branch `saves` van de repo. Elke week een commit, dus oude versies blijven
+  terug te halen. Alleen als de repo privé is, want de saves bevatten wachtwoord-hashes.
+  Handmatig: `yarn saves:push`.
 
 - **Eigen naam: Realm of Eeshwar.** Wereldnaam, tabtitel, loginscherm, welkomstbericht en
   pluginlijst gebruiken de nieuwe naam in plaats van "Old School RuneScape" en "RSPS.app".

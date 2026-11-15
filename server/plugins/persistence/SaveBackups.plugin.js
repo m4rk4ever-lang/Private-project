@@ -4,6 +4,11 @@
  * something changed since the last copy. The newest `SaveBackups:keep` copies (48 by default,
  * two days of hourly copies) are kept.
  *
+ * Once a week (at most once every 7 days, checked hourly while the server runs: a codespace sleeps
+ * when idle, so a fixed day would be missed) the newest copy also goes to the repository's `saves`
+ * branch through scripts/push-saves.sh, which refuses while the repository is public. Turn this off
+ * with `SaveBackups:pushWeekly` false; push by hand with `yarn saves:push`.
+ *
  * The database is copied with VACUUM INTO, as the rollback and import scripts do, so a copy
  * taken while the server writes is still consistent. Restore by stopping the server and copying
  * a backup's files back into data/saves (players.sqlite and accounts.json together, see
@@ -13,8 +18,15 @@ const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const { DatabaseSync } = require("node:sqlite");
+const { spawn } = require("node:child_process");
 
 const KEEP_CONFIG = "SaveBackups:keep";
+const PUSH_CONFIG = "SaveBackups:pushWeekly";
+const PUSH_EVERY_MS = 7 * 24 * 60 * 60 * 1000;
+/** A failed push (a public repository, no network) is tried again a day later, not every hour. */
+const PUSH_RETRY_MS = 24 * 60 * 60 * 1000;
+const PUSH_STAMP_FILE = "last-push.txt";
+const PUSH_LOG_FILE = "push.log";
 const DEFAULT_KEEP = 48;
 const TICKS_PER_HOUR = 6000; // 0.6 s ticks
 const FINGERPRINT_FILE = "fingerprint.txt";
@@ -23,6 +35,7 @@ const DATABASE_FILE = "players.sqlite";
 const SKIPPED = /\.sqlite(-wal|-shm|-journal)?$|\.pid$|\.tmp$/;
 
 let api = null;
+let lastPushAttempt = 0;
 
 function savesDirectory() {
   return path.join(process.cwd(), "data", "saves");
@@ -123,11 +136,40 @@ function runBackup(reason) {
   }
 }
 
+/** Seconds-since-epoch of the last successful push (the script writes it), or 0. */
+function lastPushTime(root = backupsDirectory()) {
+  try {
+    return Number(fs.readFileSync(path.join(root, PUSH_STAMP_FILE), "utf8").trim()) * 1000 || 0;
+  } catch {
+    return 0;
+  }
+}
+
+/** Whether a weekly push is due: a week since the last one, and a day since the last attempt. */
+function pushDue(now = Date.now(), lastPush = lastPushTime(), lastAttempt = lastPushAttempt) {
+  return now - lastPush >= PUSH_EVERY_MS && now - lastAttempt >= PUSH_RETRY_MS;
+}
+
+function maybePushWeekly() {
+  if (api?.getPluginConfig?.(PUSH_CONFIG, true) === false || !pushDue()) return;
+  const script = path.resolve(process.cwd(), "..", "scripts", "push-saves.sh");
+  if (!fs.existsSync(script)) return;
+  lastPushAttempt = Date.now();
+  fs.mkdirSync(backupsDirectory(), { recursive: true });
+  const log = fs.openSync(path.join(backupsDirectory(), PUSH_LOG_FILE), "a");
+  const child = spawn("bash", [script], { cwd: path.dirname(path.dirname(script)), stdio: ["ignore", log, log], detached: true });
+  child.on("exit", (code) => console.info(`[backups] weekly push to the saves branch ${code === 0 ? "done" : `failed (see data/backups/${PUSH_LOG_FILE})`}`));
+  child.unref();
+}
+
 function startHourlyBackups() {
   const { Task, TaskManager } = api.core;
   TaskManager.submit(new (class extends Task {
     constructor() { super(TICKS_PER_HOUR, false); }
-    execute() { runBackup("hourly"); }
+    execute() {
+      runBackup("hourly");
+      maybePushWeekly();
+    }
   })());
 }
 
@@ -141,8 +183,12 @@ function init(pluginApi) {
 
 module.exports = {
   name: "SaveBackups",
-  description: "Copies data/saves to data/backups every hour and when the server stops, only when something changed, keeping the newest 48 copies.",
+  description: "Copies data/saves to data/backups every hour and when the server stops, only when something changed, keeping the newest 48 copies; weekly the newest goes to the repository's saves branch.",
   config: {
+    [PUSH_CONFIG]: {
+      type: "boolean", label: "Push backups weekly", default: true,
+      help: "Once every 7 days, store the newest backup on the repository's saves branch (only while the repository is private).",
+    },
     [KEEP_CONFIG]: {
       type: "number", label: "Backups kept", default: DEFAULT_KEEP, min: 1,
       help: "How many backups of data/saves to keep; the oldest go first. One is made each hour something changed.",
@@ -153,5 +199,5 @@ module.exports = {
     pluginApi.onServerStartup(startHourlyBackups);
     pluginApi.onServerShutdown(backupOnShutdown);
   },
-  _test: { backup, prune, stamp },
+  _test: { backup, prune, stamp, pushDue, PUSH_EVERY_MS, PUSH_RETRY_MS },
 };
