@@ -50,6 +50,8 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Opgelost
+- `update` stopte een gameserver die bleef hangen tijdens het afsluiten niet, waardoor poort
+  43594 bezet bleef. Hij wordt nu na 20 seconden geforceerd gestopt.
 - `update` stopt als laatste redmiddel alle node-processen van het spel zelf (server, client en
   hulpprocessen), ook als de poort niet aan een proces te koppelen is. Lukt het dan nog niet, dan
   laat het zien wat er draait.

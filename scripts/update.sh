@@ -32,6 +32,10 @@ for _ in $(seq 1 20); do
   sleep 1
 done
 if ports_busy; then
+  # A server that hangs while shutting down keeps its port: force the same processes.
+  for pattern in "scripts/local-panel.cjs" "nodemon" "elvarg/Server.ts" "craco.js start" "concurrently.*--names server,client"; do
+    $SUDO pkill -9 -f "$pattern" 2>/dev/null
+  done
   for pid in $(port_pids); do $SUDO kill -9 "$pid" 2>/dev/null; done
   sleep 2
 fi
@@ -66,8 +70,10 @@ game_pids() {
   for dir in /proc/[0-9]*; do
     pid=${dir#/proc/}
     case "$keep" in *" $pid "*) continue ;; esac
-    comm=$(cat "$dir/comm" 2>/dev/null) || continue
-    case "$comm" in node|yarn|tsx|npm|nodemon|concurrently|esbuild) ;; *) continue ;; esac
+    # The program from the command line: node renames its main thread ("MainThread"), so the
+    # process name (comm) does not say it is node.
+    exe=$(tr '\0' '\n' < "$dir/cmdline" 2>/dev/null | head -n 1) || continue
+    case "${exe##*/}" in node|yarn|tsx|npm|npx|nodemon|ts-node|concurrently|esbuild) ;; *) continue ;; esac
     cwd=$($SUDO readlink "$dir/cwd" 2>/dev/null) || continue
     case "$cwd" in "$repo"|"$repo"/*) echo "$pid" ;; esac
   done
