@@ -77,6 +77,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers wisselen weer tussen Attack, Strength en Defence: tussen gevechten zetten ze hun vechtstijl op de laagste van de drie. Daardoor groeien ze ook door naar sterkere monsters en blijven ze niet eindeloos op ratten en mannen in Lumbridge hangen (de plek hangt af van de laagste van de drie, en Defence bleef op 1 staan).
 - De avonturierspagina toont niet meer "Begint" terwijl een avonturier al bezig is: je ziet nu waar hij heen loopt en waarom (banken, kopen, verkopen, Slayer-taak, trainen), hoe lang al, of dat hij wacht op een GE-bod. Lukt het hem niet iets te starten, dan staat erbij wat hij probeerde.
 - Avonturiers nemen de spullen van hun vorige klus niet meer mee naar de volgende: liggen er 6 of meer vakjes aan logs, erts of vis in hun tas, dan banken ze die eerst, ook als het weinig waard is. Lukt de weg naar de bank niet, dan laten ze het goedkoopste vallen in plaats van met een volle tas verder te werken.
 - Avonturiers blijven niet meer hangen bij de tolpoort van Al Kharid. Ze betalen alleen als 10 gp kleingeld voor ze is (1.000 gp of meer op zak); anders lopen ze om via het pad naar Varrock. Plekken en banken achter de poort tellen voor hen als verder weg, dus ze kiezen ze minder snel.

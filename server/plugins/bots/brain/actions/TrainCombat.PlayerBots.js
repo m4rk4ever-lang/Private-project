@@ -238,6 +238,26 @@ function createTrainCombatAction(spec, world) {
     bot.targetHp = null;
   }
 
+  /**
+   * Melee trains the lowest of Attack, Strength and Defence: the weapon's accurate, aggressive or
+   * defensive style, as a player switches on the combat tab. Its weapon may lack that style (no
+   * defensive on some): then the next lowest it has. Done between fights, so it switches as the
+   * levels change.
+   */
+  function meleeStyleForLowest(player) {
+    const manager = player.getSkillManager();
+    const fightTypes = Object.values(player.getWeapon()?.getFightType?.() ?? {}).filter(Boolean);
+    const order = skills.map((skill, index) => ({ index, level: manager.getMaxLevel(skill) }))
+      .sort((a, b) => a.level - b.level || a.index - b.index);
+    for (const { index } of order) {
+      const fightType = fightTypes.find((type) => type?.getStyle?.() === styles[index]);
+      if (!fightType) continue;
+      if (player.getFightType?.() !== fightType) WeaponInterfaceManager.changeCombatStyle(player, fightType.getChildId());
+      return styles[index];
+    }
+    return null;
+  }
+
   function prepare(player, state) {
     // An honest bot (an adventurer) fights in what it owns and eats what it carries.
     if (state?.honest || isHonest(player)) {
@@ -245,6 +265,7 @@ function createTrainCombatAction(spec, world) {
       // in the bag for its scimitar): through the game's own equip. Its way of fighting is its
       // own choice (state.honestStyle: melee, a bow, or spells with its runes).
       wearOwnGear(player, core, state?.honestStyle ?? "melee");
+      if ((state?.honestStyle ?? "melee") === "melee") meleeStyleForLowest(player);
       return false;
     }
     let changed = false;
@@ -327,13 +348,7 @@ function createTrainCombatAction(spec, world) {
         }
       }
     }
-    if (style === "melee") {
-      const levels = skills.map((skill) => manager.getMaxLevel(skill));
-      const fightStyle = styles[levels.indexOf(Math.min(...levels))];
-      const fightType = Object.values(player.getWeapon()?.getFightType?.() ?? {})
-        .find((type) => type?.getStyle?.() === fightStyle);
-      if (fightType) WeaponInterfaceManager.changeCombatStyle(player, fightType.getChildId());
-    }
+    if (style === "melee") meleeStyleForLowest(player);
     // Match equipTool/ensureItem: simulated bots are provisioned, but earn XP
     // exclusively through the normal combat engine. Refill only between fights.
     const food = stageFoodIds.get(stageFor(player, state)?.id) ?? foodId;

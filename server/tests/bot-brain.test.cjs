@@ -3753,3 +3753,23 @@ test('a name only a league character is saved under is taken for a new AI bot', 
   for (const name of ['mainonly', 'leagueonly', 'online', 'rostered']) assert.equal(nameHeld(core, roster, name), true, name);
   assert.equal(nameHeld(core, roster, 'free'), false);
 });
+
+test('an honest melee trainer switches to the style of its lowest melee skill between fights', () => {
+  const s = trainingScene(5);
+  s.levels[Skill.ATTACK.getIndex()] = 12;
+  s.levels[Skill.STRENGTH.getIndex()] = 9;
+  s.levels[Skill.DEFENCE.getIndex()] = 7;
+  s.ctx.state = { honest: true, honestStyle: 'melee' };
+  s.world.core.ItemDefinition = { forId: () => ({ getName: () => 'Thing' }) };
+  s.world.core.ItemOnGroundManager = { ownedBy: () => [] };
+  const inventoryOf = s.player.getInventory;
+  s.player.getInventory = () => ({ ...inventoryOf(), getItems: () => [] });
+  const a = createTrainCombatAction(trainingSpec, s.world);
+  a.update(s.ctx);
+  assert.equal(s.changes.at(-1), 2, 'defensive for the lowest, Defence');
+  s.levels[Skill.DEFENCE.getIndex()] = 13;
+  s.kill(); s.ctx.nowMs += 5000; a.update(s.ctx);
+  s.ctx.nowMs += 5000; a.update(s.ctx);
+  assert.equal(s.changes.at(-1), 1, 'aggressive once Strength is lowest');
+  a.stop(s.ctx);
+});
