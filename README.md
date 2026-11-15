@@ -27,7 +27,8 @@ Typ deze in een terminal in de map van het project (in een codespace: `/workspac
 | Command | Wat het doet |
 | --- | --- |
 | `update` | Spel stoppen, nieuwste versie ophalen, zo nodig installeren en opnieuw starten (zelfde als `yarn update`) |
-| `yarn start` | Het spel starten: server en client samen. Stoppen met `Ctrl+C` |
+| `yarn start` | Het spel starten: server en client samen. Een spel dat nog draait, stopt eerst. Stoppen met `Ctrl+C` |
+| `yarn stop` | Een draaiend spel stoppen, ook uit een andere terminal |
 | `yarn server` | Alleen de gameserver starten |
 | `yarn client` | Alleen de browserclient starten |
 | `yarn start:prod` | Het spel starten in de snellere productie-versie (bouwen duurt eerst een paar minuten) |
