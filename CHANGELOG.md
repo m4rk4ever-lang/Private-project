@@ -63,6 +63,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Opgelost
+- Zakkenrollende bots bleven aan de verkeerde kant van een muur of heg staan bij een doelwit dat ze niet konden bereiken. Zo'n doelwit slaan ze nu een minuut over en ze kiezen er een die wel bereikbaar is.
 - Avonturiers kregen nog op drie manieren iets wat ze niet verdienden: een PvP-uitrusting als ze niets aan hadden (de iron scimitar na een reset), coins voor tolpoorten, en het geld van GE-verkopen uit hun vorige start. Alle drie zijn dicht, en de avonturiers beginnen daarom nog één keer opnieuw. Ze hebben nu ook een eigen tinderbox nodig om vuur te maken.
 - Krijgt een avonturier toch een draagbaar item zonder koop, vondst of eigen werk, dan staat er 'Onverklaard' in zijn dagboek en in de serverlog, zodat de oorzaak gevonden kan worden.
 - Avonturiers stonden soms minutenlang stil: als een keuze niet kon starten (geen gereedschap in de buurt te koop) wachtten ze een minuut. Nu kiezen ze meteen iets anders, en wie twee minuten geen XP haalt en niet beweegt, kiest ook iets anders.

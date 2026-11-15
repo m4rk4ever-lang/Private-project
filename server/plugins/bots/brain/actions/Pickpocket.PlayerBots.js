@@ -19,6 +19,8 @@ const LOW_HITPOINTS = 0.5;
 const FOOD = { name: "CAKE", heal: 4, amount: 10 };
 const EAT_ANIMATION = 829;
 const ATTEMPT_MS = 1800;
+/** A target it could not get to is passed over this long. */
+const AVOID_MS = 60_000;
 
 function thieving() {
   return require("../../../skills/thieving/Pickpocket.Thieving");
@@ -45,17 +47,41 @@ function createPickpocketAction(spec = {}, world = {}) {
     return world.foodId ?? require("../../../../src/main/typescript/elvarg/util/ItemIdentifiers").ItemIdentifiers[spec.food ?? FOOD.name];
   }
 
-  function nearestTarget(player) {
+  // Targets behind a wall, a hedge or a fence (a man on the other side of Lumbridge's castle
+  // wall) are passed over for a while: it walked at them and got no closer.
+  const avoided = new WeakMap();
+  let routeFinder = null;
+  function reachable(player, npc) {
+    const core = world.core;
+    if (!core?.RsmodRouteFinding) return true;
+    routeFinder ??= new core.RsmodRouteFinding();
+    const from = player.getLocation();
+    const to = npc.getLocation();
+    if (from.getZ() !== to.getZ()) return false;
+    const route = routeFinder.findRoute({
+      level: from.getZ(), srcX: from.getX(), srcY: from.getY(), srcSize: 1,
+      destX: to.getX(), destY: to.getY(), destWidth: 1, destLength: 1, locAngle: 0, locShape: -2,
+      moveNear: false, blockAccessFlags: 0, maxWaypoints: 25, privateArea: player.getPrivateArea?.() ?? null,
+    });
+    return route.success === true;
+  }
+
+  function nearestTarget(player, nowMs = Date.now()) {
     const here = player.getLocation();
     let best = null;
     let bestDistance = Infinity;
     for (const npc of player.getLocalNpcs?.() ?? []) {
       if (!npc || npc.isRegistered?.() === false || !names.has(nameOf(npc).toLowerCase())) continue;
+      if ((avoided.get(npc) ?? 0) > nowMs) continue;
       const distance = chebyshev(npc.getLocation(), here);
       if (distance <= SEARCH_TILES && distance < bestDistance) {
         best = npc;
         bestDistance = distance;
       }
+    }
+    if (best && !reachable(player, best)) {
+      avoided.set(best, nowMs + AVOID_MS);
+      return null;
     }
     return best;
   }
@@ -112,7 +138,7 @@ function createPickpocketAction(spec = {}, world = {}) {
         return "running";
       }
       if (pouchCount(player) >= POUCH_OPEN_AT) openPouches(player);
-      const npc = nearestTarget(player);
+      const npc = nearestTarget(player, nowMs);
       if (!npc) {
         // None here: walk the home area until one comes into view.
         if (state.home && nowMs - bot.walkStarted > WALK_TIMEOUT_MS) {
@@ -124,6 +150,13 @@ function createPickpocketAction(spec = {}, world = {}) {
       }
       if (chebyshev(npc.getLocation(), player.getLocation()) > 1) {
         if (player.getMovementQueue?.()?.size?.() > 0 && nowMs - bot.walkStarted < WALK_TIMEOUT_MS) return "running";
+        // Walked at this one before and still not next to it: something is in the way.
+        if (bot.target === npc && nowMs - bot.walkStarted >= WALK_TIMEOUT_MS) {
+          avoided.set(npc, nowMs + AVOID_MS);
+          bot.target = null;
+          return "running";
+        }
+        bot.target = npc;
         bot.walkStarted = nowMs;
         move(player, npc.getLocation().getX(), npc.getLocation().getY(), { reason: "brain_pickpocket", basicPather: true, z: npc.getLocation().getZ() });
         return "running";
