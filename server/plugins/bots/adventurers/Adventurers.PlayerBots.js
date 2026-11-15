@@ -261,6 +261,12 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return runtime.entriesByUsername?.get?.(player.getUsername?.());
   }
 
+  const BLOCKED_MS = 15 * 60_000;
+  const placeKey = (to) => `${to.x},${to.y},${to.z ?? 0}`;
+  function blockedPlace(entry, to) {
+    return (entry?.blockedPlaces?.get(placeKey(to)) ?? 0) > now();
+  }
+
   function placeName(to) {
     return String(to.name ?? to.id ?? `${to.x}, ${to.y}`).replace(/_/g, " ");
   }
@@ -270,9 +276,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * looks again once it is there (after a sale or a purchase); without it the job it started
    * goes on (a walk to the trees is part of the stretch). False when it cannot go now.
    */
-  function walkTo(entry, to, { reason, arrive = () => {}, replan = true, say = true } = {}) {
+  function walkTo(entry, to, { reason, arrive = () => {}, replan = true, say = true, urgent = false } = {}) {
     const run = runtimeEntry(entry.player);
-    if (!run || errands.busy(entry.player) || (replan && (entry.noErrandUntil ?? 0) > now())) return false;
+    // `urgent`: a full bag to bank goes even while other errands rest after a failed one.
+    if (!run || errands.busy(entry.player) || (replan && !urgent && (entry.noErrandUntil ?? 0) > now())) return false;
+    if (blockedPlace(entry, to)) return false;
     const started = errands.go(run, to, {
       reason,
       arrive: (player) => {
@@ -284,8 +292,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       },
       fail: (player) => {
         note(player, `Kwam niet bij ${placeName(to)}: de weg was versperd.`, "activity");
+        // That place is out for a while; the next bank or shop is still fine.
+        (entry.blockedPlaces ??= new Map()).set(placeKey(to), now() + BLOCKED_MS);
         if (replan) {
-          entry.noErrandUntil = now() + 10 * 60_000;
+          if (!["bank", "exchange"].includes(reason)) entry.noErrandUntil = now() + 10 * 60_000;
           entry.until = 0;
         }
       },
@@ -522,9 +532,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
     // Errands first, each a walk; the planner looks again when it is back.
     if (trade(entry) || upgrade(entry)) return;
-    // No bank or exchange to walk to now (the road was blocked): it does not start a new job
-    // with a full bag, it drops the cheapest of the last job's things, as a player does.
-    clearBag(entry.player);
+    // A full bag and no bank or exchange it can reach now (every road it tried was blocked):
+    // it weighs it up. Cheap things go; what is worth the walk stays and it tries a bank again
+    // shortly instead of starting a new job with a full bag.
+    if (!clearBag(entry.player)) {
+      entry.phase = "waiting";
+      entry.until = nowMs + 60_000;
+      return;
+    }
     entry.group = false;
     if (random() < (data.groupChance ?? 0.3) && startGroup(entry, nowMs)) return;
     const view = snapshot(entry.player);
@@ -667,7 +682,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         entry.until = 0;
       }
       // A full bag ends the stretch: off to sell (trade()), as a player banks or sells.
-      if (nowMs >= entry.until || (entry.phase !== "new" && entry.player.getInventory().getFreeSlots() === 0)) next(entry, nowMs);
+      if (nowMs >= entry.until || (entry.phase === "training" && entry.player.getInventory().getFreeSlots() === 0)) next(entry, nowMs);
     }
   }
 
@@ -840,10 +855,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   }
 
   /** The nearest bank (data.banks) to where it is. */
-  function nearestBank(player) {
+  function nearestBank(player, entry = [...adventurers.values()].find((other) => other.player === player)) {
     const at = player.getLocation();
     let best = null;
     for (const bank of data.banks ?? []) {
+      if (blockedPlace(entry, bank)) continue;
       const away = walkTiles({ x: at.getX(), y: at.getY() }, bank, player);
       if (!best || away < best.away) best = { ...bank, away };
     }
@@ -895,10 +911,38 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * At the Grand Exchange's bank: what it banked to sell comes out as notes, as a player
    * withdraws as notes to sell. Returns how many stacks came out.
    */
+  /**
+   * Coins it is short for what it saves up for (a coins goal: gear, a teleport amulet, tools
+   * for its next levels). 0 when it has enough or saves for nothing.
+   */
+  function shortfall(player) {
+    const entry = [...adventurers.values()].find((other) => other.player === player);
+    const goal = entry ? player.getAttribute(GOAL_ATTRIBUTE) ?? null : null;
+    if (goal?.kind !== "coins") return 0;
+    return Math.max(0, goal.amount - (Shopping.coinsOf(player) + banked(player, Trade.COINS)));
+  }
+
+  /** What its banked materials (not the supplies it uses up) fetch on the GE, roughly. */
+  function bankedMaterialValue(player) {
+    const keep = Trade.keepIds(player, core, { isFood });
+    let total = 0;
+    for (const bank of player.getBanks?.() ?? []) {
+      for (const item of bank?.getItems?.() ?? []) {
+        const id = item?.getId?.() ?? -1;
+        if (!(id > 0) || keep.has(id) || need(player, id) === Infinity) continue;
+        total += Value.itemValue(core, id, item.getAmount());
+      }
+    }
+    return total;
+  }
+
   function withdrawToSell(player) {
     const keep = Trade.keepIds(player, core, { isFood });
     const inventory = player.getInventory();
     let taken = 0;
+    // Saving up: it also sells materials it would keep (logs, gems, bars) until the sale covers
+    // what it is short. Its supplies (runes, food, ammo) stay.
+    let short = shortfall(player);
     for (const bank of player.getBanks?.() ?? []) {
       for (const item of [...(bank?.getItems?.() ?? [])]) {
         const id = item?.getId?.() ?? -1;
@@ -906,7 +950,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         if (!(id > 0) || !(amount > 0) || keep.has(id) || Value.itemValue(core, id, 1) <= 0) continue;
         // What it needs stays; only the surplus (or what it has outgrown) is sold.
         const wanted = need(player, id);
-        const surplus = wanted === Infinity ? 0 : amount - wanted;
+        let surplus = wanted === Infinity ? 0 : amount - wanted;
+        if (wanted !== Infinity && short > 0 && surplus < amount) {
+          const each = Value.itemValue(core, id, 1);
+          const extra = Math.min(amount - Math.max(0, surplus), Math.ceil(short / each));
+          surplus = Math.max(0, surplus) + extra;
+          short -= extra * each;
+        }
         if (surplus <= 0) continue;
         if (inventory.getFreeSlots() <= 1) return taken;
         const definition = core.ItemDefinition.forId(id);
@@ -1007,13 +1057,21 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const full = player.getInventory().getFreeSlots() <= (data.fullSlots ?? 4);
     const cluttered = Trade.slotsOf(player, stock) >= (data.storeSlots ?? 6);
     const waiting = Trade.finishedOffers(player, emit) > 0;
-    if (!waiting && worth < (data.keepValue ?? 200) && !((full || cluttered) && stock.length > 0)) return false;
+    // Saving up and its banked logs, gems or bars would cover a good part of it: off to sell.
+    const short = shortfall(player);
+    const fund = short > 0 && now() >= (entry.fundAfter ?? 0) && !blockedPlace(entry, data.grandExchange) && bankedMaterialValue(player) + worth >= short / 4;
+    if (fund) entry.fundAfter = now() + 20 * 60_000;
+    if (!waiting && !fund && worth < (data.keepValue ?? 200) && !((full || cluttered) && stock.length > 0)) return false;
     const ge = { ...data.grandExchange, name: "de Grand Exchange" };
     const bank = nearestBank(player);
-    const toExchange = waiting || worth >= (data.sellValue ?? 5000) || !bank || distanceTo(player, ge) <= bank.away + 40;
-    if (toExchange) return walkTo(entry, ge, { reason: "exchange", arrive: atExchange });
+    const urgent = full || cluttered;
+    const geOpen = !blockedPlace(entry, ge);
+    const toExchange = geOpen && (fund || waiting || worth >= (data.sellValue ?? 5000) || !bank || distanceTo(player, ge) <= bank.away + 40);
+    if (toExchange) return walkTo(entry, ge, { reason: "exchange", arrive: atExchange, urgent });
+    if (!bank) return false;
     return walkTo(entry, { ...bank, name: bank.name ?? bank.id }, {
       reason: "bank",
+      urgent,
       arrive: (banker) => {
         const stored = deposit(banker, Trade.goodsToSell(banker, core, Trade.keepIds(banker, core, { isFood }), { isFood, worthless: true }));
         if (stored.length > 0) note(banker, `Zet op de bank in ${bank.name ?? bank.id}: ${stored.slice(0, 5).map((good) => itemName(good.itemId)).join(", ")}${stored.length > 5 ? ` en ${stored.length - 5} meer` : ""}. Bruikbaars bewaart hij; de rest verkoopt hij later op de GE.`, "activity");
@@ -1021,21 +1079,26 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     });
   }
 
-  /** Drops the least valuable things it does not keep until the bag has room again. */
+  /**
+   * With no bank in reach: drops the cheapest things it does not keep (worth less than
+   * data.dropValue a stack) until the bag has room. True when there is room now.
+   */
   function clearBag(player) {
     const inventory = player.getInventory();
     const room = (data.fullSlots ?? 4) + 1;
-    if (inventory.getFreeSlots() >= room) return;
+    if (inventory.getFreeSlots() >= room) return true;
     const stock = Trade.goodsToSell(player, core, Trade.keepIds(player, core, { isFood }), { isFood, worthless: true })
       .sort((a, b) => a.value - b.value);
     const dropped = [];
     for (const good of stock) {
       if (inventory.getFreeSlots() >= room) break;
+      if (good.value >= (data.dropValue ?? 500)) break;
       inventory.deleteNumber?.(good.itemId, inventory.getAmount(good.itemId));
       dropped.push(itemName(good.itemId));
     }
     inventory.refreshItems?.();
-    if (dropped.length > 0) note(player, `Kon niet naar de bank; laat vallen: ${dropped.slice(0, 4).join(", ")}.`, "activity");
+    if (dropped.length > 0) note(player, `Kon geen bank bereiken; laat het goedkoopste vallen: ${dropped.slice(0, 4).join(", ")}.`, "activity");
+    return inventory.getFreeSlots() >= room;
   }
 
   function itemName(itemId) {

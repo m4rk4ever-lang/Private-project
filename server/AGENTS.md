@@ -84,6 +84,7 @@ module.exports = {
 | Editing the map over MCP (objects, NPCs, terrain, presets, the 65 KB budget) | [docs/agents/map-editing.md](docs/agents/map-editing.md) |
 | Building something that looks right (verified objects, walls, terrain, screenshots); add what you learn | [docs/agents/map-building-notes.md](docs/agents/map-building-notes.md) |
 | Testing a quest start-to-finish (Quest Helper route, stages/varps, rewards, relog) | [docs/agents/quest-testing.md](docs/agents/quest-testing.md) |
+| Bots and adventurers: the honesty rules, what is built, the direction and what comes next | [docs/agents/adventurers.md](docs/agents/adventurers.md) |
 
 Project layout: [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md). Custom items, special
 attacks and plugin pets: [`docs/custom-content.md`](../docs/custom-content.md).

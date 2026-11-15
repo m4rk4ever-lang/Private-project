@@ -66,6 +66,10 @@ Indeling per versie:
 - **Eigen logo** op het loginscherm in plaats van het RuneScape-logo, en "Realm of Eeshwar is loading"
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
+### Gewijzigd
+- Avonturiers maken zelf de afweging bij een volle tas: is een bank of de GE onbereikbaar, dan proberen ze de volgende bank. Een versperde weg blokkeert alleen die ene plek. Alleen als niets bereikbaar is, laten ze goedkope spullen (minder dan 500 gp per stapel) vallen; duurdere spullen houden ze en ze proberen het even later opnieuw.
+- Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
+
 ### Opgelost
 - Avonturiers nemen de spullen van hun vorige klus niet meer mee naar de volgende: liggen er 6 of meer vakjes aan logs, erts of vis in hun tas, dan banken ze die eerst, ook als het weinig waard is. Lukt de weg naar de bank niet, dan laten ze het goedkoopste vallen in plaats van met een volle tas verder te werken.
 - Avonturiers blijven niet meer hangen bij de tolpoort van Al Kharid. Ze betalen alleen als 10 gp kleingeld voor ze is (1.000 gp of meer op zak); anders lopen ze om via het pad naar Varrock. Plekken en banken achter de poort tellen voor hen als verder weg, dus ze kiezen ze minder snel.
