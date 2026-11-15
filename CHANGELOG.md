@@ -14,7 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
-- `::volg` laat in de chat de quests van de gevolgde bot zien: hoeveel er voltooid zijn en welke nu bezig zijn (met hun stage). Bij het starten en elke keer dat het verandert.
+- `::volg` laat in de chat de quests van de gevolgde bot zien (hoeveel voltooid, welke bezig met hun stage) en hoeveel achievement diary-taken hij per gebied gedaan heeft. Bij het starten en elke keer dat het verandert.
 - Avonturiers doen echt quests, stap voor stap zoals een speler: naar de NPC lopen (ook trappen op en via ladders een kelder in), Talk-to en de dialoog doorklikken, waarbij ze de juiste antwoorden kiezen. De quest zelf zet de stages en geeft de beloningen. De eerste is Rune Mysteries (Runecraft). Ze beginnen alleen aan een quest waarvan ze alle eisen halen. Lukt een stap niet, dan leggen ze de quest een uur weg. Owners kunnen een quest starten met `::advquest <naam>:<quest>`.
 - Bots gebruiken de home teleport (Lumbridge) voor een lange wandeling: de echte spreuk met de lange animatie en de cooldown van 30 minuten.
 - De avonturierspagina toont de avonturiers per clan (beste clan eerst, de leider bovenaan), met een knop om terug te gaan naar één ranglijst. De keuze wordt onthouden.

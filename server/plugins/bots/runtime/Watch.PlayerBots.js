@@ -49,7 +49,7 @@ function skillsKey(player) {
 }
 
 /**
- * The followed player's quests: { open: ["Rune Mysteries (stage 3)"], done, total }. The quest tab
+ * The followed player's quests (and below, its diary tasks): { open: ["Rune Mysteries (stage 3)"], done, total }. The quest tab
  * itself is not mirrored: its varps are the watcher's own quest state on the server too.
  */
 function questsOf(target) {
@@ -72,11 +72,16 @@ function questsOf(target) {
 function showQuests(player, state) {
   const quests = questsOf(state.target);
   if (!quests) return;
-  const key = `${quests.done}:${quests.open.join("|")}`;
+  // Achievement diary tasks done, per diary (achievement-diaries:tasks, the diaries' own record).
+  const diaryTasks = state.target.getAttribute?.("achievement-diaries:tasks") ?? {};
+  const diaries = Object.entries(diaryTasks).filter(([, tasks]) => Array.isArray(tasks) && tasks.length > 0)
+    .map(([diary, tasks]) => `${diary} ${tasks.length}`);
+  const key = `${quests.done}:${quests.open.join("|")}:${diaries.join("|")}`;
   if (key === state.shownQuests) return;
   state.shownQuests = key;
   player.sendMessage(`Quests van ${nameOf(state.target)}: ${quests.done}/${quests.total} voltooid. `
     + (quests.open.length > 0 ? `Bezig: ${quests.open.join(", ")}.` : "Geen quest bezig."));
+  player.sendMessage(diaries.length > 0 ? `Diary-taken gedaan: ${diaries.join(", ")}.` : "Nog geen diary-taken gedaan.");
 }
 
 /** The bot's inventory and stats in the watcher's tabs, when they changed. */
