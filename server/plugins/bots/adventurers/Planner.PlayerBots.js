@@ -52,6 +52,8 @@ function trainingOptions(adventurer) {
   // Fighting with a bow and arrows, or spells with runes, when it has them (adventurer.styles).
   if ((adventurer.styles ?? []).includes("ranged")) options.push({ mode: "combat_ranged", skill: "RANGED", level: adventurer.levels.RANGED ?? 1 });
   if ((adventurer.styles ?? []).includes("magic")) options.push({ mode: "combat_magic", skill: "MAGIC", level: adventurer.levels.MAGIC ?? 1 });
+  // Slayer: a task from a master, then only its monsters (adventurer.slayer, Slayer.PlayerBots.js).
+  if (adventurer.slayer) options.push({ mode: "slayer", skill: "SLAYER", level: adventurer.levels.SLAYER ?? 1 });
   // Agility: laps on the best course its level allows (adventurers.json agilityCourses).
   options.push({ mode: "agility", skill: "AGILITY", level: adventurer.levels.AGILITY ?? 1 });
   if ((adventurer.levels.FIREMAKING ?? 1) >= WINTERTODT_LEVEL) {
@@ -127,6 +129,8 @@ function trainingWeight(option, options, adventurer, { focus = {}, busyModes = n
   if (busyModes.has(option.mode)) weight *= 0.5;
   // One skill feeds the next: with logs in the bank fletching or burning comes up more often.
   if (option.mode.startsWith("buy_") && (adventurer.stocked ?? []).includes(option.skill)) weight *= 3;
+  // A Slayer task it has is one it means to finish.
+  if (option.mode === "slayer" && adventurer.slayer?.task) weight *= 3;
   return weight;
 }
 

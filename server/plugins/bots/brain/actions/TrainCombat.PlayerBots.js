@@ -123,6 +123,24 @@ function createTrainCombatAction(spec, world) {
     if (onlyNames.size > 0 && !onlyNames.has(name)) return null;
     return definition?.isAttackable?.() === true && level > 0 && !excludedNames.has(name) ? level : null;
   };
+  // A bot's own target list (state.onlyNames: a Slayer task's monsters) narrows it further,
+  // per bot; its clusters are indexed apart, keyed by those names.
+  const ownLevels = new Map();
+  const targetsFor = (state) => {
+    const names = state?.onlyNames;
+    if (!Array.isArray(names) || names.length === 0) return { key: "", level: opponentLevel };
+    const key = names.map((name) => String(name).toLowerCase()).sort().join("|");
+    let level = ownLevels.get(key);
+    if (!level) {
+      const own = new Set(key.split("|"));
+      level = (definition) => (own.has(String(definition?.getName?.() ?? "").toLowerCase())
+        && definition?.isAttackable?.() === true && (definition?.getCombatLevel?.() ?? 0) > 0
+        ? definition.getCombatLevel() : null);
+      if (ownLevels.size > 64) ownLevels.clear();
+      ownLevels.set(key, level);
+    }
+    return { key, level };
+  };
   const levelKeys = (stage) => Array.from(
     { length: stage.npcLevels.max - stage.npcLevels.min + 1 }, (_, index) => stage.npcLevels.min + index);
   // Tiles of extra walking worth one more trainer per NPC at a cluster: lower keeps
@@ -337,9 +355,10 @@ function createTrainCombatAction(spec, world) {
    * clusters first and spill outward in proportion. Skips the last visit and
    * clusters this bot failed at.
    */
-  function selectSite(player, bot, stage, nowMs) {
+  function selectSite(player, bot, stage, nowMs, state = null) {
     const loc = player.getLocation();
-    const clusters = nearestClusters(npcClustersFor(world, `trainCombat:${[...excludedNames]}:${[...onlyNames]}`, opponentLevel),
+    const own = targetsFor(state);
+    const clusters = nearestClusters(npcClustersFor(world, `trainCombat:${[...excludedNames]}:${[...onlyNames]}:${own.key}`, own.level),
       levelKeys(stage), { x: loc.getX(), y: loc.getY(), z: loc.getZ() })
       .filter((cluster) => (bot.avoidedSites.get(cluster.key) ?? 0) <= nowMs);
     const fresh = clusters.filter((cluster) => cluster.key !== bot.previousSiteId);
@@ -394,13 +413,13 @@ function createTrainCombatAction(spec, world) {
     release(player, bot);
   }
 
-  function available(player, npc, bot, nowMs) {
+  function available(player, npc, bot, nowMs, state = null) {
     if (!live(npc) || npc.getPrivateArea?.() !== player.getPrivateArea?.()) return false;
     const at = npc.getLocation();
     const anchor = bot.site.anchor;
     if (at.getZ() !== anchor.z ||
         Math.max(Math.abs(at.getX() - anchor.x), Math.abs(at.getY() - anchor.y)) > SITE_RADIUS) return false;
-    const level = opponentLevel(npc.getCurrentDefinition(player));
+    const level = targetsFor(state).level(npc.getCurrentDefinition(player));
     if (level === null || level < bot.site.npcLevels.min || level > bot.site.npcLevels.max) return false;
     if ((bot.avoided.get(npc) ?? 0) > nowMs) return false;
     const combat = npc.getCombat();
@@ -476,7 +495,7 @@ function createTrainCombatAction(spec, world) {
       }
       if (bot.target) {
         const stalled = nowMs - bot.claimedAt >= TARGET_STALL_MS;
-        if (stalled || !available(player, bot.target, bot, nowMs)) {
+        if (stalled || !available(player, bot.target, bot, nowMs, state)) {
           if (stalled) bot.failedTargets += 1;
           dropTarget(player, bot, nowMs, SITE_STALL_MS);
           clearMovementRequest(player);
@@ -546,7 +565,7 @@ function createTrainCombatAction(spec, world) {
           return "running";
         }
         if (!bot.site) {
-          const selected = selectSite(player, bot, stage, nowMs);
+          const selected = selectSite(player, bot, stage, nowMs, state);
           if (selected === null) return "running";
           if (!selected) return "failed";
         }
@@ -559,7 +578,7 @@ function createTrainCombatAction(spec, world) {
         prepare(player, state);
         // Every NPC near the cluster, not just those in regions active around real players.
         const candidates = world.core.World.getNpcsNear(location, SITE_RADIUS + ATTACK_DISTANCE, player.getPrivateArea?.() ?? null)
-          .filter((npc) => available(player, npc, bot, nowMs))
+          .filter((npc) => available(player, npc, bot, nowMs, state))
           .sort((a, b) => location.getDistance(a.getLocation()) - location.getDistance(b.getLocation()))
           .slice(0, TARGET_SPREAD);
         const offset = randomInRange(0, Math.max(0, candidates.length - 1));

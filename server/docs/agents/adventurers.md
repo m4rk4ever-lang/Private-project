@@ -80,7 +80,7 @@ make menus, house party, GE flows, equipment mirror, the Al Kharid detour.
 
 ## Next, in order
 
-1. **Slayer** (in progress): walk to a real master (Turael Burthorpe, Spria Draynor,
+1. **Slayer** (first version done 15-11-2026; next: dungeons, finishing items, Vannaka): walk to a real master (Turael Burthorpe, Spria Draynor,
    Vannaka at 40 combat), `slayer:assignment`, fight only NPCs where `slayer:on-task` is true
    (TrainCombat filter, level band 1..1000, home near the nearest spawn by name), stop when
    `slayer:current-task` is empty. Planner mode `slayer`.

@@ -32,6 +32,8 @@ const GOAL_ATTRIBUTE = "adventurers:goal";
 const GENERATION_ATTRIBUTE = "adventurers:generation";
 const Shopping = require("./Shopping.PlayerBots");
 const Trade = require("./Trade.PlayerBots");
+const Slayer = require("./Slayer.PlayerBots");
+const npcSpawns = require("../../../data/definitions/npc-spawns.json");
 const { markHonest } = require("../brain/Honest.PlayerBots");
 const { errandsFor } = require("../brain/Errands.PlayerBots");
 /** A companion joins a group if its own stretch ends within this. */
@@ -155,10 +157,20 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       buyable: buyableSkills(player),
       stocked: stockedSkills(player),
       styles: fightingStyles(player),
+      slayer: slayerView(player),
       // Only quests a bot can really play (none yet): nothing is simulated.
       available: new Set(questList().filter((quest) => quest.playthrough === true && registered.has(normalize(quest.name)))
         .map((quest) => quest.name)),
     };
+  }
+
+  /** Slayer in its options: { task: true/false } when it can do Slayer now, else null. */
+  function slayerView(player) {
+    const entry = [...adventurers.values()].find((other) => other.player === player);
+    if (!entry || (entry.slayerPausedUntil ?? 0) > now()) return null;
+    // A master's tasks are fights: not before it can hold its own (combat 10).
+    if (player.getSkillManager().getCombatLevel() < (data.slayerCombat ?? 10)) return null;
+    return { task: Slayer.currentTask(emit, player) !== null };
   }
 
   /** The materials it would buy for a skill now: { skill, recipe, itemId, name, amount, cost }, or null. */
@@ -312,6 +324,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function startTraining(entry, plan, nowMs) {
     const { player } = entry;
     const view = snapshot(player);
+    // Only a Slayer task narrows what it fights; any other job fights what it finds.
+    const own = runtimeEntry(player);
+    if (own?.state && plan.mode !== "slayer") own.state.onlyNames = null;
+    if (plan.mode === "slayer") return startSlayer(entry, plan, nowMs);
     if (plan.mode.startsWith("buy_")) {
       return startBuyTraining(entry, plan, nowMs);
     }
@@ -532,6 +548,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
     // Errands first, each a walk; the planner looks again when it is back.
     if (trade(entry) || upgrade(entry)) return;
+    // Just got a Slayer task: off to it.
+    if (entry.slayerNext) {
+      entry.slayerNext = false;
+      if (startSlayer(entry, { kind: "train", mode: "slayer", skill: "SLAYER", reason: "nieuwe taak" }, nowMs)) return;
+    }
     // A full bag and no bank or exchange it can reach now (every road it tried was blocked):
     // it weighs it up. Cheap things go; what is worth the walk stays and it tries a bank again
     // shortly instead of starting a new job with a full bag.
@@ -679,6 +700,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       }
       if (stuck(entry, nowMs)) {
         note(entry.player, `Kon bij ${String(entry.activity ?? "zijn klus").replace(/_/g, " ")} niets doen; kiest iets anders.`, "activity");
+        entry.until = 0;
+      }
+      // A finished Slayer task ends the stretch: back to a master, or something else.
+      if (entry.phase === "training" && entry.activity === "slayer_task" && !Slayer.currentTask(emit, entry.player)) {
+        note(entry.player, "Slayer-taak klaar.", "skill");
         entry.until = 0;
       }
       // A full bag ends the stretch: off to sell (trade()), as a player banks or sells.
@@ -908,9 +934,58 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   }
 
   /**
-   * At the Grand Exchange's bank: what it banked to sell comes out as notes, as a player
-   * withdraws as notes to sell. Returns how many stacks came out.
+   * Slayer: with no task it walks to the nearest master (Turael, Spria) and asks for one;
+   * with a task it fights only the task's monsters, at the nearest place it can fight them.
+   * A task it cannot do here (Wilderness, a dungeon, a finishing item) puts Slayer aside.
    */
+  function startSlayer(entry, plan, nowMs) {
+    const { player } = entry;
+    const task = Slayer.currentTask(emit, player);
+    const here = { x: player.getLocation().getX(), y: player.getLocation().getY() };
+    if (!task) {
+      const master = Slayer.nearest(Slayer.MASTERS, (place) => walkTiles(here, place, player));
+      if (!master) return false;
+      return walkTo(entry, master, {
+        reason: "slayer",
+        arrive: (slayer) => {
+          const { task: got, line } = Slayer.askForTask(emit, slayer, master);
+          if (got) {
+            note(slayer, `Krijgt van ${master.name} een Slayer-taak: ${got.count} x ${String(got.name).toLowerCase()}.`, "skill");
+            entry.slayerNext = true;
+          } else {
+            note(slayer, `${master.name} gaf geen taak${line ? `: "${line}"` : ""}.`, "activity");
+            entry.slayerPausedUntil = now() + 30 * 60_000;
+          }
+        },
+      });
+    }
+    const targets = Slayer.taskTargets(npcSpawns, (npcId, spawn) => {
+      const request = { player, npcId, location: new core.Location(spawn.x, spawn.y, spawn.z ?? 0), onTask: false };
+      emit("slayer:on-task", request);
+      return request.onTask;
+    });
+    const spot = Slayer.nearest(targets, (place) => walkTiles(here, place, player));
+    if (!spot) {
+      note(player, `Kan zijn Slayer-taak (${String(task.name).toLowerCase()}) hier nog niet doen; laat Slayer even liggen.`, "activity");
+      entry.slayerPausedUntil = now() + 60 * 60_000;
+      return false;
+    }
+    const run = runtimeEntry(player);
+    if (run?.state) {
+      run.state.onlyNames = Slayer.namesNear(targets, spot);
+      run.state.honestStyle = run.state.honestStyle ?? "melee";
+    }
+    const home = { x: spot.x, y: spot.y, z: spot.z ?? 0 };
+    startActivity(player, "slayer_task", { home, nowMs });
+    walkTo(entry, { ...home, name: `de ${String(spot.name).toLowerCase()}` }, { reason: "training", replan: false });
+    entry.activity = "slayer_task";
+    entry.phase = "training";
+    entry.plan = plan;
+    entry.until = nowMs + randomBetween(data.trainMinutes, random) * 60_000;
+    note(player, `Slayer-taak: ${task.count} x ${String(task.name).toLowerCase()} te gaan.`, "skill");
+    return true;
+  }
+
   /**
    * Coins it is short for what it saves up for (a coins goal: gear, a teleport amulet, tools
    * for its next levels). 0 when it has enough or saves for nothing.
@@ -936,6 +1011,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return total;
   }
 
+  /**
+   * At the Grand Exchange's bank: what it banked to sell comes out as notes, as a player
+   * withdraws as notes to sell. Returns how many stacks came out.
+   */
   function withdrawToSell(player) {
     const keep = Trade.keepIds(player, core, { isFood });
     const inventory = player.getInventory();

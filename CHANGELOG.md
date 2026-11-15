@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Avonturiers doen Slayer: ze lopen naar Turael (Burthorpe) of Spria (Draynor), krijgen een echte taak en vechten alleen tegen de monsters die meetellen, op de dichtstbijzijnde plek waar dat kan. Is de taak klaar, dan halen ze een nieuwe of doen iets anders. Taken in de Wilderness, in dungeons of met een afmaak-item (zoals ijskoelers) laten ze voorlopig liggen.
 - Avonturiers vechten ook met pijl en boog of met spells: met hun eigen boog en pijlen (shortbow tot magic shortbow, bronze tot rune arrows) of hun eigen runes (Wind Strike tot Fire Bolt, met een staf). Ze kiezen dat als ze de spullen hebben, halen ze uit de bank en kopen pijlen en runes bij op de GE. Ranged- en Magic-doelen sturen die keuze.
 - Avonturiers trainen Agility: ze lopen rondjes op de beste course die hun level toelaat (Gnome Stronghold tot Seers' Village Rooftop), via de echte obstakels met slagingskans, vallen, XP en marks of grace. Marks rapen ze op en bewaren ze.
 - Avonturiers hebben steeds een eigen doel, zoals "20 Attack voor een mithril scimitar", daarna "1.500 gp" om hem te kopen, Firemaking 50 voor Wintertodt of geld voor een amulet of glory. Het doel stuurt wat ze trainen; staat het op sparen, dan kiezen ze vaker wat geld oplevert en kopen ze minder materialen. Gehaalde en nieuwe doelen staan in hun dagboek, het huidige doel op de avonturierspagina. De vaste favoriete skills zijn weg.
