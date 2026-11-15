@@ -7,7 +7,7 @@
  *   ::quest <name> reset       back to not started
  *   ::quest <name> <stage>     set the stage
  *
- *   ::allquests                mark every quest complete for yourself, without rewards (owner)
+ *   ::allquests                mark every quest and achievement diary complete for yourself, without rewards (owner)
  *
  * <name> is a quest's name or key, any case; part of a name works when only one quest matches
  * ("grand tree"). Quest points follow a quest set below or above its completion stage.
@@ -155,6 +155,12 @@ function allQuestsCommand({ player }) {
     ? "You have already completed every quest."
     : `Marked ${completed} quest${completed === 1 ? "" : "s"} as complete (no rewards).`);
   if (failed.length > 0) player.sendMessage(`Could not complete: ${failed.slice(0, 5).join(", ")}${failed.length > 5 ? ", ..." : ""}.`);
+  // The achievement diaries too (AchievementDiaries plugin), tasks only: rewards stay to claim.
+  const diaries = { player, tiers: null };
+  api?.emitCustomEvent?.("diary:complete-all", diaries);
+  if (diaries.tiers > 0) {
+    player.sendMessage(`Completed ${diaries.tiers} achievement diary tier${diaries.tiers === 1 ? "" : "s"}. Claim their rewards from each diary's NPC.`);
+  }
   return true;
 }
 

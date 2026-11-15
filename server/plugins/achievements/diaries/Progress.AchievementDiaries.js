@@ -185,6 +185,29 @@ function claimTier(player, diary, tier) {
   player.getPacketSender().sendVarbit(diary.tiers[tier].rewardVarbit, 1);
 }
 
+/**
+ * Marks every task of every diary done at once, quietly (the owner's ::allquests): no task
+ * messages, congratulation boxes or clan broadcasts, and no rewards claimed (those are still
+ * claimed from each diary's NPC as usual). Returns how many tiers were newly completed.
+ */
+function completeAll(player) {
+  let tiers = 0;
+  for (const diary of DIARIES) {
+    const done = doneTasks(player, diary);
+    for (const tier of TIERS) {
+      if (isTierComplete(player, diary, tier)) continue;
+      // A pending congratulations from an earlier task no longer fires.
+      advanceTierGeneration(player, diary, tier);
+      for (const task of diary.tiers[tier].tasks) done.add(task.key);
+      tiers++;
+    }
+    store(player, TASKS_ATTRIBUTE, diary, [...done]);
+    sendDiary(player, diary);
+  }
+  if (tiers > 0) api?.emitCustomEvent("persistence:save", { player, reason: "diary-complete-all" });
+  return tiers;
+}
+
 /** Clears tiers' tasks and rewards (the admin command's reset). */
 function resetTiers(player, diary, tiers) {
   for (const tier of tiers) advanceTierGeneration(player, diary, tier);
@@ -205,5 +228,5 @@ module.exports = function attachProgress(pluginApi) {
 
 Object.assign(module.exports, {
   TASKS_ATTRIBUTE, REWARDS_ATTRIBUTE, doneTasks, claimedTiers, tierCount, isTierComplete, isStarted,
-  notifyTaskProgress, completeTask, claimTier, resetTiers, restore, sendDiary, tierGeneration,
+  notifyTaskProgress, completeTask, completeAll, claimTier, resetTiers, restore, sendDiary, tierGeneration,
 });

@@ -29,6 +29,8 @@ Indeling per versie:
 - `::allquests` (owner): zet alle quests en miniquests in één keer op voltooid, met questpunten
   maar zonder beloningen (geen items of XP). Ook quests en miniquests die nog niet speelbaar
   zijn gebouwd, worden in de questlijst afgevinkt en blijven dat na opnieuw inloggen.
+  Ook alle achievement diaries (alle tiers) worden voltooid. De diary-beloningen haal je zelf op
+  bij de NPC van elke diary.
 - **Getrapte XP-rate**, per skill op basis van je level: x25 van level 1 tot 49, x15 van 50 tot 79,
   x10 van 80 tot 89 en x5 vanaf 90. Geldt ook voor quest-beloningen, lampen en tomes.
   Aan te passen met de instelling `TieredExperience:tiers`.
