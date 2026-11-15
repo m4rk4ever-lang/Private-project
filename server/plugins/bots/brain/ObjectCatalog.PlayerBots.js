@@ -37,6 +37,9 @@ const CATALOGS = {
   minigame: () => [{ name: "Bruma roots", objectNames: ["Bruma roots"], ids: [] }],
   // Anvils by name (Smith.PlayerBots.js); the Rusted and experimental ones are quest anvils.
   anvil: () => [{ name: "anvil", objectNames: ["Anvil"], ids: [] }],
+  // A house's chapel (HouseParty.PlayerBots.js): its altar and incense burners, found in the house.
+  houseAltar: () => [{ name: "altar", objectNames: ["Altar"], ids: [] }],
+  incenseBurner: () => [{ name: "burner", objectNames: ["Incense burner"], ids: [] }],
   furnace: () => [
     {
       name: "furnace",

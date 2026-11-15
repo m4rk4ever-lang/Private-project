@@ -15,6 +15,7 @@
  */
 const Shopping = require("../adventurers/Shopping.PlayerBots");
 const Trade = require("../adventurers/Trade.PlayerBots");
+const HouseParty = require("./HouseParty.PlayerBots");
 
 const GRAND_EXCHANGE = Object.freeze({ x: 3164, y: 3487, z: 0 });
 /** How often bots are looked at, and how many each time (round robin). */
@@ -51,7 +52,14 @@ function createUpkeep({ core, runtime, emit, isFood, now = () => Date.now(), log
   /** What this bot needs at the exchange now, or null. */
   function needs(player, mode, changedJob = false) {
     const inventory = player.getInventory();
-    const goods = Trade.goodsToSell(player, core, Trade.keepIds(player, core, { isFood }));
+    const keep = Trade.keepIds(player, core, { isFood });
+    // Bones go to the house party's altar while one is on, not to the exchange.
+    if (HouseParty.isOpen()) {
+      for (const item of inventory.getItems() ?? []) {
+        if (item && /bones$/i.test(String(core.ItemDefinition?.forId?.(item.getId())?.getName?.() ?? ""))) keep.add(item.getId());
+      }
+    }
+    const goods = Trade.goodsToSell(player, core, keep);
     const worth = goods.reduce((sum, good) => sum + good.value, 0);
     const want = { goods: [], buy: [] };
     // A full bag of things to sell (its made bows, platebodies or loot), or a valuable load.
@@ -127,7 +135,8 @@ function createUpkeep({ core, runtime, emit, isFood, now = () => Date.now(), log
       const entry = entries[cursor++ % entries.length];
       const player = entry?.player;
       const state = entry?.state;
-      if (!player || !state?.honest || state.adventurer || trips.has(player)) continue;
+      // A paused brain is already away (at a house party, HouseParty.PlayerBots.js).
+      if (!player || !state?.honest || state.adventurer || trips.has(player) || entry.brain?.paused) continue;
       if (player.getCombat?.()?.getAttacker?.() || player.getHitpoints?.() <= 0) continue;
       const mode = entry.brain?.currentRoot?.()?.mode ?? null;
       if (mode === "pvp" || mode === "minigame") continue;

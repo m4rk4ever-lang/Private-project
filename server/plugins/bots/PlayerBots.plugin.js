@@ -3,6 +3,7 @@ const { startChatter } = require("./brain/Chatter.PlayerBots");
 const { startAdventurers } = require("./adventurers/Adventurers.PlayerBots");
 const { startWatching } = require("./runtime/Watch.PlayerBots");
 const { startUpkeep } = require("./brain/Upkeep.PlayerBots");
+const { startHouseParty } = require("./brain/HouseParty.PlayerBots");
 const { startIronmen } = require("./brain/Ironmen.PlayerBots");
 const { startProgression } = require("./brain/Progression.PlayerBots");
 const { initPvpTierLoadouts } = require("./behaviours/pvp/PvpTierLoadouts.PlayerBots");
@@ -295,6 +296,8 @@ module.exports = {
     startWatching(api);
     // World bots with a generated account sell, collect and restock at the Grand Exchange.
     startUpkeep(api, boot.runtime);
+    // A bot with a gilded altar in its house hosts a party; fighters bring their bones.
+    startHouseParty(api, boot.runtime, boot.brainWorld);
 
     registerBotStatusInteractions({
       api,

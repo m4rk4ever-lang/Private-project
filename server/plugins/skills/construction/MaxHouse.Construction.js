@@ -184,6 +184,18 @@ function randomHouse(request, random = Math.random) {
   if (count !== null) player.sendMessage(`Your house has been set up with ${count} rooms. ::restorehouse brings the old one back.`);
 }
 
+/**
+ * "construction:furnished-house" { player, rooms, handled }: a house of these ground-floor rooms
+ * (room keys, from the garden out), each furnished as ::maxhouse furnishes it. For content that
+ * gives an account a house of its own (a bot with a generated account that hosts house parties).
+ */
+function furnishedHouse(request) {
+  const player = request?.player;
+  const rooms = (request?.rooms ?? []).filter((key) => GROUND_ROOMS.includes(key));
+  if (!player || rooms.length === 0) return;
+  request.handled = replaceHouse(player, (save) => layout(save, rooms, [])) !== null;
+}
+
 function restoreHouse({ player }) {
   const backup = player.getAttribute(BACKUP_ATTRIBUTE);
   if (!backup) return player.sendMessage("There is no saved house to restore.");
@@ -194,4 +206,4 @@ function restoreHouse({ player }) {
   player.sendMessage("Your old house is back. Enter it at your house portal.");
 }
 
-Object.assign(module.exports, { maxHouse, randomHouse, restoreHouse, BACKUP_ATTRIBUTE });
+Object.assign(module.exports, { maxHouse, randomHouse, furnishedHouse, restoreHouse, BACKUP_ATTRIBUTE });

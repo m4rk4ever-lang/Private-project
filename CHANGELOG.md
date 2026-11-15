@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- House parties: een bot met een hoog Construction-level heeft een huis met kapel en gilded altar, houdt de wierookbranders aan en adverteert zijn huis in Rimmington. Vechtende bots sparen dan hun botten en offeren ze daar (350% Prayer-XP). Uit te zetten met `HOUSE_PARTY=0`.
 - Bots maken zelf iets van hun grondstoffen: mijners smelten hun erts en smeden de staven op een aambeeld tot het beste wat hun Smithing-level toelaat, houthakkers fletchen hun logs met een mes, vissers koken hun vangst en banken die. Zonder hamer of mes, of met te laag level, verkopen ze het.
 - Elke wereldbot krijgt bij het starten een eigen account alsof hij al speelde: gereedschap en uitrusting bij zijn levels, eten, coins en een bank met wat grondstoffen. Daarna speelt hij eerlijk: hij raapt loot op, verkoopt op de GE en koopt eten en gereedschap met zijn eigen coins. Uit te zetten met `BOT_GENERATED_ACCOUNTS=0`.
 - Bij `::volg` zie je de inventaris en skills van de bot die je volgt; na het stoppen weer je eigen.

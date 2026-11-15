@@ -4,6 +4,7 @@ const { playerState } = require("../ActionState.PlayerBots");
 const { nearestClusters, npcClustersFor } = require("../NpcClusterIndex.PlayerBots");
 const { canReachSpot } = require("../../behaviours/navigation/LongRoutes.PlayerBots");
 const Loot = require("../Loot.PlayerBots");
+const HouseParty = require("../HouseParty.PlayerBots");
 const isFood = (itemId) => require("../../../items/Food.plugin").isFoodItem(itemId);
 const Value = require("../../../interface/ValueWarning");
 const { requestMovement, clearMovementRequest, peekMovementRequest, randomInRange } =
@@ -482,7 +483,8 @@ function createTrainCombatAction(spec, world) {
         // Then it buries the bones it picked up, one a click, as a player does between kills.
         const boneSlot = (player.getInventory().getItems() ?? [])
           .findIndex((item) => item && /bones$/i.test(String(world.core.ItemDefinition.forId(item.getId())?.getName?.() ?? "")));
-        if (boneSlot >= 0 && nowMs >= (bot.buryAt ?? 0) && world.useItem) {
+        // While a house party is on (HouseParty.PlayerBots.js) it keeps them for the altar.
+        if (boneSlot >= 0 && !HouseParty.isOpen() && nowMs >= (bot.buryAt ?? 0) && world.useItem) {
           bot.buryAt = nowMs + BURY_EVERY_MS;
           if (world.useItem(player, boneSlot, "Bury")) {
             bot.lastProgressAt = nowMs;

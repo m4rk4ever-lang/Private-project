@@ -2064,6 +2064,9 @@ function attach(api) {
   api.onCustomEvent("construction:spirit-tree", spiritTreeHouse);
   api.onCustomEvent("construction:spirit-tree-travel", spiritTreeTravel);
   api.onCustomEvent("construction:exit-house", exitHouseTo);
+  api.onCustomEvent("construction:visit-house", visitHouseRequest);
+  api.onCustomEvent("construction:advertise-house", advertiseHouseRequest);
+  api.onCustomEvent("construction:furnished-house", MaxHouse.furnishedHouse);
   api.onSpellDisabled(refuseHouseVengeance);
   api.onPlayerBeforeDeath(safeHouseDeath);
   api.onPlayerLogin(loginHouse);
