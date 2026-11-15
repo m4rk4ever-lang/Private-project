@@ -13,6 +13,17 @@
  * ("grand tree"). Quest points follow a quest set below or above its completion stage.
  */
 const QuestRuntime = require("./QuestRuntime");
+const { metadata, questMetadata } = require("./QuestList.QuestRuntime");
+const progressVars = require("./data/quest-progress-vars.json").rows;
+
+/**
+ * Quests and miniquests in the cache's quest list that no plugin implements, marked complete by
+ * ::allquests: { varps: { id: value }, varbits: { id: value } }, sent again at every login.
+ */
+const MARKED_COMPLETE_ATTRIBUTE = "quest-command:marked-complete";
+const RESEND_DELAY_TICKS = 2;
+
+let api = null;
 const { PlayerRights } = require("../../src/main/typescript/elvarg/game/model/rights/PlayerRights");
 
 const USAGE = "Usage: ::quest <name> [complete|reset|<stage>]";
@@ -77,9 +88,53 @@ function questCommand({ player, parts }) {
   return true;
 }
 
+/** Sets a quest list row's progress variable on the client and the server's copy. */
+function sendProgress(player, kind, id, value) {
+  const sender = player.getPacketSender();
+  if (kind === "varbit") sender.sendVarbit(id, value);
+  else sender.sendConfig(id, value);
+}
+
+/**
+ * The cache quest list's rows that no registered quest covers and that have a known progress
+ * variable and end state: the quests and miniquests without a plugin of their own.
+ */
+function unimplementedRows(cache) {
+  const covered = new Set(QuestRuntime.getRegisteredQuests()
+    .map((quest) => questMetadata(quest, cache)?.rowId).filter((rowId) => rowId !== undefined));
+  return [...metadata(cache).values()].filter((row) => row.release_type?.[0] !== 0
+    && !covered.has(row.rowId) && Number.isInteger(row.endstate?.[0]) && row.endstate[0] >= 0
+    && progressVars[String(row.rowId)]);
+}
+
+/** Marks the unimplemented rows complete (remembered for the next login); returns how many it marked. */
+function markUnimplementedComplete(player, cache) {
+  const marked = player.getAttribute(MARKED_COMPLETE_ATTRIBUTE) ?? { varps: {}, varbits: {} };
+  let count = 0;
+  let points = 0;
+  for (const row of unimplementedRows(cache)) {
+    const vars = progressVars[String(row.rowId)];
+    const kind = Number.isInteger(vars.varbit) ? "varbit" : "varp";
+    const id = vars[kind];
+    const end = row.endstate[0];
+    const table = kind === "varbit" ? marked.varbits : marked.varps;
+    if (table[id] === end) continue;
+    table[id] = end;
+    sendProgress(player, kind, id, end);
+    count++;
+    if ((row.type?.[0] ?? 0) === 0 && !row.parent_quest?.length) {
+      points += Number((row.questpoints_override ?? row.questpoints)?.[0] ?? 0);
+    }
+  }
+  player.setAttribute(MARKED_COMPLETE_ATTRIBUTE, marked);
+  if (points > 0) addQuestPoints(player, points);
+  return count;
+}
+
 /**
  * Marks every quest the player hasn't done as complete: the completion stage and quest points
- * only, without rewards (no items, experience, scroll or messages), then one summary.
+ * only, without rewards (no items, experience, scroll or messages). Quests and miniquests that
+ * no plugin implements are marked complete in the quest list too. Then one summary.
  */
 function allQuestsCommand({ player }) {
   let completed = 0;
@@ -94,6 +149,8 @@ function allQuestsCommand({ player }) {
       console.warn(`[quest] ::allquests could not complete ${quest.name}:`, error);
     }
   }
+  completed += markUnimplementedComplete(player, api?.core?.CacheDefinitions);
+  QuestRuntime.refreshQuestList(player);
   player.sendMessage(completed === 0 && failed.length === 0
     ? "You have already completed every quest."
     : `Marked ${completed} quest${completed === 1 ? "" : "s"} as complete (no rewards).`);
@@ -101,12 +158,35 @@ function allQuestsCommand({ player }) {
   return true;
 }
 
+/** After the login's own quest varps: the rows ::allquests marked complete, again. */
+function resendMarkedComplete({ player }) {
+  const marked = player.getAttribute(MARKED_COMPLETE_ATTRIBUTE);
+  if (!marked) return;
+  const { Task, TaskManager } = api.core;
+  TaskManager.submit(new (class extends Task {
+    constructor() { super(RESEND_DELAY_TICKS, player, false); }
+    execute() {
+      this.stop();
+      for (const [id, value] of Object.entries(marked.varps ?? {})) sendProgress(player, "varp", Number(id), value);
+      for (const [id, value] of Object.entries(marked.varbits ?? {})) sendProgress(player, "varbit", Number(id), value);
+      QuestRuntime.refreshQuestList(player);
+    }
+  })());
+}
+
+function init(pluginApi) {
+  api = pluginApi;
+}
+
 module.exports = {
   name: "QuestCommand",
   description: "Adds the admin ::quest command to show, set, complete or reset a player's quest stage, for testing quest-gated content.",
   register(api) {
+    init(api);
+    api.persistAttribute(MARKED_COMPLETE_ATTRIBUTE);
+    api.onPlayerLogin(resendMarkedComplete);
     api.registerCommand("quest", questCommand, PlayerRights.ADMINISTRATOR, "Show or set a quest's progress: ::quest <name> [complete|reset|<stage>]");
     api.registerCommand("allquests", allQuestsCommand, PlayerRights.OWNER, "Mark every quest complete, without rewards");
   },
-  _test: { questCommand, findQuests, allQuestsCommand },
+  _test: { questCommand, findQuests, allQuestsCommand, markUnimplementedComplete, unimplementedRows, init, MARKED_COMPLETE_ATTRIBUTE },
 };
