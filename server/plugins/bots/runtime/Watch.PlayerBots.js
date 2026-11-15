@@ -3,13 +3,16 @@
 /**
  * Watching a bot live: `::volg <naam>` puts the camera on a bot and keeps it there while the bot
  * walks, teleports and fights. The watcher is hidden, cannot be attacked and cannot walk; they
- * are moved along whenever the bot gets out of view. `::volg` without a name (or logging out)
+ * are moved along whenever the bot gets out of view. Their inventory and stats tabs show the
+ * bot's, kept up to date; their own come back after. `::volg` without a name (or logging out)
  * stops it and puts the watcher back where they stood.
  *
  * Built like Clan Wars' viewing orb (minigames/clanwars/Viewing.ClanWars.js): hidden appearance,
  * a fixed view distance, cam_target on the followed player and the old camera restored after.
  */
 
+/** Inventory.INTERFACE_ID: where the game's own inventory refresh sends to. */
+const INVENTORY_INTERFACE_ID = 3214;
 /** Tiles the bot may get away before the watcher is moved to it. */
 const KEEP_WITHIN = 6;
 
@@ -27,6 +30,32 @@ function findPlayer(core, name) {
   const plain = (text) => String(text ?? "").toLowerCase().replace(/[\s_]+/g, " ").trim();
   return core.World.players.search((p) => p && (plain(p.getDisplayName?.()) === wanted || plain(p.getUsername?.()) === wanted))
     ?? null;
+}
+
+/** What the watcher's inventory and stats tabs last showed of the bot, to send only changes. */
+function inventoryKey(player) {
+  return (player.getInventory().getItems() ?? []).map((item) => (item ? `${item.getId()}x${item.getAmount()}` : "-")).join(",");
+}
+
+function skillsKey(player) {
+  const manager = player.getSkillManager();
+  return `${manager.getTotalLevel?.()}:${Math.floor(manager.getTotalExp?.() ?? 0)}:${player.getHitpoints?.()}`;
+}
+
+/** The bot's inventory and stats in the watcher's tabs, when they changed. */
+function mirror(player, state) {
+  const target = state.target;
+  const sender = player.getPacketSender();
+  const items = inventoryKey(target);
+  if (items !== state.shownItems) {
+    sender.sendItemContainer?.(target.getInventory(), INVENTORY_INTERFACE_ID);
+    state.shownItems = items;
+  }
+  const skills = skillsKey(target);
+  if (skills !== state.shownSkills) {
+    sender.sendSkillsSnapshotOf?.(target);
+    state.shownSkills = skills;
+  }
 }
 
 function far(a, b) {
@@ -64,6 +93,9 @@ function stop(player, restore = true) {
   player.setFixedViewDistance(state.fixedDistance);
   player.getMovementQueue().setBlockMovement(state.blocked);
   player.setUntargetable(state.untargetable);
+  // Their own inventory and stats again.
+  player.getInventory?.()?.refreshItems?.();
+  player.getPacketSender().sendSkillsSnapshot?.();
   if (restore) {
     player.moveTo(state.location);
     player.getPacketSender().restoreCameraState(state.camera);
@@ -86,6 +118,7 @@ function tick() {
       player.moveTo(target.getLocation().clone());
       state.pendingCamera = true;
     }
+    mirror(player, state);
     if (state.pendingCamera && !player.isNeedsPlacement?.()) {
       player.getPacketSender().sendCameraTarget({ player: target.getIndex() });
       state.pendingCamera = false;

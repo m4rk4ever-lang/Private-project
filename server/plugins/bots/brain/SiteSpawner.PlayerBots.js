@@ -10,6 +10,9 @@ const { Flag } = require("../../../src/main/typescript/elvarg/game/model/Flag");
 const { Item } = require("../../../src/main/typescript/elvarg/game/model/Item");
 const { Equipment } = require("../../../src/main/typescript/elvarg/game/model/container/impl/Equipment");
 const { assignIronMode } = require("./Ironmen.PlayerBots");
+const { generateAccount } = require("./Accounts.PlayerBots");
+/** BOT_GENERATED_ACCOUNTS=0: world bots are provisioned as before (gear, food and bait on demand). */
+const GENERATED_ACCOUNTS = (process.env.BOT_GENERATED_ACCOUNTS ?? "1") !== "0";
 const { ItemIdentifiers } = require("../../../src/main/typescript/elvarg/util/ItemIdentifiers");
 
 /**
@@ -331,7 +334,12 @@ function startBotSites(options = {}) {
     });
     // Not every bot starts its job at the site: most set off for a place where it is done, so a
     // site's twenty miners do not all go to the nearest mine.
-    if (attached) world.travel?.(bot, runtime.botStatesByName?.get?.(bot.getUsername?.()), activity, Date.now());
+    const state = runtime.botStatesByName?.get?.(bot.getUsername?.());
+    // An account of its own, as if it had played before; honest from here on (Accounts.PlayerBots.js).
+    if (attached && world.core && GENERATED_ACCOUNTS) {
+      generateAccount(bot, state, { core: world.core, mode: activity.mode, equipCombatGear: world.equipCombatGear });
+    }
+    if (attached) world.travel?.(bot, state, activity, Date.now());
     return attached;
   }
 

@@ -14,6 +14,8 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Elke wereldbot krijgt bij het starten een eigen account alsof hij al speelde: gereedschap en uitrusting bij zijn levels, eten, coins en een bank met wat grondstoffen. Daarna speelt hij eerlijk: hij raapt loot op, verkoopt op de GE en koopt eten en gereedschap met zijn eigen coins. Uit te zetten met `BOT_GENERATED_ACCOUNTS=0`.
+- Bij `::volg` zie je de inventaris en skills van de bot die je volgt; na het stoppen weer je eigen.
 - `::volg <naam>`: volg een bot of avonturier live met de camera. Je bent onzichtbaar en loopt vanzelf mee. `::volg` zonder naam stopt.
 - Avonturiers rapen hun eigen loot op en verkopen die op de Grand Exchange. De coins halen ze later op en gebruiken ze voor uitrusting en eten.
 - Gevonden uitrusting die beter is en die ze mogen dragen, trekken avonturiers zelf aan.
@@ -55,6 +57,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Opgelost
+- De iconen op de avonturierspagina laden nu echt: de game-server haalt ze één keer op bij de OSRS Wiki en bewaart ze.
 - Stoppen vindt het spel nu ook in een codespace, waar niet te zien is welk proces een poort
   vasthoudt: op de opdrachtregel. Een achtergebleven client op poort 3000 wordt zo ook gestopt.
   De client neemt bij stoppen ook zijn eigen ontwikkelserver mee, zodat die niet achterblijft.

@@ -1497,17 +1497,24 @@ export class PacketSender {
   }
 
   sendSkillsSnapshot(): this {
-    const manager = this.player.getSkillManager();
+    return this.sendSkillsSnapshotOf(this.player);
+  }
+
+  /**
+   * Every skill of `subject` in this player's stats tab: their own, or another player's while
+   * this one watches them (a spectator). sendSkillsSnapshot() puts their own back.
+   */
+  sendSkillsSnapshotOf(subject: any): this {
+    const manager = subject.getSkillManager();
     this.player.getSession().sendClientPacket(encodeSkillsSnapshot(
-      Skill.values().map((skill) => this.skillView(skill)),
+      Skill.values().map((skill) => this.skillView(skill, manager)),
       manager.getTotalLevel(),
       manager.getCombatLevel()
     ));
     return this;
   }
 
-  private skillView(skill: Skill): SkillView {
-    const manager = this.player.getSkillManager();
+  private skillView(skill: Skill, manager: any = this.player.getSkillManager()): SkillView {
     const baseLevel = manager.getMaxLevel(skill);
     const currentLevel = manager.getCurrentLevel(skill);
     return {

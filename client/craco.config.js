@@ -54,6 +54,53 @@ for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
     process.once(signal, () => console.log(`[client] De ontwikkelserver kreeg ${signal}.`));
 }
 
+const WIKI_ICON_DIR = path.resolve(appRoot, "node_modules/.cache/wiki-icons");
+const WIKI_ICON_NAME = /^[A-Za-z0-9_().'%!,+-]{1,120}\.png$/;
+
+/** One OSRS Wiki image by file name, from the cache or fetched (following a redirect or two). */
+function serveWikiIcon(req, res) {
+    let name;
+    try {
+        name = decodeURIComponent(String(req.path || "").replace(/^\//, ""));
+    } catch {
+        name = "";
+    }
+    if (!WIKI_ICON_NAME.test(name)) return res.status(400).end();
+    const file = path.join(WIKI_ICON_DIR, name);
+    const send = () => res.set({ "Content-Type": "image/png", "Cache-Control": "public, max-age=604800" }).sendFile(file);
+    if (fs.existsSync(file)) return send();
+    if (fs.existsSync(`${file}.missing`)) return res.status(404).end();
+    const fetchFrom = (url, hops) => {
+        const request = require("https").get(url, {
+            headers: { "User-Agent": "RealmOfEeshwar/1.0 (private server, adventurers page icons)" },
+            timeout: 8000,
+        }, (reply) => {
+            if ([301, 302, 303, 307, 308].includes(reply.statusCode) && reply.headers.location && hops < 3) {
+                reply.resume();
+                return fetchFrom(new URL(reply.headers.location, url).toString(), hops + 1);
+            }
+            if (reply.statusCode !== 200) {
+                reply.resume();
+                if (reply.statusCode === 404) {
+                    fs.mkdirSync(WIKI_ICON_DIR, { recursive: true });
+                    fs.writeFileSync(`${file}.missing`, "");
+                }
+                return res.status(404).end();
+            }
+            const chunks = [];
+            reply.on("data", (chunk) => chunks.push(chunk));
+            reply.on("end", () => {
+                fs.mkdirSync(WIKI_ICON_DIR, { recursive: true });
+                fs.writeFileSync(file, Buffer.concat(chunks));
+                send();
+            });
+        });
+        request.on("timeout", () => request.destroy());
+        request.on("error", () => res.headersSent || res.status(502).end());
+    };
+    fetchFrom(`https://oldschool.runescape.wiki/images/${encodeURIComponent(name)}`, 0);
+}
+
 module.exports = {
     // `yarn start` skips the lint pass (CLIENT_LINT=0, scripts/run-with-env.mjs); builds keep it.
     eslint: { enable: process.env.CLIENT_LINT !== "0" },
@@ -267,6 +314,12 @@ module.exports = {
                     upstream.on("error", () => res.status(502).json({ error: "game server not reachable" }));
                     upstream.on("timeout", () => upstream.destroy());
                 });
+
+                // The adventurers page's RuneScape icons (skills, items) come from the OSRS Wiki.
+                // The page cannot load them from there itself (this server sends
+                // Cross-Origin-Embedder-Policy: require-corp), so they are fetched here, once, and
+                // kept in node_modules/.cache/wiki-icons.
+                devServer.app.use("/wiki-icons", (req, res) => serveWikiIcon(req, res));
 
                 return middlewares;
             },

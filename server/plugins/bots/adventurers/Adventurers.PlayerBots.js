@@ -422,7 +422,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       adventurers.set(name, { name, player: bot, phase: "new", until: 0, plan: null, activity: null });
       // Honest: no conjured gear, tools, food or bait; it buys, finds or makes what it uses.
       const state = runtime.botStatesByName?.get?.(name);
-      if (state) state.honest = true;
+      if (state) {
+        state.honest = true;
+        // Its own planner trades for it (trade()); the world bots' upkeep leaves it alone.
+        state.adventurer = true;
+      }
       if (Number(bot.getAttribute(GENERATION_ATTRIBUTE) ?? 0) < (data.generation ?? 1)) startOver(bot);
     }
   }

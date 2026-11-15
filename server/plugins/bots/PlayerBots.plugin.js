@@ -2,6 +2,7 @@ const path = require("path");
 const { startChatter } = require("./brain/Chatter.PlayerBots");
 const { startAdventurers } = require("./adventurers/Adventurers.PlayerBots");
 const { startWatching } = require("./runtime/Watch.PlayerBots");
+const { startUpkeep } = require("./brain/Upkeep.PlayerBots");
 const { startIronmen } = require("./brain/Ironmen.PlayerBots");
 const { startProgression } = require("./brain/Progression.PlayerBots");
 const { initPvpTierLoadouts } = require("./behaviours/pvp/PvpTierLoadouts.PlayerBots");
@@ -292,6 +293,8 @@ module.exports = {
     startAdventurers({ api, runtime: boot.runtime, world: boot.brainWorld, registry: boot.brainRegistry });
     // ::volg <naam>: the camera follows a bot live.
     startWatching(api);
+    // World bots with a generated account sell, collect and restock at the Grand Exchange.
+    startUpkeep(api, boot.runtime);
 
     registerBotStatusInteractions({
       api,

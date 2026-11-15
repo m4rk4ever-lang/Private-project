@@ -4,6 +4,7 @@ const { playerState } = require("../ActionState.PlayerBots");
 const { nearestClusters, npcClustersFor } = require("../NpcClusterIndex.PlayerBots");
 const { canReachSpot } = require("../../behaviours/navigation/LongRoutes.PlayerBots");
 const Loot = require("../Loot.PlayerBots");
+const isFood = (itemId) => require("../../../items/Food.plugin").isFoodItem(itemId);
 const Value = require("../../../interface/ValueWarning");
 const { requestMovement, clearMovementRequest, peekMovementRequest, randomInRange } =
   require("../../behaviours/navigation/Navigation.PlayerBots");
@@ -457,6 +458,13 @@ function createTrainCombatAction(spec, world) {
             return "running";
           }
         }
+      }
+      if (state.honest && !bot.target && player.getHitpoints() * 2 < player.getSkillManager().getMaxLevel(Skill.HITPOINTS) &&
+          !(player.getInventory().getItems() ?? []).some((item) => item && isFood(item.getId()))) {
+        // Hurt and out of food: an honest bot stops before it dies, and restocks first
+        // (Upkeep.PlayerBots.js, or an adventurer's planner).
+        leaveSite(player, bot, nowMs, SITE_AVOID_MS);
+        return "failed";
       }
       if (!bot.target && state.honest) {
         // An honest bot (an adventurer) takes its own loot between fights: its income.

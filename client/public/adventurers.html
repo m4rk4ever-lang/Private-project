@@ -89,9 +89,10 @@
   const SKILL_NAMES = { runecrafting: "Runecraft" };
   const TAB_ICONS = { skill: "Stats_icon", quest: "Quest_point_icon", boss: "Combat_icon", drop: "Coins_10000", bank: "Bank_icon", activity: "Grand_Exchange_icon" };
 
-  /** An image from the OSRS Wiki by its file name; a missing one simply disappears. */
+  /** An image from the OSRS Wiki by its file name; a missing one shows its short text. */
   function wikiFile(file) {
-    return `https://oldschool.runescape.wiki/images/${encodeURIComponent(file.replace(/ /g, "_"))}.png`;
+    // Through the game's own dev server (see serveWikiIcon in craco.config.js).
+    return `/wiki-icons/${encodeURIComponent(file.replace(/ /g, "_"))}.png`;
   }
   /** Without the picture (offline, or no such file) its short text stands in. */
   function icon(file, title = "", fallback = "") {

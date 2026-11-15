@@ -21,8 +21,15 @@ function actor(name, at, index) {
       getCameraState: () => ({ mode: "follow" }),
       restoreCameraState: (state) => p.camera.push(["restore", state.mode]),
       sendCameraTarget: (target) => p.camera.push(["target", target.player]),
+      sendItemContainer: (container) => p.camera.push(["inventory", container.getItems()[0].getAmount()]),
+      sendSkillsSnapshotOf: (subject) => p.camera.push(["skills-of", subject.getIndex()]),
+      sendSkillsSnapshot: () => p.camera.push(["own-skills"]),
     }),
     sendMessage: (text) => p.messages.push(text),
+    items: [{ getId: () => 995, getAmount: () => index }],
+    getInventory: () => ({ getItems: () => p.items, refreshItems: () => p.camera.push(["own-inventory"]) }),
+    getSkillManager: () => ({ getTotalLevel: () => 100 + index, getTotalExp: () => 5000 }),
+    getHitpoints: () => 10,
   };
   return p;
 }
@@ -36,6 +43,11 @@ test("::volg keeps the camera on the bot and moves the hidden watcher along; sto
   assert.equal(me.blocked, true);
   Watch.tick();
   assert.deepEqual(me.camera.at(-1), ["target", 7]);
+  assert.ok(me.camera.some(([kind, value]) => kind === "inventory" && value === 7), "the bot's inventory");
+  assert.ok(me.camera.some(([kind, value]) => kind === "skills-of" && value === 7), "the bot's stats");
+  const sent = me.camera.length;
+  Watch.tick();
+  assert.equal(me.camera.length, sent, "nothing new while nothing changed");
   bot.at = loc(3165 + Watch.KEEP_WITHIN + 5, 3487);
   Watch.tick();
   assert.equal(me.at.getX(), bot.at.getX(), "moved along when the bot walked out of view");
@@ -44,6 +56,7 @@ test("::volg keeps the camera on the bot and moves the hidden watcher along; sto
   assert.equal(me.blocked, false);
   assert.equal(me.at.getX(), 3222, "back where it stood");
   assert.deepEqual(me.camera.at(-1), ["restore", "follow"]);
+  assert.ok(me.camera.some(([kind]) => kind === "own-inventory") && me.camera.some(([kind]) => kind === "own-skills"), "own tabs back");
   assert.equal(Watch.watching.size, 0);
 });
 
