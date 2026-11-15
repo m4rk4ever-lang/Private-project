@@ -50,6 +50,10 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Opgelost
+- `yarn start` stopte direct na het compileren van de client ("exited with code 0") en nam de
+  server mee. De client blijft nu draaien.
+- Opstarten is rustiger: geen pagina's met stijlwaarschuwingen van de client meer en geen
+  SQLite-melding van de server.
 - `update` stopte een gameserver die bleef hangen tijdens het afsluiten niet, waardoor poort
   43594 bezet bleef. Hij wordt nu na 20 seconden geforceerd gestopt.
 - `update` stopt als laatste redmiddel alle node-processen van het spel zelf (server, client en

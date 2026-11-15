@@ -30,6 +30,18 @@ const env = { ...loadedEnv, ...process.env };
 if (packageDir === resolve(rootDir, "client")) {
   env.REACT_APP_WEBRTC_SIGNAL_URL ??= env.WEBRTC_SIGNAL_URL;
   env.REACT_APP_WEBRTC_ICE_SERVERS ??= env.WEBRTC_ICE_SERVERS;
+  if (mode === "development") {
+    // The dev server stops when its input closes unless CI is set, and `yarn start` runs it
+    // without input (concurrently): it compiled and then exited, taking the server down too.
+    env.CI ??= "true";
+    // No lint pass on every start and rebuild: a page of style warnings that say nothing
+    // about the game (they stay in `yarn build`).
+    env.DISABLE_ESLINT_PLUGIN ??= "true";
+  }
+}
+// Node's "SQLite is an experimental feature" notice on every server start.
+if (packageDir === resolve(rootDir, "server") && !String(env.NODE_OPTIONS ?? "").includes("--disable-warning")) {
+  env.NODE_OPTIONS = `${env.NODE_OPTIONS ?? ""} --disable-warning=ExperimentalWarning`.trim();
 }
 
 const result = spawnSync(
