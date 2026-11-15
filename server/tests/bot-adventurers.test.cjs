@@ -199,3 +199,29 @@ test("supplies it uses up are kept however many: runes, arrows, tablets, charged
   };
   assert.deepEqual([1, 2, 3, 4, 5, 6].filter((id) => Trade.isSupply(core, id)), [1, 2, 3, 4]);
 });
+
+test("goals: the next gear's level first, then its price; a goal steers the pick", () => {
+  const Goals = require("../plugins/bots/adventurers/Goals.PlayerBots");
+  const gear = { slots: { weapon: [
+    { item: "RUNE_SCIMITAR", skill: "ATTACK", level: 40 },
+    { item: "MITHRIL_SCIMITAR", skill: "ATTACK", level: 20 },
+    { item: "IRON_SCIMITAR", skill: "ATTACK", level: 1 },
+  ] }, tools: {} };
+  const ids = { RUNE_SCIMITAR: 1, MITHRIL_SCIMITAR: 2, IRON_SCIMITAR: 3, AMULET_OF_GLORY_4_: 4 };
+  const helpers = (attack, coins, wornIds = [3]) => ({
+    gear, coins,
+    levelOf: (skill) => (skill === "ATTACK" ? attack : skill === "FIREMAKING" ? 60 : 1),
+    owns: () => false, worn: (id) => wornIds.includes(id), questDone: () => true,
+    idOf: (name) => ids[name], priceOf: (id) => ({ 1: 15000, 2: 1500, 4: 12000 })[id] ?? 0,
+  });
+  const low = Goals.pickGoal(helpers(10, 0), () => 0);
+  assert.deepEqual({ kind: low.kind, skill: low.skill, level: low.level }, { kind: "level", skill: "ATTACK", level: 20 });
+  const ready = Goals.pickGoal(helpers(25, 0), () => 0);
+  assert.equal(ready.kind, "coins");
+  assert.equal(ready.item, "MITHRIL_SCIMITAR");
+  assert.equal(Goals.reached(ready, helpers(25, 2000)), true);
+  assert.match(Goals.describe(low), /20 Attack voor mithril scimitar/);
+  // Steering: an Attack goal makes combat four times as likely.
+  assert.equal(Goals.goalWeight(low, { mode: "combat_training", skill: "COMBAT" }), 4);
+  assert.equal(Goals.goalWeight(ready, { mode: "buy_fletching", skill: "FLETCHING" }) < 1, true, "saving: no spending on materials");
+});

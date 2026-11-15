@@ -14,6 +14,8 @@
  *   Each choice is a mode the bots can do (woodcutting, mining, fishing, thieving, combat,
  *   Wintertodt for Firemaking from level 50) and the best activity of that mode for its level.
  */
+const { goalWeight, describe } = require("./Goals.PlayerBots");
+
 const TRAINABLE = Object.freeze({
   WOODCUTTING: "woodcutting",
   MINING: "mining",
@@ -68,7 +70,7 @@ function bossesFor(adventurer, bosses = []) {
 
 function chooseNext(adventurer, quests, {
   available = null, questChance = 0.45, bosses = [], bossChance = 0, random = Math.random,
-  focus = {}, busyModes = new Set(), exclude = new Set(),
+  focus = {}, busyModes = new Set(), exclude = new Set(), goal = null,
 } = {}) {
   const open = quests.filter((quest) => !adventurer.done.has(quest.name) && (!available || available.has(quest.name)));
   const fightable = bossesFor(adventurer, bosses);
@@ -95,11 +97,12 @@ function chooseNext(adventurer, quests, {
     }
   }
   // Nothing in the way: a weighted pick (trainingWeights), so each adventurer has its own way.
-  const weighted = options.map((option) => ({ option, weight: trainingWeight(option, options, adventurer, { focus, busyModes }) }));
+  const weighted = options.map((option) => ({ option, weight: trainingWeight(option, options, adventurer, { focus, busyModes }) * goalWeight(goal, option) }));
   const total = weighted.reduce((sum, entry) => sum + entry.weight, 0);
   let roll = random() * total;
   const choice = (weighted.find((entry) => (roll -= entry.weight) < 0) ?? weighted[weighted.length - 1]).option;
-  return { kind: "train", mode: choice.mode, skill: choice.skill, reason: reasonFor(choice, options, focus) };
+  const forGoal = goal && goalWeight(goal, choice) > 1;
+  return { kind: "train", mode: choice.mode, skill: choice.skill, reason: forGoal ? `doel: ${describe(goal)}` : reasonFor(choice, options, focus) };
 }
 
 /**

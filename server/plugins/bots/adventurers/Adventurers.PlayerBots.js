@@ -20,11 +20,14 @@ const definitions = require("../../../data/definitions/bot-activities.json");
 const data = require("../data/adventurers.json");
 const { chooseNext, bestActivity } = require("./Planner.PlayerBots");
 const { createQuestList } = require("./Quests.PlayerBots");
+const Goals = require("./Goals.PlayerBots");
 const { createTravel } = require("../brain/Travel.PlayerBots");
 const { startActivity } = require("../brain/BrainActivities.PlayerBots");
 const travelData = require("../data/travel-destinations.json");
 
 const LOG_ATTRIBUTE = "adventurers:journal";
+/** Its current goal (Goals.PlayerBots.js), kept across restarts. */
+const GOAL_ATTRIBUTE = "adventurers:goal";
 /** Which start an adventurer belongs to; a lower one than data.generation starts it over. */
 const GENERATION_ATTRIBUTE = "adventurers:generation";
 const Shopping = require("./Shopping.PlayerBots");
@@ -175,6 +178,40 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   /** It has the materials for this (in its bag or bank): what it gathered feeds the next skill. */
   function hasStock(player, plan) {
     return plan.materials.every((id) => banked(player, id) + player.getInventory().getAmount(id) >= 5);
+  }
+
+  function goalHelpers(player) {
+    const worn = new Set((player.getEquipment().getItems() ?? []).map((item) => item?.getId?.()).filter((id) => id > 0));
+    return {
+      gear: Shopping.gear,
+      levelOf: (skill) => levelOf(player, skill),
+      owns: (id) => Number.isInteger(id) && (player.getInventory().contains(id) || banked(player, id) > 0),
+      worn: (id) => worn.has(id),
+      priceOf: (id) => {
+        const guide = Number(core.ItemDefinition?.forId?.(id)?.getGrandExchangeValue?.() ?? 0);
+        return guide > 0 ? Math.ceil(guide * 1.05) : 0;
+      },
+      questDone: questDone(player),
+      idOf: (name) => Shopping.idOf(core, name),
+      coins: Shopping.coinsOf(player) + banked(player, Trade.COINS),
+    };
+  }
+
+  /** Its goal now: the stored one until reached, then the next (in its journal both). */
+  function goalOf(entry) {
+    const player = entry.player;
+    const helpers = goalHelpers(player);
+    let goal = player.getAttribute(GOAL_ATTRIBUTE) ?? null;
+    if (goal && Goals.reached(goal, helpers)) {
+      note(player, `Doel gehaald: ${Goals.describe(goal)}.`, "skill");
+      goal = null;
+    }
+    if (!goal) {
+      goal = Goals.pickGoal(helpers, random);
+      if (goal) note(player, `Nieuw doel: ${Goals.describe(goal)}.`, "activity");
+      player.setAttribute(GOAL_ATTRIBUTE, goal);
+    }
+    return goal;
   }
 
   /** Skills it has the materials for now: they weigh more in its next pick (one skill feeds another). */
@@ -439,7 +476,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     for (let attempt = 0; attempt < 4; attempt += 1) {
       const plan = chooseNext(view, questList(), {
         available: view.available, questChance: data.questChance, bosses: data.bosses, bossChance: attempt === 0 ? data.bossChance : 0, random,
-        focus: data.focus?.[entry.name] ?? {}, busyModes, exclude,
+        focus: data.focus?.[entry.name] ?? {}, busyModes, exclude, goal: goalOf(entry),
       });
       const started = plan.kind === "quest" ? startQuest(entry, plan)
         : plan.kind === "boss" ? startBoss(entry, plan, nowMs)
@@ -592,6 +629,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
     player.setAttribute(QuestRuntime.QUEST_POINTS_ATTRIBUTE, 0);
     player.setAttribute(LOG_ATTRIBUTE, []);
+    player.setAttribute(GOAL_ATTRIBUTE, null);
     // What every new account gets on Tutorial Island.
     for (const [name, amount] of Shopping.gear.starterKit) {
       const id = Shopping.idOf(core, name);
@@ -1020,6 +1058,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         questPoints: view?.questPoints ?? 0,
         quests: view ? [...view.done] : [],
         questsTotal: questList().length,
+        goal: online ? Goals.describe(player.getAttribute(GOAL_ATTRIBUTE) ?? null) : null,
         skills,
         doing: entry.phase === "boss" ? `Boss: ${entry.plan?.boss?.name}`
           : entry.plan ? `Training: ${String(entry.activity).replace(/_/g, " ")} (${entry.plan.reason})` : "Begint",
@@ -1047,6 +1086,7 @@ const REPORT_CACHE_MS = 2000;
 function startAdventurers({ api, runtime, world, registry }) {
   api.persistAttribute(LOG_ATTRIBUTE, []);
   api.persistAttribute(GENERATION_ATTRIBUTE, 0);
+  api.persistAttribute(GOAL_ATTRIBUTE, null);
   const manager = createAdventurers({ api, runtime, world, registry });
   api.onPlayerLevelUp(manager.onLevelUp);
   api.onCustomEvent("npc-drops:roll", manager.onDrops);
