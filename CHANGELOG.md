@@ -70,6 +70,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Alle 15 avonturiers beginnen opnieuw op level 1 (ook de eerste 5), zodat de clanrace eerlijk start: levels, spullen, bank, quests, GE-biedingen en dagboek zijn gewist.
 - Veel minder wereldbots: hooguit 3 PvP-bots per actief gebied (was 16) en een pool van 30 (was 845). Samen met de vaste plekken zijn dat er zo'n 50 in plaats van 150 tot 180. Zo blijft er ruimte voor de avonturiers.
 - Avonturiers maken zelf de afweging bij een volle tas: is een bank of de GE onbereikbaar, dan proberen ze de volgende bank. Een versperde weg blokkeert alleen die ene plek. Alleen als niets bereikbaar is, laten ze goedkope spullen (minder dan 500 gp per stapel) vallen; duurdere spullen houden ze en ze proberen het even later opnieuw.
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
