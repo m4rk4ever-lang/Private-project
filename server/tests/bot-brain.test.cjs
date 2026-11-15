@@ -2049,16 +2049,17 @@ test('a site\'s levels are applied to every skill of a spawned bot (hitpoints at
   }
 });
 
-test('a spawned bot is dressed for its tier with real items and keeps the weapon slot free', () => {
+test('a spawned bot is dressed for its tier with real items or empty slots, and keeps the weapon slot free', () => {
   const { applyOutfit, outfitTier } = require('../plugins/bots/brain/SiteSpawner.PlayerBots');
   const { Equipment } = require('../src/main/typescript/elvarg/game/model/container/impl/Equipment');
   assert.equal(outfitTier(1), 'novice');
   assert.equal(outfitTier({ all: [1, 19] }), 'novice');
   assert.equal(outfitTier({ all: [20, 39] }), 'mid');
   assert.equal(outfitTier({ all: [40, 59] }), 'advanced');
-  assert.equal(outfitTier({ all: [60, 99] }), 'elite');
+  assert.equal(outfitTier({ all: [60, 79] }), 'elite');
+  assert.equal(outfitTier({ all: [80, 99] }), 'master');
   const slots = [Equipment.HEAD_SLOT, Equipment.CAPE_SLOT, Equipment.AMULET_SLOT, Equipment.BODY_SLOT,
-    Equipment.LEG_SLOT, Equipment.HANDS_SLOT, Equipment.FEET_SLOT];
+    Equipment.LEG_SLOT, Equipment.HANDS_SLOT, Equipment.FEET_SLOT, Equipment.RING_SLOT];
   const worn = new Map();
   const bot = {
     getEquipment: () => ({ set: (slot, item) => worn.set(slot, item.getId()), refreshItems() {} }),
@@ -2066,7 +2067,7 @@ test('a spawned bot is dressed for its tier with real items and keeps the weapon
   };
   applyOutfit(bot, 'elite');
   for (const slot of slots) {
-    assert.ok(worn.get(slot) > 0, `slot ${slot} has a real item`);
+    assert.ok(worn.get(slot) > 0 || worn.get(slot) === -1, `slot ${slot} has a real item or is emptied`);
   }
   assert.equal(worn.has(Equipment.WEAPON_SLOT), false, 'the skill tool owns the weapon slot');
 });

@@ -7,7 +7,8 @@
  * from data/travel-destinations.json among those that offer the new activity's mode and suit
  * the bot's level (the skill for a skilling mode, the combat level for combat training). The bot
  * arrives with the normal teleport, and its home moves there: searches and roaming start from it,
- * and the activity walks to the nearest tree, rock, fishing spot or monster cluster as usual.
+ * and the activity walks to the nearest tree, rock, fishing spot or monster cluster as usual. A
+ * skiller also changes clothes for the new job (SiteSpawner's dressForMode).
  *
  * Only skilling and combat-training bots travel; PvP bots and bots in a fight, a bank trip or
  * the Wilderness stay put, and no destination is in the Wilderness.
@@ -41,7 +42,7 @@ function destinationsFor(mode, level, here, destinations = data.destinations) {
  * Returns `travel(player, state, activity, nowMs)`: teleports the bot to a fitting destination
  * (with `chance`) and moves its home there. Returns the destination, or null when it stays.
  */
-function createTravel({ core, log = () => {}, random = Math.random, chance = data.chance } = {}) {
+function createTravel({ core, log = () => {}, dress = null, random = Math.random, chance = data.chance } = {}) {
   return function travel(player, state, activity, nowMs) {
     const mode = activity?.mode;
     if (!player || !mode || !(mode in MODE_SKILL || mode === "combat_training")) return null;
@@ -61,6 +62,8 @@ function createTravel({ core, log = () => {}, random = Math.random, chance = dat
       player.moveTo(target);
     }
     if (state) state.home = { x: place.x, y: place.y, z: place.z ?? 0 };
+    // New place, new job: a skiller changes into what fits it (Lumberjack, Prospector, Angler...).
+    dress?.(player, mode);
     log("bot_travel", { username: player.getUsername?.() ?? null, to: place.id, mode, at: nowMs });
     return place;
   };

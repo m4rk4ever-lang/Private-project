@@ -47,12 +47,23 @@ function occupants(siteId) {
 }
 
 /** Stable per-bot seed so each trainer keeps its random low-gear outfit. */
+/**
+ * A stable, well-mixed hash of a string: FNV-1a, then the murmur3 finaliser. Each bot keeps its
+ * own gear (the hash of its username and the slot), and bots with near-identical usernames
+ * (PlayerBot5, PlayerBot41) or the same bot's different slots no longer pick in lockstep, as
+ * the low bits of a plain `hash * 31` did.
+ */
 function hashSeed(value) {
-  let hash = 0;
+  let hash = 0x811c9dc5;
   for (let index = 0; index < value.length; index += 1) {
-    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
+    hash = Math.imul(hash ^ value.charCodeAt(index), 0x01000193);
   }
-  return hash;
+  hash ^= hash >>> 16;
+  hash = Math.imul(hash, 0x85ebca6b);
+  hash ^= hash >>> 13;
+  hash = Math.imul(hash, 0xc2b2ae35);
+  hash ^= hash >>> 16;
+  return hash >>> 0;
 }
 
 function createTrainCombatAction(spec, world) {

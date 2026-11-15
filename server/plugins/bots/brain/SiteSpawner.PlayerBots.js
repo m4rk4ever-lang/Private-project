@@ -80,45 +80,92 @@ function applyLevels(bot, levels) {
   bot.getUpdateFlag?.()?.flag?.(Flag.APPEARANCE);
 }
 
-/** Wearable kit per tier; a bot draws one random item per slot, so crowds vary. */
+/**
+ * What a bot wears, per outfit tier. Like real players, a bot leaves slots empty: each slot is
+ * worn with its SLOT_CHANCE (an empty body or legs shows the bot's own clothes, whose colours
+ * are rolled at spawn). Capes come from one shared pool (the colours, all 50 team capes and the
+ * cloaks that fit the tier), so two bots rarely match.
+ */
+const COLOUR_CAPES = ["RED_CAPE", "BLUE_CAPE", "GREEN_CAPE", "YELLOW_CAPE", "ORANGE_CAPE", "PURPLE_CAPE", "BLACK_CAPE"];
+const TEAM_CAPES = ["TEAM_1_CAPE", "TEAM_2_CAPE", "TEAM_3_CAPE", "TEAM_4_CAPE", "TEAM_5_CAPE", "TEAM_6_CAPE", "TEAM_7_CAPE", "TEAM_8_CAPE", "TEAM_9_CAPE", "TEAM_10_CAPE", "TEAM_11_CAPE", "TEAM_12_CAPE", "TEAM_13_CAPE", "TEAM_14_CAPE", "TEAM_15_CAPE", "TEAM_16_CAPE", "TEAM_17_CAPE", "TEAM_18_CAPE", "TEAM_19_CAPE", "TEAM_20_CAPE", "TEAM_21_CAPE", "TEAM_22_CAPE", "TEAM_23_CAPE", "TEAM_24_CAPE", "TEAM_25_CAPE", "TEAM_26_CAPE", "TEAM_27_CAPE", "TEAM_28_CAPE", "TEAM_29_CAPE", "TEAM_30_CAPE", "TEAM_31_CAPE", "TEAM_32_CAPE", "TEAM_33_CAPE", "TEAM_34_CAPE", "TEAM_35_CAPE", "TEAM_36_CAPE", "TEAM_37_CAPE", "TEAM_38_CAPE", "TEAM_39_CAPE", "TEAM_40_CAPE", "TEAM_41_CAPE", "TEAM_42_CAPE", "TEAM_43_CAPE", "TEAM_44_CAPE", "TEAM_45_CAPE", "TEAM_46_CAPE", "TEAM_47_CAPE", "TEAM_48_CAPE", "TEAM_49_CAPE", "TEAM_50_CAPE"];
+const FREMENNIK_CLOAKS = ["FREMENNIK_BLUE_CLOAK", "FREMENNIK_RED_CLOAK", "FREMENNIK_GREEN_CLOAK", "FREMENNIK_BROWN_CLOAK"];
+const HATS = ["CHEFS_HAT", "RED_BERET", "BLACK_BERET", "BLUE_BERET", "WHITE_BERET", "BEANIE", "RED_HEADBAND",
+  "BLACK_HEADBAND", "BROWN_HEADBAND", "GREEN_HAT", "BLUE_HAT"];
+const BOATERS = ["RED_BOATER", "ORANGE_BOATER", "GREEN_BOATER", "BLUE_BOATER", "BLACK_BOATER"];
+const CAVALIERS = ["TAN_CAVALIER", "DARK_CAVALIER", "BLACK_CAVALIER", "HIGHWAYMAN_MASK"];
+const FREMENNIK_HELMS = ["HELM_OF_NEITIZNOT", "BERSERKER_HELM", "WARRIOR_HELM", "ARCHER_HELM", "FARSEER_HELM"];
+
 const SKILLING_OUTFITS = Object.freeze({
   novice: {
-    head: ["LEATHER_COWL", "BRONZE_MED_HELM", "IRON_MED_HELM", "WIZARD_HAT", "BLUE_WIZARD_HAT"],
-    cape: ["BLUE_CAPE", "RED_CAPE", "GREEN_CAPE", "YELLOW_CAPE", "ORANGE_CAPE", "PURPLE_CAPE"],
-    amulet: ["AMULET_OF_STRENGTH", "AMULET_OF_DEFENCE", "AMULET_OF_MAGIC"],
-    body: ["LEATHER_BODY", "BRONZE_PLATEBODY", "IRON_PLATEBODY", "BLUE_WIZARD_ROBE"],
-    legs: ["LEATHER_CHAPS", "BRONZE_PLATELEGS", "IRON_PLATELEGS", "BLUE_SKIRT", "BLACK_SKIRT"],
-    hands: ["LEATHER_GLOVES", "BRONZE_GLOVES", "IRON_GLOVES"],
+    head: ["LEATHER_COWL", "BRONZE_MED_HELM", "IRON_MED_HELM", "WIZARD_HAT", "BLUE_WIZARD_HAT", ...HATS],
+    cape: [...COLOUR_CAPES, ...TEAM_CAPES],
+    amulet: ["AMULET_OF_STRENGTH", "AMULET_OF_DEFENCE", "AMULET_OF_MAGIC", "AMULET_OF_ACCURACY", "HOLY_SYMBOL"],
+    body: ["LEATHER_BODY", "BRONZE_PLATEBODY", "IRON_PLATEBODY", "BLUE_WIZARD_ROBE", "HAM_SHIRT", "MONKS_ROBE_TOP", "DRUIDS_ROBE_TOP"],
+    legs: ["LEATHER_CHAPS", "BRONZE_PLATELEGS", "IRON_PLATELEGS", "BLUE_SKIRT", "BLACK_SKIRT", "PINK_SKIRT", "HAM_ROBE", "MONKS_ROBE", "DRUIDS_ROBE"],
+    hands: ["LEATHER_GLOVES"],
     feet: ["LEATHER_BOOTS", "BRONZE_BOOTS", "IRON_BOOTS"],
+    ring: [],
   },
   mid: {
-    head: ["STEEL_MED_HELM", "MITHRIL_MED_HELM", "WIZARD_HAT", "BLUE_WIZARD_HAT"],
-    cape: ["BLACK_CAPE", "BLUE_CAPE", "RED_CAPE", "GREEN_CAPE", "PURPLE_CAPE"],
-    amulet: ["AMULET_OF_STRENGTH", "AMULET_OF_DEFENCE", "AMULET_OF_MAGIC"],
-    body: ["STUDDED_BODY", "STEEL_PLATEBODY", "MITHRIL_PLATEBODY", "GREEN_DHIDE_BODY", "BLUE_WIZARD_ROBE"],
-    legs: ["STUDDED_CHAPS", "STEEL_PLATELEGS", "MITHRIL_PLATELEGS", "GREEN_DHIDE_CHAPS", "BLUE_SKIRT"],
-    hands: ["STEEL_GLOVES", "MITHRIL_GLOVES", "LEATHER_GLOVES"],
+    head: ["STEEL_MED_HELM", "MITHRIL_MED_HELM", "WIZARD_HAT", "BLUE_WIZARD_HAT", ...HATS, ...BOATERS, ...CAVALIERS],
+    cape: [...COLOUR_CAPES, ...TEAM_CAPES, "ARDOUGNE_CLOAK_1"],
+    amulet: ["AMULET_OF_STRENGTH", "AMULET_OF_DEFENCE", "AMULET_OF_MAGIC", "AMULET_OF_POWER", "HOLY_SYMBOL"],
+    body: ["STUDDED_BODY", "STEEL_PLATEBODY", "MITHRIL_PLATEBODY", "GREEN_DHIDE_BODY", "BLUE_WIZARD_ROBE", "HAM_SHIRT", "MONKS_ROBE_TOP"],
+    legs: ["STUDDED_CHAPS", "STEEL_PLATELEGS", "MITHRIL_PLATELEGS", "GREEN_DHIDE_CHAPS", "BLUE_SKIRT", "BLACK_SKIRT", "PINK_SKIRT", "MONKS_ROBE"],
+    hands: ["LEATHER_GLOVES", "STEEL_GLOVES", "MITHRIL_GLOVES"],
     feet: ["STEEL_BOOTS", "MITHRIL_BOOTS", "LEATHER_BOOTS", "CLIMBING_BOOTS"],
+    ring: ["EXPLORERS_RING_1"],
   },
   advanced: {
-    head: ["ADAMANT_MED_HELM", "MITHRIL_MED_HELM", "MYSTIC_HAT", "SPLITBARK_HELM"],
-    cape: ["BLACK_CAPE", "RED_CAPE", "BLUE_CAPE", "GREEN_CAPE"],
-    amulet: ["AMULET_OF_GLORY", "AMULET_OF_STRENGTH", "AMULET_OF_MAGIC"],
+    head: ["ADAMANT_MED_HELM", "MITHRIL_MED_HELM", "MYSTIC_HAT", "SPLITBARK_HELM", "SPINED_HELM", ...BOATERS, ...CAVALIERS],
+    cape: [...COLOUR_CAPES, ...TEAM_CAPES, ...FREMENNIK_CLOAKS, "ARDOUGNE_CLOAK_2", "OBSIDIAN_CAPE"],
+    amulet: ["AMULET_OF_GLORY", "AMULET_OF_STRENGTH", "AMULET_OF_MAGIC", "AMULET_OF_POWER"],
     body: ["ADAMANT_PLATEBODY", "BLUE_DHIDE_BODY", "RED_DHIDE_BODY", "MYSTIC_ROBE_TOP", "SPLITBARK_BODY"],
     legs: ["ADAMANT_PLATELEGS", "BLUE_DHIDE_CHAPS", "RED_DHIDE_CHAPS", "MYSTIC_ROBE_BOTTOM", "SPLITBARK_LEGS"],
     hands: ["ADAMANT_GLOVES", "MITHRIL_GLOVES"],
-    feet: ["ADAMANT_BOOTS", "CLIMBING_BOOTS", "FIGHTING_BOOTS"],
+    feet: ["ADAMANT_BOOTS", "CLIMBING_BOOTS", "FIGHTING_BOOTS", "BOOTS_OF_LIGHTNESS", "SNAKESKIN_BOOTS"],
+    ring: ["EXPLORERS_RING_1"],
   },
   elite: {
-    head: ["RUNE_MED_HELM", "ADAMANT_MED_HELM", "MYSTIC_HAT"],
-    cape: ["BLACK_CAPE", "GREEN_CAPE", "PURPLE_CAPE", "ORANGE_CAPE"],
-    amulet: ["AMULET_OF_GLORY"],
+    head: ["RUNE_MED_HELM", "ADAMANT_MED_HELM", "MYSTIC_HAT", "SPLITBARK_HELM", ...FREMENNIK_HELMS, ...CAVALIERS],
+    cape: [...COLOUR_CAPES, ...TEAM_CAPES, ...FREMENNIK_CLOAKS, "ARDOUGNE_CLOAK_3", "OBSIDIAN_CAPE", "CAPE_OF_LEGENDS"],
+    amulet: ["AMULET_OF_GLORY", "AMULET_OF_POWER", "HOLY_SYMBOL"],
     body: ["RUNE_PLATEBODY", "BLACK_DHIDE_BODY", "MYSTIC_ROBE_TOP", "SPLITBARK_BODY"],
     legs: ["RUNE_PLATELEGS", "BLACK_DHIDE_CHAPS", "MYSTIC_ROBE_BOTTOM", "SPLITBARK_LEGS"],
     hands: ["RUNE_GLOVES", "ADAMANT_GLOVES"],
-    feet: ["RUNE_BOOTS", "ADAMANT_BOOTS", "FIGHTING_BOOTS"],
+    feet: ["RUNE_BOOTS", "ADAMANT_BOOTS", "FIGHTING_BOOTS", "BOOTS_OF_LIGHTNESS", "SNAKESKIN_BOOTS"],
+    ring: ["RING_OF_WEALTH", "EXPLORERS_RING_1"],
+  },
+  master: {
+    head: [...FREMENNIK_HELMS, "RUNE_MED_HELM", "MYSTIC_HAT", ...CAVALIERS],
+    cape: [...TEAM_CAPES, ...FREMENNIK_CLOAKS, "ARDOUGNE_CLOAK_4", "OBSIDIAN_CAPE", "CAPE_OF_LEGENDS", "BLACK_CAPE"],
+    amulet: ["AMULET_OF_GLORY", "AMULET_OF_POWER"],
+    body: ["RUNE_PLATEBODY", "BLACK_DHIDE_BODY", "MYSTIC_ROBE_TOP", "SPLITBARK_BODY"],
+    legs: ["RUNE_PLATELEGS", "BLACK_DHIDE_CHAPS", "MYSTIC_ROBE_BOTTOM", "SPLITBARK_LEGS"],
+    hands: ["RUNE_GLOVES"],
+    feet: ["RUNE_BOOTS", "BOOTS_OF_LIGHTNESS", "SNAKESKIN_BOOTS", "CLIMBING_BOOTS"],
+    ring: ["RING_OF_WEALTH", "EXPLORERS_RING_1"],
   },
 });
+
+/** How often each slot is worn at all. */
+const SLOT_CHANCE = Object.freeze({ head: 0.5, cape: 0.35, amulet: 0.5, body: 0.85, legs: 0.85, hands: 0.3, feet: 0.6, ring: 0.2 });
+
+/** The skill outfits, worn (piece by piece) by some bots of a mode from the advanced tier up. */
+const MODE_OUTFITS = Object.freeze({
+  woodcutting: { head: "LUMBERJACK_HAT", body: "LUMBERJACK_TOP", legs: "LUMBERJACK_LEGS", feet: "LUMBERJACK_BOOTS" },
+  mining: { head: "PROSPECTOR_HELMET", body: "PROSPECTOR_JACKET", legs: "PROSPECTOR_LEGS", feet: "PROSPECTOR_BOOTS" },
+  fishing: { head: "ANGLER_HAT", body: "ANGLER_TOP", legs: "ANGLER_WADERS", feet: "ANGLER_BOOTS" },
+});
+const GRACEFUL = Object.freeze({ head: "GRACEFUL_HOOD", cape: "GRACEFUL_CAPE", body: "GRACEFUL_TOP", legs: "GRACEFUL_LEGS",
+  hands: "GRACEFUL_GLOVES", feet: "GRACEFUL_BOOTS" });
+const MODE_OUTFIT_CHANCE = Object.freeze({ novice: 0, mid: 0.1, advanced: 0.3, elite: 0.45, master: 0.6 });
+const GRACEFUL_CHANCE = Object.freeze({ novice: 0, mid: 0.05, advanced: 0.15, elite: 0.25, master: 0.35 });
+const PIECE_CHANCE = 0.75;
+/** A 99 in the mode's skill shows: most such bots wear that skill's cape. */
+const SKILL_CAPES = Object.freeze({ woodcutting: ["WOODCUTTING", "WOODCUTTING_CAPE"], mining: ["MINING", "MINING_CAPE"],
+  fishing: ["FISHING", "FISHING_CAPE"] });
+const SKILL_CAPE_CHANCE = 0.7;
 
 /** The outfit tier a site's level band implies (its lowest levels pick the kit). */
 function outfitTier(levels) {
@@ -134,7 +181,8 @@ function outfitTier(levels) {
   if (lowest < 20) return "novice";
   if (lowest < 40) return "mid";
   if (lowest < 60) return "advanced";
-  return "elite";
+  if (lowest < 80) return "elite";
+  return "master";
 }
 
 /** The outfit slots in the order they are filled; the weapon slot stays free for the tool. */
@@ -146,23 +194,53 @@ const OUTFIT_SLOTS = Object.freeze({
   legs: Equipment.LEG_SLOT,
   hands: Equipment.HANDS_SLOT,
   feet: Equipment.FEET_SLOT,
+  ring: Equipment.RING_SLOT,
 });
 
-/** Dress the bot for its tier; the weapon slot stays free for the skill tool. */
-function applyOutfit(bot, tier) {
+/** The item names a bot wears: slot key -> ItemIdentifiers name (absent: the slot is empty). */
+function rollOutfit(tier, { mode = null, skillLevel = 0, random = Math.random } = {}) {
   const pool = SKILLING_OUTFITS[tier] ?? SKILLING_OUTFITS.novice;
+  const pick = (list) => list[Math.floor(random() * list.length)];
+  const outfit = {};
+  for (const key of Object.keys(OUTFIT_SLOTS)) {
+    const list = pool[key];
+    if (Array.isArray(list) && list.length > 0 && random() < SLOT_CHANCE[key]) outfit[key] = pick(list);
+  }
+  const overlay = (pieces) => {
+    for (const [key, name] of Object.entries(pieces)) if (random() < PIECE_CHANCE) outfit[key] = name;
+  };
+  if (random() < (GRACEFUL_CHANCE[tier] ?? 0)) overlay(GRACEFUL);
+  if (MODE_OUTFITS[mode] && random() < (MODE_OUTFIT_CHANCE[tier] ?? 0)) overlay(MODE_OUTFITS[mode]);
+  if (SKILL_CAPES[mode] && skillLevel >= 99 && random() < SKILL_CAPE_CHANCE) outfit.cape = SKILL_CAPES[mode][1];
+  return outfit;
+}
+
+/** The bot's real level in a mode's skill (0 for modes without one). */
+function modeSkillLevel(bot, mode) {
+  const skill = SKILL_CAPES[mode] ? Skill[SKILL_CAPES[mode][0]] : null;
+  return skill ? Number(bot.getSkillManager?.()?.getMaxLevel?.(skill) ?? 0) : 0;
+}
+
+/**
+ * Dresses the bot for its tier (and mode: skill outfits, a skill cape at 99); empty rolls clear
+ * their slot, so a re-dress after travelling leaves nothing stale. The weapon slot stays free.
+ */
+function applyOutfit(bot, tier, options = {}) {
   const equipment = bot.getEquipment?.();
   if (!equipment) return;
+  const outfit = rollOutfit(tier, { ...options, skillLevel: options.skillLevel ?? modeSkillLevel(bot, options.mode) });
   for (const [key, slot] of Object.entries(OUTFIT_SLOTS)) {
-    const list = pool[key];
-    if (!Array.isArray(list) || list.length === 0) continue;
-    const id = ItemIdentifiers[list[Math.floor(Math.random() * list.length)]];
-    if (id != null) {
-      equipment.set(slot, new Item(id, 1));
-    }
+    const id = outfit[key] ? ItemIdentifiers[outfit[key]] : null;
+    equipment.set(slot, new Item(Number.isInteger(id) ? id : -1, 1));
   }
   equipment.refreshItems();
   bot.getUpdateFlag?.()?.flag?.(Flag.APPEARANCE);
+}
+
+/** Re-dresses a skilling bot for a new mode (after travelling), by its level in that skill. */
+function dressForMode(bot, mode) {
+  if (!SKILL_CAPES[mode]) return;
+  applyOutfit(bot, outfitTier(modeSkillLevel(bot, mode)), { mode });
 }
 
 const SPAWN_ATTEMPTS = 16;
@@ -212,7 +290,7 @@ function startBotSites(options = {}) {
       return false;
     }
     applyLevels(bot, site.levels);
-    applyOutfit(bot, site.outfit ?? outfitTier(site.levels));
+    applyOutfit(bot, site.outfit ?? outfitTier(site.levels), { mode: activity.mode });
     return attachBrain({
       runtime,
       registry,
@@ -265,6 +343,8 @@ function startBotSites(options = {}) {
 module.exports = {
   applyLevels,
   applyOutfit,
+  dressForMode,
+  rollOutfit,
   combatLevelOf,
   outfitTier,
   startBotSites,

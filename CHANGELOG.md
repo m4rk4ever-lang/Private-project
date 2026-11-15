@@ -65,6 +65,15 @@ Indeling per versie:
 - **High-level bots:** twee nieuwe groepen, masters (level 80+) en legends (90+). Zij hakken magic
   trees en redwoods, minen adamantite en runite, vangen sharks en anglerfish, en vechten in Barrows-,
   Bandos- en Armadyl-gear met wapens als de whip, godswords en de Ghrazi rapier.
+- **Meer variatie in hoe bots eruitzien:** niet meer elk slot gevuld (de meeste beginners dragen geen
+  cape), keuze uit 50 team capes, cloaks, hoeden en kostuums, skilling-outfits (Lumberjack,
+  Prospector, Angler, Graceful) vanaf gevorderd niveau, en een skillcape bij 99. Na het reizen
+  kleedt een skiller zich om voor zijn nieuwe klus.
+
+### Opgelost
+- Combat-bots kozen hun uitrusting met een zwakke hash, waardoor bots met bijna gelijke namen
+  vaak hetzelfde droegen. Elke bot houdt zijn eigen vaste uitrusting, maar de spreiding is nu echt
+  willekeurig, en beginners dragen nog maar de helft van de tijd een cape.
 
 ## [0.1.0] - 15-11-2026
 
