@@ -272,6 +272,23 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       note(player, `Traint ${plan.skill.toLowerCase()} met gekochte ${itemName(buy.itemId)}.`);
       return true;
     }
+    // Its own stock first: banked logs or bars, fetched from the nearest bank.
+    if (banked(player, buy.itemId) > 0) {
+      const bank = nearestBank(player);
+      const ge = { ...data.grandExchange, name: "de Grand Exchange" };
+      const to = !bank || distanceTo(player, ge) <= bank.away ? ge : { ...bank, name: bank.name ?? bank.id };
+      return walkTo(entry, to, {
+        reason: "withdraw",
+        arrive: (banker) => {
+          const got = withdraw(banker, buy.itemId, buy.amount);
+          if (got > 0) {
+            note(banker, `Haalt ${got} x ${itemName(buy.itemId)} van de bank om ${plan.skill.toLowerCase()} te trainen.`, "activity");
+            entry.resume = plan;
+            entry.waitingSince = now();
+          }
+        },
+      });
+    }
     // To the exchange for the materials; it waits there for the bid to fill.
     return walkTo(entry, { ...data.grandExchange, name: "de Grand Exchange" }, {
       reason: "buy_materials",
@@ -612,6 +629,67 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return require("../../items/Food.plugin").isFoodItem(itemId);
   }
 
+  /**
+   * What it keeps in its bank for later rather than selling: materials it trains with (its
+   * buyToTrain logs and bars, data.bankKeep: ores, raw fish, bones). Up to data.bankCap of each;
+   * more than that is sold. Junk (worth under data.junkValue each, and of no use) it drops.
+   */
+  let usefulIds = null;
+  function useful() {
+    if (usefulIds) return usefulIds;
+    usefulIds = new Set();
+    for (const recipe of Object.values(data.buyToTrain ?? {})) {
+      for (const [, name] of recipe.tiers) {
+        const id = Shopping.idOf(core, name);
+        if (Number.isInteger(id)) usefulIds.add(id);
+      }
+    }
+    for (const name of data.bankKeep ?? []) {
+      const id = Shopping.idOf(core, name);
+      if (Number.isInteger(id)) usefulIds.add(id);
+    }
+    return usefulIds;
+  }
+
+  function baseId(itemId) {
+    const unnoted = core.ItemDefinition?.forId?.(itemId)?.unNote?.();
+    return Number.isInteger(unnoted) && unnoted > 0 ? unnoted : itemId;
+  }
+
+  function banked(player, itemId) {
+    return (player.getBanks?.() ?? []).reduce((sum, bank) => sum + (bank?.getAmount?.(itemId) ?? 0), 0);
+  }
+
+  /** Its bag sorted: to bank (useful), to sell, and junk to drop. */
+  function sortBag(player) {
+    const goods = Trade.goodsToSell(player, core, Trade.keepIds(player, core, { isFood }));
+    const keep = [];
+    const sell = [];
+    for (const good of goods) {
+      const id = baseId(good.itemId);
+      if (useful().has(id) && banked(player, id) < (data.bankCap ?? 1000)) keep.push(good);
+      else sell.push(good);
+    }
+    const junk = [];
+    for (const item of player.getInventory().getItems() ?? []) {
+      const id = item?.getId?.() ?? -1;
+      if (!(id > 0) || useful().has(baseId(id)) || isFood(id)) continue;
+      const definition = core.ItemDefinition?.forId?.(id);
+      const wearable = Number.isInteger(definition?.getEquipmentType?.()?.getSlot?.()) && definition.getEquipmentType().getSlot() >= 0;
+      const each = Value.itemValue(core, id, 1);
+      if (!wearable && each < (data.junkValue ?? 3) && !Trade.keepIds(player, core, { isFood }).has(id)) junk.push(id);
+    }
+    return { keep, sell, junk: [...new Set(junk)] };
+  }
+
+  /** Junk out of the bag, as a player drops it. */
+  function dropJunk(player, junk) {
+    const inventory = player.getInventory();
+    for (const id of junk) inventory.deleteNumber?.(id, inventory.getAmount(id));
+    inventory.refreshItems?.();
+    if (junk.length > 0) note(player, `Laat vallen: ${junk.map(itemName).join(", ")} (waardeloos).`, "activity");
+  }
+
   /** The nearest bank (data.banks) to where it is. */
   function nearestBank(player) {
     const at = player.getLocation();
@@ -646,6 +724,24 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return stored;
   }
 
+  /** Out of its bank, unnoted, as many as fit (up to `amount`). Returns how many. */
+  function withdraw(player, itemId, amount) {
+    const inventory = player.getInventory();
+    let wanted = Math.min(amount, inventory.getFreeSlots());
+    let got = 0;
+    for (const bank of player.getBanks?.() ?? []) {
+      const have = bank?.getAmount?.(itemId) ?? 0;
+      const take = Math.min(have, wanted - got);
+      if (take <= 0) continue;
+      bank.deleteNumber?.(itemId, take);
+      acquire(player, itemId);
+      inventory.add(new core.Item(itemId, take), false);
+      got += take;
+    }
+    inventory.refreshItems?.();
+    return got;
+  }
+
   /**
    * At the Grand Exchange's bank: what it banked to sell comes out as notes, as a player
    * withdraws as notes to sell. Returns how many stacks came out.
@@ -659,14 +755,17 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         const id = item?.getId?.() ?? -1;
         const amount = item?.getAmount?.() ?? 0;
         if (!(id > 0) || !(amount > 0) || keep.has(id) || Value.itemValue(core, id, 1) <= 0) continue;
+        // What it keeps for later stays, up to its cap; only the surplus is sold.
+        const surplus = useful().has(id) ? amount - (data.bankCap ?? 1000) : amount;
+        if (surplus <= 0) continue;
         if (inventory.getFreeSlots() <= 1) return taken;
         const definition = core.ItemDefinition.forId(id);
         const noteId = definition.getNoteId?.() ?? -1;
         const outId = noteId > 0 && !definition.isNoted?.() ? noteId : id;
-        if (outId === id && !definition.isStackable?.() && amount > inventory.getFreeSlots() - 1) continue;
-        bank.deleteNumber?.(id, amount) ?? bank.delete?.(new core.Item(id, amount));
+        if (outId === id && !definition.isStackable?.() && surplus > inventory.getFreeSlots() - 1) continue;
+        bank.deleteNumber?.(id, surplus) ?? bank.delete?.(new core.Item(id, surplus));
         acquire(player, outId);
-        inventory.add(new core.Item(outId, amount), false);
+        inventory.add(new core.Item(outId, surplus), false);
         taken += 1;
       }
     }
@@ -691,6 +790,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   }
 
   function atExchange(player) {
+    const bag = sortBag(player);
+    dropJunk(player, bag.junk);
+    // The exchange has its bank: what it keeps for later goes in there, not up for sale.
+    const stored = deposit(player, bag.keep);
+    if (stored.length > 0) note(player, `Bewaart op de bank: ${stored.map((good) => itemName(good.itemId)).join(", ")}.`, "activity");
     const pulled = withdrawToSell(player);
     const goods = Trade.goodsToSell(player, core, Trade.keepIds(player, core, { isFood }));
     const { collectedCoins, offered } = Trade.sellAtExchange(player, core, emit, goods);
@@ -720,6 +824,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     for (const name of Trade.wearBest(player, core, rules)) {
       note(player, `Draagt nu ${name.toLowerCase().replace(/_/g, " ")} (gevonden).`, "activity");
     }
+    // Junk goes at once, wherever it is.
+    dropJunk(player, sortBag(player).junk);
     const goods = Trade.goodsToSell(player, core, Trade.keepIds(player, core, { isFood }));
     const worth = goods.reduce((sum, good) => sum + good.value, 0);
     const full = player.getInventory().getFreeSlots() <= (data.fullSlots ?? 4);
@@ -733,7 +839,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       reason: "bank",
       arrive: (banker) => {
         const stored = deposit(banker, Trade.goodsToSell(banker, core, Trade.keepIds(banker, core, { isFood })));
-        if (stored.length > 0) note(banker, `Zet ${stored.length} soorten spullen op de bank in ${bank.name ?? bank.id}.`, "activity");
+        if (stored.length > 0) note(banker, `Zet op de bank in ${bank.name ?? bank.id}: ${stored.slice(0, 5).map((good) => itemName(good.itemId)).join(", ")}${stored.length > 5 ? ` en ${stored.length - 5} meer` : ""}. Bruikbaars bewaart hij; de rest verkoopt hij later op de GE.`, "activity");
       },
     });
   }
