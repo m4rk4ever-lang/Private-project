@@ -15,6 +15,7 @@ const Shopping = require("../adventurers/Shopping.PlayerBots");
 const { markHonest } = require("./Honest.PlayerBots");
 
 const COMBAT_MODES = new Set(["combat_training", "bossing"]);
+const BANK_MODES = new Set(["bankskilling", "bankstanding"]);
 /** Produce an account keeps in its bank, by skill and level (best it can make first). */
 const PRODUCE = Object.freeze({
   WOODCUTTING: [[75, "MAGIC_LOGS"], [60, "YEW_LOGS"], [45, "MAPLE_LOGS"], [30, "WILLOW_LOGS"], [15, "OAK_LOGS"], [1, "LOGS"]],
@@ -80,6 +81,20 @@ function generateAccount(bot, state, { core, mode, equipCombatGear = null, rando
       const level = levelOf(bot, core, skill);
       const [, name] = table.find(([needed]) => level >= needed) ?? [];
       const amount = 20 + Math.floor(random() * 480);
+      if (name && give(bank, core, name, amount)) got.bank.push([name, amount]);
+    }
+  }
+  // A bank stander's bank has what it works on at the booth (BankCraft.PlayerBots.js): its tools
+  // and a stock of logs and uncut gems for its levels.
+  if (BANK_MODES.has(mode) && bank) {
+    const recipes = require("../data/adventurers.json").buyToTrain ?? {};
+    for (const skill of ["FLETCHING", "CRAFTING"]) {
+      const recipe = recipes[skill];
+      if (!recipe) continue;
+      give(bank, core, recipe.tool, 1);
+      const level = levelOf(bot, core, skill);
+      const [, name] = recipe.tiers.find(([needed]) => level >= needed) ?? [];
+      const amount = 200 + Math.floor(random() * 1800);
       if (name && give(bank, core, name, amount)) got.bank.push([name, amount]);
     }
   }

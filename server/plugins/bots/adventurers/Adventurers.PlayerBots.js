@@ -136,6 +136,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       questPoints: Number(player.getAttribute(QuestRuntime.QUEST_POINTS_ATTRIBUTE)) || 0,
       done,
       buyable: buyableSkills(player),
+      stocked: stockedSkills(player),
       // Only quests a bot can really play (none yet): nothing is simulated.
       available: new Set(questList().filter((quest) => quest.playthrough === true && registered.has(normalize(quest.name)))
         .map((quest) => quest.name)),
@@ -166,7 +167,21 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       // Herblore needs Druidic Ritual first, as for a player.
       if (data.buyToTrain[skill].quest && !done(data.buyToTrain[skill].quest)) return false;
       const plan = buyPlan(player, skill);
-      return plan && coins >= plan.cost + 200;
+      // Its own stock (the logs it chopped, the ore it smelted) is enough; else coins to buy.
+      return plan && (hasStock(player, plan) || coins >= plan.cost + 200);
+    });
+  }
+
+  /** It has the materials for this (in its bag or bank): what it gathered feeds the next skill. */
+  function hasStock(player, plan) {
+    return plan.materials.every((id) => banked(player, id) + player.getInventory().getAmount(id) >= 5);
+  }
+
+  /** Skills it has the materials for now: they weigh more in its next pick (one skill feeds another). */
+  function stockedSkills(player) {
+    return Object.keys(data.buyToTrain ?? {}).filter((skill) => {
+      const plan = buyPlan(player, skill);
+      return plan && hasStock(player, plan);
     });
   }
 

@@ -79,3 +79,44 @@ test("a bank stander stands by one of the nearest booths, not on it", () => {
     assert.ok(!(spot.x === 3170 && spot.y === 3490));
   }
 });
+
+test("an honest bank stander works through its own bank: knife and logs out, bows made, bows back in", () => {
+  const BankCraft = require("../plugins/bots/brain/BankCraft.PlayerBots");
+  const KNIFE = 946, LOGS = 1511, OAK = 1521, BOW = 841;
+  const store = (entries) => {
+    const map = new Map(entries);
+    return {
+      map,
+      getAmount: (id) => map.get(id) ?? 0,
+      add: (item) => map.set(item.getId(), (map.get(item.getId()) ?? 0) + item.getAmount()),
+      deleteNumber: (id, amount) => map.set(id, (map.get(id) ?? 0) - amount),
+      getItems: () => [...map].filter(([, amount]) => amount > 0).map(([id, amount]) => ({ getId: () => id, getAmount: () => amount })),
+      getFreeSlots: () => 28 - [...map.values()].filter((amount) => amount > 0).length,
+      refreshItems() {},
+    };
+  };
+  const bank = store([[KNIFE, 1], [LOGS, 500], [OAK, 100]]);
+  const bag = store([[995, 10]]);
+  const player = {
+    getBanks: () => [bank], getBank: () => bank, getInventory: () => bag,
+    getSkillManager: () => ({ getMaxLevel: (skill) => (skill === "FLETCHING" ? 10 : 1) }),
+  };
+  const core = {
+    Skill: { FLETCHING: "FLETCHING", CRAFTING: "CRAFTING", HERBLORE: "HERBLORE" },
+    ItemIdentifiers: { COINS: 995, KNIFE, LOGS, OAK_LOGS: OAK, CHISEL: 1755, UNCUT_OPAL: 1625 },
+    Item: class { constructor(id, amount) { this.id = id; this.amount = amount; } getId() { return this.id; } getAmount() { return this.amount; } },
+    Bank: { getTabForItem: () => 0 },
+  };
+  const jobs = BankCraft.jobsFor(player, core);
+  assert.equal(jobs.length, 1, "fletching only: no chisel, no gems");
+  assert.deepEqual(jobs[0].materials, [LOGS], "oak needs Fletching 15+... the best tier its level allows is plain logs");
+  BankCraft.withdrawJob(player, core, jobs[0]);
+  assert.equal(bag.getAmount(KNIFE), 1);
+  assert.ok(bag.getAmount(LOGS) > 20);
+  bag.map.set(LOGS, 0);
+  bag.map.set(BOW, 27);
+  BankCraft.depositAll(player, core, [KNIFE]);
+  assert.equal(bank.getAmount(BOW), 27, "the products go in the bank");
+  assert.equal(bag.getAmount(KNIFE), 1, "the knife stays at hand");
+  assert.equal(bag.getAmount(995), 10, "and its coins");
+});

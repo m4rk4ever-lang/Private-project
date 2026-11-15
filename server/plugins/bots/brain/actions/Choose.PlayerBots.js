@@ -5,8 +5,10 @@ const { isHonest } = require("../Honest.PlayerBots");
 const { playerState } = require("../ActionState.PlayerBots");
 const { clearMovementRequest } = require("../../behaviours/navigation/Navigation.PlayerBots");
 
-/** Steps that make something of the produce (Smith, Fletch, Cook). */
-const MAKING = new Set(["smith", "fletch", "cook"]);
+/** Steps that make something of the produce (Smith, Fletch, Cook, burn it, use it). */
+const MAKING = new Set(["smith", "fletch", "cook", "lightFire", "make"]);
+/** What an honest bot does with its produce: make something of it, or bank it for later. */
+const PRODUCTIVE = new Set([...MAKING, "bank"]);
 const MAKE_RETRY_MS = 10 * 60_000;
 
 /**
@@ -31,13 +33,20 @@ function createChooseAction(spec, compileAction) {
   const current = (bot) => bot.option?.actions[bot.index] ?? null;
 
   /**
-   * An honest bot (an adventurer, a world bot with its own account) makes something of its
-   * produce when it can (smith its bars, fletch its logs), else sells it: that is its income.
-   * A making that failed (no hammer or knife, too low a level) is left alone for a while.
+   * An honest bot (an adventurer, a world bot with its own account) does something useful with
+   * its produce, as a player does, and not always the same: after chopping it fletches the logs,
+   * burns them or banks them; after mining it smelts and smiths, or banks the ore. It never
+   * drops what it could use. One that failed (no knife, too low a level) is left alone for a
+   * while; with none left it sells: that is its income.
    */
   function honestChoice(bot, nowMs = Date.now()) {
-    const making = options.find((option) => option.actions.some((step) => MAKING.has(step.id)));
-    if (making && !(bot.makeFailedUntil > nowMs)) return making;
+    const useful = options.filter((option) => option.actions.some((step) => PRODUCTIVE.has(step.id))
+      && !(option.actions.some((step) => MAKING.has(step.id)) && bot.makeFailedUntil?.get?.(option) > nowMs));
+    if (useful.length > 0) {
+      const total = useful.reduce((sum, option) => sum + option.weight, 0);
+      let roll = Math.random() * total;
+      return useful.find((option) => (roll -= option.weight) < 0) ?? useful[useful.length - 1];
+    }
     return options.find((option) => option.actions.some((step) => step.id === "sellItems")) ?? null;
   }
 
@@ -68,7 +77,10 @@ function createChooseAction(spec, compileAction) {
       }
       if (result === "failed") {
         step.stop?.(ctx);
-        if (bot.option.actions.some((entry) => MAKING.has(entry.id))) bot.makeFailedUntil = (ctx.nowMs ?? Date.now()) + MAKE_RETRY_MS;
+        if (bot.option.actions.some((entry) => MAKING.has(entry.id))) {
+          bot.makeFailedUntil ??= new Map();
+          bot.makeFailedUntil.set(bot.option, (ctx.nowMs ?? Date.now()) + MAKE_RETRY_MS);
+        }
         bot.option = null;
       }
       return result;

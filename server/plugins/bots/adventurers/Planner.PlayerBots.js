@@ -107,7 +107,8 @@ function chooseNext(adventurer, quests, {
  * - combat first on a new account: loot is its income and its way to bosses (x3 below combat 40);
  * - its own focus (adventurers.json `focus`), so five adventurers do not all mine at once;
  * - a skill far behind its others catches up (+20% per level under their average);
- * - a mode another adventurer already does weighs half (no clump), unless they are a group.
+ * - a mode another adventurer already does weighs half (no clump), unless they are a group;
+ * - a skill it has gathered the materials for (logs to fletch, bars to smith) weighs triple.
  */
 function trainingWeight(option, options, adventurer, { focus = {}, busyModes = new Set() } = {}) {
   const average = options.reduce((sum, entry) => sum + entry.level, 0) / options.length;
@@ -116,6 +117,8 @@ function trainingWeight(option, options, adventurer, { focus = {}, busyModes = n
   weight *= focus[option.mode] ?? 1;
   weight *= 1 + Math.max(0, average - option.level) * 0.2;
   if (busyModes.has(option.mode)) weight *= 0.5;
+  // One skill feeds the next: with logs in the bank fletching or burning comes up more often.
+  if (option.mode.startsWith("buy_") && (adventurer.stocked ?? []).includes(option.skill)) weight *= 3;
   return weight;
 }
 

@@ -8,8 +8,10 @@
  * The craft is the bot's best of the listed skills (a 90 fletcher fletches), with a little
  * chance. The bot walks to a free tile within `radius` of its home first.
  *
- * This shows the activity; it does not make products or give XP yet. That comes when the bot
- * uses the skill plugins (item on item) itself.
+ * An honest bot (one with its own account, an adventurer) does it for real: it works through its
+ * own bank an inventory at a time, makes the best its level allows through the game's menus, and
+ * banks the products (BankCraft.PlayerBots.js). With nothing in its bank to work on it just
+ * stands. Other bots only show the animation.
  *
  * With `trade` the bot is a trader at the Grand Exchange instead: it stands by the booths and
  * clerks, now and then steps to another spot, as players waiting on offers do.
@@ -59,6 +61,10 @@ function chooseCraft(player, crafts, core, random = Math.random) {
   }
   return crafts[crafts.length - 1];
 }
+
+const { isHonest } = require("../Honest.PlayerBots");
+const BankCraft = require("../BankCraft.PlayerBots");
+const { createMakeAction } = require("./Make.PlayerBots");
 
 function createBankStandAction(spec = {}, world = {}) {
   const crafts = Array.isArray(spec.crafts) && spec.crafts.length > 0 ? spec.crafts : DEFAULT_CRAFTS;
@@ -110,6 +116,36 @@ function createBankStandAction(spec = {}, world = {}) {
     (world.requestMovement ?? walk)(player, spot.x, spot.y, { reason: "brain_bankstand", basicPather: true, z: spot.z });
   }
 
+  /** The real work at the booth: an inventory from its bank, made through the game's menus. */
+  function craftFromBank(ctx, stand) {
+    const { player, nowMs } = ctx;
+    const core = world.core;
+    if (!stand.job) {
+      const job = BankCraft.pickJob(BankCraft.jobsFor(player, core), random);
+      if (!job) {
+        // Nothing in its bank to work on: it stands about, and looks again in a while.
+        stand.nextAt = nowMs + 30_000;
+        return "running";
+      }
+      if (BankCraft.withdrawJob(player, core, job) <= 0) {
+        stand.nextAt = nowMs + 30_000;
+        return "running";
+      }
+      const herblore = job.materials.length > 1;
+      stand.job = job;
+      stand.make = createMakeAction(herblore ? { pairs: [job.materials] } : { tool: job.toolId, materials: job.materials }, world);
+    }
+    const result = stand.make.update(ctx);
+    if (result === "running") return "running";
+    // An inventory done (or nothing more it can make of it): the products go in the bank.
+    stand.make.stop?.(ctx);
+    BankCraft.depositAll(player, core, stand.job.toolId ? [stand.job.toolId] : []);
+    stand.job = null;
+    stand.make = null;
+    stand.nextAt = nowMs + randomInt(BANK_PAUSE_MS[0], BANK_PAUSE_MS[1], random);
+    return "running";
+  }
+
   return {
     id: "bankStand",
     update(ctx) {
@@ -124,6 +160,7 @@ function createBankStandAction(spec = {}, world = {}) {
         return "running";
       }
       if (nowMs < stand.nextAt) return "running";
+      if (!spec.trade && (state.honest || isHonest(player)) && world.core?.Skill) return craftFromBank(ctx, stand);
       if (spec.trade) {
         // Waiting on offers: stand, and after a while find another spot nearby.
         if (stand.steps > 0) start(player, state, nowMs);

@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Bankstanders werken nu echt: ze halen hun mes of chisel en een inventaris logs of edelstenen uit hun eigen bank, maken het beste wat hun level toelaat via de echte menu's (met XP), en zetten de producten terug. Hebben ze niets meer om te maken, dan staan ze gewoon. Hun gegenereerde account heeft een voorraad om mee te beginnen.
 - Trainen met gekochte materialen werkt nu ook voor Crafting (edelstenen slijpen met een chisel), Cooking (rauwe vis bakken in de keuken van Lumbridge) en Herblore (unfinished potions met hun ingrediënt, pas na Druidic Ritual). Bots maken dit via de echte menu's van het spel, met het beste product dat hun level toelaat.
 - Avonturiers gebruiken hun bank slimmer en bewaren naar behoefte: wat ze opgebruiken (runes, pijlen, eten, teleport tablets, geladen sieraden) houden ze allemaal; materialen voor hun huidige of komende levels tot 10.000 per soort; materialen waar ze overheen gegroeid zijn verkopen ze op de GE. Waardeloze spullen laten ze vallen. Willen ze trainen met materialen, dan halen ze eerst hun eigen voorraad van de bank voordat ze iets kopen.
 - Avonturiers met geld over kopen materialen om te trainen: logs om te fletchen of te branden bij de GE, staven om te smeden bij de aambeelden van Varrock West. Ze bieden op de GE, wachten tot het bod vol is, gaan aan het werk en verkopen de producten weer, ook met verlies, zoals spelers dat doen.
@@ -107,6 +108,7 @@ Indeling per versie:
   iedereen nu ook als member in de skills-tab en de questlijst (op een members-wereld).
 
 ### Gewijzigd
+- Skills hangen samen: na houthakken fletcht een bot zijn logs, brandt ze of zet ze op de bank, afwisselend; na minen smelt en smeedt hij of bankt hij het erts. Eerlijke bots gooien niets weg wat ze nog kunnen gebruiken. Avonturiers met logs, erts of staven op de bank kiezen vaker de skill die daarbij hoort, ook zonder geld om te kopen.
 - Avonturiers en wereldbots lopen nu naar hun klus, de bank, de GE, een winkel of een house party, in plaats van te teleporteren. Wie het spel kent kan ook teleporteren: met het juiste Magic-level en de runes in zijn tas casten ze Varrock, Lumbridge, Falador of Camelot Teleport als dat een lange wandeling scheelt.
 - Avonturiers zetten de spullen van hun vorige klus op de dichtstbijzijnde bank. Naar de GE gaan ze als die ongeveer even dichtbij is, als ze veel bij zich hebben of als er verkopen klaarliggen; dan nemen ze ook gebankte spullen mee (als notes).
 - Uitrusting die geen winkel in de buurt verkoopt, kopen avonturiers op de GE.
