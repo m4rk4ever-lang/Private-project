@@ -8,12 +8,17 @@
  */
 const honest = new WeakSet();
 
+/** Also on the player, for other plugins' own checks (a bot needs its own tinderbox then). */
+const HONEST_ATTRIBUTE = "bots:honest";
+
 function markHonest(player) {
-  if (player) honest.add(player);
+  if (!player) return;
+  honest.add(player);
+  player.setAttribute?.(HONEST_ATTRIBUTE, true);
 }
 
 function isHonest(player) {
   return Boolean(player) && honest.has(player);
 }
 
-module.exports = { markHonest, isHonest };
+module.exports = { markHonest, isHonest, HONEST_ATTRIBUTE };

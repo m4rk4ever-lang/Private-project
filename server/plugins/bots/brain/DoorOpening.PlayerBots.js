@@ -1,5 +1,7 @@
 "use strict";
 
+const { isHonest } = require("./Honest.PlayerBots");
+
 /**
  * Brain-owned door/gate opening. A route the strict pather cannot solve is often
  * a closed gate between the bot and its target; the ditch-crossing pattern
@@ -277,7 +279,8 @@ function clickDoor(player, state, world, attempt) {
     // Simulated bots are provisioned like their tools and food: top up the toll.
     const inventory = player.getInventory();
     const missing = Number(toll[1]) - inventory.getAmount(COINS_ID);
-    if (missing > 0) inventory.adds(COINS_ID, missing);
+    // An honest bot pays from its own coins, or the gate stays shut.
+    if (missing > 0 && !isHonest(player)) inventory.adds(COINS_ID, missing);
   }
   world.emitObjectInteraction?.({
     player,

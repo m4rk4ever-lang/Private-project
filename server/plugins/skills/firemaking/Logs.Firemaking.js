@@ -84,8 +84,9 @@ function canPlayerBurnLog(player, itemId) {
   return getFiremakingLevel(player) >= log.requiredLevel;
 }
 
+/** Simulated bots light without one; an honest bot ("bots:honest", an adventurer) needs its own. */
 function requiresTinderbox(player) {
-  return !(player?.isPlayerBot?.() === true);
+  return !(player?.isPlayerBot?.() === true) || player?.getAttribute?.("bots:honest") === true;
 }
 
 /** Wiki Barbarian Firemaking: any bow except these cannot light logs. */

@@ -60,6 +60,8 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Opgelost
+- Avonturiers kregen nog op drie manieren iets wat ze niet verdienden: een PvP-uitrusting als ze niets aan hadden (de iron scimitar na een reset), coins voor tolpoorten, en het geld van GE-verkopen uit hun vorige start. Alle drie zijn dicht. Ze hebben nu ook een eigen tinderbox nodig om vuur te maken.
+- Krijgt een avonturier toch een draagbaar item zonder koop, vondst of eigen werk, dan staat er 'Onverklaard' in zijn dagboek en in de serverlog, zodat de oorzaak gevonden kan worden.
 - Avonturiers stonden soms minutenlang stil: als een keuze niet kon starten (geen gereedschap in de buurt te koop) wachtten ze een minuut. Nu kiezen ze meteen iets anders, en wie twee minuten geen XP haalt en niet beweegt, kiest ook iets anders.
 - Eerlijke bots konden alsnog gratis uitrusting krijgen (zoals een iron full helm) wanneer ze van klus wisselden. Ze worden nu ook als eerlijk herkend als hun klus opnieuw start. Avonturiers kopen ook alleen nog in winkels in de buurt, niet overal op de kaart. De avonturiers beginnen daarom nog één keer opnieuw.
 - Het dagboek van een avonturier toont elke wijziging in zijn uitrusting, zodat je kunt nagaan waar een stuk vandaan komt.

@@ -72,7 +72,7 @@ function areaKeyFor(location) {
  * nothing" check, so without this it would stick forever.
  */
 function restorePvpBot(player, state, api) {
-  if (!state?.pvp || !needsLoadoutRestore(player)) {
+  if (!state?.pvp || isHonest(player) || !needsLoadoutRestore(player)) {
     return false;
   }
   state.pvp.loadoutPending = true;

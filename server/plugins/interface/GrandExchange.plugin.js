@@ -1225,6 +1225,22 @@ function collectEvent(request) {
   request.freeSlots = Array.from({ length: usableSlots() }, (_, i) => i).filter((i) => !Object.hasOwn(completedOffers(player), i)).length;
 }
 
+/**
+ * "ge:reset" { player }: the account starts over (a bot's new start): its offers, whatever they
+ * held, its buy limits and its history are gone, so nothing carries over into the new start.
+ */
+function resetEvent(request) {
+  const player = request?.player;
+  if (!player) return;
+  for (const timer of completionTimers.get(player) ?? []) clearTimeout(timer);
+  completionTimers.delete(player);
+  offers.delete(player);
+  player.setAttribute(OFFERS_ATTRIBUTE, {});
+  player.setAttribute(LIMITS_ATTRIBUTE, {});
+  player.setAttribute(HISTORY_ATTRIBUTE, []);
+  saveOffers(player);
+}
+
 /** "grand-exchange:can-open": other content may keep a player out. */
 function refusedEntry(player) {
   const request = { player, allow: true, message: null };
@@ -1473,6 +1489,7 @@ module.exports = {
     setOffer: (player, offer) => offers.set(player, offer),
     placeOfferEvent,
     collectEvent,
+    resetEvent,
     price,
     sellPrice,
     changePrice,
@@ -1528,6 +1545,7 @@ module.exports = {
     api.registerContentEndpoint("item-prices", itemPricesResource);
     api.onCustomEvent("ge:place-offer", placeOfferEvent);
     api.onCustomEvent("ge:collect", collectEvent);
+    api.onCustomEvent("ge:reset", resetEvent);
     api.registerCommand("ge", openGrandExchange, undefined, "Open the Grand Exchange");
     api.registerCommand("gecollect", openCollectionBox, undefined, "Open the Grand Exchange collection box");
 

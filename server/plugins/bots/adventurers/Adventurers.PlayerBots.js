@@ -368,8 +368,54 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return nowMs - (entry.lastMarkAt ?? nowMs) > STUCK_MS;
   }
 
+  /**
+   * Where its gear may come from: bought in a shop, collected at the Grand Exchange, picked up
+   * from the ground, made with a skill, or its Tutorial Island kit. Any other wearable item that
+   * turns up is a bug in some bot code: it is named in its journal and the server log
+   * ("adventurer_unexplained_item"), so it can be found and fixed.
+   */
+  const acquired = new Map();
+  function acquire(player, itemId) {
+    const name = player?.getUsername?.();
+    if (!name || !adventurers.has(name) || !(itemId > 0)) return;
+    if (!acquired.has(name)) acquired.set(name, new Set());
+    const definition = core.ItemDefinition?.forId?.(itemId);
+    acquired.get(name).add(itemId);
+    const unnoted = definition?.unNote?.();
+    if (Number.isInteger(unnoted)) acquired.get(name).add(unnoted);
+  }
+
+  function wearables(player) {
+    const counts = new Map();
+    for (const container of [player.getInventory(), player.getEquipment()]) {
+      for (const item of container.getItems() ?? []) {
+        const id = item?.getId?.() ?? -1;
+        if (!(id > 0)) continue;
+        const slot = core.ItemDefinition?.forId?.(id)?.getEquipmentType?.()?.getSlot?.();
+        if (!Number.isInteger(slot) || slot < 0) continue;
+        counts.set(id, (counts.get(id) ?? 0) + item.getAmount());
+      }
+    }
+    return counts;
+  }
+
+  function audit(entry) {
+    const now = wearables(entry.player);
+    const before = entry.wearables;
+    entry.wearables = now;
+    if (!before) return;
+    const known = acquired.get(entry.name) ?? new Set();
+    for (const [id, amount] of now) {
+      if (amount <= (before.get(id) ?? 0) || known.has(id)) continue;
+      note(entry.player, `Onverklaard: ${itemName(id)} kwam erbij zonder koop, vondst of eigen werk. Dit is een fout in de botcode.`, "activity");
+      world.log?.("adventurer_unexplained_item", { username: entry.name, itemId: id, name: itemName(id), activity: entry.activity ?? null });
+    }
+    acquired.set(entry.name, new Set());
+  }
+
   /** Every change in what it wears goes in its journal, so where each piece came from can be followed. */
   function watchGear(entry) {
+    audit(entry);
     const worn = (entry.player.getEquipment().getItems() ?? []).filter((item) => item && item.getId() > 0).map((item) => item.getId());
     const before = entry.worn ?? worn;
     entry.worn = worn;
@@ -406,6 +452,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     player.getInventory().resetItems();
     player.getEquipment().resetItems();
     for (const bank of player.getBanks?.() ?? []) bank?.resetItems?.();
+    // Nothing of the old start carries over: not its Grand Exchange offers (coins or items from
+    // earlier sales waiting to be collected bought a reset adventurer an iron scimitar).
+    emit("ge:reset", { player });
     for (const quest of QuestRuntime.getRegisteredQuests()) {
       if (quest.getStage(player) !== 0) quest.setStage(player, 0);
     }
@@ -414,7 +463,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // What every new account gets on Tutorial Island.
     for (const [name, amount] of Shopping.gear.starterKit) {
       const id = Shopping.idOf(core, name);
-      if (Number.isInteger(id)) player.getInventory().add(new core.Item(id, amount));
+      if (Number.isInteger(id)) {
+        acquire(player, id);
+        player.getInventory().add(new core.Item(id, amount));
+      }
     }
     player.getInventory().refreshItems?.();
     player.getEquipment().refreshItems?.();
@@ -457,6 +509,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
           entry.noErrandUntil = now() + 10 * 60_000;
           return;
         }
+        acquire(buyer, itemId);
         const paid = coinsBefore - Shopping.coinsOf(buyer);
         note(buyer, `Gekocht: ${got > 1 ? `${got} x ` : ""}${label} bij ${shop.name} (${paid.toLocaleString("nl-NL")} gp).`, "activity");
         Shopping.wear(buyer, core, itemId);
@@ -521,6 +574,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         const outId = noteId > 0 && !definition.isNoted?.() ? noteId : id;
         if (outId === id && !definition.isStackable?.() && amount > inventory.getFreeSlots() - 1) continue;
         bank.deleteNumber?.(id, amount) ?? bank.delete?.(new core.Item(id, amount));
+        acquire(player, outId);
         inventory.add(new core.Item(outId, amount), false);
         taken += 1;
       }
@@ -737,7 +791,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       .map((entry, index) => ({ ...entry, rank: index + 1 }));
   }
 
-  return { adventurers, spawn, tick, onLevelUp, onDrops, onNpcDeath, report, next, startGroup };
+  return { adventurers, spawn, tick, onLevelUp, onDrops, onNpcDeath, report, next, startGroup, acquire };
 }
 
 /** Starts the adventurers on server start; serves /api/adventurers and the commands. */
@@ -750,6 +804,10 @@ function startAdventurers({ api, runtime, world, registry }) {
   api.onPlayerLevelUp(manager.onLevelUp);
   api.onCustomEvent("npc-drops:roll", manager.onDrops);
   api.onNpcDeath(manager.onNpcDeath);
+  // Where an adventurer's things may come from (its audit, above).
+  api.onCustomEvent("ge:offer-collected", ({ player, itemId }) => manager.acquire(player, itemId));
+  api.onCustomEvent("skills:produced", ({ player, itemId }) => manager.acquire(player, itemId));
+  api.onGroundItemPickup((event) => manager.acquire(event.player, event.groundItemId));
   // Every open page asks every 5 s; one report serves them all for 2 s.
   let cached = null;
   api.registerContentEndpoint("adventurers", () => {

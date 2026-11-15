@@ -363,6 +363,9 @@
     {"id":"bankstand","mode":"bankstanding","capacity":1024,"repeat":true,"failureCooldownSeconds":5,"actions":[{"type":"bankStand"}]},
     {"id":"roam","mode":"roaming","capacity":1024,"repeat":true,"failureCooldownSeconds":5,"actions":[{"type":"wander"}]},
     {"id":"follow_owner","mode":"follow_owner","capacity":64,"repeat":false,"ephemeral":true,"manual":true,"failureCooldownSeconds":5,"actions":[{"type":"followOwner"}]},
+    {"id":"process_fletching","mode":"processing","capacity":64,"repeat":true,"manual":true,"failureCooldownSeconds":5,"actions":[{"type":"fletch","itemIds":["logs","oak_logs","willow_logs","maple_logs","yew_logs","magic_logs"]}]},
+    {"id":"process_firemaking","mode":"processing","capacity":64,"repeat":true,"manual":true,"failureCooldownSeconds":5,"actions":[{"type":"lightFire"}]},
+    {"id":"process_smithing","mode":"processing","capacity":64,"repeat":true,"manual":true,"failureCooldownSeconds":5,"actions":[{"type":"smith","bar":"any"}]},
     {
       "id": "bank_trip",
       "mode": "bank_run",

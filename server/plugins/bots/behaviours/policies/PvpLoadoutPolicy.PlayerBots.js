@@ -1,5 +1,7 @@
 "use strict";
 
+const { isHonest } = require("../../brain/Honest.PlayerBots");
+
 const { applyPreset, canEquipPresetItem } = require("../../../modes/pvp/Presets.PvpMode");
 const { Presetable } = require("../../../../src/main/typescript/elvarg/game/content/presets/Presetable");
 const { CombatSpells } = require("../../../../src/main/typescript/elvarg/game/content/combat/magic/CombatSpells");
@@ -419,6 +421,12 @@ function hasNoEquipment(player) {
 
 function applyGeneratedPvpLoadout(player, state, options = {}) {
   if (!player || player.isPlayerBot?.() !== true) {
+    return false;
+  }
+  // An honest bot (an adventurer, a world bot with its own account) wears what it owns: a bare
+  // one is not dressed in a PvP kit (a reset adventurer got an iron scimitar this way).
+  if (isHonest(player)) {
+    if (state?.pvp) state.pvp.loadoutPending = false;
     return false;
   }
   const combat = player.getCombat?.();

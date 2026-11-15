@@ -20,7 +20,13 @@ function createSmithAction(spec, world) {
   const anvilIds = resolveCatalogObjectIds({ catalog: "anvil" });
   const barName = String(spec.bar ?? "").replace(/_/g, " ").toLowerCase();
   const recipe = Smithing.SMELTING_RECIPES?.find((entry) => String(entry.name ?? "").toLowerCase() === barName) ?? null;
-  const barId = recipe?.barId ?? null;
+  // "any": whichever bar it carries (bars it bought to train), best metal first.
+  const anyBar = barName === "any";
+  const barIdFor = (player) => {
+    if (!anyBar) return recipe?.barId ?? null;
+    const bars = (Smithing.SMELTING_RECIPES ?? []).map((entry) => entry.barId).filter(Number.isInteger).reverse();
+    return bars.find((id) => player.getInventory().getAmount(id) > 0) ?? null;
+  };
   const canReach = createObjectReachChecker(world.core);
   const hammerId = world.core.ItemIdentifiers.HAMMER;
   const stateFor = (player) => playerState(action, player, () => ({ lastClickAt: 0, started: false }));
@@ -49,6 +55,8 @@ function createSmithAction(spec, world) {
     update(ctx) {
       const { player, nowMs } = ctx;
       const bot = stateFor(player);
+      const barId = barIdFor(player);
+      if (anyBar && barId === null) return "success";
       if (!Number.isInteger(barId)) return "failed";
       if (Smithing.isSmithingActive?.(player)) return "running";
       if (player.getInventory().getAmount(barId) <= 0) return "success";
@@ -72,7 +80,7 @@ function createSmithAction(spec, world) {
       if (approachBlockedObject(player, anvil, { nowMs, reason: "brain_anvil_approach", canReach })) return "running";
       player.getMovementQueue().walkToObject(anvil, {
         execute: () => {
-          if (Smithing.startBotSmithing?.(player, barId, anvil)) bot.started = true;
+          if (Smithing.startBotSmithing?.(player, barIdFor(player), anvil)) bot.started = true;
         },
       });
       return "running";
