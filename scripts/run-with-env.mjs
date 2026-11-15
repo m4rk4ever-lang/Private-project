@@ -65,12 +65,24 @@ for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
   process.on(signal, () => {
     if (!stopping) console.log(`[client] Stopsignaal ${signal} ontvangen: de client stopt.`);
     stopping = signal;
-    child?.kill(signal);
+    killGroup(signal);
   });
 }
+// craco starts the dev server as a child of its own: signal the whole group, or that child
+// lives on as an orphan holding port 3000.
+function killGroup(signal) {
+  if (!child?.pid) return;
+  try {
+    process.kill(-child.pid, signal);
+  } catch {
+    child.kill(signal);
+  }
+}
 function run() {
-  child = spawn(process.execPath, command, { env, stdio: "inherit" });
+  child = spawn(process.execPath, command, { env, stdio: "inherit", detached: true });
   child.on("exit", (code, signal) => {
+    // Its dev server too, before anything starts again.
+    killGroup("SIGKILL");
     if (stopping) process.exit(code ?? 0);
     const now = Date.now();
     restarts.push(now);

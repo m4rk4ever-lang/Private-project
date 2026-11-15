@@ -50,6 +50,9 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Opgelost
+- Stoppen vindt het spel nu ook in een codespace, waar niet te zien is welk proces een poort
+  vasthoudt: op de opdrachtregel. Een achtergebleven client op poort 3000 wordt zo ook gestopt.
+  De client neemt bij stoppen ook zijn eigen ontwikkelserver mee, zodat die niet achterblijft.
 - `yarn start` stopt eerst een spel dat nog draait. Zo'n oud spel hield poort 43594 bezet,
   waardoor je verbond met de oude server en nieuwe bots en wijzigingen niet zag. Nieuw:
   `yarn stop`. `update` laat VS Code zelf voortaan altijd met rust.
