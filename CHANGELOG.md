@@ -14,6 +14,8 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- De avonturierspagina toont de avonturiers per clan (beste clan eerst, de leider bovenaan), met een knop om terug te gaan naar één ranglijst. De keuze wordt onthouden.
+- Lange tochten voor bots lopen via een netwerk van tussenstops (steden en kruisingen, met routes die in het spel gecontroleerd zijn). Zo komen ze ook ver weg, bijvoorbeeld van Lumbridge naar de Agility-course in de Gnome Stronghold, in plaats van tegen de eerste muur of rivier te blijven staan.
 - Avonturiers onthouden hun lopende klus: bij het begin van een klus en daarna elke 3 minuten wordt één regel per avonturier overschreven (wat, waarom, hoe lang nog) en opgeslagen. Na een herstart pakken ze die klus weer op voor de tijd die nog over was, in plaats van opnieuw te beginnen. Een opgeslagen klus van meer dan 6 uur oud vervalt.
 - Drie clans racen tegen elkaar, elk met 5 avonturiers: de Jorg Clan (leider Bekoek, met Jorgbot 1 t/m 4), de Patrick Clan (leider Slayed Soul, met Eeshwar en Patrickbot 1 t/m 3) en de Mark Clan (leider Call me Mark, met Kram539 en Markbot 1 t/m 3). De leider sticht de clan in het spel; de anderen worden lid. Alle 15 zijn te volgen met `::volg` en staan op de avonturierspagina, met bovenaan een clanrace (score, totaal level en bezit per clan).
 - Clangenoten geven elkaar materialen die ze echt over hebben: wie logs, staven of edelstenen nodig heeft om te trainen, krijgt die eerst uit de bank van een clangenoot (die houdt zelf 500 achter) voordat hij gaat kopen. Beide dagboeken melden het.
@@ -71,6 +73,9 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Avonturiers kiezen bij het vechten niet altijd de dichtstbijzijnde plek, maar een van de beste paar plekken voor hun level, met een voorkeur voor sterkere monsters. Zo zie je ze op meer plekken dan bij de ratten en mannen van Lumbridge.
+- Avonturiers die met pijl en boog of met spells vechten, trainen ook Defence als die achterloopt: longrange (Ranged- en Defence-XP) of defensief casten (Magic- en Defence-XP).
+- Avonturiers gaan pas naar de Canifis Rooftop na Priest in Peril, en kiezen een course die onlangs onbereikbaar bleek even niet.
 - Pijlen, bogen en runes die een avonturier voor zijn volgende klus niet nodig heeft (een klus zonder vechten, of met een andere vechtstijl), zet hij op de bank als hij daar toch is. Wat zijn huidige vechtstijl gebruikt, houdt hij bij zich.
 - Alle 15 avonturiers beginnen opnieuw op level 1 (ook de eerste 5), zodat de clanrace eerlijk start: levels, spullen, bank, quests, GE-biedingen en dagboek zijn gewist.
 - Veel minder wereldbots: hooguit 3 PvP-bots per actief gebied (was 16) en een pool van 30 (was 845). Samen met de vaste plekken zijn dat er zo'n 50 in plaats van 150 tot 180. Zo blijft er ruimte voor de avonturiers.

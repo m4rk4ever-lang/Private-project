@@ -241,7 +241,7 @@
   "agilityCourses": [
     { "course": "seers", "name": "Seers' Village Rooftop", "level": 60, "x": 2729, "y": 3489, "z": 0 },
     { "course": "falador", "name": "Falador Rooftop", "level": 50, "x": 3036, "y": 3341, "z": 0 },
-    { "course": "canifis", "name": "Canifis Rooftop", "level": 40, "x": 3508, "y": 3488, "z": 0 },
+    { "course": "canifis", "name": "Canifis Rooftop", "level": 40, "x": 3508, "y": 3488, "z": 0, "quests": ["Priest in Peril"] },
     { "course": "varrock", "name": "Varrock Rooftop", "level": 30, "x": 3221, "y": 3414, "z": 0 },
     { "course": "alkharid", "name": "Al Kharid Rooftop", "level": 20, "x": 3273, "y": 3195, "z": 0 },
     { "course": "draynor", "name": "Draynor Village Rooftop", "level": 10, "x": 3103, "y": 3279, "z": 0 },

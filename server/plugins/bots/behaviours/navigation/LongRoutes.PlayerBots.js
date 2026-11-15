@@ -4,6 +4,7 @@ const { RegionManager } = require("../../../../src/main/typescript/elvarg/game/c
 const { MapObjects } = require("../../../../src/main/typescript/elvarg/game/entity/impl/object/MapObjects");
 const { RsmodRouteFinding } = require("../../../../src/main/typescript/elvarg/game/model/movement/path/RsmodRouteFinding");
 const { planRoute } = require("./LongRoutePlanner.PlayerBots");
+const TravelHubs = require("./TravelHubs.PlayerBots");
 
 // Walks shorter than this are left to the route finder's own 128-tile window.
 const LONG_ROUTE_MIN_TILES = 32;
@@ -145,12 +146,26 @@ function nextWaypoint(player, request, nowMs = Date.now()) {
   if (goal.z !== here.z || (distance <= LONG_ROUTE_MIN_TILES && !straightFailed)) {
     return null;
   }
+  // Too far to plan in one go: the walk goes hub to hub (TravelHubs), a planned leg at a time.
+  const leg = TravelHubs.nextLeg(here, goal, request.badHubs);
+  if ((leg?.key ?? null) !== (request.legKey ?? null)) {
+    request.legKey = leg?.key ?? null;
+    request.route = undefined;
+  }
+  const target = leg ? { x: leg.x, y: leg.y, z: leg.z } : goal;
   if (request.route === undefined) {
-    const route = routeFor(player, here, goal, nowMs);
+    const route = routeFor(player, here, target, nowMs);
     if (route === undefined) {
       return null; // planning budget spent this tick: straight-line now, plan next dispatch
     }
     request.route = route;
+    if (!route && leg) {
+      // No way to this hub from here (a river, a wall): another chain of hubs next dispatch.
+      (request.badHubs ??= new Set()).add(leg.key);
+      request.route = undefined;
+      request.legKey = null;
+      return null;
+    }
   }
   const route = request.route;
   if (!route) {
@@ -167,7 +182,8 @@ function nextWaypoint(player, request, nowMs = Date.now()) {
       break;
     }
   }
-  return route.waypoints[route.index] ?? null;
+  // The leg is walked: on to the hub itself, and from there the next leg is planned.
+  return route.waypoints[route.index] ?? (leg ? target : null);
 }
 
 /**

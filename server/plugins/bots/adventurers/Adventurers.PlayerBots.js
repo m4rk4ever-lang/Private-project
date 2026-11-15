@@ -436,7 +436,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
     if (plan.mode === "agility") {
       const level = levelOf(player, "AGILITY");
-      const course = (data.agilityCourses ?? []).find((entry) => level >= entry.level);
+      // The best course its level allows and its quests open (Canifis is in Morytania, behind
+      // Priest in Peril), that it has not found blocked lately.
+      const course = (data.agilityCourses ?? []).find((option) => level >= option.level
+        && (option.quests ?? []).every((name) => questsByName().get(normalize(name))?.isComplete(player) === true)
+        && !blockedPlace(entry, option));
       if (!course || !registry?.byId?.get(`agility_${course.course}`)) return false;
       startActivity(player, `agility_${course.course}`, { home: course, nowMs });
       walkTo(entry, course, { reason: "agility", replan: false });

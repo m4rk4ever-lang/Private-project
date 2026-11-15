@@ -267,6 +267,30 @@ function createTrainCombatAction(spec, world) {
     return null;
   }
 
+  /**
+   * Ranged and magic train Defence too when it lags: longrange (Ranged and Defence XP) or
+   * defensive casting (Magic and Defence XP), as the combat tab offers; otherwise a style that
+   * gives all its XP to Ranged or Magic. Hitpoints XP comes with every hit, whatever the style.
+   */
+  function rangedOrMagicStyle(player, style) {
+    const manager = player.getSkillManager();
+    const offence = manager.getMaxLevel(style === "ranged" ? Skill.RANGED : Skill.MAGIC);
+    const defensive = manager.getMaxLevel(Skill.DEFENCE) < offence;
+    const fightTypes = Object.values(player.getWeapon()?.getFightType?.() ?? {}).filter(Boolean);
+    const wanted = defensive ? FightStyle.DEFENSIVE : style === "ranged" ? FightStyle.AGGRESSIVE : FightStyle.ACCURATE;
+    const fightType = fightTypes.find((type) => type?.getStyle?.() === wanted)
+      ?? (defensive ? null : fightTypes.find((type) => type?.getStyle?.() !== FightStyle.DEFENSIVE));
+    if (!fightType || player.getFightType?.() === fightType) return;
+    if (style === "ranged") {
+      WeaponInterfaceManager.changeCombatStyle(player, fightType.getChildId());
+      return;
+    }
+    // Choosing a style turns autocast off; defensive casting keeps the spell and sets the
+    // staff's defensive style under it, as the autocast selector does.
+    player.setFightType?.(fightType);
+    core.Autocasting?.refreshIndicators?.(player);
+  }
+
   function prepare(player, state) {
     // An honest bot (an adventurer) fights in what it owns and eats what it carries.
     if (state?.honest || isHonest(player)) {
@@ -277,7 +301,9 @@ function createTrainCombatAction(spec, world) {
       if (state && state.honestStyle === "ranged" && !wornAmmo(player, core)) state.honestStyle = "melee";
       if (state && state.honestStyle === "magic" && !castableSpell(player, core)) state.honestStyle = "melee";
       wearOwnGear(player, core, state?.honestStyle ?? "melee");
-      if ((state?.honestStyle ?? "melee") === "melee") meleeStyleForLowest(player);
+      const honestStyle = state?.honestStyle ?? "melee";
+      if (honestStyle === "melee") meleeStyleForLowest(player);
+      else rangedOrMagicStyle(player, honestStyle);
       return false;
     }
     let changed = false;
@@ -394,17 +420,31 @@ function createTrainCombatAction(spec, world) {
     const score = (cluster) => occupants(cluster.key).size / cluster.count + cluster.distance / spreadDistance;
     // Best-scoring cluster the route planner can reach (jail, desert pass, island are
     // skipped by this bot). null: still planning, try again next tick.
-    let cluster = null;
-    for (const entry of [...pool].sort((a, b) => score(a) - score(b))) {
+    // An honest bot (an adventurer) does not always take the very best spot: it picks among the
+    // few best it can reach, and leans to stronger monsters in its band, so it sees more of the
+    // world than the rats and men next to it.
+    const honest = state?.honest || isHonest(player);
+    const strength = (cluster) => {
+      const band = stage.npcLevels.max - stage.npcLevels.min;
+      return band > 0 && Number.isFinite(cluster.level) ? (cluster.level - stage.npcLevels.min) / band : 0;
+    };
+    const rank = (cluster) => score(cluster) - (honest ? strength(cluster) * 0.6 : 0);
+    const choices = [];
+    for (const entry of [...pool].sort((a, b) => rank(a) - rank(b))) {
       const reachable = routeExists(player, entry, nowMs);
       // Not planned yet (planning budget spent): pick next tick, never walk blind.
-      if (reachable === undefined) return null;
-      if (reachable === true) {
-        cluster = entry;
+      if (reachable === undefined) {
+        if (choices.length === 0) return null;
         break;
+      }
+      if (reachable === true) {
+        choices.push(entry);
+        if (!honest || choices.length >= 3) break;
+        continue;
       }
       bot.avoidedSites.set(entry.key, nowMs + SITE_AVOID_MS);
     }
+    const cluster = choices[Math.floor(Math.random() * choices.length)] ?? null;
     if (!cluster) return false;
     occupants(cluster.key).add(player);
     bot.site = { id: cluster.key, npcLevels: stage.npcLevels, anchor: { x: cluster.x, y: cluster.y, z: cluster.z } };

@@ -66,12 +66,16 @@ function nearestClusters(index, keys, from) {
         continue;
       }
       const into = merged.get(cell.key);
+      // The strongest of its groups when they are combat levels (TrainCombat leans to stronger ones).
+      const level = Number(key);
+      if (into && Number.isFinite(level)) into.level = Math.max(into.level ?? level, level);
       if (into) {
         into.x = Math.round((into.x * into.count + cell.x * cell.count) / (into.count + cell.count));
         into.y = Math.round((into.y * into.count + cell.y * cell.count) / (into.count + cell.count));
         into.count += cell.count;
       } else {
-        merged.set(cell.key, { key: cell.key, x: cell.x, y: cell.y, z: cell.z, count: cell.count });
+        merged.set(cell.key, { key: cell.key, x: cell.x, y: cell.y, z: cell.z, count: cell.count,
+          ...(Number.isFinite(Number(key)) ? { level: Number(key) } : {}) });
       }
     }
   }
