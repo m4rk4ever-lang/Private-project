@@ -26,6 +26,8 @@ const ARRIVE_TILES = 3;
 const FLOOR_TILES = 20;
 /** Not one step taken for this long: it is stuck (a door it cannot open, a wall). */
 const STALL_MS = 30_000;
+/** Standing still this long on the way: the route planner takes over from the straight walk. */
+const PLAN_AFTER_MS = 6_000;
 /**
  * Walking but no closer for this long: a detour round a river or through a gate may lead away
  * for a while, so only a long spell without getting nearer counts as a way that does not lead there.
@@ -126,7 +128,7 @@ function bestTeleport(core, player, to, { jewelleryData = null } = {}) {
 }
 
 function createErrands({ now = () => Date.now(), log = () => {}, core = null, move = requestMovement, clear = clearMovementRequest,
-  useItem = null, emit = null } = {}) {
+  useItem = null, emit = null, peek = (player) => navigation().peekMovementRequest(player) } = {}) {
   /**
    * The free home teleport (Lumbridge on the standard spellbook), when it saves a long walk and its
    * 30-minute cooldown has passed: cast through its plugin ("home-teleport:cast"), so the cooldown,
@@ -225,8 +227,26 @@ function createErrands({ now = () => Date.now(), log = () => {}, core = null, mo
       if (tile !== errand.tile) {
         errand.tile = tile;
         errand.movedAt = nowMs;
+        errand.planned = false;
       }
-      const still = nowMs - Math.max(errand.movedAt ?? errand.walkFrom, errand.walkFrom) > STALL_MS;
+      // Standing still short of the goal: the straight walk ends at a wall (the basic pather walks
+      // to the nearest tile it can and calls that a route). Ask the route planner instead, once.
+      const idle = nowMs - Math.max(errand.movedAt ?? errand.walkFrom, errand.walkFrom);
+      if (idle > PLAN_AFTER_MS && !errand.planned) {
+        let request = null;
+        try {
+          request = peek(player);
+        } catch {
+          request = null;
+        }
+        if (request && !request.route) {
+          errand.planned = true;
+          request.noPathAttempts = Math.max(1, Number(request.noPathAttempts ?? 0));
+          request.fresh = true;
+          log("bot_errand_replan", { username: player.getUsername?.() ?? null, at: tile, reason: errand.reason });
+        }
+      }
+      const still = idle > STALL_MS;
       if (still || nowMs - errand.bestAt > NO_CLOSER_MS || nowMs - errand.since > MAX_MS) {
         log("bot_errand_failed", { username: player.getUsername?.() ?? null, reason: errand.reason, at: tile,
           to: `${errand.to.x},${errand.to.y},${errand.to.z ?? 0}`, why: still ? "stuck" : nowMs - errand.bestAt > NO_CLOSER_MS ? "no-closer" : "too-long" });
