@@ -68,3 +68,12 @@ test("the shipped bot-sites.json: skilling sites on and the PvP pens off, as a d
   assert.deepEqual(ids.map((id) => enabled[id]), ids.map(on));
   assert.ok(result.sites.filter((site) => site.pvp).every((site) => site.enabled === false));
 });
+
+test("PlayerBots:population scales every site's counts, keeping each group", () => {
+  const { scalePopulation } = require("../plugins/bots/brain/Sites.PlayerBots");
+  const file = { sites: [{ id: "a", bots: { fishing: { novices: 4, experts: 1 }, mining: { masters: 0 } } }] };
+  scalePopulation(file, 0.5);
+  assert.deepEqual(file.sites[0].bots, { fishing: { novices: 2, experts: 1 }, mining: { masters: 0 } });
+  scalePopulation(file, 2);
+  assert.deepEqual(file.sites[0].bots.fishing, { novices: 4, experts: 2 });
+});

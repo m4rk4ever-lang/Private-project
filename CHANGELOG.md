@@ -101,6 +101,8 @@ Indeling per versie:
   Prospector, Angler, Graceful) vanaf gevorderd niveau, en een skillcape bij 99. Na het reizen
   kleedt een skiller zich om voor zijn nieuwe klus.
 - **300 bots** in de wereld (was 144): elke groep is verdubbeld.
+- Nieuwe instelling `PlayerBots:population` in `world.json`: vermenigvuldigt het aantal bots
+  (0.5 is de helft). Handig als de server het niet bijhoudt.
 - **Thieving-bots:** bots stelen van stalls passend bij hun level, van de bakery- en tea stall
   tot silk, fruit, fur, silver, spice en gem stalls, vooral op de markt van Ardougne.
 - **Bank standing:** bij drukke banken (Grand Exchange, Varrock West, Edgeville, Falador,

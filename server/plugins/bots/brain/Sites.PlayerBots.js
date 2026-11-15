@@ -56,6 +56,25 @@ function applySiteOverrides(sitesFile, overrides) {
   return sitesFile;
 }
 
+const POPULATION_CONFIG_KEY = "PlayerBots:population";
+
+/**
+ * Scales every site's bot counts by `factor` (0.5 halves the population), rounding each count
+ * and keeping at least one bot where there was one, so every group stays.
+ */
+function scalePopulation(sitesFile, factor) {
+  if (!Number.isFinite(factor) || factor < 0 || factor === 1) return sitesFile;
+  for (const site of sitesFile.sites ?? []) {
+    for (const tiers of Object.values(site.bots ?? {})) {
+      if (!tiers || typeof tiers !== "object") continue;
+      for (const [tier, count] of Object.entries(tiers)) {
+        if (Number.isInteger(count) && count > 0) tiers[tier] = factor === 0 ? 0 : Math.max(1, Math.round(count * factor));
+      }
+    }
+  }
+  return sitesFile;
+}
+
 /** Reads bot-sites.json (or `file`) with the world config's "PlayerBots:sites" applied. */
 function readBotSites(file, raw) {
   const sitesFile = JSON.parse(fs.readFileSync(file, "utf8"));
@@ -63,7 +82,8 @@ function readBotSites(file, raw) {
   if (regionDensity !== undefined) {
     (sitesFile.pvp ??= {}).activeRegionBotsByRegion = regionDensity;
   }
-  return applySiteOverrides(sitesFile, siteOverrides(raw));
+  applySiteOverrides(sitesFile, siteOverrides(raw));
+  return scalePopulation(sitesFile, Number(PluginManager.getPluginConfig(POPULATION_CONFIG_KEY) ?? 1));
 }
 
-module.exports = { readBotSites, siteOverrides, applySiteOverrides };
+module.exports = { readBotSites, siteOverrides, applySiteOverrides, scalePopulation };

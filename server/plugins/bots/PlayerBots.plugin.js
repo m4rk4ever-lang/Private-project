@@ -223,6 +223,10 @@ module.exports = {
       type: "json", label: "Bot site overrides", defaultText: "No overrides: the shipped bot-sites.json applies",
       help: "Maps a bot site id to the properties to change for it, e.g. { \"some_site\": { \"enabled\": false } }. Sites not named keep their shipped properties; a world.local.json value replaces the world.json one as a whole.",
     },
+    "PlayerBots:population": {
+      type: "number", label: "Bot population", default: 1, min: 0, max: 4,
+      help: "Multiplies every bot site's bot counts: 0.5 halves the population, 2 doubles it, 0 spawns no site bots. Each group keeps at least one bot. Lower it when the server cannot keep up.",
+    },
     "PlayerBots:activeRegionBotsByRegion": {
       type: "json", label: "Wilderness bots per map square", defaultText: "Shipped value in bot-sites.json",
       help: "Target number of bots in individual 64x64 map squares, keyed plane:regionX:regionY with whole-number counts. Replaces pvp.activeRegionBotsByRegion in bot-sites.json.",
