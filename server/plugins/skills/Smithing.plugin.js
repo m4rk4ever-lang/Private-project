@@ -61,6 +61,10 @@ module.exports = {
   loadData: Data.load,
   startBotSmelting,
   isSmeltingActive: Smelting.isSmeltingActive,
+  /** Bots: smith the best product of a bar at an anvil, and whether that is still going. */
+  startBotSmithing: (player, barId, anvil) => Anvil.startBotSmithing(player, barId, anvil),
+  isSmithingActive: (player) => Sessions.typeOf(player) === "smith",
+  ANVIL_NAMES: Anvil.ANVIL_NAMES,
   register(api) {
     Core.init(api);
     api.onPlayerDisconnect(disconnect);

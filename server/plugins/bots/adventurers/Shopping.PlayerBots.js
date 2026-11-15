@@ -94,8 +94,14 @@ function shoppingList(player, core, { levelOf, questDone, modes = [] }) {
     }
   };
   for (const list of Object.values(gear.slots)) consider(list);
-  if (modes.includes("woodcutting")) consider(gear.tools.axe);
-  if (modes.includes("mining")) consider(gear.tools.pickaxe);
+  if (modes.includes("woodcutting")) {
+    consider(gear.tools.axe);
+    consider(gear.tools.knife ?? []);
+  }
+  if (modes.includes("mining")) {
+    consider(gear.tools.pickaxe);
+    consider(gear.tools.hammer ?? []);
+  }
   const bought = [];
   for (const want of wants.sort((a, b) => a.price - b.price)) {
     if (want.price > budget) continue;

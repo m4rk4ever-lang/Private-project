@@ -368,8 +368,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
 
   /**
    * Its income: found gear it may wear goes on, the rest of its loot and produce is sold at the
-   * Grand Exchange, and coins from earlier sales are collected. Only when there is something
-   * worth the trip (data.sellValue), its bag is nearly full, or sales are waiting.
+   * Grand Exchange, and coins from earlier sales are collected. Between every two stretches,
+   * so it starts each job with an empty bag, unless what it has is worth less than data.keepValue.
    */
   function trade(entry) {
     const { player } = entry;
@@ -381,7 +381,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const worth = goods.reduce((sum, good) => sum + good.value, 0);
     const full = player.getInventory().getFreeSlots() <= (data.fullSlots ?? 4);
     const waiting = Trade.finishedOffers(player, emit) > 0;
-    if (!waiting && worth < (data.sellValue ?? 2000) && !(full && goods.length > 0)) return;
+    // Between stretches its bag is emptied of the last job's things, as a player banks or sells
+    // before the next job: only small change (under data.keepValue) stays.
+    if (!waiting && worth < (data.keepValue ?? 200) && !(full && goods.length > 0)) return;
     teleport(player, data.grandExchange);
     const { collectedCoins, offered } = Trade.sellAtExchange(player, core, emit, goods);
     if (collectedCoins > 0) {

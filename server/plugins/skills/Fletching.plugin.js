@@ -25,6 +25,9 @@ const UNITS = [
 
 module.exports = {
   answerShafts,
+  // Bots fletch without the menu (plugins/bots/brain/actions/Fletch.PlayerBots.js).
+  startBotFletching: (...args) => require("./fletching/Shared.Fletching").startBotFletching(...args),
+  isBotFletching: (player) => require("./fletching/Shared.Fletching").isFletching(player),
   name: "Fletching",
   description: "Fletching: every Wiki recipe for bows, arrows, bolts and more, with menus and animations, plus an arrow shaft event for other content.",
   members: true,

@@ -624,7 +624,29 @@ function handlePair(player, usedId, usedWithId) {
   return true;
 }
 
+/**
+ * For a bot: makes the best thing its Fletching level allows from `materialId` with its knife (or
+ * other tool), as many as it carries materials for, through the normal make loop (no menu).
+ * Returns the recipe it started, or null.
+ */
+function startBotFletching(player, toolId, materialId) {
+  const usable = recipesFor(toolId, materialId)
+    .filter((recipe) => unlocked(player, recipe) && hasTools(player, recipe)
+      && fletchingLevel(player) >= recipe.level && batchesAvailable(player, recipe) > 0)
+    .sort((a, b) => b.level - a.level);
+  const recipe = usable[0];
+  if (!recipe) return null;
+  startFletching(player, recipe, CREATION_ALL_SENTINEL, toolId, { startLocation: locationSnapshot(player.getLocation()) });
+  return recipe;
+}
+
+function isFletching(player) {
+  return tasks.has(player);
+}
+
 module.exports = {
+  startBotFletching,
+  isFletching,
   init,
   getApi,
   getCore,

@@ -3,6 +3,10 @@
 const { playerState } = require("../ActionState.PlayerBots");
 const { clearMovementRequest } = require("../../behaviours/navigation/Navigation.PlayerBots");
 
+/** Steps that make something of the produce (Smith, Fletch). */
+const MAKING = new Set(["smith", "fletch"]);
+const MAKE_RETRY_MS = 10 * 60_000;
+
 /**
  * Weighted choice between short action lists, re-rolled every time the action
  * starts, then run in order. Lets one activity vary what a bot does at a step,
@@ -24,15 +28,25 @@ function createChooseAction(spec, compileAction) {
   const stateFor = (player) => playerState(action, player, () => ({ option: null, index: 0 }));
   const current = (bot) => bot.option?.actions[bot.index] ?? null;
 
+  /**
+   * An honest bot (an adventurer, a world bot with its own account) makes something of its
+   * produce when it can (smith its bars, fletch its logs), else sells it: that is its income.
+   * A making that failed (no hammer or knife, too low a level) is left alone for a while.
+   */
+  function honestChoice(bot, nowMs = Date.now()) {
+    const making = options.find((option) => option.actions.some((step) => MAKING.has(step.id)));
+    if (making && !(bot.makeFailedUntil > nowMs)) return making;
+    return options.find((option) => option.actions.some((step) => step.id === "sellItems")) ?? null;
+  }
+
   const action = {
     id: "choose",
     update(ctx) {
       const bot = stateFor(ctx.player);
       if (!bot.option) {
         let roll = Math.random() * totalWeight;
-        // An honest bot (an adventurer) sells its produce: that is its income.
-        const selling = ctx.state?.honest ? options.find((option) => option.actions.some((step) => step.id === "sellItems")) : null;
-        bot.option = selling ?? options.find((option) => (roll -= option.weight) < 0) ?? options[options.length - 1];
+        bot.option = (ctx.state?.honest ? honestChoice(bot, ctx.nowMs) : null)
+          ?? options.find((option) => (roll -= option.weight) < 0) ?? options[options.length - 1];
         bot.index = 0;
       }
       const step = current(bot);
@@ -52,6 +66,7 @@ function createChooseAction(spec, compileAction) {
       }
       if (result === "failed") {
         step.stop?.(ctx);
+        if (bot.option.actions.some((entry) => MAKING.has(entry.id))) bot.makeFailedUntil = (ctx.nowMs ?? Date.now()) + MAKE_RETRY_MS;
         bot.option = null;
       }
       return result;

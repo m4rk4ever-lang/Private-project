@@ -350,4 +350,18 @@ module.exports = function attach(api) {
   api.onInterfaceActionButton(range(FIRST_PRODUCT_COMPONENT, LAST_PRODUCT_COMPONENT).map(buttonId), chooseProduct);
 };
 
-Object.assign(module.exports, { ANVIL_NAMES: ["Anvil", "An experimental anvil", "Rusted anvil"], useOnAnvil, forget, smithingInterval });
+/**
+ * For a bot at an anvil: smiths the highest-level product of `barId` its level and bars allow
+ * (no quest or members product it may not make), as many as the bars cover. The product, or null.
+ */
+function startBotSmithing(player, barId, anvil) {
+  const bars = player.getInventory().getAmount(barId);
+  const product = Data.productsFor(barId)
+    .filter((entry) => !entry.quest && (!entry.members || Core.WorldDefinition.isMembersWorld())
+      && entry.level <= smithingLevel(player) && entry.bars <= bars)
+    .sort((a, b) => b.level - a.level || b.bars - a.bars)[0];
+  if (!product) return null;
+  return startSmithing(player, product, bars, stationSnapshot(player, anvil) ?? undefined) ? product : null;
+}
+
+Object.assign(module.exports, { ANVIL_NAMES: ["Anvil", "An experimental anvil", "Rusted anvil"], useOnAnvil, forget, smithingInterval, startBotSmithing });

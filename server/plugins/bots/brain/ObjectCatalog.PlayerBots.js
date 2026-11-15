@@ -35,6 +35,8 @@ const CATALOGS = {
     [...(Stalls.STALLS ?? new Map()).keys()].map((name) => ({ name, objectNames: [name], ids: [] })),
   // Minigame objects bots use by name (Wintertodt's bruma roots).
   minigame: () => [{ name: "Bruma roots", objectNames: ["Bruma roots"], ids: [] }],
+  // Anvils by name (Smith.PlayerBots.js); the Rusted and experimental ones are quest anvils.
+  anvil: () => [{ name: "anvil", objectNames: ["Anvil"], ids: [] }],
   furnace: () => [
     {
       name: "furnace",

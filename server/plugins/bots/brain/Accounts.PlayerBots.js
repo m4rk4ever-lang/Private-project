@@ -57,6 +57,9 @@ function generateAccount(bot, state, { core, mode, equipCombatGear = null, rando
   const tools = mode === "mining" ? [pickaxe, axe] : [axe, pickaxe];
   for (const entry of tools) if (entry && give(inventory, core, entry.item)) got.tools.push(entry.item);
   if (give(inventory, core, "TINDERBOX")) got.tools.push("TINDERBOX");
+  // To make something of its produce: a knife for its logs, a hammer for its bars.
+  if (mode === "woodcutting" && give(inventory, core, "KNIFE")) got.tools.push("KNIFE");
+  if (mode === "mining" && give(inventory, core, "HAMMER")) got.tools.push("HAMMER");
   if (mode === "fishing") {
     const fishing = levelOf(bot, core, "FISHING");
     const kit = [["SMALL_FISHING_NET", 1, 1], ["FLY_FISHING_ROD", 1, 20], ["FEATHER", 500 + Math.floor(random() * 2500), 20],

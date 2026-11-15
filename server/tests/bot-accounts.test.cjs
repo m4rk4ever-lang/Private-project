@@ -93,3 +93,26 @@ test("upkeep sends a hurt fighter without food to the exchange, and leaves adven
   assert.equal(upkeep.trips.size, 0);
   assert.equal(brain.paused, false, "and goes back to work");
 });
+
+test("a bot that changes jobs sells the last job's things first", () => {
+  const miner = bot({});
+  miner.getLocation = () => ({ getX: () => 3200, getY: () => 3200, getZ: () => 0 });
+  miner.moveTo = () => {};
+  miner.getUsername = () => "miner";
+  miner.getHitpoints = () => 10;
+  miner.getCombat = () => ({ getAttacker: () => null });
+  miner.inventory.add(new core.Item(440, 5));
+  miner.inventory.add(new core.Item(IDS.BRONZE_PICKAXE, 1));
+  miner.inventory.add(new core.Item(IDS.BRONZE_AXE, 1));
+  let mode = "mining";
+  const brain = { paused: false, currentRoot: () => ({ mode }) };
+  const runtime = { entriesByUsername: new Map([["miner", { player: miner, state: { honest: true }, brain }]]) };
+  const emit = (name, payload) => { if (name === "ge:collect") payload.finished = 0; if (name === "ge:place-offer") payload.placed = true; };
+  const upkeep = createUpkeep({ core: { ...core, Location: class {}, ItemDefinition: { forId: () => ({ getGrandExchangeValue: () => 10, isTradeable: () => true, unNote: () => 1 }) },
+    CacheDefinitions: { hasItem: () => true, getItem: () => ({}) } }, runtime, emit, isFood: () => false, now: () => 0 });
+  upkeep.check(0);
+  assert.equal(upkeep.trips.size, 0, "five ores in a half-empty bag: it keeps mining");
+  mode = "woodcutting";
+  upkeep.check(0);
+  assert.equal(upkeep.trips.size, 1, "new job: the ores go first");
+});
