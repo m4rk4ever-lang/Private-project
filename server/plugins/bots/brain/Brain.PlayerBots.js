@@ -355,6 +355,45 @@ class BotBrain {
     this.assignNext(nowMs);
   }
 
+  /**
+   * A level-up opened a better activity of the same kind (yews after willows): swap the root for
+   * it now, at a safe point, instead of waiting for the next rotation. The rotation follows, so
+   * a later switch does not fall back to the old tier. False when not at a safe point.
+   */
+  upgradeRoot(activity, nowMs) {
+    if (this.frames.length !== 1 || !activity) return false;
+    const combat = this.player.getCombat?.();
+    if (combat?.getTarget?.() || combat?.getAttacker?.()) return false;
+    const frame = this.frames[0];
+    const from = frame.behaviour.id;
+    if (from === activity.id) return false;
+    this.stopAction(frame.action(), this.context(frame, nowMs));
+    this.releaseFrame(frame);
+    this.frames = [];
+    if (this.rotation?.activityIds?.includes(from)) {
+      this.rotation = {
+        ...this.rotation,
+        activityIds: this.rotation.activityIds.map((id) => (id === from ? activity.id : id)),
+        weights: this.rotation.weights?.[from] !== undefined
+          ? { ...this.rotation.weights, [activity.id]: this.rotation.weights[from] }
+          : this.rotation.weights,
+      };
+    }
+    if (this.rootActivityId === from) this.rootActivityId = activity.id;
+    this.world?.log?.("bot_brain_activity_upgrade", { username: this.player.getUsername?.() ?? null, from, to: activity.id });
+    // Somewhere the new tier is: the bot may travel there (Travel.PlayerBots.js).
+    this.world?.travel?.(this.player, this.ensureState(), activity, nowMs);
+    const switchAt = this.switchAt;
+    this.pushRoot(activity, nowMs);
+    // The rotation's clock keeps running: an upgrade is not a fresh stretch.
+    if (switchAt) this.switchAt = switchAt;
+    return true;
+  }
+
+  currentRoot() {
+    return this.frames[0]?.behaviour ?? null;
+  }
+
   context(frame, nowMs) {
     return {
       player: this.player,

@@ -364,6 +364,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function report() {
     return [...adventurers.values()].map((entry) => {
       const { player } = entry;
+      // A level-up may have moved it to a better tier since (Progression.PlayerBots.js).
+      const root = runtime.entriesByUsername?.get?.(entry.name)?.brain?.currentRoot?.();
+      if (root && entry.phase === "training") entry.activity = root.id;
       const online = player?.isRegistered?.() === true;
       const skills = {};
       if (online) {

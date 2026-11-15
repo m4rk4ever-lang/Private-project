@@ -40,6 +40,8 @@ const MODE_SKILL = Object.freeze({
 });
 /** How far from where it stands a place must be to be worth the teleport. */
 const MIN_TRAVEL_TILES = 30;
+/** Bots at a place before its weight halves (1 / (1 + bots / cap)). */
+const OCCUPANCY_SOFT_CAP = 3;
 
 function combatLevelOf(player) {
   return player.getSkillManager?.()?.getCombatLevel?.() ?? player.getCombatLevel?.() ?? 3;
@@ -152,6 +154,20 @@ function createTravel({
     const [min, max] = data.stayMinutes?.[activityId] ?? data.stayMinutes?.roam ?? [3, 6];
     return (min + random() * (max - min)) * 60_000;
   }
+  /**
+   * Who went where: place id -> usernames. A place that already has bots weighs less
+   * (OCCUPANCY_SOFT_CAP), so they spread over the world instead of piling into one mine.
+   */
+  const occupancy = new Map();
+  function settle(name, placeId) {
+    for (const present of occupancy.values()) present.delete(name);
+    if (!placeId) return;
+    if (!occupancy.has(placeId)) occupancy.set(placeId, new Set());
+    occupancy.get(placeId).add(name);
+  }
+  function crowding(place) {
+    return 1 / (1 + (occupancy.get(place.id)?.size ?? 0) / OCCUPANCY_SOFT_CAP);
+  }
   /** Who is at each minigame lobby now: game id -> usernames. */
   const attendance = new Map();
   function leaveMinigames(name) {
@@ -189,7 +205,9 @@ function createTravel({
         place = { ...hub, hangout: true };
       } else {
         const hangouts = hangoutsFor(combatLevel, here);
-        if (hangouts.length > 0) place = { ...pickWeighted(hangouts, random), hangout: true };
+        if (hangouts.length > 0) {
+          place = { ...pickWeighted(hangouts, random, (option) => (option.weight ?? 1) * crowding(option)), hangout: true };
+        }
       }
       if (place?.activities) {
         // A place says what bots do there (the Grand Exchange: mostly trading and bank standing).
@@ -205,8 +223,9 @@ function createTravel({
       const options = destinationsFor(mode, level, here);
       if (options.length === 0) return null;
       place = pickWeighted(options, random,
-        (option) => (option.weight ?? 1) * (nearHub(option, hub) ? nearHubBonus : 1));
+        (option) => (option.weight ?? 1) * (nearHub(option, hub) ? nearHubBonus : 1) * crowding(option));
     }
+    settle(name, place.minigame ? null : place.id);
     const target = new core.Location(place.x, place.y, place.z ?? 0);
     if (core.TeleportHandler?.teleport && core.TeleportType?.NORMAL) {
       core.TeleportHandler.teleport(player, target, core.TeleportType.NORMAL, false);
@@ -239,6 +258,7 @@ function createTravel({
     return place;
   }
   travel.attendance = attendance;
+  travel.occupancy = occupancy;
   return travel;
 }
 

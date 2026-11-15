@@ -3,7 +3,7 @@
   "chance": 0.6,
   "hangoutChance": 0.15,
   "ownHubChance": 0.7,
-  "nearHubBonus": 3,
+  "nearHubBonus": 1.5,
   "bankstandChance": 0.5,
   "minigameChance": 0.12,
   "destinations": [

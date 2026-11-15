@@ -124,6 +124,12 @@ Indeling per versie:
   opgeslagen. Quests zonder uitgewerkte playthrough worden gesimuleerd (ze gaan naar het begin
   van de quest, blijven daar een tijdje, en krijgen de normale beloning); dat staat er altijd bij.
   Af en toe doen ze iets samen: Wintertodt, of trainen op dezelfde plek.
+- **Bots verspreiden zich:** een plek waar al bots zijn, wordt minder vaak gekozen, en de meeste
+  bots gaan bij het opstarten meteen naar een plek waar hun klus kan, in plaats van allemaal
+  naar de dichtstbijzijnde mijn of boom. De trek naar de eigen hub is zwakker.
+- **Door naar de volgende tier:** haalt een bot een level waarmee iets beters kan (60 Woodcutting:
+  yews in plaats van willows, 15 Mining: iron in plaats van copper), dan stapt hij meteen over
+  en reist hij zo nodig naar een plek waar dat kan. Dit geldt ook voor de avonturiers.
 - **Avonturiers gaan bossen:** vanaf combat 65 de Giant Mole, vanaf 75 Sarachnis, alleen of
   samen. Kills komen in het bosslog.
 - **Ranglijst, bank en bezit:** de pagina toont een ranglijst (score: totaal level + 2 per

@@ -249,3 +249,18 @@ test("a hangout is a short break: the bot goes back to work after a few minutes"
   const work = createTravel({ core, random: () => 0, chance: 1, hangoutChance: 0, minigameChance: 0 })(player, {}, { mode: "fishing" }, 0);
   assert.equal(work.stayMs, undefined);
 });
+
+test("bots spread: a place that already has bots is picked less", () => {
+  const { core } = harness();
+  const travel = createTravel({ core, random: Math.random, chance: 1, hangoutChance: 0, minigameChance: 0 });
+  const counts = new Map();
+  for (let i = 0; i < 60; i++) {
+    const { player } = harness({ level: 1, name: `Miner${i}`, at: { x: 0, y: 0, z: 0 } });
+    const place = travel(player, {}, { mode: "mining" }, 0);
+    counts.set(place.id, (counts.get(place.id) ?? 0) + 1);
+  }
+  const most = Math.max(...counts.values());
+  assert.ok(counts.size >= 4, [...counts].join(" "));
+  assert.ok(most <= 25, `one place got ${most} of 60`);
+  assert.equal([...travel.occupancy.values()].reduce((sum, set) => sum + set.size, 0), 60);
+});
