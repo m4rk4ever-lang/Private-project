@@ -1,5 +1,5 @@
 {
-  "_comment": "Adventurers (adventurers/Adventurers.PlayerBots.js): a few named bots that start as new accounts and play on their own, training toward the quests below and completing them. Their progress is saved. quests: the quest path, by the quest's name as registered on this server; skills and quests are the requirements (OSRS Wiki), combat a recommended combat level. Quests are completed by playing them where a playthrough is built (playthrough: true), otherwise simulated: the bot goes to the quest's start, spends a while there, and the quest completes with its normal rewards. trainMinutes / questMinutes: how long one stretch lasts. questChance: the chance to pick a quest when one is ready. groupChance: the chance an adventurer takes the others along (Wintertodt together, or the same training spot). dropValue: the lowest value (coins) of a drop that goes in the drop log. bossLevel: the lowest combat level of a kill that goes in the boss log.",
+  "_comment": "Adventurers (adventurers/Adventurers.PlayerBots.js): a few named bots that start as new accounts and play on their own, training toward the quests below and completing them. Their progress is saved. quests: the quest path, by the quest's name as registered on this server; skills and quests are the requirements (OSRS Wiki), combat a recommended combat level. Quests are completed by playing them where a playthrough is built (playthrough: true), otherwise simulated: the bot goes to the quest's start, spends a while there, and the quest completes with its normal rewards. trainMinutes / questMinutes: how long one stretch lasts. questChance: the chance to pick a quest when one is ready. groupChance: the chance an adventurer takes the others along (Wintertodt together, or the same training spot). dropValue: the lowest value (coins) of a drop that goes in the drop log. bossLevel: the lowest combat level of a kill that goes in the boss log. bosses: the bosses adventurers fight from their combat level, in the boss's shared lair (x, y: where they arrive); bossChance: the chance to go bossing when one is open to them, alone or with the others.",
   "names": [
     "Eeshwar",
     "Call me Mark",
@@ -210,5 +210,24 @@
   ],
   "groupChance": 0.3,
   "dropValue": 10000,
-  "bossLevel": 100
+  "bossLevel": 100,
+  "bosses": [
+    {
+      "id": "boss_giant_mole",
+      "name": "Giant Mole",
+      "combat": 65,
+      "x": 1752,
+      "y": 5237,
+      "z": 0
+    },
+    {
+      "id": "boss_sarachnis",
+      "name": "Sarachnis",
+      "combat": 75,
+      "x": 1841,
+      "y": 9906,
+      "z": 0
+    }
+  ],
+  "bossChance": 0.25
 }

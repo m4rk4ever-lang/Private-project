@@ -29,7 +29,8 @@
   .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--red); }
   .dot.on { background: var(--green); }
   .tag { font-size: 11px; padding: 1px 7px; border-radius: 10px; background: var(--panel-2); color: var(--blue); border: 1px solid var(--line); }
-  .stats { display: flex; gap: 14px; margin-top: 6px; color: var(--muted); font-size: 13px; }
+  .stats { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; color: var(--muted); font-size: 13px; }
+  .stats span { white-space: nowrap; }
   .stats b { color: var(--text); font-weight: 600; }
   .doing { margin-top: 8px; font-size: 14px; }
   .where { color: var(--muted); font-size: 13px; }
@@ -46,6 +47,16 @@
   .log time { color: var(--muted); flex: 0 0 auto; font-variant-numeric: tabular-nums; }
   .empty { color: var(--muted); padding: 8px 0; }
   .note { padding: 0 24px 24px; color: var(--muted); font-size: 13px; }
+  .ranking { margin: 18px 24px 0; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .ranking h2 { margin: 0; padding: 10px 16px; font-size: 15px; color: var(--gold); border-bottom: 1px solid var(--line); }
+  .ranking table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .ranking th, .ranking td { padding: 7px 16px; text-align: right; border-bottom: 1px solid #3a342a; }
+  .ranking th { color: var(--muted); font-weight: 500; font-size: 12px; }
+  .ranking th:nth-child(2), .ranking td:nth-child(2) { text-align: left; }
+  .ranking th:first-child, .ranking td:first-child { text-align: left; width: 40px; }
+  .ranking tr:last-child td { border-bottom: 0; }
+  .medal { color: var(--gold); font-weight: 700; }
+  .rank { font-size: 13px; color: var(--gold); font-weight: 700; }
 </style>
 </head>
 <body>
@@ -53,13 +64,14 @@
   <h1>Avonturiers</h1>
   <span class="status" id="status">Laden...</span>
 </header>
+<section class="ranking" id="ranking"></section>
 <main id="cards"></main>
-<p class="note">Ververst elke 5 seconden. Ga in het spel naar een avonturier met <code>::adventurer &lt;naam&gt;</code>. Quests zonder uitgewerkte playthrough zijn gesimuleerd, en dat staat erbij.</p>
+<p class="note">Score: totaal level + 2 per questpunt + 1 per miljoen gp aan bezit. Ververst elke 5 seconden. Ga in het spel naar een avonturier met <code>::adventurer &lt;naam&gt;</code>. Quests zonder uitgewerkte playthrough zijn gesimuleerd, en dat staat erbij.</p>
 <script>
   const SKILLS = ["attack", "hitpoints", "mining", "strength", "agility", "smithing", "defence", "herblore", "fishing",
     "ranged", "thieving", "cooking", "prayer", "crafting", "firemaking", "magic", "fletching", "woodcutting",
     "runecraft", "runecrafting", "slayer", "farming", "construction", "hunter", "sailing"];
-  const TABS = [["skill", "Skills"], ["quest", "Quests"], ["boss", "Bosses"], ["drop", "Drops"], ["activity", "Activiteit"]];
+  const TABS = [["skill", "Skills"], ["quest", "Quests"], ["boss", "Bosses"], ["drop", "Drops"], ["bank", "Bank"], ["activity", "Activiteit"]];
   const chosenTab = {};
 
   function esc(text) {
@@ -81,7 +93,26 @@
       return `<div class="skill ${level >= 90 ? "hi" : ""}" title="${esc(name)}: ${skills[name].xp.toLocaleString("nl-NL")} xp"><b>${level}</b>${esc(name.slice(0, 4))}</div>`;
     }).join("");
   }
+  function gp(value) {
+    const v = Number(value) || 0;
+    if (v >= 1_000_000) return `${(v / 1_000_000).toLocaleString("nl-NL", { maximumFractionDigits: 1 })}m`;
+    if (v >= 100_000) return `${Math.round(v / 1_000).toLocaleString("nl-NL")}k`;
+    return v.toLocaleString("nl-NL");
+  }
+  function bankList(adventurer) {
+    const stacks = adventurer.bank ?? [];
+    const w = adventurer.wealth;
+    const head = w ? `<li><span>Bank <b>${gp(w.bank)}</b> · bij zich <b>${gp(w.carried)}</b> · totaal <b>${gp(w.total)}</b> gp</span></li>` : "";
+    if (stacks.length === 0) return head + `<li class="empty">De bank is nog leeg.</li>`;
+    return head + stacks.map((stack) => `<li><time>${gp(stack.value)}</time><span>${stack.amount > 1 ? `${stack.amount.toLocaleString("nl-NL")} x ` : ""}${esc(stack.name)}</span></li>`).join("");
+  }
+  function ranking(list) {
+    const rows = list.map((a) => `<tr><td class="${a.rank <= 3 ? "medal" : ""}">#${a.rank}</td><td>${esc(a.name)}</td><td>${a.score}</td>
+      <td>${a.total ?? "-"}</td><td>${a.combat ?? "-"}</td><td>${a.questPoints}</td><td>${gp(a.wealth?.total)}</td></tr>`).join("");
+    return `<h2>Ranglijst</h2><table><tr><th></th><th>Naam</th><th>Score</th><th>Totaal</th><th>Combat</th><th>QP</th><th>Bezit</th></tr>${rows}</table>`;
+  }
   function logList(adventurer, tab) {
+    if (tab === "bank") return bankList(adventurer);
     const lines = (adventurer.journal ?? []).filter((entry) => (entry.type ?? "activity") === tab);
     if (tab === "quest" && adventurer.quests.length > 0 && lines.length === 0) {
       return `<li class="empty">${adventurer.quests.length} quests voltooid.</li>`;
@@ -96,13 +127,14 @@
       : "Offline";
     return `<section class="card">
       <div class="top">
-        <div class="name"><span class="dot ${adventurer.online ? "on" : ""}"></span>${esc(adventurer.name)}
+        <div class="name"><span class="rank">#${adventurer.rank}</span><span class="dot ${adventurer.online ? "on" : ""}"></span>${esc(adventurer.name)}
           ${adventurer.group ? '<span class="tag">samen</span>' : ""}</div>
         <div class="stats">
           <span>Combat <b>${adventurer.combat ?? "-"}</b></span>
           <span>Totaal <b>${adventurer.total ?? "-"}</b></span>
           <span>QP <b>${adventurer.questPoints}</b></span>
           <span>Quests <b>${adventurer.quests.length}/${adventurer.questsOnPath}</b></span>
+          <span>Bezit <b>${gp(adventurer.wealth?.total)}</b></span>
         </div>
         <div class="doing">${esc(adventurer.doing)}${minutesLeft(adventurer.until)}</div>
         <div class="where">${where}</div>
@@ -116,6 +148,7 @@
   let last = null;
   function render() {
     if (!last) return;
+    document.getElementById("ranking").innerHTML = ranking(last.adventurers);
     document.getElementById("cards").innerHTML = last.adventurers.map(card).join("");
   }
   document.addEventListener("click", (event) => {

@@ -37,7 +37,7 @@ const DEFAULT_SITES_PATH = path.join(process.cwd(), "data", "definitions", "bot-
 
 // Modes a site never rotates through: PvP and roaming belong to the wilderness pool.
 // Bank standing is where a bot goes at a busy bank (Travel.PlayerBots.js), not a site's job.
-const NON_SITE_MODES = new Set(["pvp", "roaming", "bankstanding", "minigame"]);
+const NON_SITE_MODES = new Set(["pvp", "roaming", "bankstanding", "minigame", "bossing"]);
 
 const SITE_DEFAULTS = Object.freeze({
   spawnRadius: 6,

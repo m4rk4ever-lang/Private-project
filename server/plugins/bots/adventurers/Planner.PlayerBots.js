@@ -2,7 +2,8 @@
 
 /**
  * What an adventurer does next, from its levels and quests: a pure function, so it is easy to
- * test and to reason about. An adventurer either trains a skill or does a quest.
+ * test and to reason about. An adventurer trains a skill, does a quest or fights a boss (from the
+ * boss's combat level, with `bossChance`).
  *
  * - A quest is ready when its required skills, quests, quest points and recommended combat level
  *   are met. With `questChance` the adventurer takes the first ready quest on the path.
@@ -54,8 +55,19 @@ function trainingOptions(adventurer) {
  * The next thing to do: { kind: "quest", quest } or { kind: "train", mode, skill, reason }.
  * `quests` is the path (adventurers.json), `available` the names this server has.
  */
-function chooseNext(adventurer, quests, { available = null, questChance = 0.45, random = Math.random } = {}) {
+/** The bosses this adventurer can take on: its combat level reaches the boss's. */
+function bossesFor(adventurer, bosses = []) {
+  return bosses.filter((boss) => adventurer.combat >= (boss.combat ?? 1));
+}
+
+function chooseNext(adventurer, quests, {
+  available = null, questChance = 0.45, bosses = [], bossChance = 0, random = Math.random,
+} = {}) {
   const open = quests.filter((quest) => !adventurer.done.has(quest.name) && (!available || available.has(quest.name)));
+  const fightable = bossesFor(adventurer, bosses);
+  if (fightable.length > 0 && random() < bossChance) {
+    return { kind: "boss", boss: fightable[Math.floor(random() * fightable.length)] };
+  }
   const ready = open.filter((quest) => isReady(quest, adventurer));
   if (ready.length > 0 && random() < questChance) {
     return { kind: "quest", quest: ready[0] };
@@ -96,4 +108,4 @@ function bestActivity(mode, level, definitions) {
   return best?.id ?? null;
 }
 
-module.exports = { chooseNext, missing, isReady, trainingOptions, bestActivity, TRAINABLE, COMBAT };
+module.exports = { chooseNext, bossesFor, missing, isReady, trainingOptions, bestActivity, TRAINABLE, COMBAT };

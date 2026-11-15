@@ -83,10 +83,13 @@ function createTrainCombatAction(spec, world) {
   // Opponents are attackable NPCs in the stage's combat-level band; excludeNames drops
   // ones that cannot be fought where they stand (ducks on water).
   const excludedNames = new Set((spec.excludeNames ?? []).map((name) => String(name).toLowerCase()));
+  // `onlyNames`: fight these and nothing else (a boss: the Giant Mole, Sarachnis).
+  const onlyNames = new Set((spec.onlyNames ?? []).map((name) => String(name).toLowerCase()));
   const opponentLevel = (definition) => {
     const level = definition?.getCombatLevel?.() ?? 0;
-    return definition?.isAttackable?.() === true && level > 0 &&
-      !excludedNames.has(String(definition.getName?.() ?? "").toLowerCase()) ? level : null;
+    const name = String(definition?.getName?.() ?? "").toLowerCase();
+    if (onlyNames.size > 0 && !onlyNames.has(name)) return null;
+    return definition?.isAttackable?.() === true && level > 0 && !excludedNames.has(name) ? level : null;
   };
   const levelKeys = (stage) => Array.from(
     { length: stage.npcLevels.max - stage.npcLevels.min + 1 }, (_, index) => stage.npcLevels.min + index);
@@ -295,7 +298,7 @@ function createTrainCombatAction(spec, world) {
    */
   function selectSite(player, bot, stage, nowMs) {
     const loc = player.getLocation();
-    const clusters = nearestClusters(npcClustersFor(world, `trainCombat:${[...excludedNames]}`, opponentLevel),
+    const clusters = nearestClusters(npcClustersFor(world, `trainCombat:${[...excludedNames]}:${[...onlyNames]}`, opponentLevel),
       levelKeys(stage), { x: loc.getX(), y: loc.getY(), z: loc.getZ() })
       .filter((cluster) => (bot.avoidedSites.get(cluster.key) ?? 0) <= nowMs);
     const fresh = clusters.filter((cluster) => cluster.key !== bot.previousSiteId);

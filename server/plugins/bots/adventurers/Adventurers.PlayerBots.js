@@ -28,6 +28,7 @@ const LOG_ATTRIBUTE = "adventurers:journal";
 const GROUP_JOIN_WINDOW_MS = 4 * 60_000;
 const GROUP_MAX = 5;
 const Value = require("../../interface/ValueWarning");
+const COINS = 995;
 const CHECK_TICKS = 10;
 const WINTERTODT = travelData.minigames.find((game) => game.id === "wintertodt");
 
@@ -149,6 +150,21 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return true;
   }
 
+  function startBoss(entry, plan, nowMs) {
+    const { player } = entry;
+    const { boss } = plan;
+    if (!registry?.byId?.get(boss.id)) return false;
+    teleport(player, boss);
+    world.equipCombatGear?.(player, stateOf(player));
+    startActivity(player, boss.id, { home: boss, nowMs });
+    entry.phase = "boss";
+    entry.plan = plan;
+    entry.activity = boss.id;
+    entry.until = nowMs + randomBetween(data.trainMinutes, random) * 60_000;
+    note(player, `Gaat ${boss.name} bevechten${entry.group ? " (samen)" : ""}.`, "boss");
+    return true;
+  }
+
   function startQuest(entry, plan, nowMs) {
     const { player } = entry;
     const row = questMetadata({ name: plan.quest.name }, core.CacheDefinitions);
@@ -185,6 +201,16 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const companions = freeCompanions(entry, nowMs).slice(0, GROUP_MAX - 1);
     if (companions.length === 0) return false;
     const members = [entry, ...companions];
+    // A boss all of them can take on, together.
+    const shared = (data.bosses ?? []).filter((boss) => members.every((member) => snapshot(member.player).combat >= boss.combat));
+    if (shared.length > 0 && random() < 0.5) {
+      const boss = shared[Math.floor(random() * shared.length)];
+      for (const member of members) {
+        member.group = true;
+        startBoss(member, { kind: "boss", boss, reason: "samen" }, nowMs);
+      }
+      return true;
+    }
     const firemakers = members.filter((member) => snapshot(member.player).levels.FIREMAKING >= 50);
     if (firemakers.length >= 2) {
       for (const member of firemakers) {
@@ -195,6 +221,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
     const view = snapshot(entry.player);
     const plan = chooseNext(view, data.quests, { available: view.available, questChance: 0, random });
+    if (plan.kind !== "train") return false;
     entry.group = true;
     if (!startTraining(entry, { ...plan, reason: `${plan.reason}, samen` }, nowMs)) return false;
     const home = stateOf(entry.player)?.home;
@@ -213,8 +240,12 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     entry.group = false;
     if (random() < (data.groupChance ?? 0.3) && startGroup(entry, nowMs)) return;
     const view = snapshot(entry.player);
-    const plan = chooseNext(view, data.quests, { available: view.available, questChance: data.questChance, random });
-    const started = plan.kind === "quest" ? startQuest(entry, plan, nowMs) : startTraining(entry, plan, nowMs);
+    const plan = chooseNext(view, data.quests, {
+      available: view.available, questChance: data.questChance, bosses: data.bosses, bossChance: data.bossChance, random,
+    });
+    const started = plan.kind === "quest" ? startQuest(entry, plan, nowMs)
+      : plan.kind === "boss" ? startBoss(entry, plan, nowMs)
+      : startTraining(entry, plan, nowMs);
     if (!started) entry.until = nowMs + 60_000;
   }
 
@@ -262,6 +293,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         mode: "roaming", activity: "world", username: name, persistent: true,
       });
       if (!bot) continue;
+      // Bots get a generated name shown above them; an adventurer goes by its own.
+      bot.setDisplayName?.(name);
+      bot.getUpdateFlag?.()?.flag?.(core.Flag?.APPEARANCE);
       adventurers.set(name, { name, player: bot, phase: "new", until: 0, plan: null, activity: null });
       if (journal(bot).length === 0) note(bot, "Een nieuw avontuur begint in Lumbridge.");
     }
@@ -283,6 +317,47 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
     const name = best && best.distance < 120 ? best.id.replace(/_/g, " ") : "onderweg";
     return { x: here.x, y: here.y, z: at.getZ(), near: name };
+  }
+
+  /** Coins value (Grand Exchange) of a container's items. */
+  function containerValue(container) {
+    let value = 0;
+    for (const item of container?.getItems?.() ?? []) {
+      const id = item?.getId?.() ?? -1;
+      const amount = item?.getAmount?.() ?? 0;
+      if (id === COINS) value += amount;
+      else if (id > 0 && amount > 0) value += Value.itemValue(core, id, amount);
+    }
+    return value;
+  }
+
+  /** The bank's most valuable stacks, for the page. */
+  function bankTop(player, count = 8) {
+    const stacks = [];
+    for (const bank of player.getBanks?.() ?? []) {
+      for (const item of bank?.getItems?.() ?? []) {
+        const id = item?.getId?.() ?? -1;
+        const amount = item?.getAmount?.() ?? 0;
+        if (!(id > 0) || !(amount > 0)) continue;
+        const value = id === COINS ? amount : Value.itemValue(core, id, amount);
+        stacks.push({ name: core.ItemDefinition?.forId?.(id)?.getName?.() ?? `item ${id}`, amount, value });
+      }
+    }
+    return stacks.sort((a, b) => b.value - a.value).slice(0, count);
+  }
+
+  function wealthOf(player) {
+    const bank = (player.getBanks?.() ?? []).reduce((sum, tab) => sum + containerValue(tab), 0);
+    const carried = containerValue(player.getInventory?.()) + containerValue(player.getEquipment?.());
+    return { bank, carried, total: bank + carried };
+  }
+
+  /**
+   * Who is doing best: total level, plus 2 per quest point, plus 1 per million coins of wealth.
+   * The page shows the order and the score.
+   */
+  function scoreOf(report) {
+    return (report.total ?? 0) + 2 * (report.questPoints ?? 0) + Math.floor((report.wealth?.total ?? 0) / 1_000_000);
   }
 
   /** What the page and ::adventurers show. */
@@ -309,13 +384,18 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         skills,
         doing: entry.phase === "quest"
           ? `Quest: ${entry.plan?.quest?.name} (gesimuleerd)`
+          : entry.phase === "boss" ? `Boss: ${entry.plan?.boss?.name}`
           : entry.plan ? `Training: ${String(entry.activity).replace(/_/g, " ")} (${entry.plan.reason})` : "Begint",
         group: entry.group === true,
         until: entry.until,
         location: online ? describeLocation(player) : null,
+        wealth: online ? wealthOf(player) : null,
+        bank: online ? bankTop(player) : [],
         journal: online ? journal(player).slice().reverse() : [],
       };
-    });
+    }).map((entry) => ({ ...entry, score: scoreOf(entry) }))
+      .sort((a, b) => b.score - a.score)
+      .map((entry, index) => ({ ...entry, rank: index + 1 }));
   }
 
   return { adventurers, spawn, tick, onLevelUp, onDrops, onNpcDeath, report, next, startGroup };
@@ -333,7 +413,7 @@ function startAdventurers({ api, runtime, world, registry }) {
   api.registerCommand("adventurers", ({ player }) => {
     for (const a of manager.report()) {
       player.sendMessage(a.online
-        ? `${a.name}: combat ${a.combat}, totaal ${a.total}, ${a.quests.length} quests. ${a.doing}. Bij ${a.location?.near}.`
+        ? `#${a.rank} ${a.name}: combat ${a.combat}, totaal ${a.total}, ${a.quests.length} quests, ${Math.round((a.wealth?.total ?? 0) / 1000).toLocaleString("nl-NL")}k. ${a.doing}. Bij ${a.location?.near}.`
         : `${a.name}: offline.`);
     }
     return true;

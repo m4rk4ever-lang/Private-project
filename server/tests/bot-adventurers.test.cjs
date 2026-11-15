@@ -58,3 +58,14 @@ test("the best activity fits the level", () => {
   assert.equal(bestActivity("thieving", 60, definitions), "pickpocket_knights");
   assert.equal(bestActivity("combat_training", 3, definitions), "combat_training");
 });
+
+test("from a boss's combat level an adventurer sometimes goes bossing", () => {
+  const strong = adventurer({}, { combat: 80 });
+  const plan = chooseNext(strong, data.quests, { bosses: data.bosses, bossChance: 1, random: () => 0 });
+  assert.equal(plan.kind, "boss");
+  assert.ok(data.bosses.some((boss) => boss.id === plan.boss.id));
+  const weak = chooseNext(adventurer({}, { combat: 30 }), data.quests, { bosses: data.bosses, bossChance: 1, random: () => 0 });
+  assert.notEqual(weak.kind, "boss");
+  const ids = require("../data/definitions/bot-activities.json").activities.map((activity) => activity.id);
+  for (const boss of data.bosses) assert.ok(ids.includes(boss.id), boss.id);
+});

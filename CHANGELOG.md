@@ -124,6 +124,12 @@ Indeling per versie:
   opgeslagen. Quests zonder uitgewerkte playthrough worden gesimuleerd (ze gaan naar het begin
   van de quest, blijven daar een tijdje, en krijgen de normale beloning); dat staat er altijd bij.
   Af en toe doen ze iets samen: Wintertodt, of trainen op dezelfde plek.
+- **Avonturiers gaan bossen:** vanaf combat 65 de Giant Mole, vanaf 75 Sarachnis, alleen of
+  samen. Kills komen in het bosslog.
+- **Ranglijst, bank en bezit:** de pagina toont een ranglijst (score: totaal level + 2 per
+  questpunt + 1 per miljoen gp aan bezit), per avonturier de waarde van bank en wat hij bij zich
+  heeft, en de waardevolste stacks in zijn bank. Avonturiers staan in het spel onder hun eigen
+  naam (eerst kregen ze een gegenereerde botnaam).
 - **Live meekijken:** de pagina `/adventurers.html` op je spel-adres (poort 3000) toont per
   avonturier levels, combat, totaal, questpunten, wat hij doet en waar hij is, met logboeken
   voor skills, quests, bosses, drops (vanaf 10k) en activiteit. Ververst elke 5 seconden.
