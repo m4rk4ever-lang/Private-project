@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Avonturiers met geld over kopen materialen om te trainen: logs om te fletchen of te branden bij de GE, staven om te smeden bij de aambeelden van Varrock West. Ze bieden op de GE, wachten tot het bod vol is, gaan aan het werk en verkopen de producten weer, ook met verlies, zoals spelers dat doen.
 - Bots teleporteren ook met teleport tablets en geladen sieraden (glory, games necklace, ring of dueling en meer), alleen naar de bestemmingen van dat sieraad en zonder bestemmingen achter een quest of in de Wilderness. Een tablet wordt opgebruikt, een sieraad verliest een lading.
 - House parties: een bot met een hoog Construction-level heeft een huis met kapel en gilded altar, houdt de wierookbranders aan en adverteert zijn huis in Rimmington. Vechtende bots sparen dan hun botten en offeren ze daar (350% Prayer-XP). Uit te zetten met `HOUSE_PARTY=0`.
 - Bots maken zelf iets van hun grondstoffen: mijners smelten hun erts en smeden de staven op een aambeeld tot het beste wat hun Smithing-level toelaat, houthakkers fletchen hun logs met een mes, vissers koken hun vangst en banken die. Zonder hamer of mes, of met te laag level, verkopen ze het.
@@ -60,7 +61,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Opgelost
-- Avonturiers kregen nog op drie manieren iets wat ze niet verdienden: een PvP-uitrusting als ze niets aan hadden (de iron scimitar na een reset), coins voor tolpoorten, en het geld van GE-verkopen uit hun vorige start. Alle drie zijn dicht. Ze hebben nu ook een eigen tinderbox nodig om vuur te maken.
+- Avonturiers kregen nog op drie manieren iets wat ze niet verdienden: een PvP-uitrusting als ze niets aan hadden (de iron scimitar na een reset), coins voor tolpoorten, en het geld van GE-verkopen uit hun vorige start. Alle drie zijn dicht, en de avonturiers beginnen daarom nog één keer opnieuw. Ze hebben nu ook een eigen tinderbox nodig om vuur te maken.
 - Krijgt een avonturier toch een draagbaar item zonder koop, vondst of eigen werk, dan staat er 'Onverklaard' in zijn dagboek en in de serverlog, zodat de oorzaak gevonden kan worden.
 - Avonturiers stonden soms minutenlang stil: als een keuze niet kon starten (geen gereedschap in de buurt te koop) wachtten ze een minuut. Nu kiezen ze meteen iets anders, en wie twee minuten geen XP haalt en niet beweegt, kiest ook iets anders.
 - Eerlijke bots konden alsnog gratis uitrusting krijgen (zoals een iron full helm) wanneer ze van klus wisselden. Ze worden nu ook als eerlijk herkend als hun klus opnieuw start. Avonturiers kopen ook alleen nog in winkels in de buurt, niet overal op de kaart. De avonturiers beginnen daarom nog één keer opnieuw.

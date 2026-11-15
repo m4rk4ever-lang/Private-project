@@ -172,3 +172,19 @@ test("a new adventurer does not always mine: combat first, its favourites, and n
   assert.ok(counts.fishing > counts.woodcutting, JSON.stringify(counts));
   assert.ok(counts.mining > 0 && counts.thieving > 0, "everything still comes up now and then");
 });
+
+test("with coins to spare it may train a skill on bought materials", () => {
+  const plan = chooseNext(adventurer({ FLETCHING: 30 }, { buyable: ["FLETCHING"] }), [], {
+    available: new Set(), questChance: 0, random: () => 0.999, exclude: new Set(["combat_training", "woodcutting", "mining", "fishing", "thieving"]),
+  });
+  assert.equal(plan.mode, "buy_fletching");
+  assert.equal(plan.skill, "FLETCHING");
+  const none = chooseNext(adventurer({ FLETCHING: 30 }), [], { available: new Set(), questChance: 0, random: () => 0.999,
+    exclude: new Set(["combat_training", "woodcutting", "mining", "fishing", "thieving"]) });
+  assert.notEqual(none.mode, "buy_fletching", "not without the coins");
+  const data = require("../plugins/bots/data/adventurers.json");
+  for (const [skill, recipe] of Object.entries(data.buyToTrain)) {
+    assert.ok(recipe.tiers.length > 0 && recipe.tiers.at(-1)[0] === 1, `${skill} has a level-1 tier`);
+    assert.match(recipe.activity, /^process_/);
+  }
+});

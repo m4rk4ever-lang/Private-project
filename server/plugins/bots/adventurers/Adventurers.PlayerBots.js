@@ -37,6 +37,8 @@ const GROUP_MAX = 5;
 const Value = require("../../interface/ValueWarning");
 const COINS = 995;
 const CHECK_TICKS = 10;
+/** How long it waits at the exchange for a bid on training materials to fill. */
+const BID_WAIT_MS = 3 * 60_000;
 /** No XP and no step for this long while training: it is stuck, it picks something else. */
 const STUCK_MS = 2 * 60_000;
 const WINTERTODT = travelData.minigames.find((game) => game.id === "wintertodt");
@@ -133,10 +135,32 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       combat: player.getSkillManager().getCombatLevel(),
       questPoints: Number(player.getAttribute(QuestRuntime.QUEST_POINTS_ATTRIBUTE)) || 0,
       done,
+      buyable: buyableSkills(player),
       // Only quests a bot can really play (none yet): nothing is simulated.
       available: new Set(questList().filter((quest) => quest.playthrough === true && registered.has(normalize(quest.name)))
         .map((quest) => quest.name)),
     };
+  }
+
+  /** The materials it would buy for a skill now: { skill, recipe, itemId, name, amount, cost }, or null. */
+  function buyPlan(player, skill) {
+    const recipe = data.buyToTrain?.[skill];
+    if (!recipe) return null;
+    const level = levelOf(player, skill);
+    const [, name] = recipe.tiers.find(([needed]) => level >= needed) ?? [];
+    const itemId = name ? Shopping.idOf(core, name) : null;
+    if (!Number.isInteger(itemId)) return null;
+    const guide = Number(core.ItemDefinition?.forId?.(itemId)?.getGrandExchangeValue?.() ?? 0) || 1;
+    return { skill, recipe, itemId, name, amount: recipe.amount, cost: Math.ceil(guide * 1.05) * recipe.amount };
+  }
+
+  /** Skills it can afford to train on bought materials (with coins to spare for food and tools). */
+  function buyableSkills(player) {
+    const coins = Shopping.coinsOf(player);
+    return Object.keys(data.buyToTrain ?? {}).filter((skill) => {
+      const plan = buyPlan(player, skill);
+      return plan && coins >= plan.cost + 200;
+    });
   }
 
   function stateOf(player) {
@@ -190,6 +214,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function startTraining(entry, plan, nowMs) {
     const { player } = entry;
     const view = snapshot(player);
+    if (plan.mode.startsWith("buy_")) {
+      return startBuyTraining(entry, plan, nowMs);
+    }
     if (plan.mode === "wintertodt") {
       startActivity(player, "wintertodt", { home: WINTERTODT, nowMs });
       walkTo(entry, { ...WINTERTODT, name: "Wintertodt" }, { reason: "wintertodt", replan: false });
@@ -219,6 +246,47 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     entry.until = nowMs + randomBetween(data.trainMinutes, random) * 60_000;
     note(player, `Traint ${plan.skill === "COMBAT" ? "combat" : plan.skill.toLowerCase()} (${String(entry.activity).replace(/_/g, " ")}) voor ${plan.reason}.`);
     return true;
+  }
+
+  /**
+   * Training on bought materials: its own tool first (bought if near), then the materials at the
+   * Grand Exchange (a bid a little over the guide), then the work where it is done (logs at the
+   * exchange, bars at the Varrock anvils). The products are sold at the next visit.
+   */
+  function startBuyTraining(entry, plan, nowMs) {
+    const { player } = entry;
+    const buy = buyPlan(player, plan.skill);
+    if (!buy) return false;
+    const toolId = Shopping.idOf(core, buy.recipe.tool);
+    if (Number.isInteger(toolId) && !Shopping.owns(player, toolId)) return shopFor(entry, toolId, buy.recipe.tool, 1);
+    entry.plan = plan;
+    if (player.getInventory().getAmount(buy.itemId) > 0) {
+      const station = buy.recipe.station ?? null;
+      const home = station ?? (() => { const at = player.getLocation(); return { x: at.getX(), y: at.getY(), z: at.getZ() }; })();
+      startActivity(player, buy.recipe.activity, { home, nowMs });
+      if (station) walkTo(entry, station, { reason: "station", replan: false });
+      entry.activity = buy.recipe.activity;
+      entry.phase = "training";
+      entry.buying = buy.itemId;
+      entry.until = nowMs + randomBetween(data.trainMinutes, random) * 60_000;
+      note(player, `Traint ${plan.skill.toLowerCase()} met gekochte ${itemName(buy.itemId)}.`);
+      return true;
+    }
+    // To the exchange for the materials; it waits there for the bid to fill.
+    return walkTo(entry, { ...data.grandExchange, name: "de Grand Exchange" }, {
+      reason: "buy_materials",
+      arrive: (buyer) => {
+        emit("ge:collect", { player: buyer });
+        if (buyer.getInventory().getAmount(buy.itemId) > 0) return;
+        if (!Trade.buyAtExchange(buyer, core, emit, buy.itemId, buy.amount)) {
+          note(buyer, `Kon geen bod doen op ${itemName(buy.itemId)}.`, "activity");
+          return;
+        }
+        note(buyer, `Biedt op ${buy.amount} x ${itemName(buy.itemId)} (~${buy.cost.toLocaleString("nl-NL")} gp) om ${plan.skill.toLowerCase()} te trainen.`, "activity");
+        entry.resume = plan;
+        entry.waitingSince = now();
+      },
+    });
   }
 
   function startBoss(entry, plan, nowMs) {
@@ -297,6 +365,24 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
 
   function next(entry, nowMs) {
     if (errands.busy(entry.player)) return;
+    // Waiting at the exchange for its materials: collect once they are in, then to work.
+    if (entry.resume) {
+      const waiting = Trade.finishedOffers(entry.player, emit) > 0;
+      if (waiting) emit("ge:collect", { player: entry.player });
+      const resume = entry.resume;
+      const buy = buyPlan(entry.player, resume.skill);
+      if (buy && entry.player.getInventory().getAmount(buy.itemId) > 0) {
+        entry.resume = null;
+        if (startBuyTraining(entry, resume, nowMs)) return;
+      } else if (nowMs - (entry.waitingSince ?? nowMs) < BID_WAIT_MS) {
+        entry.phase = "waiting";
+        entry.until = nowMs + 6_000;
+        return;
+      } else {
+        entry.resume = null;
+        note(entry.player, "Het bod liep niet vol; doet iets anders.", "activity");
+      }
+    }
     // Errands first, each a walk; the planner looks again when it is back.
     if (trade(entry) || upgrade(entry)) return;
     entry.group = false;
@@ -431,6 +517,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     for (const entry of adventurers.values()) {
       if (!entry.player?.isRegistered?.()) continue;
       watchGear(entry);
+      if (entry.phase === "training" && entry.buying && entry.player.getInventory().getAmount(entry.buying) <= 0
+          && !errands.busy(entry.player)) {
+        entry.buying = null;
+        entry.until = 0;
+      }
       if (stuck(entry, nowMs)) {
         note(entry.player, `Kon bij ${String(entry.activity ?? "zijn klus").replace(/_/g, " ")} niets doen; kiest iets anders.`, "activity");
         entry.until = 0;

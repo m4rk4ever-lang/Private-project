@@ -50,6 +50,10 @@ function trainingOptions(adventurer) {
   if ((adventurer.levels.FIREMAKING ?? 1) >= WINTERTODT_LEVEL) {
     options.push({ mode: "wintertodt", skill: "FIREMAKING", level: adventurer.levels.FIREMAKING });
   }
+  // Skills trained on bought materials (logs to fletch or burn, bars to smith), when it can pay.
+  for (const skill of adventurer.buyable ?? []) {
+    options.push({ mode: `buy_${skill.toLowerCase()}`, skill, level: adventurer.levels[skill] ?? 1 });
+  }
   return options;
 }
 
