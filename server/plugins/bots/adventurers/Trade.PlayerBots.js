@@ -32,6 +32,15 @@ function equippedIds(player) {
   return new Set((player.getEquipment().getItems() ?? []).filter((item) => item && item.getId() > 0).map((item) => item.getId()));
 }
 
+/** Runes, ammunition (arrows, bolts, darts), teleport tablets and charged teleport jewellery. */
+function isSupply(core, itemId) {
+  const definition = core.ItemDefinition?.forId?.(itemId);
+  const name = String(definition?.getName?.() ?? "").toLowerCase();
+  if (/ rune$/.test(name) || / teleport$/.test(name) || /\(\d+\)$/.test(name) && /(glory|necklace|ring of|bracelet|pendant)/.test(name)) return true;
+  const slot = definition?.getEquipmentType?.()?.getSlot?.();
+  return Number.isInteger(slot) && slot === core.Equipment?.AMMUNITION_SLOT;
+}
+
 /** For each gear list: the position of the best piece it wears (lists run best first). */
 function wornRank(list, core, worn) {
   const index = list.findIndex((entry) => worn.has(Shopping.idOf(core, entry.item)));
@@ -81,7 +90,9 @@ function keepIds(player, core, { isFood = () => false } = {}) {
       if (Number.isInteger(id) && (isTool || index < rank)) keep.add(id);
     });
   }
-  for (const id of inventoryIds(player)) if (isFood(id)) keep.add(id);
+  // What it uses up and needs plenty of: food, runes, ammunition, teleport tablets and charged
+  // teleport jewellery. Never sold or dropped, however many.
+  for (const id of inventoryIds(player)) if (isFood(id) || isSupply(core, id)) keep.add(id);
   return keep;
 }
 
@@ -134,4 +145,4 @@ function finishedOffers(player, emit) {
   return peek.finished ?? 0;
 }
 
-module.exports = { wearBest, keepIds, goodsToSell, sellAtExchange, buyAtExchange, finishedOffers, COINS, KEEP_TOOLS };
+module.exports = { isSupply, wearBest, keepIds, goodsToSell, sellAtExchange, buyAtExchange, finishedOffers, COINS, KEEP_TOOLS };

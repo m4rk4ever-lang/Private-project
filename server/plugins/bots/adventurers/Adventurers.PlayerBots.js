@@ -667,6 +667,29 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return Number.isInteger(unnoted) && unnoted > 0 ? unnoted : itemId;
   }
 
+  /**
+   * How many of a thing it keeps (in its bank and bag), by need rather than one number:
+   * - supplies it uses up (runes, arrows, food, tablets): all of them;
+   * - training materials for its levels now or later: up to data.bankCap; a tier it has
+   *   outgrown (bronze bars at Smithing 80) is no use any more and is sold;
+   * - other keepers (ores, raw fish, bones, feathers): up to data.bankCap.
+   */
+  function need(player, itemId) {
+    const id = baseId(itemId);
+    if (isFood(id) || Trade.isSupply(core, id)) return Infinity;
+    for (const [skill, recipe] of Object.entries(data.buyToTrain ?? {})) {
+      const level = levelOf(player, skill);
+      const tiers = recipe.tiers.map(([needed, names]) => ({ needed, ids: (Array.isArray(names) ? names : [names]).map((name) => Shopping.idOf(core, name)) }));
+      const index = tiers.findIndex((tier) => tier.ids.includes(id));
+      if (index < 0) continue;
+      // Tiers run best first: the one above this is outgrown it when its level is well past it.
+      const above = tiers[index - 1];
+      if (above && level >= above.needed + 10) return 0;
+      return data.bankCap ?? 10000;
+    }
+    return useful().has(id) ? (data.bankCap ?? 10000) : 0;
+  }
+
   function banked(player, itemId) {
     return (player.getBanks?.() ?? []).reduce((sum, bank) => sum + (bank?.getAmount?.(itemId) ?? 0), 0);
   }
@@ -678,13 +701,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const sell = [];
     for (const good of goods) {
       const id = baseId(good.itemId);
-      if (useful().has(id) && banked(player, id) < (data.bankCap ?? 1000)) keep.push(good);
+      if (need(player, id) > banked(player, id)) keep.push(good);
       else sell.push(good);
     }
     const junk = [];
     for (const item of player.getInventory().getItems() ?? []) {
       const id = item?.getId?.() ?? -1;
-      if (!(id > 0) || useful().has(baseId(id)) || isFood(id)) continue;
+      if (!(id > 0) || need(player, id) > 0) continue;
       const definition = core.ItemDefinition?.forId?.(id);
       const wearable = Number.isInteger(definition?.getEquipmentType?.()?.getSlot?.()) && definition.getEquipmentType().getSlot() >= 0;
       const each = Value.itemValue(core, id, 1);
@@ -766,8 +789,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         const id = item?.getId?.() ?? -1;
         const amount = item?.getAmount?.() ?? 0;
         if (!(id > 0) || !(amount > 0) || keep.has(id) || Value.itemValue(core, id, 1) <= 0) continue;
-        // What it keeps for later stays, up to its cap; only the surplus is sold.
-        const surplus = useful().has(id) ? amount - (data.bankCap ?? 1000) : amount;
+        // What it needs stays; only the surplus (or what it has outgrown) is sold.
+        const wanted = need(player, id);
+        const surplus = wanted === Infinity ? 0 : amount - wanted;
         if (surplus <= 0) continue;
         if (inventory.getFreeSlots() <= 1) return taken;
         const definition = core.ItemDefinition.forId(id);

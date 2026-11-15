@@ -188,3 +188,14 @@ test("with coins to spare it may train a skill on bought materials", () => {
     assert.match(recipe.activity, /^process_/);
   }
 });
+
+test("supplies it uses up are kept however many: runes, arrows, tablets, charged jewellery", () => {
+  const Trade = require("../plugins/bots/adventurers/Trade.PlayerBots");
+  const names = { 1: "Air rune", 2: "Iron arrow", 3: "Varrock teleport", 4: "Amulet of glory(4)", 5: "Iron ore", 6: "Bronze sword" };
+  const slots = { 2: 13, 4: 2, 6: 3 };
+  const core = {
+    Equipment: { AMMUNITION_SLOT: 13 },
+    ItemDefinition: { forId: (id) => ({ getName: () => names[id], getEquipmentType: () => ({ getSlot: () => slots[id] ?? -1 }) }) },
+  };
+  assert.deepEqual([1, 2, 3, 4, 5, 6].filter((id) => Trade.isSupply(core, id)), [1, 2, 3, 4]);
+});
