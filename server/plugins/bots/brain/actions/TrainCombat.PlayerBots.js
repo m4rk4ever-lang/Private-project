@@ -125,6 +125,9 @@ function createTrainCombatAction(spec, world) {
   // site; crowded sites lose targets to other trainers, so keep it generous.
   const maxFailedTargets = Math.max(1, Math.floor(Number(spec.maxFailedTargets ?? 6)));
   const foodId = resolveItem(spec.food ?? "TROUT");
+  // A stage may bring its own food (sharks for high-level monsters); the spec's is the default.
+  const stageFoodIds = new Map(stages.filter((stage) => stage.food).map((stage) => [stage.id, resolveItem(stage.food)]));
+  const allFoodIds = [...new Set([foodId, ...stageFoodIds.values()])];
   const foodAmount = Math.max(1, Math.min(28, Number(spec.foodAmount ?? 16)));
   const minSeconds = Math.max(1, Number(spec.durationSeconds?.min ?? 300));
   const maxSeconds = Math.max(minSeconds, Number(spec.durationSeconds?.max ?? 720));
@@ -234,7 +237,11 @@ function createTrainCombatAction(spec, world) {
         continue;
       }
       if (existing?.getId() === id && (amount === undefined || existing.getAmount() >= amount)) continue;
-      equipment.set(slot, new Item(id, amount ?? 1));
+      const item = new Item(id, amount ?? 1);
+      // A weapon with charges (scythe, blowpipe, trident ...) comes fully charged, as the PvP
+      // load-outs hand them out: its plugin answers "item:fill-charges".
+      core.PluginManager?.emitCustomEvent?.("item:fill-charges", { player, item, handled: false });
+      equipment.set(slot, item);
       changed = true;
     }
     if (changed) {
@@ -267,10 +274,18 @@ function createTrainCombatAction(spec, world) {
     }
     // Match equipTool/ensureItem: simulated bots are provisioned, but earn XP
     // exclusively through the normal combat engine. Refill only between fights.
-    const missing = foodAmount - inventory.getAmount(foodId);
-    if (missing > 0) inventory.adds(foodId, missing);
-    state.virtualFoodChargesRemaining = inventory.getAmount(foodId);
+    const food = stageFoodIds.get(stageFor(player, state)?.id) ?? foodId;
+    for (const other of allFoodIds) {
+      const stale = other === food ? 0 : inventory.getAmount(other);
+      if (stale > 0) inventory.deleteNumber?.(other, stale);
+    }
+    const missing = foodAmount - inventory.getAmount(food);
+    if (missing > 0) inventory.adds(food, missing);
+    state.virtualFoodChargesRemaining = inventory.getAmount(food);
   }
+
+  // Travel puts a high-level bot in its fighting gear at a raid or boss entrance.
+  world.equipCombatGear = (player, state) => prepare(player, state ?? {});
 
   /**
    * Picks an NPC cluster from the index (no hand-drawn areas) by the lowest
@@ -525,7 +540,7 @@ function createTrainCombatAction(spec, world) {
       // Food and runes are provisioned for training only: take them back, so a bot
       // switching to skilling has a free inventory (the next fight re-provisions).
       const inventory = ctx.player.getInventory?.();
-      for (const itemId of [foodId, ...(bot.runeIds ?? [])]) {
+      for (const itemId of [...allFoodIds, ...(bot.runeIds ?? [])]) {
         const amount = inventory?.getAmount(itemId) ?? 0;
         if (amount > 0) inventory.deleteNumber?.(itemId, amount);
       }

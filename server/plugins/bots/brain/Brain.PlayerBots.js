@@ -248,8 +248,10 @@ class BotBrain {
       to: next.id,
     });
     // The new activity may be done elsewhere: the bot can travel there first (Travel.PlayerBots.js).
-    this.world?.travel?.(this.player, this.ensureState(), next, nowMs);
-    this.pushRoot(next, nowMs);
+    // At a hangout (a bank, the Grand Exchange, a raid entrance) it roams until the next switch.
+    const place = this.world?.travel?.(this.player, this.ensureState(), next, nowMs);
+    const roam = place?.hangout ? this.registry?.byId?.get?.("roam") : null;
+    this.pushRoot(roam ?? next, nowMs);
   }
 
   startFrame(frame, nowMs) {

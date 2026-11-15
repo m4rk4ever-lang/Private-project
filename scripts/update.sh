@@ -35,10 +35,29 @@ if ports_busy; then
   for pid in $(port_pids); do $SUDO kill -9 "$pid" 2>/dev/null; done
   sleep 2
 fi
+# A socket ss shows without its process (seen on port 3000): find its owner through /proc
+# (the socket's inode in /proc/net/tcp, then the process holding that inode), and with
+# fuser where it is installed.
+inode_pids() {
+  local port_hex inodes
+  port_hex=$(printf '%04X' "$1")
+  inodes=$(awk -v p=":$port_hex" '$2 ~ p"$" && $4 == "0A" { print $10 }' /proc/net/tcp /proc/net/tcp6 2>/dev/null | sort -u)
+  for inode in $inodes; do
+    $SUDO find /proc/[0-9]*/fd -lname "socket:\[$inode\]" 2>/dev/null | cut -d/ -f3
+  done | sort -u
+}
+if ports_busy; then
+  for port in 3000 43594 49600; do
+    for pid in $(inode_pids "$port"); do $SUDO kill -9 "$pid" 2>/dev/null; done
+    command -v fuser >/dev/null && $SUDO fuser -k -9 "$port/tcp" >/dev/null 2>&1
+  done
+  sleep 2
+fi
 if ports_busy; then
   echo "[update] Er draait nog iets op poort 3000, 43594 of 49600 dat ik niet kan stoppen:"
   $SUDO ss -ltnp 2>/dev/null | grep -E "$PORTS_RE"
-  echo "[update] Stuur deze regels door, dan zoek ik uit wat het is."
+  echo "[update] Stop de codespace op github.com/codespaces en open hem weer; dan is de poort vrij."
+  echo "[update] Gebeurt dit vaker? Stuur deze regels door."
   exit 1
 fi
 

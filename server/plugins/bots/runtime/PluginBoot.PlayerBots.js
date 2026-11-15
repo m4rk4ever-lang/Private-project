@@ -123,7 +123,13 @@ function bootPlayerBotsRuntime(options = {}) {
       Smithing.isSmeltingActive?.(player) === true,
     log: (message, extra) => botApi.log(message, extra),
   };
-  brainWorld.travel = createTravel({ core: botApi.core, log: brainWorld.log, dress: dressForMode });
+  brainWorld.travel = createTravel({
+    core: botApi.core,
+    log: brainWorld.log,
+    dress: dressForMode,
+    // Set by the trainCombat action when the activities compile (TrainCombat.PlayerBots.js).
+    equipCombatGear: (player, state) => brainWorld.equipCombatGear?.(player, state),
+  });
 
   // One pvp engine for the brain activities and reactive overlays.
   const pvpController = new PvpController(botStatesByName, botApi, {

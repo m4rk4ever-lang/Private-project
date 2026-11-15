@@ -1,38 +1,611 @@
 {
-  "_comment": "Where bots may teleport to when they switch activity (brain/Travel.PlayerBots.js). modes: the bot activity modes found nearby; minLevel: the skill level for a skilling mode, the combat level for combat_training. Tiles are arrival tiles; bots then walk to the nearest tree, rock, fishing spot or monster cluster themselves. Never in the Wilderness.",
+  "_comment": "Where bots may teleport to when they switch activity (brain/Travel.PlayerBots.js). destinations: places to do an activity; modes: the bot activity modes found nearby; minLevel: the skill level for a skilling mode, the combat level for combat_training; weight: how often it is picked among the fitting ones (default 1). hangouts: busy places where a bot just spends its next stretch walking around (banking, idling) as players do; weights follow how busy these places are on live OSRS (an estimate: the Grand Exchange by far, then the main banks); minCombat keeps boss and raid entrances for high-level bots, who wear their combat gear there (combatGear). Tiles are arrival tiles; never in the Wilderness. hubFor: the activity modes a hangout is a home hub for: each bot gets one hub per mode (fixed by its name, among those that fit its level), returns there between activities (ownHubChance) and prefers destinations within 300 tiles of it (weight times nearHubBonus). hubMaxLevel: a hub only for bots below this level (Lumbridge for beginners).",
   "chance": 0.6,
+  "hangoutChance": 0.35,
+  "ownHubChance": 0.7,
+  "nearHubBonus": 3,
   "destinations": [
-    { "id": "lumbridge", "x": 3222, "y": 3218, "z": 0, "modes": ["woodcutting", "fishing", "combat_training"], "minLevel": 1 },
-    { "id": "lumbridge_swamp", "x": 3228, "y": 3150, "z": 0, "modes": ["mining", "fishing"], "minLevel": 1 },
-    { "id": "draynor", "x": 3088, "y": 3238, "z": 0, "modes": ["woodcutting", "fishing"], "minLevel": 1 },
-    { "id": "varrock_west_mine", "x": 3180, "y": 3370, "z": 0, "modes": ["mining"], "minLevel": 1 },
-    { "id": "varrock_east_mine", "x": 3286, "y": 3366, "z": 0, "modes": ["mining"], "minLevel": 1 },
-    { "id": "barbarian_village", "x": 3104, "y": 3428, "z": 0, "modes": ["fishing", "mining", "combat_training"], "minLevel": 15 },
-    { "id": "rimmington", "x": 2977, "y": 3240, "z": 0, "modes": ["mining"], "minLevel": 1 },
-    { "id": "port_sarim", "x": 3041, "y": 3236, "z": 0, "modes": ["fishing", "combat_training"], "minLevel": 1 },
-    { "id": "al_kharid", "x": 3293, "y": 3175, "z": 0, "modes": ["combat_training"], "minLevel": 3 },
-    { "id": "al_kharid_mine", "x": 3300, "y": 3300, "z": 0, "modes": ["mining"], "minLevel": 15 },
-    { "id": "edgeville", "x": 3087, "y": 3478, "z": 0, "modes": ["woodcutting", "combat_training"], "minLevel": 20 },
-    { "id": "grand_exchange", "x": 3165, "y": 3487, "z": 0, "modes": ["woodcutting"], "minLevel": 1 },
-    { "id": "falador", "x": 2965, "y": 3380, "z": 0, "modes": ["woodcutting", "mining", "combat_training"], "minLevel": 1 },
-    { "id": "mining_guild", "x": 3046, "y": 9741, "z": 0, "modes": ["mining"], "minLevel": 60 },
-    { "id": "taverley", "x": 2895, "y": 3440, "z": 0, "modes": ["combat_training"], "minLevel": 20 },
-    { "id": "burthorpe", "x": 2898, "y": 3545, "z": 0, "modes": ["combat_training"], "minLevel": 20 },
-    { "id": "catherby", "x": 2837, "y": 3433, "z": 0, "modes": ["fishing", "woodcutting"], "minLevel": 35 },
-    { "id": "seers_village", "x": 2727, "y": 3492, "z": 0, "modes": ["woodcutting", "combat_training"], "minLevel": 45 },
-    { "id": "sorcerers_tower_magics", "x": 2702, "y": 3399, "z": 0, "modes": ["woodcutting"], "minLevel": 75 },
-    { "id": "fishing_guild", "x": 2604, "y": 3417, "z": 0, "modes": ["fishing"], "minLevel": 68 },
-    { "id": "ardougne", "x": 2662, "y": 3305, "z": 0, "modes": ["combat_training"], "minLevel": 20 },
-    { "id": "yanille", "x": 2606, "y": 3093, "z": 0, "modes": ["combat_training"], "minLevel": 30 },
-    { "id": "tree_gnome_stronghold", "x": 2465, "y": 3495, "z": 0, "modes": ["woodcutting", "combat_training"], "minLevel": 40 },
-    { "id": "karamja_musa_point", "x": 2924, "y": 3178, "z": 0, "modes": ["fishing", "combat_training"], "minLevel": 35 },
-    { "id": "tai_bwo_wannai", "x": 2827, "y": 3083, "z": 0, "modes": ["woodcutting"], "minLevel": 35 },
-    { "id": "shilo_village", "x": 2857, "y": 2970, "z": 0, "modes": ["fishing"], "minLevel": 20 },
-    { "id": "canifis", "x": 3493, "y": 3488, "z": 0, "modes": ["combat_training"], "minLevel": 40 },
-    { "id": "slayer_tower", "x": 3428, "y": 3535, "z": 0, "modes": ["combat_training"], "minLevel": 85 },
-    { "id": "rellekka", "x": 2660, "y": 3657, "z": 0, "modes": ["fishing", "combat_training"], "minLevel": 40 },
-    { "id": "woodcutting_guild", "x": 1658, "y": 3505, "z": 0, "modes": ["woodcutting"], "minLevel": 60 },
-    { "id": "piscarilius", "x": 1830, "y": 3770, "z": 0, "modes": ["fishing"], "minLevel": 82 },
-    { "id": "prifddinas", "x": 3264, "y": 6064, "z": 0, "modes": ["combat_training"], "minLevel": 90 }
+    {
+      "id": "lumbridge",
+      "x": 3222,
+      "y": 3218,
+      "z": 0,
+      "modes": [
+        "woodcutting",
+        "fishing",
+        "combat_training"
+      ],
+      "minLevel": 1
+    },
+    {
+      "id": "lumbridge_swamp",
+      "x": 3228,
+      "y": 3150,
+      "z": 0,
+      "modes": [
+        "mining",
+        "fishing"
+      ],
+      "minLevel": 1
+    },
+    {
+      "id": "draynor",
+      "x": 3088,
+      "y": 3238,
+      "z": 0,
+      "modes": [
+        "woodcutting",
+        "fishing"
+      ],
+      "minLevel": 1
+    },
+    {
+      "id": "varrock_west_mine",
+      "x": 3180,
+      "y": 3370,
+      "z": 0,
+      "modes": [
+        "mining"
+      ],
+      "minLevel": 1
+    },
+    {
+      "id": "varrock_east_mine",
+      "x": 3286,
+      "y": 3366,
+      "z": 0,
+      "modes": [
+        "mining"
+      ],
+      "minLevel": 1
+    },
+    {
+      "id": "barbarian_village",
+      "x": 3104,
+      "y": 3428,
+      "z": 0,
+      "modes": [
+        "fishing",
+        "mining",
+        "combat_training"
+      ],
+      "minLevel": 15
+    },
+    {
+      "id": "rimmington",
+      "x": 2977,
+      "y": 3240,
+      "z": 0,
+      "modes": [
+        "mining"
+      ],
+      "minLevel": 1
+    },
+    {
+      "id": "port_sarim",
+      "x": 3041,
+      "y": 3236,
+      "z": 0,
+      "modes": [
+        "fishing",
+        "combat_training"
+      ],
+      "minLevel": 1
+    },
+    {
+      "id": "al_kharid",
+      "x": 3293,
+      "y": 3175,
+      "z": 0,
+      "modes": [
+        "combat_training"
+      ],
+      "minLevel": 3
+    },
+    {
+      "id": "al_kharid_mine",
+      "x": 3300,
+      "y": 3300,
+      "z": 0,
+      "modes": [
+        "mining"
+      ],
+      "minLevel": 15,
+      "weight": 0.5
+    },
+    {
+      "id": "edgeville",
+      "x": 3087,
+      "y": 3478,
+      "z": 0,
+      "modes": [
+        "woodcutting",
+        "combat_training"
+      ],
+      "minLevel": 20
+    },
+    {
+      "id": "grand_exchange",
+      "x": 3165,
+      "y": 3487,
+      "z": 0,
+      "modes": [
+        "woodcutting"
+      ],
+      "minLevel": 1
+    },
+    {
+      "id": "falador",
+      "x": 2965,
+      "y": 3380,
+      "z": 0,
+      "modes": [
+        "woodcutting",
+        "mining",
+        "combat_training"
+      ],
+      "minLevel": 1
+    },
+    {
+      "id": "mining_guild",
+      "x": 3046,
+      "y": 9741,
+      "z": 0,
+      "modes": [
+        "mining"
+      ],
+      "minLevel": 60
+    },
+    {
+      "id": "taverley",
+      "x": 2895,
+      "y": 3440,
+      "z": 0,
+      "modes": [
+        "combat_training"
+      ],
+      "minLevel": 20
+    },
+    {
+      "id": "burthorpe",
+      "x": 2898,
+      "y": 3545,
+      "z": 0,
+      "modes": [
+        "combat_training"
+      ],
+      "minLevel": 20
+    },
+    {
+      "id": "catherby",
+      "x": 2837,
+      "y": 3433,
+      "z": 0,
+      "modes": [
+        "fishing",
+        "woodcutting"
+      ],
+      "minLevel": 35
+    },
+    {
+      "id": "seers_village",
+      "x": 2727,
+      "y": 3492,
+      "z": 0,
+      "modes": [
+        "woodcutting",
+        "combat_training"
+      ],
+      "minLevel": 45
+    },
+    {
+      "id": "sorcerers_tower_magics",
+      "x": 2702,
+      "y": 3399,
+      "z": 0,
+      "modes": [
+        "woodcutting"
+      ],
+      "minLevel": 75
+    },
+    {
+      "id": "fishing_guild",
+      "x": 2604,
+      "y": 3417,
+      "z": 0,
+      "modes": [
+        "fishing"
+      ],
+      "minLevel": 68
+    },
+    {
+      "id": "ardougne",
+      "x": 2662,
+      "y": 3305,
+      "z": 0,
+      "modes": [
+        "combat_training"
+      ],
+      "minLevel": 20
+    },
+    {
+      "id": "yanille",
+      "x": 2606,
+      "y": 3093,
+      "z": 0,
+      "modes": [
+        "combat_training"
+      ],
+      "minLevel": 30
+    },
+    {
+      "id": "tree_gnome_stronghold",
+      "x": 2465,
+      "y": 3495,
+      "z": 0,
+      "modes": [
+        "woodcutting",
+        "combat_training"
+      ],
+      "minLevel": 40
+    },
+    {
+      "id": "karamja_musa_point",
+      "x": 2924,
+      "y": 3178,
+      "z": 0,
+      "modes": [
+        "fishing",
+        "combat_training"
+      ],
+      "minLevel": 35
+    },
+    {
+      "id": "tai_bwo_wannai",
+      "x": 2827,
+      "y": 3083,
+      "z": 0,
+      "modes": [
+        "woodcutting"
+      ],
+      "minLevel": 35
+    },
+    {
+      "id": "shilo_village",
+      "x": 2857,
+      "y": 2970,
+      "z": 0,
+      "modes": [
+        "fishing"
+      ],
+      "minLevel": 20
+    },
+    {
+      "id": "canifis",
+      "x": 3493,
+      "y": 3488,
+      "z": 0,
+      "modes": [
+        "combat_training"
+      ],
+      "minLevel": 40
+    },
+    {
+      "id": "slayer_tower",
+      "x": 3428,
+      "y": 3535,
+      "z": 0,
+      "modes": [
+        "combat_training"
+      ],
+      "minLevel": 85
+    },
+    {
+      "id": "rellekka",
+      "x": 2660,
+      "y": 3657,
+      "z": 0,
+      "modes": [
+        "fishing",
+        "combat_training"
+      ],
+      "minLevel": 40
+    },
+    {
+      "id": "woodcutting_guild",
+      "x": 1658,
+      "y": 3505,
+      "z": 0,
+      "modes": [
+        "woodcutting"
+      ],
+      "minLevel": 60
+    },
+    {
+      "id": "piscarilius",
+      "x": 1830,
+      "y": 3770,
+      "z": 0,
+      "modes": [
+        "fishing"
+      ],
+      "minLevel": 82
+    },
+    {
+      "id": "prifddinas",
+      "x": 3264,
+      "y": 6064,
+      "z": 0,
+      "modes": [
+        "combat_training"
+      ],
+      "minLevel": 90
+    },
+    {
+      "id": "taverley_dungeon",
+      "x": 2884,
+      "y": 9798,
+      "z": 0,
+      "modes": [
+        "combat_training"
+      ],
+      "minLevel": 70
+    },
+    {
+      "id": "brimhaven_dungeon",
+      "x": 2713,
+      "y": 9564,
+      "z": 0,
+      "modes": [
+        "combat_training"
+      ],
+      "minLevel": 70
+    },
+    {
+      "id": "fremennik_slayer_dungeon",
+      "x": 2808,
+      "y": 10002,
+      "z": 0,
+      "modes": [
+        "combat_training"
+      ],
+      "minLevel": 75
+    },
+    {
+      "id": "catacombs_of_kourend",
+      "x": 1666,
+      "y": 10050,
+      "z": 0,
+      "modes": [
+        "combat_training"
+      ],
+      "minLevel": 85
+    }
+  ],
+  "hangouts": [
+    {
+      "id": "grand_exchange",
+      "x": 3164,
+      "y": 3486,
+      "z": 0,
+      "weight": 6,
+      "hubFor": [
+        "woodcutting",
+        "mining",
+        "fishing",
+        "combat_training"
+      ]
+    },
+    {
+      "id": "varrock_west_bank",
+      "x": 3185,
+      "y": 3440,
+      "z": 0,
+      "weight": 2,
+      "hubFor": [
+        "mining",
+        "woodcutting",
+        "combat_training"
+      ]
+    },
+    {
+      "id": "varrock_square",
+      "x": 3212,
+      "y": 3424,
+      "z": 0,
+      "weight": 2
+    },
+    {
+      "id": "edgeville_bank",
+      "x": 3094,
+      "y": 3493,
+      "z": 0,
+      "weight": 2,
+      "hubFor": [
+        "woodcutting",
+        "combat_training"
+      ]
+    },
+    {
+      "id": "falador_west_bank",
+      "x": 2946,
+      "y": 3370,
+      "z": 0,
+      "weight": 1.5,
+      "hubFor": [
+        "mining",
+        "combat_training"
+      ]
+    },
+    {
+      "id": "falador_park",
+      "x": 2995,
+      "y": 3376,
+      "z": 0,
+      "weight": 1.5
+    },
+    {
+      "id": "lumbridge_castle",
+      "x": 3222,
+      "y": 3218,
+      "z": 0,
+      "weight": 1.5,
+      "hubFor": [
+        "woodcutting",
+        "mining",
+        "fishing",
+        "combat_training"
+      ],
+      "hubMaxLevel": 40
+    },
+    {
+      "id": "draynor_bank",
+      "x": 3092,
+      "y": 3245,
+      "z": 0,
+      "weight": 1,
+      "hubFor": [
+        "woodcutting",
+        "fishing"
+      ]
+    },
+    {
+      "id": "seers_bank",
+      "x": 2725,
+      "y": 3491,
+      "z": 0,
+      "weight": 1,
+      "hubFor": [
+        "woodcutting",
+        "fishing"
+      ]
+    },
+    {
+      "id": "catherby_bank",
+      "x": 2809,
+      "y": 3440,
+      "z": 0,
+      "weight": 1,
+      "hubFor": [
+        "fishing"
+      ]
+    },
+    {
+      "id": "ardougne_market",
+      "x": 2662,
+      "y": 3305,
+      "z": 0,
+      "weight": 1,
+      "hubFor": [
+        "fishing",
+        "combat_training"
+      ]
+    },
+    {
+      "id": "al_kharid_bank",
+      "x": 3270,
+      "y": 3167,
+      "z": 0,
+      "weight": 0.5,
+      "hubFor": [
+        "mining",
+        "combat_training"
+      ]
+    },
+    {
+      "id": "prifddinas",
+      "x": 3264,
+      "y": 6064,
+      "z": 0,
+      "weight": 1,
+      "minCombat": 90,
+      "hubFor": [
+        "woodcutting",
+        "mining",
+        "fishing",
+        "combat_training"
+      ]
+    },
+    {
+      "id": "chambers_of_xeric",
+      "x": 1246,
+      "y": 3558,
+      "z": 0,
+      "weight": 1,
+      "minCombat": 110,
+      "combatGear": true
+    },
+    {
+      "id": "theatre_of_blood",
+      "x": 3677,
+      "y": 3217,
+      "z": 0,
+      "weight": 1,
+      "minCombat": 115,
+      "combatGear": true
+    },
+    {
+      "id": "tombs_of_amascut",
+      "x": 3358,
+      "y": 9113,
+      "z": 0,
+      "weight": 1,
+      "minCombat": 110,
+      "combatGear": true
+    },
+    {
+      "id": "colosseum",
+      "x": 1799,
+      "y": 9506,
+      "z": 0,
+      "weight": 0.7,
+      "minCombat": 115,
+      "combatGear": true
+    },
+    {
+      "id": "tzhaar_city",
+      "x": 2438,
+      "y": 5168,
+      "z": 0,
+      "weight": 0.7,
+      "minCombat": 90,
+      "combatGear": true
+    },
+    {
+      "id": "god_wars_entrance",
+      "x": 2917,
+      "y": 3745,
+      "z": 0,
+      "weight": 0.7,
+      "minCombat": 100,
+      "combatGear": true
+    },
+    {
+      "id": "barrows",
+      "x": 3565,
+      "y": 3289,
+      "z": 0,
+      "weight": 0.7,
+      "minCombat": 80,
+      "combatGear": true
+    },
+    {
+      "id": "giant_mole_hole",
+      "x": 2984,
+      "y": 3314,
+      "z": 0,
+      "weight": 0.5,
+      "minCombat": 70,
+      "combatGear": true
+    },
+    {
+      "id": "kalphite_lair",
+      "x": 3227,
+      "y": 3108,
+      "z": 0,
+      "weight": 0.5,
+      "minCombat": 90,
+      "combatGear": true
+    }
   ]
 }

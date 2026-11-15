@@ -152,6 +152,30 @@
             "legends": 5
           }
         }
+      },
+      "grand_exchange": {
+        "enabled": true,
+        "x": 3164,
+        "y": 3486,
+        "switchMinutes": [
+          15,
+          25
+        ],
+        "bots": {
+          "combat_training": {
+            "experts": 3,
+            "maxed": 4
+          },
+          "woodcutting": {
+            "maxed": 2
+          },
+          "mining": {
+            "maxed": 2
+          },
+          "fishing": {
+            "maxed": 2
+          }
+        }
       }
     }
   },

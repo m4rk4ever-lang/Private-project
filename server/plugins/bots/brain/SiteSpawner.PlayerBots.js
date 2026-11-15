@@ -95,7 +95,7 @@ const BOATERS = ["RED_BOATER", "ORANGE_BOATER", "GREEN_BOATER", "BLUE_BOATER", "
 const CAVALIERS = ["TAN_CAVALIER", "DARK_CAVALIER", "BLACK_CAVALIER", "HIGHWAYMAN_MASK"];
 const FREMENNIK_HELMS = ["HELM_OF_NEITIZNOT", "BERSERKER_HELM", "WARRIOR_HELM", "ARCHER_HELM", "FARSEER_HELM"];
 
-const SKILLING_OUTFITS = Object.freeze({
+const SKILLING_OUTFITS = {
   novice: {
     head: ["LEATHER_COWL", "BRONZE_MED_HELM", "IRON_MED_HELM", "WIZARD_HAT", "BLUE_WIZARD_HAT", ...HATS],
     cape: [...COLOUR_CAPES, ...TEAM_CAPES],
@@ -146,7 +146,11 @@ const SKILLING_OUTFITS = Object.freeze({
     feet: ["RUNE_BOOTS", "BOOTS_OF_LIGHTNESS", "SNAKESKIN_BOOTS", "CLIMBING_BOOTS"],
     ring: ["RING_OF_WEALTH", "EXPLORERS_RING_1"],
   },
-});
+};
+// Maxed bots dress like masters, and most of them show off a max cape.
+SKILLING_OUTFITS.maxed = SKILLING_OUTFITS.master;
+Object.freeze(SKILLING_OUTFITS);
+const MAX_CAPE_CHANCE = 0.75;
 
 /** How often each slot is worn at all. */
 const SLOT_CHANCE = Object.freeze({ head: 0.5, cape: 0.35, amulet: 0.5, body: 0.85, legs: 0.85, hands: 0.3, feet: 0.6, ring: 0.2 });
@@ -159,8 +163,8 @@ const MODE_OUTFITS = Object.freeze({
 });
 const GRACEFUL = Object.freeze({ head: "GRACEFUL_HOOD", cape: "GRACEFUL_CAPE", body: "GRACEFUL_TOP", legs: "GRACEFUL_LEGS",
   hands: "GRACEFUL_GLOVES", feet: "GRACEFUL_BOOTS" });
-const MODE_OUTFIT_CHANCE = Object.freeze({ novice: 0, mid: 0.1, advanced: 0.3, elite: 0.45, master: 0.6 });
-const GRACEFUL_CHANCE = Object.freeze({ novice: 0, mid: 0.05, advanced: 0.15, elite: 0.25, master: 0.35 });
+const MODE_OUTFIT_CHANCE = Object.freeze({ novice: 0, mid: 0.1, advanced: 0.3, elite: 0.45, master: 0.6, maxed: 0.6 });
+const GRACEFUL_CHANCE = Object.freeze({ novice: 0, mid: 0.05, advanced: 0.15, elite: 0.25, master: 0.35, maxed: 0.4 });
 const PIECE_CHANCE = 0.75;
 /** A 99 in the mode's skill shows: most such bots wear that skill's cape. */
 const SKILL_CAPES = Object.freeze({ woodcutting: ["WOODCUTTING", "WOODCUTTING_CAPE"], mining: ["MINING", "MINING_CAPE"],
@@ -182,7 +186,8 @@ function outfitTier(levels) {
   if (lowest < 40) return "mid";
   if (lowest < 60) return "advanced";
   if (lowest < 80) return "elite";
-  return "master";
+  if (lowest < 99) return "master";
+  return "maxed";
 }
 
 /** The outfit slots in the order they are filled; the weapon slot stays free for the tool. */
@@ -212,6 +217,7 @@ function rollOutfit(tier, { mode = null, skillLevel = 0, random = Math.random } 
   if (random() < (GRACEFUL_CHANCE[tier] ?? 0)) overlay(GRACEFUL);
   if (MODE_OUTFITS[mode] && random() < (MODE_OUTFIT_CHANCE[tier] ?? 0)) overlay(MODE_OUTFITS[mode]);
   if (SKILL_CAPES[mode] && skillLevel >= 99 && random() < SKILL_CAPE_CHANCE) outfit.cape = SKILL_CAPES[mode][1];
+  if (tier === "maxed" && random() < MAX_CAPE_CHANCE) outfit.cape = "MAX_CAPE";
   return outfit;
 }
 

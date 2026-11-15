@@ -48,6 +48,9 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Opgelost
+- `update` stopt nu ook een spel dat op een poort blijft hangen zonder dat zichtbaar is welk
+  proces het is (de melding "Er draait nog iets op poort 3000").
+- Minder bots die vastlopen bij de Al Kharid-mijn en de tolpoort: die mijn wordt minder vaak gekozen.
 - In een codespace laden de graphics op een nieuwe plek niet langer traag. De client haalt de
   hele game-cache bij de eerste keer laden in één keer binnen en bewaart die in je browser.
   Die eerste keer duurt wat langer, daarna komen er geen graphics meer over het netwerk.
@@ -75,6 +78,20 @@ Indeling per versie:
   cape), keuze uit 50 team capes, cloaks, hoeden en kostuums, skilling-outfits (Lumberjack,
   Prospector, Angler, Graceful) vanaf gevorderd niveau, en een skillcape bij 99. Na het reizen
   kleedt een skiller zich om voor zijn nieuwe klus.
+- **Maxed bots:** 13 extra bots bij de Grand Exchange, waarvan 10 maxed (alles 99, combat 126)
+  in max gear: Torva, Masori en Ancestral, met de Scythe of Vitur, Twisted bow en Kodai wand.
+  Opgeladen wapens zijn echt opgeladen. Meestal dragen ze een max cape. Nu 144 bots.
+- **Bots hebben een thuisbasis:** elke bot heeft per activiteit een vaste hub die erbij past.
+  Vissers bij Catherby, Seers of Draynor, miners bij Falador, Varrock West of Al Kharid,
+  woodcutters bij Seers, Draynor of Edgeville, vechters bij Edgeville of Varrock. Iedereen kan
+  de Grand Exchange als hub hebben, beginners Lumbridge, en vanaf combat 90 ook Prifddinas.
+  Tussen activiteiten lopen bots daar een tijdje rond en ze werken het liefst in de buurt.
+- **Drukke plekken:** bots hangen ook rond bij de Grand Exchange (verreweg het drukst), de banken
+  en pleinen van Varrock, Falador, Edgeville en Ardougne. High-level bots staan in hun
+  combat-gear bij Chambers of Xeric, Theatre of Blood, Tombs of Amascut, de Colosseum,
+  God Wars, Barrows, TzHaar, de Giant Mole en de Kalphite Lair.
+- Bots trainen nu ook in de Taverley, Brimhaven en Fremennik Slayer Dungeons en de Catacombs of
+  Kourend, en vechten op master- en legend-niveau tegen sterkere monsters met betere food.
 
 
 ## [0.1.0] - 15-11-2026
