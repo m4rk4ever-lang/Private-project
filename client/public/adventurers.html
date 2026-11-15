@@ -198,7 +198,7 @@
     return `<section class="card">
       <div class="top">
         <div class="name"><span class="rank">#${adventurer.rank}</span><span class="dot ${adventurer.online ? "on" : ""}"></span>${esc(adventurer.name)}
-          ${adventurer.clan ? `<span class="tag">${emblem(adventurer.emblem, 14)}${esc(adventurer.clan)}${adventurer.leader ? " · leider" : ""}</span>` : ""}
+          ${adventurer.clan ? `<span class="tag">${emblem(adventurer.emblem ?? fallbackEmblem(adventurer.clan), 14)}${esc(adventurer.clan)}${adventurer.leader ? " · leider" : ""}</span>` : ""}
           ${adventurer.group ? '<span class="tag">samen</span>' : ""}
           <button class="follow" data-follow="${esc(adventurer.name)}" title="Kopieert ::volg ${esc(adventurer.name)}">Volg</button></div>
         <div class="stats">
@@ -235,7 +235,15 @@
       + `<path d="M3 3 L29 3 L29 18 C29 27 22 32 16 35 C10 32 3 27 3 18 Z" fill="${color}" stroke="#d6b25e" stroke-width="2"/>`
       + `${SYMBOLS[e.symbol] ?? ""}</svg>`;
   }
-  const emblemOf = (name) => last?.adventurers?.find((a) => a.clan === name)?.emblem ?? null;
+  /** Without an emblem from the server (an older server): a steady colour from the clan's name. */
+  function fallbackEmblem(name) {
+    if (!name) return null;
+    let hash = 0;
+    for (const char of String(name)) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+    const colors = ["#b3261e", "#2e7d32", "#1f5fae", "#8e24aa", "#ef6c00", "#00838f"];
+    return { color: colors[hash % colors.length], symbol: ["axe", "skull", "star", "crown", "sword"][hash % 5] };
+  }
+  const emblemOf = (name) => last?.adventurers?.find((a) => a.clan === name)?.emblem ?? fallbackEmblem(name);
 
   // "clan": the cards in their clans (best clan first, leader first); "rank": one ranking.
   let view = "clan";
