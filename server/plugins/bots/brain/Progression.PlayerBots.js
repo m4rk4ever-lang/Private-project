@@ -36,7 +36,31 @@ function upgradeFor(current, level) {
   return best;
 }
 
+/** A bot clicks Continue on a level-up this many ticks after it opens (1.2 to 3 s), as a player does. */
+const CONTINUE_TICKS = [2, 5];
+
+/**
+ * The level-up pop-up pauses skilling until Continue (SkillLevelUp.plugin.js). A player clicks it
+ * and carries on; a bot did not, and stood still after every level. It now clicks through a
+ * moment later, and what the pop-up paused goes on.
+ */
+function continueLevelUps(api) {
+  api.onCustomEvent("level-up:popup-opened", ({ player }) => {
+    if (player?.isPlayerBot?.() !== true) return;
+    const { Task, TaskManager } = api.core;
+    const ticks = CONTINUE_TICKS[0] + Math.floor(Math.random() * (CONTINUE_TICKS[1] - CONTINUE_TICKS[0] + 1));
+    TaskManager.submit(new (class extends Task {
+      constructor() { super(ticks, player, false); }
+      execute() {
+        this.stop();
+        if (player.isRegistered?.()) api.emitCustomEvent("level-up:continue", { player });
+      }
+    })());
+  });
+}
+
 function startProgression(api, runtime, registry) {
+  continueLevelUps(api);
   api.onPlayerLevelUp(({ player, skill, newLevel }) => {
     if (player?.isPlayerBot?.() !== true) return;
     const brain = runtime.entriesByUsername?.get?.(player.getUsername?.())?.brain;

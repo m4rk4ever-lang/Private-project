@@ -80,7 +80,10 @@ function createPickpocketAction(spec = {}, world = {}) {
     const here = player.getLocation();
     let best = null;
     let bestDistance = Infinity;
-    for (const npc of player.getLocalNpcs?.() ?? []) {
+    // Every NPC around it, as TrainCombat looks: a bot has no client, so its local NPC list
+    // (filled by the client update) can stay empty and it never found anyone to steal from.
+    const near = world.core?.World?.getNpcsNear?.(here, SEARCH_TILES, player.getPrivateArea?.() ?? null);
+    for (const npc of near ?? player.getLocalNpcs?.() ?? []) {
       if (!npc || npc.isRegistered?.() === false || !names.has(nameOf(npc, player).toLowerCase())) continue;
       if ((avoided.get(npc) ?? 0) > nowMs) continue;
       const distance = chebyshev(npc.getLocation(), here);

@@ -78,6 +78,10 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Zakkenrollen door bots werkt: ze zochten hun doelwit in een lijst die alleen een echte client vult, vonden nooit een man of vrouw en kregen dus geen XP of buit. Nu zoeken ze in de wereld om zich heen.
+- Bots klikken na een level-up door de pop-up heen (na 1 tot 3 seconden, zoals een speler) en gaan verder met wat ze deden, in plaats van stil te blijven staan.
+- Avonturiers schakelen over op melee als hun pijlen of runes op zijn, in plaats van met lege handen door te gaan.
+- Avonturiers houden geen notes meer in hun tas: wat ze op de GE niet kwijt konden, gaat terug de bank in (als gewone items, zoals de bank dat doet).
 - Nieuwe avonturiers bleven op het spawnpunt in Lumbridge staan met "Loopt naar Draynor om te banken": hun eerste klus was een wandeling, maar zonder lopende training werd die route nooit uitgevoerd. Na een minuut gaven ze het op en probeerden ze de volgende bank, eindeloos. Nu lopen ze echt.
 - Avonturiers halen hun boog, pijlen of runes niet meer op afstand uit de bank: ze lopen naar de bank en pakken ze daar. Ze beginnen pas met boogschieten of toveren als ze minstens 50 pijlen of runes voor 50 spreuken hebben.
 - Avonturiers wisselen weer tussen Attack, Strength en Defence: tussen gevechten zetten ze hun vechtstijl op de laagste van de drie. Daardoor groeien ze ook door naar sterkere monsters en blijven ze niet eindeloos op ratten en mannen in Lumbridge hangen (de plek hangt af van de laagste van de drie, en Defence bleef op 1 staan).

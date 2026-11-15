@@ -416,6 +416,23 @@ function interfaceClosed(event) {
   showNext(event.player, state);
 }
 
+/**
+ * "level-up:continue" { player }: Continue on every open level-up at once, as a player who
+ * clicks through them (a bot does, a moment after its level-up). The unlock lines go to the chat
+ * and what the level-up paused carries on.
+ */
+function continueAll({ player }) {
+  const state = pending.get(player);
+  if (!state) return;
+  for (const level of [state.current, ...state.queue]) {
+    if (level?.boxed) announceUnlocks(player, level.skill, level.from ?? level.oldLevel, level.to ?? level.newLevel);
+  }
+  state.current = null;
+  state.queue.length = 0;
+  player.setAttribute(COMBAT_POPUP_FROM_ATTRIBUTE, undefined);
+  finishPending(player, state);
+}
+
 function itemAction(event) {
   if (event.action !== "bonus") cancelPending(event);
 }
@@ -435,6 +452,7 @@ module.exports = {
     api.onPlayerLevelUp(showLevelUp);
     api.onInterfaceActionButton(CONTINUE, continueLevelUp);
     api.onCustomEvent("player:world-input", cancelPending);
+    api.onCustomEvent("level-up:continue", continueAll);
     api.onCustomEvent("interface:closed", interfaceClosed);
     api.onCanUseItem(itemAction);
     api.onPlayerLogout(cancelPending);

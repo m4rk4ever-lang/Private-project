@@ -1056,7 +1056,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       if (!bank) continue;
       const held = inventory.getAmount(itemId);
       if (held <= 0) continue;
-      bank.add(new core.Item(itemId, held), false);
+      // A note goes in as the item itself, as the bank does it.
+      const definition = core.ItemDefinition?.forId?.(itemId);
+      const bankId = definition?.isNoted?.() ? definition.unNote() : itemId;
+      bank.add(new core.Item(bankId, held), false);
       inventory.deleteNumber?.(itemId, held);
       stored.push({ itemId, amount: held });
     }
@@ -1256,6 +1259,12 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const total = offered.reduce((sum, good) => sum + good.value, 0);
       note(player, `Zet te koop op de GE${pulled ? " (ook uit de bank)" : ""}: ${names.join(", ")}${offered.length > 4 ? ` en ${offered.length - 4} meer` : ""} (~${total.toLocaleString("nl-NL")} gp).`, "activity");
     }
+    // Notes it took out to sell and could not offer (all slots taken, no price) go back in:
+    // it does not walk about with a bag of notes.
+    const notes = (player.getInventory().getItems() ?? [])
+      .filter((item) => item && item.getId() > 0 && core.ItemDefinition.forId(item.getId())?.isNoted?.())
+      .map((item) => ({ itemId: item.getId(), amount: item.getAmount() }));
+    if (notes.length > 0) deposit(player, notes);
     bidForUpgrades(player);
     bidForSupplies(player);
     for (const name of Trade.wearBest(player, core, { levelOf: (skill) => levelOf(player, skill), questDone: questDone(player) })) {

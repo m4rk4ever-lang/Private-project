@@ -22,6 +22,15 @@ function castableSpell(player, core) {
   return null;
 }
 
+/** Whether it has arrows to shoot: in its ammunition slot, or in its bag to put on. */
+function wornAmmo(player, core) {
+  const slot = core.Equipment?.AMMUNITION_SLOT;
+  const worn = Number.isInteger(slot) ? player.getEquipment?.()?.getItems?.()?.[slot] : null;
+  if (worn && worn.getId?.() > 0 && worn.getAmount?.() > 0) return true;
+  return (player.getInventory?.()?.getItems?.() ?? []).some((item) => item && item.getId?.() > 0
+    && core.ItemDefinition?.forId?.(item.getId())?.getEquipmentType?.()?.getSlot?.() === slot);
+}
+
 /** An honest bot puts on the best fighting gear it carries (Trade.wearBest's lists and rules). */
 function wearOwnGear(player, core, style = "melee") {
   const Trade = require("../../adventurers/Trade.PlayerBots");
@@ -264,6 +273,9 @@ function createTrainCombatAction(spec, world) {
       // Into the best weapon and armour it owns and may wear (an axe it chopped with goes back
       // in the bag for its scimitar): through the game's own equip. Its way of fighting is its
       // own choice (state.honestStyle: melee, a bow, or spells with its runes).
+      // Out of arrows or runes mid-stretch: on with melee, as a player does, until it restocks.
+      if (state && state.honestStyle === "ranged" && !wornAmmo(player, core)) state.honestStyle = "melee";
+      if (state && state.honestStyle === "magic" && !castableSpell(player, core)) state.honestStyle = "melee";
       wearOwnGear(player, core, state?.honestStyle ?? "melee");
       if ((state?.honestStyle ?? "melee") === "melee") meleeStyleForLowest(player);
       return false;
