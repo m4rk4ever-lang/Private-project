@@ -10,6 +10,10 @@ corepack install
 
 npm run setup
 
+# Mark always logs in with full (developer) rights: every admin command works.
+touch .env
+grep -q '^DEV_USERNAME=' .env || echo 'DEV_USERNAME=Mark' >> .env
+
 # In a codespace the browser cannot reach localhost:43594. The game port is
 # forwarded as https://<codespace>-43594.<domain>, so the client connects there over wss.
 if [ -n "${CODESPACE_NAME:-}" ]; then

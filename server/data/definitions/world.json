@@ -1,11 +1,11 @@
 {
   "name": "Old School RuneScape",
-  "plugins": { "TutorialIsland": false },
+  "plugins": { "TutorialIsland": false, "PlayerBots": false },
   "description": "",
   "experienceMultiplier": 1,
   "spawn": {
-    "x": 3089,
-    "y": 3524,
+    "x": 3222,
+    "y": 3218,
     "z": 0
   },
   "zones": [

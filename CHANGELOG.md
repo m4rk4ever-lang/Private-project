@@ -17,6 +17,14 @@ Indeling per versie:
 - `CHANGELOG.md` om ons werk bij te houden.
 - Het spel draait in GitHub Codespaces: open de repo in een codespace en het spel start
   vanzelf in je browser (uitleg in `.devcontainer/README.md`).
+- Het account **Mark** krijgt in een codespace automatisch volledige beheerrechten
+  (developer), zodat alle admincommando's werken.
+
+### Gewijzigd
+- Nieuwe spelers starten in Lumbridge in plaats van Edgeville. `::home` gaat ook naar Lumbridge.
+
+### Verwijderd
+- De bots (nepspelers) staan uit. Je bent alleen in je wereld, op eventuele echte spelers na.
 
 ## [0.1.0] - 15-11-2026
 
