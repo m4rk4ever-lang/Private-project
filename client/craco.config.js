@@ -49,6 +49,11 @@ for (const definition of browserHostInterfaces) {
     fs.writeFileSync(path.join(interfaceOutput, `${definition.groupId}.json`), JSON.stringify(definition));
 }
 
+// Who stops the dev server: it ends itself on these signals, so name them (diagnosis).
+for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
+    process.once(signal, () => console.log(`[client] De ontwikkelserver kreeg ${signal}.`));
+}
+
 module.exports = {
     // `yarn start` skips the lint pass (CLIENT_LINT=0, scripts/run-with-env.mjs); builds keep it.
     eslint: { enable: process.env.CLIENT_LINT !== "0" },
