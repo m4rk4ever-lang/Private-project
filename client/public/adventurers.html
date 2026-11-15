@@ -84,7 +84,7 @@
   <h1>Avonturiers</h1>
   <span class="status" id="status">Laden...</span>
 </header>
-<div class="view" id="view"><button data-view="clan">Per clan</button><button data-view="rank">Ranglijst</button></div>
+<div class="view" id="view"></div>
 <section class="ranking" id="ranking"></section>
 <main id="cards"></main>
 <p class="note">Score: totaal level + 2 per questpunt + 1 per miljoen gp aan bezit. Ververst elke 5 seconden. Volg een avonturier live in het spel met <code>::volg &lt;naam&gt;</code> (de knop Volg kopieert het commando), en stop met <code>::volg</code>. Naar een avonturier toe: <code>::adventurer &lt;naam&gt;</code>. Niets is gesimuleerd: quests doen ze pas als er een bot-playthrough voor is, en coins komen alleen uit drops en verkopen. Iconen: OSRS Wiki.</p>
@@ -239,13 +239,22 @@
     }));
   }
 
+  // The buttons: per clan, one ranking, or one clan alone ("clan:<name>").
+  function viewButtons(list) {
+    const clans = byClan(list).map((clan) => clan.name);
+    const buttons = [["clan", "Per clan"], ["rank", "Ranglijst"], ...clans.map((name) => [`clan:${name}`, name])];
+    return buttons.map(([key, label]) => `<button data-view="${esc(key)}" class="${key === view ? "on" : ""}">${esc(label)}</button>`).join("");
+  }
+
   function render() {
     if (!last) return;
-    for (const button of document.querySelectorAll("#view button")) button.classList.toggle("on", button.dataset.view === view);
-    document.getElementById("ranking").innerHTML = ranking(last.adventurers);
-    document.getElementById("cards").innerHTML = view === "clan"
-      ? byClan(last.adventurers).map((clan, index) => `<h2 class="clan-head">#${index + 1} ${esc(clan.name)}<small>score ${clan.score} · totaal ${clan.total}</small></h2>${clan.members.map(card).join("")}`).join("")
-      : last.adventurers.map(card).join("");
+    document.getElementById("view").innerHTML = viewButtons(last.adventurers);
+    const only = view.startsWith("clan:") ? view.slice(5) : null;
+    const list = only ? last.adventurers.filter((a) => (a.clan ?? "Zonder clan") === only) : last.adventurers;
+    document.getElementById("ranking").innerHTML = ranking(list);
+    document.getElementById("cards").innerHTML = view === "rank"
+      ? list.map(card).join("")
+      : byClan(list).map((clan, index) => `<h2 class="clan-head">${only ? "" : `#${index + 1} `}${esc(clan.name)}<small>score ${clan.score} · totaal ${clan.total}</small></h2>${clan.members.map(card).join("")}`).join("");
   }
   document.addEventListener("click", async (event) => {
     const pick = event.target.closest("#view button");
