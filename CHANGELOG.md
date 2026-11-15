@@ -17,8 +17,10 @@ Indeling per versie:
 - `CHANGELOG.md` om ons werk bij te houden.
 - Het spel draait in GitHub Codespaces: open de repo in een codespace en het spel start
   vanzelf in je browser (uitleg in `.devcontainer/README.md`).
-- Het account **Mark** krijgt in een codespace automatisch volledige beheerrechten
-  (developer), zodat alle admincommando's werken.
+- Tutorial Island staat aan: nieuwe accounts beginnen op het eiland en gaan daarna naar Lumbridge.
+- Het account **Mark** logt in een codespace automatisch in als **owner**.
+- Nieuwe instelling `OWNER_USERNAME` in `.env`: deze accounts loggen in als owner
+  (meerdere namen met komma's).
 
 ### Gewijzigd
 - Nieuwe spelers starten in Lumbridge in plaats van Edgeville. `::home` gaat ook naar Lumbridge.

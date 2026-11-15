@@ -32,3 +32,19 @@ test("unset or empty entries make no developer", () => {
   process.env.DEV_USERNAME = " , ";
   assert.equal(isConfiguredDeveloperUsername(""), false);
 });
+
+test("OWNER_USERNAME names owner accounts, comma-separated", () => {
+  const { isConfiguredOwnerUsername } = require("../dist/net/NetworkBuilder");
+  const previousOwner = process.env.OWNER_USERNAME;
+  try {
+    process.env.OWNER_USERNAME = "Mark, Other";
+    assert.equal(isConfiguredOwnerUsername("mark"), true);
+    assert.equal(isConfiguredOwnerUsername("other"), true);
+    assert.equal(isConfiguredOwnerUsername("markus"), false);
+    delete process.env.OWNER_USERNAME;
+    assert.equal(isConfiguredOwnerUsername("mark"), false);
+  } finally {
+    if (previousOwner === undefined) delete process.env.OWNER_USERNAME;
+    else process.env.OWNER_USERNAME = previousOwner;
+  }
+});

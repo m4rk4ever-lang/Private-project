@@ -1,6 +1,6 @@
 {
   "name": "Old School RuneScape",
-  "plugins": { "TutorialIsland": false, "PlayerBots": false },
+  "plugins": { "PlayerBots": false },
   "description": "",
   "experienceMultiplier": 1,
   "spawn": {

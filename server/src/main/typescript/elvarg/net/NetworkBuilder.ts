@@ -332,11 +332,20 @@ function isBanned(name: string): boolean {
 }
 
 /** Whether `username` is one of `DEV_USERNAME`'s accounts (comma-separated). */
-export function isConfiguredDeveloperUsername(username: string): boolean {
+function isListedUsername(list: string | undefined, username: string): boolean {
   const name = username.toLowerCase();
-  return (process.env.DEV_USERNAME ?? "")
+  return (list ?? "")
     .split(",")
-    .some((developer) => developer.trim() !== "" && developer.trim().toLowerCase() === name);
+    .some((entry) => entry.trim() !== "" && entry.trim().toLowerCase() === name);
+}
+
+export function isConfiguredDeveloperUsername(username: string): boolean {
+  return isListedUsername(process.env.DEV_USERNAME, username);
+}
+
+/** OWNER_USERNAME (comma-separated) logs these accounts in as owners; DEV_USERNAME wins over it. */
+export function isConfiguredOwnerUsername(username: string): boolean {
+  return isListedUsername(process.env.OWNER_USERNAME, username);
 }
 
 export class NetworkBuilder {
@@ -1668,6 +1677,7 @@ export class ClientConnection {
     if (pending.save) pending.save.applyToPlayer(player);
     else PlayerSave.applyAttributeDefaults(player);
     if (isConfiguredDeveloperUsername(player.getUsername())) player.setRights(PlayerRights.DEVELOPER);
+    else if (isConfiguredOwnerUsername(player.getUsername())) player.setRights(PlayerRights.OWNER);
     player.setPasswordHashWithSalt(pending.passwordHash);
     // Remembered logins live on the primary; a non-primary's were saved there at login.
     if (pending.loginTokens && (Accounts.key(pending.credentialName) === Accounts.key(pending.username))) {
