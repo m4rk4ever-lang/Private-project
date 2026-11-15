@@ -10,6 +10,23 @@
  */
 
 const finishers = require("../../skills/data/slayer-finishers.json");
+const slayerGear = require("../../skills/data/slayer-gear.json");
+
+/**
+ * What a task's monsters need worn (slayer-gear.json: earmuffs for banshees, a nose peg for
+ * aberrant spectres, a facemask for dust devils ...): [item names, any one will do] per monster,
+ * for the names given. Empty when they need nothing.
+ */
+function protectionFor(names) {
+  const wanted = new Set(names.map((name) => String(name).toLowerCase()));
+  const needs = [];
+  for (const monster of slayerGear.monsters ?? []) {
+    if ((monster.names ?? []).some((name) => wanted.has(String(name).toLowerCase())) && (monster.protection ?? []).length > 0) {
+      needs.push(monster.protection);
+    }
+  }
+  return needs;
+}
 
 // Masters with no combat requirement, on the surface (npc-spawns.json).
 const MASTERS = [
@@ -112,4 +129,4 @@ function namesNear(targets, at, radius = 40) {
     .map((target) => target.name))];
 }
 
-module.exports = { MASTERS, masters, mastersFor, currentTask, askForTask, taskTargets, nearest, namesNear, NEEDS_FINISHER };
+module.exports = { MASTERS, masters, mastersFor, protectionFor, currentTask, askForTask, taskTargets, nearest, namesNear, NEEDS_FINISHER };

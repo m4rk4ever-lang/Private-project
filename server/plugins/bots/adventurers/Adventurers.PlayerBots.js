@@ -700,6 +700,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       note(entry.player, `Legt ${run.name} even weg (stap ${run.step + 1} lukte niet).`, "quest");
     }
     entry.phase = "new";
+    entry.plan = null;
     entry.until = 0;
   }
 
@@ -1286,6 +1287,24 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const spot = Slayer.nearest(targets, (place) => walkTiles(here, place, player));
     if (!spot) {
       note(player, `Kan zijn Slayer-taak (${String(task.name).toLowerCase()}) hier nog niet doen; laat Slayer even liggen.`, "activity");
+      entry.slayerPausedUntil = now() + 60 * 60_000;
+      return false;
+    }
+    // Monsters that need something worn (earmuffs, a nose peg, a facemask): it brings one it owns,
+    // buys one where a shop sells it, or leaves the task for now.
+    for (const options of Slayer.protectionFor(Slayer.namesNear(targets, spot))) {
+      const ids = options.map((name) => Shopping.idOf(core, String(name).toUpperCase().replace(/[^A-Z0-9]+/g, "_"))).filter(Number.isInteger);
+      if (ids.some((id) => Shopping.owns(player, id))) {
+        const id = ids.find((option) => player.getInventory().getAmount(option) > 0);
+        if (id !== undefined) Shopping.wear(player, core, id);
+        continue;
+      }
+      const banked = ids.find((id) => banked(player, id) > 0);
+      if (banked !== undefined) return fetchTools(entry, plan, [banked]);
+      const buyable = ids.find((id) => Shopping.shopsSelling(id).length > 0);
+      if (buyable !== undefined && Shopping.coinsOf(player) >= Shopping.estimatedPrice(core, buyable, 1)
+          && shopFor(entry, buyable, itemName(buyable), 1)) return true;
+      note(player, `Heeft ${options.join(" of ").toLowerCase()} nodig voor deze Slayer-taak; laat Slayer even liggen.`, "activity");
       entry.slayerPausedUntil = now() + 60 * 60_000;
       return false;
     }

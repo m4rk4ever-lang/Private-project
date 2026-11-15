@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Slayer-taken met monsters die beschermende uitrusting vereisen (earmuffs voor banshees, een nose peg voor aberrant spectres, een facemask voor dust devils en meer, uit de Slayer-gegevens van het spel): de avonturier draagt het item als hij het heeft, haalt het van de bank of koopt het in een winkel die het verkoopt. Anders laat hij Slayer een uur liggen.
 - Elke clan heeft een eigen wapenschild op de avonturierspagina: de Jorg Clan een rode bijl, de Patrick Clan een groene schedel en de Mark Clan een blauwe ster. Het staat bij de clanrace, de clankopjes, de knoppen en op elke kaart. Kleur en symbool zijn in te stellen in `adventurers.json`.
 - Avonturiers smelten hun eigen erts in de oven van Falador tot de beste staaf die hun Smithing-level toelaat (brons, ijzer, staal), en smeden die daarna. Zo volgt na mining vanzelf smithing.
 - Runecraft voor avonturiers na Rune Mysteries: met hun eigen air talisman en rune essence (uit de bank of van de GE) lopen ze naar de Air-ruïnes ten zuiden van Falador, gaan naar binnen, maken runes bij het altaar en gaan via het portaal terug. (Nog niet in het spel getest.)
