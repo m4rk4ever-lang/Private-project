@@ -30,3 +30,9 @@ checkout.
   and what to look at.
 - **New worktrees:** `scripts/wt new <branch>`, not plain `git worktree add`; it writes the
   ports and copies `node_modules`.
+
+## Changelog
+
+Every change that ships to `main` gets a line in [CHANGELOG.md](CHANGELOG.md) under
+"Nog niet uitgebracht", in Dutch, in the right group (Toegevoegd, Gewijzigd, Opgelost,
+Verwijderd). Write what a player or admin notices, not how the code changed.
