@@ -50,6 +50,11 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Opgelost
+- `update` stopt als laatste redmiddel alle node-processen van het spel zelf (server, client en
+  hulpprocessen), ook als de poort niet aan een proces te koppelen is. Lukt het dan nog niet, dan
+  laat het zien wat er draait.
+- De snelle eerste-keer-download van de cache werkt nu in elke codespace meteen na `update`,
+  zonder de codespace opnieuw te starten.
 - `update` stopt nu ook een spel dat op een poort blijft hangen zonder dat zichtbaar is welk
   proces het is (de melding "Er draait nog iets op poort 3000").
 - Minder bots die vastlopen bij de Al Kharid-mijn en de tolpoort: die mijn wordt minder vaak gekozen.
@@ -65,8 +70,8 @@ Indeling per versie:
   iedereen nu ook als member in de skills-tab en de questlijst (op een members-wereld).
 
 ### Gewijzigd
-- De README is herschreven voor Realm of Eeshwar: spelen, bijwerken, staff-commands, backups en
-  een link naar deze changelog.
+- De README is herschreven voor Realm of Eeshwar: spelen, bijwerken, terminal- en staff-commands,
+  backups en een link naar deze changelog.
 - Nieuwe spelers starten in Lumbridge in plaats van Edgeville. `::home` gaat ook naar Lumbridge.
 
 - **Bots terug, als levendige wereld:** 131 bots die hakken, minen, vissen en tegen monsters vechten,

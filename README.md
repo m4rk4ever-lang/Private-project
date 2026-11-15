@@ -20,6 +20,24 @@ Lokaal draaien (Node 22): `npm run setup`, daarna `yarn start` en open http://lo
 Typ `update` in een terminal van de codespace. Het spel stopt, de nieuwste versie wordt opgehaald,
 nieuwe onderdelen worden geïnstalleerd als dat nodig is en het spel start weer.
 
+## Terminal-commands
+
+Typ deze in een terminal in de map van het project (in een codespace: `/workspaces/Private-project`).
+
+| Command | Wat het doet |
+| --- | --- |
+| `update` | Spel stoppen, nieuwste versie ophalen, zo nodig installeren en opnieuw starten (zelfde als `yarn update`) |
+| `yarn start` | Het spel starten: server en client samen. Stoppen met `Ctrl+C` |
+| `yarn server` | Alleen de gameserver starten |
+| `yarn client` | Alleen de browserclient starten |
+| `yarn start:prod` | Het spel starten in de snellere productie-versie (bouwen duurt eerst een paar minuten) |
+| `npm run setup` | Alle onderdelen (opnieuw) installeren |
+| `yarn saves:push` | De nieuwste save-backup nu naar de branch `saves` op GitHub sturen (alleen bij een privé-repo) |
+| `git pull` | Alleen de nieuwste versie ophalen, zonder het spel te herstarten |
+
+Blijft `update` hangen op een bezette poort? Stop de codespace op github.com/codespaces en open
+hem weer.
+
 ## Staff
 
 Het account **Mark** logt in als owner (instelling `OWNER_USERNAME` in `.env`).

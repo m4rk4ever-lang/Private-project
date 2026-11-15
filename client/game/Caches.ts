@@ -282,15 +282,25 @@ function isPrefetchDisabled(): boolean {
     }
 }
 
+/** The page is served from a GitHub Codespace's forwarded port (https://<name>-3000.app.github.dev). */
+function isCodespacePage(): boolean {
+    try {
+        const host = (globalThis as { location?: Location }).location?.hostname ?? "";
+        return /\.(app\.)?github\.dev$/i.test(host);
+    } catch {
+        return false;
+    }
+}
+
 /**
- * `?fullCache=1` forces the legacy full-download path. REACT_APP_FULL_CACHE=1 makes it the
- * default where every request is slow (a GitHub Codespace: each one goes through GitHub's port
+ * `?fullCache=1` forces the legacy full-download path. REACT_APP_FULL_CACHE=1, or a page in a
+ * codespace, makes it the default where every request is slow (a GitHub Codespace: each one goes through GitHub's port
  * forwarding): the whole cache downloads once into the browser, after which no graphics come over
  * the network. Not on Safari (it does not keep the full file, so it would download every
  * session) or a low-end device (the full file stays in memory).
  */
 export function isFullCacheForced(): boolean {
-    if (process.env.REACT_APP_FULL_CACHE === "1" && !isLowEndDevice && !isSafari && !isIos) {
+    if ((process.env.REACT_APP_FULL_CACHE === "1" || isCodespacePage()) && !isLowEndDevice && !isSafari && !isIos) {
         return true;
     }
     try {

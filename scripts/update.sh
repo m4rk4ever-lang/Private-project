@@ -53,11 +53,39 @@ if ports_busy; then
   done
   sleep 2
 fi
+# Last resort: every node, yarn or tsx process working inside this checkout (the game's server,
+# client and their helpers), whoever started it. Never this script, its parents or the editor.
+repo=$(pwd -P)
+keep=" $$ $PPID "
+p=$PPID
+while [ -n "$p" ] && [ "$p" -gt 1 ]; do
+  p=$(awk '/^PPid:/ { print $2 }' "/proc/$p/status" 2>/dev/null)
+  keep="$keep$p "
+done
+game_pids() {
+  for dir in /proc/[0-9]*; do
+    pid=${dir#/proc/}
+    case "$keep" in *" $pid "*) continue ;; esac
+    comm=$(cat "$dir/comm" 2>/dev/null) || continue
+    case "$comm" in node|yarn|tsx|npm|nodemon|concurrently|esbuild) ;; *) continue ;; esac
+    cwd=$($SUDO readlink "$dir/cwd" 2>/dev/null) || continue
+    case "$cwd" in "$repo"|"$repo"/*) echo "$pid" ;; esac
+  done
+}
+if ports_busy; then
+  for pid in $(game_pids); do $SUDO kill -9 "$pid" 2>/dev/null; done
+  for _ in $(seq 1 10); do
+    ports_busy || break
+    sleep 1
+  done
+fi
 if ports_busy; then
   echo "[update] Er draait nog iets op poort 3000, 43594 of 49600 dat ik niet kan stoppen:"
   $SUDO ss -ltnp 2>/dev/null | grep -E "$PORTS_RE"
+  echo "[update] Gebruiker: $(whoami), sudo: $([ -n "$SUDO" ] && echo ja || echo nee)"
+  ps -eo pid,user,stat,etime,args 2>/dev/null | grep -E 'node|yarn|tsx' | grep -v grep | cut -c1-160
   echo "[update] Stop de codespace op github.com/codespaces en open hem weer; dan is de poort vrij."
-  echo "[update] Gebeurt dit vaker? Stuur deze regels door."
+  echo "[update] Stuur deze regels door, dan los ik het op."
   exit 1
 fi
 
