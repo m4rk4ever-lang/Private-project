@@ -25,7 +25,7 @@ const ARRIVE_TILES = 3;
 /** A floor up or down counts as this many tiles of progress. */
 const FLOOR_TILES = 20;
 /** Not one step taken for this long: it is stuck (a door it cannot open, a wall). */
-const STALL_MS = 30_000;
+const STALL_MS = 45_000;
 /** Standing still this long on the way: the route planner takes over from the straight walk. */
 const PLAN_AFTER_MS = 6_000;
 /**

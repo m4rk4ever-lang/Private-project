@@ -82,7 +82,7 @@ Indeling per versie:
 
 ### Gewijzigd
 - Een Slayer-taak maken avonturiers af voordat ze iets anders gaan doen (hooguit anderhalf uur), in plaats van na 8 tot 18 minuten te wisselen.
-- Een tocht geldt pas als versperd als de bot een halve minuut geen stap zet, of vier minuten lang niet dichterbij komt. Een omweg rond een rivier of door een poort breekt de tocht niet meer af.
+- Een tocht geldt pas als versperd als de bot 45 seconden geen stap zet (tijd genoeg voor een poort of deur), of vier minuten lang niet dichterbij komt. Een omweg rond een rivier of door een poort breekt de tocht niet meer af.
 - Alle 15 avonturiers beginnen opnieuw op level 1 (generatie 9), in Lumbridge met het starterspakket van Tutorial Island. Ze worden nu ook echt naar Lumbridge teruggezet, en hun hele savedata gaat terug naar die van een nieuw account: ook de Slayer-taak, diary-taken, minigame-standen en cooldowns.
 - Gereedschap dat de volgende klus niet gebruikt (hamer, pickaxe, chisel, messen), zetten avonturiers op de bank. Hebben ze het later nodig, dan halen ze het daar weer op in plaats van een nieuwe te kopen.
 - Avonturiers kiezen bij het vechten niet altijd de dichtstbijzijnde plek, maar een van de beste paar plekken voor hun level, met een voorkeur voor sterkere monsters. Zo zie je ze op meer plekken dan bij de ratten en mannen van Lumbridge.
