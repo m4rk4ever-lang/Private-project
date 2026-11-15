@@ -32,6 +32,10 @@ Indeling per versie:
   x10 van 80 tot 89 en x5 vanaf 90. Geldt ook voor quest-beloningen, lampen en tomes.
   Aan te passen met de instelling `TieredExperience:tiers`.
 
+### Opgelost
+- Account Management toont "Membership: Unlimited" in plaats van "None". De client behandelt
+  iedereen nu ook als member in de skills-tab en de questlijst (op een members-wereld).
+
 ### Gewijzigd
 - Nieuwe spelers starten in Lumbridge in plaats van Edgeville. `::home` gaat ook naar Lumbridge.
 

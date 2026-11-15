@@ -600,6 +600,7 @@ This table lists bundled plugins that have a description. The world config page 
 | `LoginTips` | LoginTips | interface | yes | Sends a 'Did you know?' tip after the login greeting, following the All Settings row that turns them off. |
 | `MaxHitThreshold` | MaxHitThreshold | interface | yes | Settings option for the lowest damage that shows a max hit hitsplat. |
 | `MaxHitsInterface` | MaxHitsInterface | interface | yes | Adds the ::maxhits command, an interface of live melee, ranged and per-spell max hits for the player's current gear and levels. |
+| `MembershipDisplay` | MembershipDisplay | interface | yes | On a members world, the client shows every account as a member: unlimited membership in Account Management, members skills and quests unlocked in the side tabs. |
 | `MinigameTeleports` | MinigameTeleports | interface | yes | Minigame Teleport spell: opens the minigame list, checks requirements, plays the home teleport cast and applies the 20-minute cooldown. |
 | `Notifications` | Notifications | interface | yes | Shows the pop-up banner at the top of the screen for collection log and Combat Achievements, queuing them one at a time. |
 | `NpcContact` | NpcContact | interface | yes | NPC Contact's contact list (interface 75) and the conversation each contact opens. (members only) |
