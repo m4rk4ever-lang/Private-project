@@ -88,6 +88,20 @@ until reached; places off the mainland or behind a quest are not chosen; home te
 30-minute cooldown; quests played for real (Rune Mysteries checked start to finish with the agent
 MCP); `::volg` shows quests and diary tasks; the page groups adventurers by clan.
 
+Later the same evening: smelting own ore (`process_smelting`, bar "auto") and Runecraft at the
+Air altar (`process_runecrafting_air`, CraftRunes action) as buy-to-train recipes; Slayer masters
+from the Slayer plugin's table and protective gear from `slayer-gear.json`; a Slayer task is fought
+to the end; empty gear slots are filled from bag or bank and an unarmed adventurer buys a weapon
+first; routes are followed to their end (no to-and-fro near a goal) and a stalled errand hands its
+walk to the route planner; quests climb stairs themselves; clan emblems and a per-clan view on the
+page; a full save reset on starting over (`api.resetPersistentAttributes`).
+
+Debugging: plugin logs are off by default (`LOG_DISABLED_TYPES=plugin`); start with
+`LOG_DISABLED_TYPES=npc.face,Combat` to see `bot_errand_failed` (why: stuck, no-closer, too-long)
+and `bot_errand_replan`. `::botinfo <name>` shows a bot's walk target and current segment (a
+segment that flips between two points is a to-and-fro). `::advquest <name>:<quest>` starts a quest
+with a playthrough.
+
 Known gaps: dungeons and other underground places need an entrance in `quest-playthroughs.json`
 `places` (only the Wizards' Tower basement so far); Slayer protective items (nose peg, earmuffs,
 anti-dragon shield), points and the slayer helm; more quests and diaries; Hunter, Farming,
