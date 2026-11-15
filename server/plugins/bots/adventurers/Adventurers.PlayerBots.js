@@ -38,6 +38,7 @@ const GENERATION_ATTRIBUTE = "adventurers:generation";
 const TASK_ATTRIBUTE = "adventurers:task";
 const TASK_SAVE_MS = 3 * 60_000;
 const Tasks = require("./Tasks.PlayerBots");
+const TravelHubs = require("../behaviours/navigation/TravelHubs.PlayerBots");
 const { createQuestPlay } = require("./QuestPlay.PlayerBots");
 /** A quest a bot could not finish is put aside this long. */
 const QUEST_ASIDE_MS = 60 * 60_000;
@@ -110,10 +111,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     nearness: (here, place, player) => (here ? 1 / (1 + walkTiles(here, place, player) / 150) : 1),
     minigameChance: 0,
     random,
-    // Adventurers only go where their quests and levels let them.
-    meets: (player, requires) => !requires || (
+    // Adventurers only go where their quests and levels let them, and where they can walk to
+    // (not Zeah by boat, not Morytania before Priest in Peril).
+    meets: (player, requires, place = null) => (!place || TravelHubs.onFoot(place)) && (!requires || (
       (requires.quests ?? []).every((name) => questsByName().get(normalize(name))?.isComplete(player) === true)
-      && Object.entries(requires.skills ?? {}).every(([skill, level]) => (core.Skill[skill] ? player.getSkillManager().getMaxLevel(core.Skill[skill]) : 0) >= level)),
+      && Object.entries(requires.skills ?? {}).every(([skill, level]) => (core.Skill[skill] ? player.getSkillManager().getMaxLevel(core.Skill[skill]) : 0) >= level))),
   });
   /** name -> { name, player, phase, until, plan, startedAt } */
   const adventurers = new Map();
@@ -361,6 +363,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
 
   /** At a bank: tools the job does not use go in (no hammer and pickaxes along for net fishing). */
   function bankUnusedTools(entry, banker, plan = entry.plan) {
+    // No job yet (a new account's first bank visit): its starter tools stay with it.
+    if (!plan) return [];
     const needed = new Set(Object.values(toolsFor(plan?.mode, entry.activity, plan?.skill)).flat()
       .map((name) => Shopping.idOf(core, name)).filter(Number.isInteger));
     const all = [...Object.values(Shopping.gear.tools ?? {}).flat().map((entry) => entry.item),

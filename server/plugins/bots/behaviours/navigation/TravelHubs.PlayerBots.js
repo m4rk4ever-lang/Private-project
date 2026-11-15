@@ -90,10 +90,43 @@ function nextLeg(here, goal, avoid = null, source = null) {
   return best.first;
 }
 
+/** Hub keys connected by links to `from` (Lumbridge, where every account starts). */
+let mainland = null;
+function connectedTo(from = "lumbridge", source = null) {
+  const { links } = source ? build(source) : (graph ??= build());
+  if (!source && mainland) return mainland;
+  const seen = new Set([from]);
+  const queue = [from];
+  while (queue.length > 0) {
+    for (const link of links.get(queue.shift()) ?? []) {
+      if (!seen.has(link.to)) {
+        seen.add(link.to);
+        queue.push(link.to);
+      }
+    }
+  }
+  if (!source) mainland = seen;
+  return seen;
+}
+
+/**
+ * Whether a place can be walked to from Lumbridge: a hub joined to Lumbridge's network lies within
+ * a plannable walk of it. Zeah (a boat), Morytania (Priest in Peril's temple) and islands are not.
+ */
+function onFoot(place, source = null) {
+  const { hubs } = source ? build(source) : (graph ??= build());
+  const joined = connectedTo("lumbridge", source);
+  for (const key of joined) {
+    const hub = hubs.get(key);
+    if (hub && hub.z === (place.z ?? 0) && chebyshev(hub, place) <= DIRECT_TILES) return true;
+  }
+  return false;
+}
+
 /** A hub by its key, or null. */
 function hub(key, source = null) {
   const { hubs } = source ? build(source) : (graph ??= build());
   return hubs.get(key) ?? null;
 }
 
-module.exports = { nextLeg, hub, build, DIRECT_TILES, AT_HUB_TILES };
+module.exports = { nextLeg, hub, onFoot, connectedTo, build, DIRECT_TILES, AT_HUB_TILES };

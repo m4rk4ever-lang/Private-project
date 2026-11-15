@@ -88,6 +88,8 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers kiezen geen bestemmingen meer die ze te voet niet kunnen bereiken, zoals Kourend (alleen per boot), Morytania (achter Priest in Peril), eilanden en dungeons zonder route ernaartoe.
+- Bij hun eerste bankbezoek zetten nieuwe avonturiers hun starter-gereedschap niet meer weg om het meteen daarna weer op te halen.
 - Een wandeling naar een andere verdieping (zoals de eerste verdieping van het kasteel van Lumbridge) gaf de bot na een minuut op voordat hij bij de trap was.
 - Op lange tochten hield de bot zijn tussenstop niet vast: bij elke stap koos hij een andere, plande hij opnieuw en liep hij vast. Nu loopt hij door tot de gekozen tussenstop bereikt is.
 - Zakkenrollen door bots werkt: ze zochten hun doelwit in een lijst die alleen een echte client vult, vonden nooit een man of vrouw en kregen dus geen XP of buit. Nu zoeken ze in de wereld om zich heen.
