@@ -401,6 +401,7 @@ import type { PluginWorldMapPointEntry, RenderedWorldMapPoint } from "@runelite/
 import type { WorldMapViewport } from "./worldMap/WorldMapTypes";
 import { WorldViewManager } from "./worldview/WorldViewManager";
 import { keybindingTabFor } from "./keybindingTabs";
+import { CLIENT_NAME } from "../config/branding";
 
 const DEVICE_OPTION_INTERFACE_SCALING = 27;
 
@@ -1456,7 +1457,7 @@ export class OsrsClient {
             widgetManager.invalidateWidgetRender(widgetManager.getGroupRoot(INVENTORY), "shift");
         };
         if (editMode) {
-            document.title = "Edit Mode - RSPS.app";
+            document.title = `Edit Mode - ${CLIENT_NAME}`;
             this.loadEditModePlugin();
         }
         // If cache is provided, initialize immediately

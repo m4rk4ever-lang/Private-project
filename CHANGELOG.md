@@ -37,6 +37,9 @@ Indeling per versie:
   de server, alleen als er iets veranderd is. De laatste 48 blijven bewaard
   (instelling `SaveBackups:keep`).
 
+- **Eigen naam: Realm of Eeshwar.** Wereldnaam, tabtitel, loginscherm, welkomstbericht en
+  pluginlijst gebruiken de nieuwe naam in plaats van "Old School RuneScape" en "RSPS.app".
+
 ### Opgelost
 - Account Management toont "Membership: Unlimited" in plaats van "None". De client behandelt
   iedereen nu ook als member in de skills-tab en de questlijst (op een members-wereld).

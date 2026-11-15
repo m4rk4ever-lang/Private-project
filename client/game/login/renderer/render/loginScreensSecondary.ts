@@ -9,6 +9,7 @@ import {
     REMEMBERED_TITLE_Y,
 } from "../layout/geometry";
 import { drawButton, drawCenteredText, drawSprite, drawText, truncateFromStart } from "./drawUtils";
+import { CLIENT_NAME } from "../../../../config/branding";
 
 export function drawForgotPassword(host: LoginRendererHost, ctx: RenderContext, state: LoginState) {
 
@@ -238,7 +239,7 @@ export function drawWelcomeDisplayName(
         drawCenteredText(host, 
             ctx,
             host.fontBold12,
-            `Welcome to ${state.serverName?.trim() || "RSPS.app"}`,
+            `Welcome to ${state.serverName?.trim() || CLIENT_NAME}`,
             centerX,
             REMEMBERED_TITLE_Y,
             0xffff00,

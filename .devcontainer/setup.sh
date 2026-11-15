@@ -29,7 +29,7 @@ if [ -n "${CODESPACE_NAME:-}" ]; then
 REACT_APP_DEFAULT_WS_URL=wss://${host}
 REACT_APP_DEFAULT_SERVER_ADDRESS=${host}
 REACT_APP_DEFAULT_SERVER_SECURE=true
-REACT_APP_DEFAULT_SERVER_NAME=Codespace
+REACT_APP_DEFAULT_SERVER_NAME=Realm of Eeshwar
 EOF
   echo "Client points at wss://${host}"
 fi

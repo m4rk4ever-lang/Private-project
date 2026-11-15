@@ -6,6 +6,7 @@ import {
     SERVER_LIST_PLAYERS_COLUMN_START,
 } from "../constants";
 import { drawGradientRect, drawButton, drawCenteredText, drawText, ellipsis } from "./drawUtils";
+import { CLIENT_NAME } from "../../../../config/branding";
 
 export function drawServerListOverlay(host: LoginRendererHost, ctx: RenderContext, state: LoginState) {
 
@@ -150,11 +151,11 @@ export function drawServerListOverlay(host: LoginRendererHost, ctx: RenderContex
 
         ctx.restore();
 
-        // Discord notice
+        // Panel caption
         drawCenteredText(host, 
             ctx,
             host.fontPlain12!,
-            "Register on RSPS.app to publish your own world",
+            `${CLIENT_NAME} worlds`,
             panelX + panelW / 2,
             panelY - 8,
             0xaaaaaa,

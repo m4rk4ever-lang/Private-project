@@ -9,12 +9,13 @@ import {
 } from "../layout/geometry";
 import { isCaretVisible } from "../canvas";
 import { drawButton, drawCenteredText, drawText, drawSprite, measureText, getCheckboxSprite, truncateFromStart } from "./drawUtils";
+import { CLIENT_NAME } from "../../../../config/branding";
 
 export function drawWelcomeScreen(host: LoginRendererHost, ctx: RenderContext, state: LoginState) {
 
         if (!host.fontBold12) return;
         const layout = getWelcomeLayout(host);
-        const welcomeName = state.serverName?.trim() || "RSPS.app";
+        const welcomeName = state.serverName?.trim() || CLIENT_NAME;
         drawCenteredText(host, 
             ctx,
             host.fontBold12,

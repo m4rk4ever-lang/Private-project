@@ -9,9 +9,10 @@ import { PluginListItem } from "./PluginListItem";
 import { comparePlugins, getPinnedPlugins, setPluginPinned } from "./pinnedPlugins";
 import { runeliteImage } from "@runelite/client/ui/runeliteImages";
 import { onConfigurationRequest, takePendingConfiguration } from "@runelite/client/plugins/config/configurationRequests";
+import { CLIENT_NAME } from "../../../../config/branding";
 
 /** The client's own settings row, pinned above the plugins (RuneLite's "RuneLite" entry). */
-const CLIENT_NAME = "RSPS.app";
+
 
 type View = { kind: "list" } | { kind: "client" } | { kind: "plugin"; pluginClass: PluginClass };
 
