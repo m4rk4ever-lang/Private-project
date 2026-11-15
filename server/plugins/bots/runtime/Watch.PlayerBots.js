@@ -3,8 +3,8 @@
 /**
  * Watching a bot live: `::volg <naam>` puts the camera on a bot and keeps it there while the bot
  * walks, teleports and fights. The watcher is hidden, cannot be attacked and cannot walk; they
- * are moved along whenever the bot gets out of view. Their inventory and stats tabs show the
- * bot's, kept up to date; their own come back after. `::volg` without a name (or logging out)
+ * are moved along whenever the bot gets out of view. Their inventory, equipment and stats tabs
+ * show the bot's, kept up to date; their own come back after. `::volg` without a name (or logging out)
  * stops it and puts the watcher back where they stood.
  *
  * Built like Clan Wars' viewing orb (minigames/clanwars/Viewing.ClanWars.js): hidden appearance,
@@ -13,6 +13,8 @@
 
 /** Inventory.INTERFACE_ID: where the game's own inventory refresh sends to. */
 const INVENTORY_INTERFACE_ID = 3214;
+/** The worn-equipment inventory the equipment tab reads (cache inventory 94). */
+const WORN_INVENTORY_ID = 94;
 /** Tiles the bot may get away before the watcher is moved to it. */
 const KEEP_WITHIN = 6;
 
@@ -37,6 +39,10 @@ function inventoryKey(player) {
   return (player.getInventory().getItems() ?? []).map((item) => (item ? `${item.getId()}x${item.getAmount()}` : "-")).join(",");
 }
 
+function equipmentKey(player) {
+  return (player.getEquipment().getItems() ?? []).map((item) => (item ? `${item.getId()}x${item.getAmount()}` : "-")).join(",");
+}
+
 function skillsKey(player) {
   const manager = player.getSkillManager();
   return `${manager.getTotalLevel?.()}:${Math.floor(manager.getTotalExp?.() ?? 0)}:${player.getHitpoints?.()}`;
@@ -50,6 +56,16 @@ function mirror(player, state) {
   if (items !== state.shownItems) {
     sender.sendItemContainer?.(target.getInventory(), INVENTORY_INTERFACE_ID);
     state.shownItems = items;
+  }
+  // Its worn gear in the watcher's equipment tab (inventory 94, by the same slots).
+  const worn = equipmentKey(target);
+  // Also every few seconds: the watcher's own appearance update would put its own gear back.
+  const now = Date.now();
+  if (worn !== state.shownWorn || now - (state.wornAt ?? 0) > 3000) {
+    state.wornAt = now;
+    const items = (target.getEquipment().getItems() ?? []).map((item) => (item && item.getId() > 0 ? { id: item.getId(), amount: item.getAmount() } : null));
+    sender.sendInventory?.(WORN_INVENTORY_ID, Math.max(14, items.length), items);
+    state.shownWorn = worn;
   }
   const skills = skillsKey(target);
   if (skills !== state.shownSkills) {
@@ -96,6 +112,8 @@ function stop(player, restore = true) {
   // Their own inventory and stats again.
   player.getInventory?.()?.refreshItems?.();
   player.getPacketSender().sendSkillsSnapshot?.();
+  const ownWorn = (player.getEquipment?.()?.getItems?.() ?? []).map((item) => (item && item.getId() > 0 ? { id: item.getId(), amount: item.getAmount() } : null));
+  player.getPacketSender().sendInventory?.(WORN_INVENTORY_ID, Math.max(14, ownWorn.length), ownWorn);
   if (restore) {
     player.moveTo(state.location);
     player.getPacketSender().restoreCameraState(state.camera);

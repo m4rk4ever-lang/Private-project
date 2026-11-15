@@ -24,10 +24,12 @@ function actor(name, at, index) {
       sendItemContainer: (container) => p.camera.push(["inventory", container.getItems()[0].getAmount()]),
       sendSkillsSnapshotOf: (subject) => p.camera.push(["skills-of", subject.getIndex()]),
       sendSkillsSnapshot: () => p.camera.push(["own-skills"]),
+      sendInventory: (id, capacity, items) => p.camera.push(["worn", items[0]?.id]),
     }),
     sendMessage: (text) => p.messages.push(text),
     items: [{ getId: () => 995, getAmount: () => index }],
     getInventory: () => ({ getItems: () => p.items, refreshItems: () => p.camera.push(["own-inventory"]) }),
+    getEquipment: () => ({ getItems: () => [{ getId: () => 1000 + index, getAmount: () => 1 }] }),
     getSkillManager: () => ({ getTotalLevel: () => 100 + index, getTotalExp: () => 5000 }),
     getHitpoints: () => 10,
   };
@@ -45,6 +47,7 @@ test("::volg keeps the camera on the bot and moves the hidden watcher along; sto
   assert.deepEqual(me.camera.at(-1), ["target", 7]);
   assert.ok(me.camera.some(([kind, value]) => kind === "inventory" && value === 7), "the bot's inventory");
   assert.ok(me.camera.some(([kind, value]) => kind === "skills-of" && value === 7), "the bot's stats");
+  assert.ok(me.camera.some(([kind, value]) => kind === "worn" && value === 1007), "the bot's worn gear");
   const sent = me.camera.length;
   Watch.tick();
   assert.equal(me.camera.length, sent, "nothing new while nothing changed");
@@ -57,6 +60,7 @@ test("::volg keeps the camera on the bot and moves the hidden watcher along; sto
   assert.equal(me.at.getX(), 3222, "back where it stood");
   assert.deepEqual(me.camera.at(-1), ["restore", "follow"]);
   assert.ok(me.camera.some(([kind]) => kind === "own-inventory") && me.camera.some(([kind]) => kind === "own-skills"), "own tabs back");
+  assert.deepEqual(me.camera.filter(([kind]) => kind === "worn").at(-1), ["worn", 1001], "own gear back");
   assert.equal(Watch.watching.size, 0);
 });
 
