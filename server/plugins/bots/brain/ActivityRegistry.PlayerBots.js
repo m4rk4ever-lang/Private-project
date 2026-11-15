@@ -23,6 +23,7 @@ const { createFollowOwnerAction } = require("./actions/FollowOwner.PlayerBots");
 const { createFishAction } = require("./actions/Fish.PlayerBots");
 const { createCookAction } = require("./actions/Cook.PlayerBots");
 const { createBankStandAction } = require("./actions/BankStand.PlayerBots");
+const { createWintertodtAction } = require("./actions/Wintertodt.PlayerBots");
 
 const DEFAULT_DEFINITIONS_PATH = path.join(
   process.cwd(),
@@ -35,7 +36,7 @@ const DEFAULT_SITES_PATH = path.join(process.cwd(), "data", "definitions", "bot-
 
 // Modes a site never rotates through: PvP and roaming belong to the wilderness pool.
 // Bank standing is where a bot goes at a busy bank (Travel.PlayerBots.js), not a site's job.
-const NON_SITE_MODES = new Set(["pvp", "roaming", "bankstanding"]);
+const NON_SITE_MODES = new Set(["pvp", "roaming", "bankstanding", "minigame"]);
 
 const SITE_DEFAULTS = Object.freeze({
   spawnRadius: 6,
@@ -205,6 +206,9 @@ function createAction(spec, world) {
   }
   if (spec.type === "bankStand") {
     return createBankStandAction(spec, world);
+  }
+  if (spec.type === "wintertodt") {
+    return createWintertodtAction(spec, world);
   }
   throw new Error(`[bot activities] unknown action type '${spec.type}'`);
 }

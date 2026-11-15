@@ -33,6 +33,8 @@ const CATALOGS = {
   // Thieving stalls by their object name ("Bakery stall", "Fruit Stall"); the tier is the name.
   stall: () =>
     [...(Stalls.STALLS ?? new Map()).keys()].map((name) => ({ name, objectNames: [name], ids: [] })),
+  // Minigame objects bots use by name (Wintertodt's bruma roots).
+  minigame: () => [{ name: "Bruma roots", objectNames: ["Bruma roots"], ids: [] }],
   furnace: () => [
     {
       name: "furnace",

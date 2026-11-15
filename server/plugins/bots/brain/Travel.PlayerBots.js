@@ -175,7 +175,8 @@ function createTravel({
         const { game } = pickWeighted(games, random, (entry) => entry.weight);
         if (!attendance.has(game.id)) attendance.set(game.id, new Set());
         attendance.get(game.id).add(name);
-        place = { ...game, hangout: true, minigame: game.id, activity: "roam" };
+        // `play`: the activity that plays the game (Wintertodt); else the bots wait in the lobby.
+        place = { ...game, hangout: true, minigame: game.id, activity: game.play ?? "roam" };
       }
     }
     if (!place && random() < hangoutChance) {

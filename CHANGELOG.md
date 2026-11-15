@@ -113,6 +113,10 @@ Indeling per versie:
   Tithe Farm, Mage Training Arena, en in combat-gear bij Castle Wars, Soul Wars, Pest Control,
   Barbarian Assault, Nightmare Zone en Shades of Mort'ton. Waar al bots zijn, komen er meer bij.
   Ze blijven in de lobby, bij Wintertodt in de veilige gang. Echt meespelen volgt per minigame.
+- **Bots spelen Wintertodt echt mee:** ze kiezen een hoek, hakken bruma roots, voeren die aan
+  hun brazier voor punten, repareren een kapotte brazier en steken een gedoofde aan. Ze nemen
+  een tinderbox, hammer en rejuvenation potions mee, drinken als ze het koud krijgen en zoeken
+  de veilige gang op als hun hitpoints laag zijn. Tussen de rondes wachten ze bij hun brazier.
 - **Soul Wars met bots:** wacht je in de Soul Wars-lobby, dan vullen bots de teams aan en spelen
   ze de game echt mee (zoals al bij Castle Wars, Pest Control en Last Man Standing).
 - **Nieuwe gebieden voor bots:** Kourend (kasteel, Hosidius met de sand crabs, Land's End,

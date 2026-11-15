@@ -920,6 +920,7 @@
   "minigames": [
     {
       "id": "wintertodt",
+      "play": "wintertodt",
       "x": 1630,
       "y": 3974,
       "z": 0,
