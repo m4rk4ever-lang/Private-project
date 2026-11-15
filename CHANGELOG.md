@@ -99,6 +99,11 @@ Indeling per versie:
   iedereen nu ook als member in de skills-tab en de questlijst (op een members-wereld).
 
 ### Gewijzigd
+- Avonturiers en wereldbots lopen nu naar hun klus, de bank, de GE, een winkel of een house party, in plaats van te teleporteren. Wie het spel kent kan ook teleporteren: met het juiste Magic-level en de runes in zijn tas casten ze Varrock, Lumbridge, Falador of Camelot Teleport als dat een lange wandeling scheelt.
+- Avonturiers zetten de spullen van hun vorige klus op de dichtstbijzijnde bank. Naar de GE gaan ze als die ongeveer even dichtbij is, als ze veel bij zich hebben of als er verkopen klaarliggen; dan nemen ze ook gebankte spullen mee (als notes).
+- Uitrusting die geen winkel in de buurt verkoopt, kopen avonturiers op de GE.
+- Eerlijke bots trekken voor een gevecht hun beste eigen wapen en armour aan.
+- Een drop die een lege plek vult (een wizard hat van een imp op een kaal hoofd) rapen eerlijke bots op en trekken ze meteen aan, ook als hij weinig waard is.
 - Avonturiers kiezen hun training niet meer allemaal hetzelfde: combat gaat voor op een nieuw account (loot is inkomen), elk heeft eigen favorieten, achterblijvende skills halen in en ze doen liever iets anders dan de rest.
 - Eerlijke bots begraven tussen gevechten de botten die ze oppakten.
 - Wereldbots hebben niet meer allemaal Agility 99; ook dat level is nu deel van hun eigen account.

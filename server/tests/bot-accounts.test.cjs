@@ -4,6 +4,17 @@ const { test } = require("node:test");
 const { generateAccount } = require("../plugins/bots/brain/Accounts.PlayerBots");
 const { createUpkeep } = require("../plugins/bots/brain/Upkeep.PlayerBots");
 
+/** Errands that arrive at once (the walking itself is the brain's navigation). */
+function instantErrands() {
+  const going = new Map();
+  return {
+    going,
+    go: (entry, to, { arrive }) => { going.set(entry.player, { entry, to, arrive }); if (entry.brain) entry.brain.paused = true; return true; },
+    busy: (player) => going.has(player),
+    arriveAll: () => { for (const [player, errand] of [...going]) { going.delete(player); if (errand.entry.brain) errand.entry.brain.paused = false; errand.arrive(player); } },
+  };
+}
+
 const IDS = { COINS: 995, BRONZE_AXE: 1351, IRON_AXE: 1349, STEEL_AXE: 1353, MITHRIL_AXE: 1355, ADAMANT_AXE: 1357, RUNE_AXE: 1359, DRAGON_AXE: 6739,
   BRONZE_PICKAXE: 1265, IRON_PICKAXE: 1267, STEEL_PICKAXE: 1269, MITHRIL_PICKAXE: 1273, ADAMANT_PICKAXE: 1271, RUNE_PICKAXE: 1275, DRAGON_PICKAXE: 11920,
   TINDERBOX: 590, SMALL_FISHING_NET: 303, FLY_FISHING_ROD: 309, FEATHER: 314, LOBSTER_POT: 301, HARPOON: 311, YEW_LOGS: 1515, LOGS: 1511, MAGIC_LOGS: 1513,
@@ -80,17 +91,15 @@ test("upkeep sends a hurt fighter without food to the exchange, and leaves adven
     if (name === "ge:collect") payload.finished = 0;
   };
   let clock = 0;
-  const upkeep = createUpkeep({ core: { ...core, Location: class { constructor(x, y, z) { Object.assign(this, { x, y, z }); } }, ItemDefinition: { forId: () => ({ getGrandExchangeValue: () => 100, isTradeable: () => true, unNote: () => 1 }) },
+  const errands = instantErrands();
+  const upkeep = createUpkeep({ errands, core: { ...core, Location: class { constructor(x, y, z) { Object.assign(this, { x, y, z }); } }, ItemDefinition: { forId: () => ({ getGrandExchangeValue: () => 100, isTradeable: () => true, unNote: () => 1 }) },
     CacheDefinitions: { hasItem: () => true, getItem: () => ({}) } }, runtime, emit, isFood: (id) => [333, 315, 379, 361, 385].includes(id), now: () => clock });
   upkeep.check(clock);
-  assert.equal(upkeep.trips.size, 1, "only the world bot goes");
-  assert.equal(brain.paused, true, "its brain waits");
-  clock += 4000;
-  upkeep.advance(clock);
+  assert.equal(errands.going.size, 1, "only the world bot goes");
+  assert.equal(brain.paused, true, "its brain waits while it walks");
+  errands.arriveAll();
   assert.ok(emitted.includes("ge:place-offer"), "it buys food");
-  clock += 7000;
-  upkeep.advance(clock);
-  assert.equal(upkeep.trips.size, 0);
+  assert.equal(errands.going.size, 0);
   assert.equal(brain.paused, false, "and goes back to work");
 });
 
@@ -108,13 +117,14 @@ test("a bot that changes jobs sells the last job's things first", () => {
   const brain = { paused: false, currentRoot: () => ({ mode }) };
   const runtime = { entriesByUsername: new Map([["miner", { player: miner, state: { honest: true }, brain }]]) };
   const emit = (name, payload) => { if (name === "ge:collect") payload.finished = 0; if (name === "ge:place-offer") payload.placed = true; };
-  const upkeep = createUpkeep({ core: { ...core, Location: class {}, ItemDefinition: { forId: () => ({ getGrandExchangeValue: () => 10, isTradeable: () => true, unNote: () => 1 }) },
+  const errands = instantErrands();
+  const upkeep = createUpkeep({ errands, core: { ...core, Location: class {}, ItemDefinition: { forId: () => ({ getGrandExchangeValue: () => 10, isTradeable: () => true, unNote: () => 1 }) },
     CacheDefinitions: { hasItem: () => true, getItem: () => ({}) } }, runtime, emit, isFood: () => false, now: () => 0 });
   upkeep.check(0);
-  assert.equal(upkeep.trips.size, 0, "five ores in a half-empty bag: it keeps mining");
+  assert.equal(errands.going.size, 0, "five ores in a half-empty bag: it keeps mining");
   mode = "woodcutting";
   upkeep.check(0);
-  assert.equal(upkeep.trips.size, 1, "new job: the ores go first");
+  assert.equal(errands.going.size, 1, "new job: the ores go first");
 });
 
 test("outfits skip honest bots", () => {

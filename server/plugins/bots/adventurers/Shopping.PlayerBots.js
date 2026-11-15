@@ -79,7 +79,7 @@ function allowed(entry, { levelOf, questDone }) {
  * The purchases worth making now: per slot the best allowed item that is better than what it
  * has, sold somewhere, and affordable within the budget (cheapest first so the coins go round).
  */
-function shoppingList(player, core, { levelOf, questDone, modes = [] }) {
+function shoppingList(player, core, { levelOf, questDone, modes = [], exchange = false }) {
   const coins = coinsOf(player);
   let budget = Math.floor(coins * (gear.budgetShare ?? 0.6));
   const wants = [];
@@ -88,8 +88,10 @@ function shoppingList(player, core, { levelOf, questDone, modes = [] }) {
       if (!allowed(entry, { levelOf, questDone })) continue;
       const itemId = idOf(core, entry.item);
       if (!Number.isInteger(itemId) || owns(player, itemId)) return; // has the best it may use
-      if (shopsSelling(itemId).length === 0) continue;
-      wants.push({ itemId, name: entry.item, price: estimatedPrice(core, itemId) });
+      // From a shop, or (exchange) at the Grand Exchange at a little over its guide price.
+      const guide = Number(core.ItemDefinition?.forId?.(itemId)?.getGrandExchangeValue?.() ?? 0);
+      if (exchange ? !(guide > 0) : shopsSelling(itemId).length === 0) continue;
+      wants.push({ itemId, name: entry.item, price: exchange ? Math.ceil(guide * 1.05) : estimatedPrice(core, itemId) });
       return;
     }
   };

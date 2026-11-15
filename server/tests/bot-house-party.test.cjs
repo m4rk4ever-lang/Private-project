@@ -63,7 +63,12 @@ test("a host builds its house, opens a party; fighters with bones visit, offer o
     },
   };
   let clock = 0;
-  const party = HouseParty.createHouseParty({ api, runtime, world, now: () => clock, catalog: ({ catalog }) => (catalog === "houseAltar" ? "altar" : "burner"), levels: () => {} });
+  const going = new Map();
+  const errands = {
+    go: (entry, to, { arrive }) => { going.set(entry.player, arrive); entry.brain.paused = true; return true; },
+    busy: (player) => going.has(player),
+  };
+  const party = HouseParty.createHouseParty({ api, runtime, world, errands, now: () => clock, catalog: ({ catalog }) => (catalog === "houseAltar" ? "altar" : "burner"), levels: () => {} });
   party.keepHost(clock);
   assert.ok(events.includes("construction:furnished-house"), "the host gets its house");
   assert.equal(hostEntry.brain.paused, true, "the host stays put");
@@ -72,9 +77,14 @@ test("a host builds its house, opens a party; fighters with bones visit, offer o
   assert.equal(HouseParty.isOpen(), true, "the party is on");
   assert.ok(events.includes("object:Light") && events.includes("construction:advertise-house"));
   party.inviteGuests(clock);
-  assert.equal(party.guests.size, 1);
+  assert.equal(going.size, 1, "it walks to the portal");
   assert.equal(fighterEntry.brain.paused, true);
-  clock += 4000;
+  const arrive = going.get(fighter);
+  going.delete(fighter);
+  fighterEntry.brain.paused = false;
+  arrive(fighter);
+  assert.equal(party.guests.size, 1);
+  assert.equal(fighterEntry.brain.paused, true, "it waits in the house");
   party.advanceGuests(clock);
   assert.ok(events.includes("construction:visit-house"));
   clock += 3000;

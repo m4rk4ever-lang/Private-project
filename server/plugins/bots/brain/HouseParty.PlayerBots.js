@@ -15,6 +15,7 @@
  * HOUSE_PARTY=0 turns it off.
  */
 const { markHonest, isHonest } = require("./Honest.PlayerBots");
+const { errandsFor } = require("./Errands.PlayerBots");
 // SiteSpawner and ObjectCatalog load the game core: required when a party starts, so isOpen()
 // stays cheap for TrainCombat and Upkeep (and their tests).
 const applyLevels = (...args) => require("./SiteSpawner.PlayerBots").applyLevels(...args);
@@ -55,7 +56,8 @@ function boneSlots(core, player) {
   return slots;
 }
 
-function createHouseParty({ api, runtime, world, now = () => Date.now(), catalog = resolveCatalogObjectIds, levels = applyLevels }) {
+function createHouseParty({ api, runtime, world, now = () => Date.now(), catalog = resolveCatalogObjectIds, levels = applyLevels,
+  errands = errandsFor(api) }) {
   const core = api.core;
   const emit = (name, payload) => { api.emitCustomEvent(name, payload); return payload; };
   let ids = null;
@@ -145,24 +147,24 @@ function createHouseParty({ api, runtime, world, now = () => Date.now(), catalog
     open = true;
   }
 
-  function startGuest(entry, nowMs) {
-    const player = entry.player;
-    const at = player.getLocation();
-    guests.set(player, { entry, stage: "travelling", at: nowMs + 3600, since: nowMs, back: { x: at.getX(), y: at.getY(), z: at.getZ() } });
-    if (entry.brain) entry.brain.paused = true;
-    core.TeleportHandler?.teleport
-      ? core.TeleportHandler.teleport(player, new core.Location(PORTAL.x, PORTAL.y, PORTAL.z), core.TeleportType.NORMAL, false)
-      : player.moveTo(new core.Location(PORTAL.x, PORTAL.y, PORTAL.z));
+  /** On foot to the house portal (Errands.PlayerBots.js); in, at the altar, from there. */
+  function startGuest(entry) {
+    errands.go(entry, PORTAL, {
+      reason: "house_party",
+      arrive: (player) => {
+        if (entry.brain) entry.brain.paused = true;
+        guests.set(player, { entry, stage: "travelling", at: now(), since: now() });
+      },
+    });
   }
 
+  /** Out through the house's portal; its job walks it back to work. */
   function finishGuest(player, guest) {
     guests.delete(player);
     if (player.getPrivateArea?.()?.constructor?.name === "PlayerHouseInstance") {
       emit("construction:exit-house", { player, to: new core.Location(PORTAL.x, PORTAL.y, PORTAL.z) });
     }
     if (guest.entry.brain) guest.entry.brain.paused = false;
-    const back = new core.Location(guest.back.x, guest.back.y, guest.back.z);
-    core.TeleportHandler?.teleport ? core.TeleportHandler.teleport(player, back, core.TeleportType.NORMAL, false) : player.moveTo(back);
   }
 
   function advanceGuests(nowMs) {
@@ -202,9 +204,9 @@ function createHouseParty({ api, runtime, world, now = () => Date.now(), catalog
     for (let looked = 0; looked < Math.min(PER_CHECK, entries.length); looked += 1) {
       const entry = entries[cursor++ % entries.length];
       const player = entry?.player;
-      if (!player || player === host || !(entry.state?.honest || isHonest(player)) || guests.has(player) || entry.brain?.paused) continue;
+      if (!player || player === host || !(entry.state?.honest || isHonest(player)) || guests.has(player) || errands.busy(player) || entry.brain?.paused) continue;
       if (player.getCombat?.()?.getAttacker?.()) continue;
-      if (boneSlots(core, player).length >= BONES_TO_GO) startGuest(entry, nowMs);
+      if (boneSlots(core, player).length >= BONES_TO_GO) startGuest(entry);
     }
   }
 

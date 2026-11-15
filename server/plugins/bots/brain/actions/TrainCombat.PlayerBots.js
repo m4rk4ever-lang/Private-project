@@ -8,6 +8,16 @@ const { canReachSpot } = require("../../behaviours/navigation/LongRoutes.PlayerB
 const Loot = require("../Loot.PlayerBots");
 const HouseParty = require("../HouseParty.PlayerBots");
 const isFood = (itemId) => require("../../../items/Food.plugin").isFoodItem(itemId);
+
+/** An honest bot puts on the best fighting gear it carries (Trade.wearBest's lists and rules). */
+function wearOwnGear(player, core) {
+  const Trade = require("../../adventurers/Trade.PlayerBots");
+  const QuestRuntime = require("../../../quests/QuestRuntime");
+  const levelOf = (name) => (core.Skill[name] ? player.getSkillManager().getMaxLevel(core.Skill[name]) : 1);
+  const norm = (name) => String(name).toLowerCase().replace(/[^a-z0-9]/g, "");
+  const questDone = (name) => QuestRuntime.getRegisteredQuests().find((quest) => norm(quest.name) === norm(name))?.isComplete(player) === true;
+  Trade.wearBest(player, core, { levelOf, questDone });
+}
 const Value = require("../../../interface/ValueWarning");
 const { requestMovement, clearMovementRequest, peekMovementRequest, randomInRange } =
   require("../../behaviours/navigation/Navigation.PlayerBots");
@@ -197,7 +207,12 @@ function createTrainCombatAction(spec, world) {
 
   function prepare(player, state) {
     // An honest bot (an adventurer) fights in what it owns and eats what it carries.
-    if (state?.honest || isHonest(player)) return false;
+    if (state?.honest || isHonest(player)) {
+      // Into the best weapon and armour it owns and may wear (an axe it chopped with goes back
+      // in the bag for its scimitar): through the game's own equip.
+      wearOwnGear(player, core);
+      return false;
+    }
     let changed = false;
     const equipment = player.getEquipment();
     const manager = player.getSkillManager();

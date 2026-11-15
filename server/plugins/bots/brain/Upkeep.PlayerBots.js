@@ -11,29 +11,29 @@ const { isHonest } = require("./Honest.PlayerBots");
  * or buys are waiting to be collected,
  * when it fights without food, or when its job needs a tool it does not have. There it collects,
  * sells its loot and produce, and buys food and tools with its own coins (carried or banked).
- * Then it goes back to where it was. Its brain waits meanwhile.
+ * It walks there and its job walks it back (Errands.PlayerBots.js): no teleports, so a far bot
+ * only goes when it has to.
  *
  * Adventurers do this in their own planner (adventurers/Adventurers.PlayerBots.js).
  */
 const Shopping = require("../adventurers/Shopping.PlayerBots");
 const Trade = require("../adventurers/Trade.PlayerBots");
 const HouseParty = require("./HouseParty.PlayerBots");
+const { errandsFor } = require("./Errands.PlayerBots");
 
 const GRAND_EXCHANGE = Object.freeze({ x: 3164, y: 3487, z: 0 });
 /** How often bots are looked at, and how many each time (round robin). */
 const CHECK_TICKS = 25;
 const PER_CHECK = 8;
-/** Arrive (teleport), deal, and stand a moment before going back. */
-const ARRIVE_MS = 3600;
-const STAY_MS = 6000;
 const FOOD_AMOUNT = 20;
+/** Further from the exchange than this, a bot does not walk there to sell. */
+const FAR_TILES = 400;
 const SELL_WORTH = 1500;
 const COMBAT_MODES = new Set(["combat_training", "bossing"]);
 /** Gathering jobs and the tool list (adventurer-gear.json) they need. */
 const TOOL_FOR_MODE = Object.freeze({ woodcutting: "axe", mining: "pickaxe" });
 
-function createUpkeep({ core, runtime, emit, isFood, now = () => Date.now(), log = () => {} }) {
-  const trips = new Map();
+function createUpkeep({ core, runtime, emit, isFood, errands, now = () => Date.now(), log = () => {} }) {
   /** The job each bot had when last looked at. */
   const lastMode = new Map();
   let cursor = 0;
@@ -75,26 +75,13 @@ function createUpkeep({ core, runtime, emit, isFood, now = () => Date.now(), log
       const best = toolList.find((entry) => !(entry.quests?.length) && levelOf(player, entry.skill) >= (entry.level ?? 1));
       if (best) want.buy.push({ itemId: Shopping.idOf(core, best.item), amount: 1 });
     }
+    // From far away (Kourend, the desert) the walk is not worth a bag of goods: its job sells at
+    // a nearby store or drops instead. Food and tools it does need, so for those it still goes.
+    const at = player.getLocation();
+    if (Math.max(Math.abs(at.getX() - GRAND_EXCHANGE.x), Math.abs(at.getY() - GRAND_EXCHANGE.y)) > FAR_TILES) want.goods = [];
     const waiting = Trade.finishedOffers(player, emit) > 0;
     if (!waiting && want.goods.length === 0 && want.buy.length === 0) return null;
     return want;
-  }
-
-  function teleport(player, place) {
-    const target = new core.Location(place.x, place.y, place.z ?? 0);
-    if (core.TeleportHandler?.teleport && core.TeleportType?.NORMAL) {
-      core.TeleportHandler.teleport(player, target, core.TeleportType.NORMAL, false);
-    } else {
-      player.moveTo(target);
-    }
-  }
-
-  function startTrip(entry, want, nowMs) {
-    const player = entry.player;
-    const at = player.getLocation();
-    trips.set(player, { entry, want, stage: "arriving", at: nowMs + ARRIVE_MS, back: { x: at.getX(), y: at.getY(), z: at.getZ() } });
-    if (entry.brain) entry.brain.paused = true;
-    teleport(player, GRAND_EXCHANGE);
   }
 
   function deal(player, want) {
@@ -106,27 +93,9 @@ function createUpkeep({ core, runtime, emit, isFood, now = () => Date.now(), log
     log("bot_upkeep", { username: player.getUsername?.() ?? null, collectedCoins, sold: offered.length, bought: bought.length });
   }
 
-  function finish(player, trip) {
-    trips.delete(player);
-    if (trip.entry.brain) trip.entry.brain.paused = false;
-    if (player.isRegistered?.() !== false) teleport(player, trip.back);
-  }
-
-  function advance(nowMs) {
-    for (const [player, trip] of [...trips]) {
-      if (player.isRegistered?.() === false) {
-        trips.delete(player);
-        continue;
-      }
-      if (nowMs < trip.at) continue;
-      if (trip.stage === "arriving") {
-        deal(player, trip.want);
-        trip.stage = "staying";
-        trip.at = nowMs + STAY_MS;
-      } else {
-        finish(player, trip);
-      }
-    }
+  function startTrip(entry, want) {
+    // What it needs may change on the way (a full bag of ores): looked at again on arrival.
+    return errands.go(entry, GRAND_EXCHANGE, { reason: "upkeep", arrive: (player) => deal(player, needs(player, entry.brain?.currentRoot?.()?.mode ?? null, true) ?? want) });
   }
 
   /** The next few honest world bots (not adventurers, not in a trip, not in PvP). */
@@ -138,7 +107,7 @@ function createUpkeep({ core, runtime, emit, isFood, now = () => Date.now(), log
       const player = entry?.player;
       const state = entry?.state;
       // A paused brain is already away (at a house party, HouseParty.PlayerBots.js).
-      if (!player || !(state?.honest || isHonest(player)) || state.adventurer || trips.has(player) || entry.brain?.paused) continue;
+      if (!player || !(state?.honest || isHonest(player)) || state.adventurer || errands.busy(player) || entry.brain?.paused) continue;
       if (player.getCombat?.()?.getAttacker?.() || player.getHitpoints?.() <= 0) continue;
       const mode = entry.brain?.currentRoot?.()?.mode ?? null;
       if (mode === "pvp" || mode === "minigame") continue;
@@ -146,23 +115,21 @@ function createUpkeep({ core, runtime, emit, isFood, now = () => Date.now(), log
       const changedJob = lastMode.has(name) && lastMode.get(name) !== mode;
       lastMode.set(name, mode);
       const want = needs(player, mode, changedJob);
-      if (want) startTrip(entry, want, nowMs);
+      if (want) startTrip(entry, want);
     }
   }
 
   let ticks = 0;
   function tick() {
-    const nowMs = now();
-    advance(nowMs);
-    if (++ticks % CHECK_TICKS === 0) check(nowMs);
+    if (++ticks % CHECK_TICKS === 0) check(now());
   }
 
-  return { tick, needs, trips, check, advance };
+  return { tick, needs, check };
 }
 
 function startUpkeep(api, runtime) {
   const isFood = (id) => require("../../items/Food.plugin").isFoodItem(id);
-  const upkeep = createUpkeep({ core: api.core, runtime, emit: (name, payload) => api.emitCustomEvent(name, payload), isFood });
+  const upkeep = createUpkeep({ core: api.core, runtime, emit: (name, payload) => api.emitCustomEvent(name, payload), isFood, errands: errandsFor(api) });
   const { Task } = api.core;
   api.getTaskManager().submit(new (class extends Task {
     constructor() { super(1, "bot-upkeep", false); }

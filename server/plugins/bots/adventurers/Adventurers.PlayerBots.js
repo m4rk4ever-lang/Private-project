@@ -30,6 +30,7 @@ const GENERATION_ATTRIBUTE = "adventurers:generation";
 const Shopping = require("./Shopping.PlayerBots");
 const Trade = require("./Trade.PlayerBots");
 const { markHonest } = require("../brain/Honest.PlayerBots");
+const { errandsFor } = require("../brain/Errands.PlayerBots");
 /** A companion joins a group if its own stretch ends within this. */
 const GROUP_JOIN_WINDOW_MS = 4 * 60_000;
 const GROUP_MAX = 5;
@@ -52,7 +53,7 @@ function unpackCoord(coord) {
   return { x: (coord >> 14) & 0x3fff, y: coord & 0x3fff, z: (coord >> 28) & 0x3 };
 }
 
-function createAdventurers({ api, runtime, world, registry, random = Math.random, now = () => Date.now() }) {
+function createAdventurers({ api, runtime, world, registry, random = Math.random, now = () => Date.now(), errands = errandsFor(api) }) {
   const core = api.core;
   const emit = (name, payload) => api.emitCustomEvent(name, payload);
   const QuestRuntime = require("../../quests/QuestRuntime");
@@ -66,6 +67,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     equipCombatGear: (player, state) => world.equipCombatGear?.(player, state),
     chance: 1,
     hangoutChance: 0,
+    // Adventurers walk (walkTo below), and so prefer places near them: a far one is a long walk.
+    moveTo: () => {},
+    nearness: (here, place) => (here ? 1 / (1 + Math.max(Math.abs(place.x - here.x), Math.abs(place.y - here.y)) / 150) : 1),
     minigameChance: 0,
     random,
     // Adventurers only go where their quests and levels let them.
@@ -137,23 +141,56 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return runtime.botStatesByName?.get?.(player.getUsername());
   }
 
-  function teleport(player, place) {
-    const target = new core.Location(place.x, place.y, place.z ?? 0);
-    if (core.TeleportHandler?.teleport && core.TeleportType?.NORMAL) {
-      core.TeleportHandler.teleport(player, target, core.TeleportType.NORMAL, false);
-    } else {
-      player.moveTo(target);
+
+
+  function runtimeEntry(player) {
+    return runtime.entriesByUsername?.get?.(player.getUsername?.());
+  }
+
+  function placeName(to) {
+    return String(to.name ?? to.id ?? `${to.x}, ${to.y}`).replace(/_/g, " ");
+  }
+
+  /**
+   * Walks there (Errands.PlayerBots.js) and runs `arrive` on arrival. With `replan` the planner
+   * looks again once it is there (after a sale or a purchase); without it the job it started
+   * goes on (a walk to the trees is part of the stretch). False when it cannot go now.
+   */
+  function walkTo(entry, to, { reason, arrive = () => {}, replan = true, say = true } = {}) {
+    const run = runtimeEntry(entry.player);
+    if (!run || errands.busy(entry.player) || (replan && (entry.noErrandUntil ?? 0) > now())) return false;
+    const started = errands.go(run, to, {
+      reason,
+      arrive: (player) => {
+        try {
+          arrive(player);
+        } finally {
+          if (replan) entry.until = 0;
+        }
+      },
+      fail: (player) => {
+        note(player, `Kwam niet bij ${placeName(to)}: de weg was versperd.`, "activity");
+        if (replan) {
+          entry.noErrandUntil = now() + 10 * 60_000;
+          entry.until = 0;
+        }
+      },
+    });
+    if (!started) return false;
+    if (replan) {
+      entry.phase = "errand";
+      entry.until = Infinity;
     }
-    const state = stateOf(player);
-    if (state) state.home = { x: place.x, y: place.y, z: place.z ?? 0 };
+    if (say) note(entry.player, `Loopt naar ${placeName(to)}.`, "activity");
+    return true;
   }
 
   function startTraining(entry, plan, nowMs) {
     const { player } = entry;
     const view = snapshot(player);
     if (plan.mode === "wintertodt") {
-      teleport(player, WINTERTODT);
       startActivity(player, "wintertodt", { home: WINTERTODT, nowMs });
+      walkTo(entry, { ...WINTERTODT, name: "Wintertodt" }, { reason: "wintertodt", replan: false });
       entry.activity = "wintertodt";
     } else {
       const level = plan.mode === "combat_training" ? view.combat : view.levels[plan.skill] ?? 1;
@@ -161,18 +198,18 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       // Fighting on an empty stomach is how adventurers die: food first, if it can buy some.
       if (plan.mode === "combat_training" && !carriesFood(player)) {
         const food = Shopping.foodToBuy(player, core, levelOf(player, "HITPOINTS"));
-        if (food && Shopping.coinsOf(player) >= Shopping.estimatedPrice(core, food.itemId, food.amount)) {
-          shopFor(player, food.itemId, food.name, food.amount);
-        }
+        if (food && Shopping.coinsOf(player) >= Shopping.estimatedPrice(core, food.itemId, food.amount)
+            && shopFor(entry, food.itemId, food.name, food.amount)) return true;
       }
-      // Fishing needs its net, rod or harpoon: bought first, or no fishing this time.
-      for (const tool of Shopping.missingTools(player, core, id)) {
-        if (!shopFor(player, tool.itemId, tool.name, tool.name === "FEATHER" || tool.name === "FISHING_BAIT" ? 200 : 1)) return false;
-      }
+      // Fishing needs its net, rod or harpoon: bought first (a walk to the shop), or no fishing now.
+      const tool = Shopping.missingTools(player, core, id)[0];
+      if (tool) return shopFor(entry, tool.itemId, tool.name, tool.name === "FEATHER" || tool.name === "FISHING_BAIT" ? 200 : 1);
       const activity = id ? registry?.byId?.get(id) ?? null : null;
       if (!activity) return false;
-      travel(player, stateOf(player), activity, nowMs);
-      startActivity(player, id, { home: stateOf(player)?.home ?? null, nowMs });
+      const place = travel(player, stateOf(player), activity, nowMs);
+      const home = stateOf(player)?.home ?? null;
+      startActivity(player, id, { home, nowMs });
+      if (place && home) walkTo(entry, { ...home, name: place.id }, { reason: "training", replan: false });
       entry.activity = id;
     }
     entry.phase = "training";
@@ -186,9 +223,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const { player } = entry;
     const { boss } = plan;
     if (!registry?.byId?.get(boss.id)) return false;
-    teleport(player, boss);
-    world.equipCombatGear?.(player, stateOf(player));
     startActivity(player, boss.id, { home: boss, nowMs });
+    walkTo(entry, boss, { reason: "boss", replan: false });
     entry.phase = "boss";
     entry.plan = plan;
     entry.activity = boss.id;
@@ -246,17 +282,21 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const home = stateOf(entry.player)?.home;
     for (const member of companions) {
       member.group = true;
-      if (!startTraining(member, { ...plan, reason: `samen met ${entry.name}` }, nowMs) || !home) continue;
-      // The same spot as the one who asked.
-      teleport(member.player, home);
+      if (!startTraining(member, { ...plan, reason: `samen met ${entry.name}` }, nowMs) || !home || member.phase !== "training") continue;
+      // The same spot as the one who asked: its job's home moves there, and it walks over.
       startActivity(member.player, member.activity, { home, nowMs });
+      if (!walkTo(member, { ...home, name: `${entry.name}` }, { reason: "group", replan: false, say: false })) {
+        const run = runtimeEntry(member.player);
+        if (run?.state) run.state.home = home;
+      }
     }
     return true;
   }
 
   function next(entry, nowMs) {
-    trade(entry);
-    upgrade(entry.player);
+    if (errands.busy(entry.player)) return;
+    // Errands first, each a walk; the planner looks again when it is back.
+    if (trade(entry) || upgrade(entry)) return;
     entry.group = false;
     if (random() < (data.groupChance ?? 0.3) && startGroup(entry, nowMs)) return;
     const view = snapshot(entry.player);
@@ -367,30 +407,137 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return (name) => quests.get(normalize(name))?.isComplete(player) === true;
   }
 
-  /** Goes to the shop's keeper and buys, through the shop itself. True when it got the item. */
-  function shopFor(player, itemId, name, amount = 1) {
+  /**
+   * Walks to the nearest shop that sells it and buys there, through the shop itself. True when
+   * it set off. Only shops within data.shopRadius tiles: a longer walk is not worth one item.
+   */
+  function shopFor(entry, itemId, name, amount = 1) {
+    const { player } = entry;
     const at = player.getLocation();
     const shop = Shopping.nearestShop(itemId, { x: at.getX(), y: at.getY() });
-    // Only a shop it could walk to from here (data.shopRadius tiles): no armour from Varrock for a
-    // newcomer in Lumbridge. Further shops wait until it trains or travels near them.
     if (!shop || shop.distance > (data.shopRadius ?? 80)) return false;
-    teleport(player, { x: shop.keeper.x + 1, y: shop.keeper.y, z: shop.keeper.z });
-    const coinsBefore = Shopping.coinsOf(player);
-    const got = Shopping.buy(player, core, shop.shopId, itemId, amount);
-    if (got <= 0) return false;
-    const paid = coinsBefore - Shopping.coinsOf(player);
-    note(player, `Gekocht: ${got > 1 ? `${got} x ` : ""}${name.toLowerCase().replace(/_/g, " ")} bij ${shop.name} (${paid.toLocaleString("nl-NL")} gp).`, "activity");
-    return true;
+    const label = name.toLowerCase().replace(/_/g, " ");
+    return walkTo(entry, { x: shop.keeper.x, y: shop.keeper.y, z: shop.keeper.z, name: shop.name }, {
+      reason: "shop",
+      arrive: (buyer) => {
+        const coinsBefore = Shopping.coinsOf(buyer);
+        const got = Shopping.buy(buyer, core, shop.shopId, itemId, amount);
+        if (got <= 0) {
+          note(buyer, `${shop.name} had geen ${label} voor hem.`, "activity");
+          entry.noErrandUntil = now() + 10 * 60_000;
+          return;
+        }
+        const paid = coinsBefore - Shopping.coinsOf(buyer);
+        note(buyer, `Gekocht: ${got > 1 ? `${got} x ` : ""}${label} bij ${shop.name} (${paid.toLocaleString("nl-NL")} gp).`, "activity");
+        Shopping.wear(buyer, core, itemId);
+      },
+    });
   }
 
   function isFood(itemId) {
     return require("../../items/Food.plugin").isFoodItem(itemId);
   }
 
+  /** The nearest bank (data.banks) to where it is. */
+  function nearestBank(player) {
+    const at = player.getLocation();
+    let best = null;
+    for (const bank of data.banks ?? []) {
+      const away = Math.max(Math.abs(bank.x - at.getX()), Math.abs(bank.y - at.getY()));
+      if (!best || away < best.away) best = { ...bank, away };
+    }
+    return best;
+  }
+
+  function distanceTo(player, place) {
+    const at = player.getLocation();
+    return Math.max(Math.abs(place.x - at.getX()), Math.abs(place.y - at.getY()));
+  }
+
+  /** Into its bank, at a bank: everything it would otherwise sell (it sells them at the GE later). */
+  function deposit(player, goods) {
+    const inventory = player.getInventory();
+    const stored = [];
+    for (const { itemId, amount } of goods) {
+      const tab = core.Bank?.getTabForItem?.(player, itemId) ?? 0;
+      const bank = player.getBank?.(tab);
+      if (!bank) continue;
+      const held = inventory.getAmount(itemId);
+      if (held <= 0) continue;
+      bank.add(new core.Item(itemId, held), false);
+      inventory.deleteNumber?.(itemId, held);
+      stored.push({ itemId, amount: held });
+    }
+    inventory.refreshItems?.();
+    return stored;
+  }
+
   /**
-   * Its income: found gear it may wear goes on, the rest of its loot and produce is sold at the
-   * Grand Exchange, and coins from earlier sales are collected. Between every two stretches,
-   * so it starts each job with an empty bag, unless what it has is worth less than data.keepValue.
+   * At the Grand Exchange's bank: what it banked to sell comes out as notes, as a player
+   * withdraws as notes to sell. Returns how many stacks came out.
+   */
+  function withdrawToSell(player) {
+    const keep = Trade.keepIds(player, core, { isFood });
+    const inventory = player.getInventory();
+    let taken = 0;
+    for (const bank of player.getBanks?.() ?? []) {
+      for (const item of [...(bank?.getItems?.() ?? [])]) {
+        const id = item?.getId?.() ?? -1;
+        const amount = item?.getAmount?.() ?? 0;
+        if (!(id > 0) || !(amount > 0) || keep.has(id) || Value.itemValue(core, id, 1) <= 0) continue;
+        if (inventory.getFreeSlots() <= 1) return taken;
+        const definition = core.ItemDefinition.forId(id);
+        const noteId = definition.getNoteId?.() ?? -1;
+        const outId = noteId > 0 && !definition.isNoted?.() ? noteId : id;
+        if (outId === id && !definition.isStackable?.() && amount > inventory.getFreeSlots() - 1) continue;
+        bank.deleteNumber?.(id, amount) ?? bank.delete?.(new core.Item(id, amount));
+        inventory.add(new core.Item(outId, amount), false);
+        taken += 1;
+      }
+    }
+    inventory.refreshItems?.();
+    return taken;
+  }
+
+  /**
+   * Better gear no shop near it sells, bought at the Grand Exchange instead (it is there anyway):
+   * a bid a little over the guide, paid from its coins; it arrives on its next visit.
+   */
+  function bidForUpgrades(player) {
+    const list = Shopping.shoppingList(player, core, {
+      levelOf: (skill) => levelOf(player, skill), questDone: questDone(player), modes: ["woodcutting", "mining"],
+      exchange: true,
+    });
+    const bids = [];
+    for (const want of list) {
+      if (Trade.buyAtExchange(player, core, emit, want.itemId, 1)) bids.push(want.name.toLowerCase().replace(/_/g, " "));
+    }
+    if (bids.length > 0) note(player, `Biedt op de GE op: ${bids.join(", ")}.`, "activity");
+  }
+
+  function atExchange(player) {
+    const pulled = withdrawToSell(player);
+    const goods = Trade.goodsToSell(player, core, Trade.keepIds(player, core, { isFood }));
+    const { collectedCoins, offered } = Trade.sellAtExchange(player, core, emit, goods);
+    if (collectedCoins > 0) {
+      note(player, `Haalt ${collectedCoins.toLocaleString("nl-NL")} gp op bij de Grand Exchange.`, "activity");
+    }
+    if (offered.length > 0) {
+      const names = offered.slice(0, 4).map((good) => `${good.amount > 1 ? `${good.amount} x ` : ""}${itemName(good.itemId)}`);
+      const total = offered.reduce((sum, good) => sum + good.value, 0);
+      note(player, `Zet te koop op de GE${pulled ? " (ook uit de bank)" : ""}: ${names.join(", ")}${offered.length > 4 ? ` en ${offered.length - 4} meer` : ""} (~${total.toLocaleString("nl-NL")} gp).`, "activity");
+    }
+    bidForUpgrades(player);
+    for (const name of Trade.wearBest(player, core, { levelOf: (skill) => levelOf(player, skill), questDone: questDone(player) })) {
+      note(player, `Draagt nu ${name.toLowerCase().replace(/_/g, " ")} (gekocht op de GE).`, "activity");
+    }
+  }
+
+  /**
+   * Between stretches its bag is emptied of the last job's things, as a player does: into the
+   * nearest bank, or sold at the Grand Exchange when that is about as near, when it carries a lot
+   * (data.sellValue) or when earlier sales wait there. Small change (data.keepValue) stays.
+   * True when it set off.
    */
   function trade(entry) {
     const { player } = entry;
@@ -402,19 +549,18 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const worth = goods.reduce((sum, good) => sum + good.value, 0);
     const full = player.getInventory().getFreeSlots() <= (data.fullSlots ?? 4);
     const waiting = Trade.finishedOffers(player, emit) > 0;
-    // Between stretches its bag is emptied of the last job's things, as a player banks or sells
-    // before the next job: only small change (under data.keepValue) stays.
-    if (!waiting && worth < (data.keepValue ?? 200) && !(full && goods.length > 0)) return;
-    teleport(player, data.grandExchange);
-    const { collectedCoins, offered } = Trade.sellAtExchange(player, core, emit, goods);
-    if (collectedCoins > 0) {
-      note(player, `Haalt ${collectedCoins.toLocaleString("nl-NL")} gp op bij de Grand Exchange.`, "activity");
-    }
-    if (offered.length > 0) {
-      const names = offered.slice(0, 4).map((good) => `${good.amount > 1 ? `${good.amount} x ` : ""}${itemName(good.itemId)}`);
-      const total = offered.reduce((sum, good) => sum + good.value, 0);
-      note(player, `Zet te koop op de GE: ${names.join(", ")}${offered.length > 4 ? ` en ${offered.length - 4} meer` : ""} (~${total.toLocaleString("nl-NL")} gp).`, "activity");
-    }
+    if (!waiting && worth < (data.keepValue ?? 200) && !(full && goods.length > 0)) return false;
+    const ge = { ...data.grandExchange, name: "de Grand Exchange" };
+    const bank = nearestBank(player);
+    const toExchange = waiting || worth >= (data.sellValue ?? 5000) || !bank || distanceTo(player, ge) <= bank.away + 40;
+    if (toExchange) return walkTo(entry, ge, { reason: "exchange", arrive: atExchange });
+    return walkTo(entry, { ...bank, name: bank.name ?? bank.id }, {
+      reason: "bank",
+      arrive: (banker) => {
+        const stored = deposit(banker, Trade.goodsToSell(banker, core, Trade.keepIds(banker, core, { isFood })));
+        if (stored.length > 0) note(banker, `Zet ${stored.length} soorten spullen op de bank in ${bank.name ?? bank.id}.`, "activity");
+      },
+    });
   }
 
   function itemName(itemId) {
@@ -422,13 +568,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   }
 
   /** Better gear and tools it can afford now, bought and worn before its next stretch. */
-  function upgrade(player) {
+  function upgrade(entry) {
+    const { player } = entry;
     const list = Shopping.shoppingList(player, core, {
       levelOf: (skill) => levelOf(player, skill), questDone: questDone(player), modes: ["woodcutting", "mining"],
     });
-    for (const want of list) {
-      if (shopFor(player, want.itemId, want.name)) Shopping.wear(player, core, want.itemId);
-    }
+    // One purchase per walk; the next is looked at when it is back.
+    return list.some((want) => shopFor(entry, want.itemId, want.name));
   }
 
   function spawn() {

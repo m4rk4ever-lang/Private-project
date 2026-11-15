@@ -144,7 +144,9 @@ function nearHub(place, hub) {
  * hangout, where the caller lets the bot roam), or null when it stays.
  */
 function createTravel({
-  core, log = () => {}, dress = null, equipCombatGear = null,
+  core, log = () => {}, dress = null, equipCombatGear = null, moveTo = null,
+  /** (here, place) -> weight factor: walkers prefer places near them. */
+  nearness = null,
   random = Math.random, chance = data.chance, hangoutChance = data.hangoutChance ?? 0,
   ownHubChance = data.ownHubChance ?? 0, nearHubBonus = data.nearHubBonus ?? 1,
   bankstandChance = data.bankstandChance ?? 0, minigameChance = data.minigameChance ?? 0,
@@ -225,11 +227,15 @@ function createTravel({
       const options = destinationsFor(mode, level, here).filter((option) => !meets || meets(player, option.requires));
       if (options.length === 0) return null;
       place = pickWeighted(options, random,
-        (option) => (option.weight ?? 1) * (nearHub(option, hub) ? nearHubBonus : 1) * crowding(option));
+        (option) => (option.weight ?? 1) * (nearHub(option, hub) ? nearHubBonus : 1) * crowding(option)
+          * (nearness ? nearness(here, option) : 1));
     }
     settle(name, place.minigame ? null : place.id);
     const target = new core.Location(place.x, place.y, place.z ?? 0);
-    if (core.TeleportHandler?.teleport && core.TeleportType?.NORMAL) {
+    if (moveTo) {
+      // Its own way there (an adventurer walks: Errands.PlayerBots.js).
+      moveTo(player, place);
+    } else if (core.TeleportHandler?.teleport && core.TeleportType?.NORMAL) {
       core.TeleportHandler.teleport(player, target, core.TeleportType.NORMAL, false);
     } else {
       player.moveTo(target);

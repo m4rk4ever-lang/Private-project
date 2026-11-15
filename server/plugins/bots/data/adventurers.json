@@ -1,5 +1,5 @@
 {
-  "_comment": "Adventurers (adventurers/Adventurers.PlayerBots.js): a few named bots that start as new accounts and play on their own, training toward the quests below and completing them. Their progress is saved. quests: the order they take quests in, by the quest's name as registered on this server; skills and quests are extra requirements on top of the cache's quest table (Quests.PlayerBots.js), combat a recommended combat level. Every other quest on the server follows, easiest first. A quest is done only where a bot playthrough is built (playthrough: true); nothing is simulated, so without one they skip it. trainMinutes / questMinutes: how long one stretch lasts. questChance: the chance to pick a quest when one is ready. groupChance: the chance an adventurer takes the others along (Wintertodt together, or the same training spot). dropValue: the lowest value (coins) of a drop that goes in the drop log. bossLevel: the lowest combat level of a kill that goes in the boss log. bosses: the bosses adventurers fight from their combat level, in the boss's shared lair (x, y: where they arrive); bossChance: the chance to go bossing when one is open to them, alone or with the others. generation: raise it to start every adventurer over (levels, items, quests and journal reset, with the Tutorial Island starter kit). grandExchange: where they sell (the Grand Exchange's centre). focus: per adventurer, how much more it likes a mode (2 = twice as often) when nothing else decides. shopRadius: they only buy at a shop this many tiles from where they are (no shopping across the map). keepValue: goods worth less than this stay in its bag between stretches (otherwise it sells them first); fullSlots: or when this few slots are free. Coins only come from sales and finds (adventurers/Trade.PlayerBots.js).",
+  "_comment": "Adventurers (adventurers/Adventurers.PlayerBots.js): a few named bots that start as new accounts and play on their own, training toward the quests below and completing them. Their progress is saved. quests: the order they take quests in, by the quest's name as registered on this server; skills and quests are extra requirements on top of the cache's quest table (Quests.PlayerBots.js), combat a recommended combat level. Every other quest on the server follows, easiest first. A quest is done only where a bot playthrough is built (playthrough: true); nothing is simulated, so without one they skip it. trainMinutes / questMinutes: how long one stretch lasts. questChance: the chance to pick a quest when one is ready. groupChance: the chance an adventurer takes the others along (Wintertodt together, or the same training spot). dropValue: the lowest value (coins) of a drop that goes in the drop log. bossLevel: the lowest combat level of a kill that goes in the boss log. bosses: the bosses adventurers fight from their combat level, in the boss's shared lair (x, y: where they arrive); bossChance: the chance to go bossing when one is open to them, alone or with the others. generation: raise it to start every adventurer over (levels, items, quests and journal reset, with the Tutorial Island starter kit). grandExchange: where they sell (the Grand Exchange's centre). focus: per adventurer, how much more it likes a mode (2 = twice as often) when nothing else decides. shopRadius: they walk to a shop only within this many tiles (a longer walk is not worth one item). Everything is on foot (brain/Errands.PlayerBots.js). banks: where they bank the last job's things; sellValue: from this much, or when the Grand Exchange is about as near, they sell instead (and take banked goods along as notes). keepValue: goods worth less than this stay in its bag between stretches (otherwise it sells them first); fullSlots: or when this few slots are free. Coins only come from sales and finds (adventurers/Trade.PlayerBots.js).",
   "names": [
     "Eeshwar",
     "Call me Mark",
@@ -238,6 +238,18 @@
   },
   "keepValue": 200,
   "shopRadius": 80,
+  "sellValue": 5000,
+  "banks": [
+    { "id": "draynor_bank", "name": "Draynor", "x": 3092, "y": 3245, "z": 0 },
+    { "id": "al_kharid_bank", "name": "Al Kharid", "x": 3270, "y": 3167, "z": 0 },
+    { "id": "varrock_west_bank", "name": "Varrock West", "x": 3185, "y": 3440, "z": 0 },
+    { "id": "varrock_east_bank", "name": "Varrock East", "x": 3253, "y": 3420, "z": 0 },
+    { "id": "edgeville_bank", "name": "Edgeville", "x": 3094, "y": 3493, "z": 0 },
+    { "id": "falador_west_bank", "name": "Falador West", "x": 2946, "y": 3370, "z": 0 },
+    { "id": "falador_east_bank", "name": "Falador East", "x": 3013, "y": 3355, "z": 0 },
+    { "id": "seers_bank", "name": "Seers' Village", "x": 2725, "y": 3491, "z": 0 },
+    { "id": "catherby_bank", "name": "Catherby", "x": 2809, "y": 3440, "z": 0 }
+  ],
   "focus": {
     "Eeshwar": { "combat_training": 2, "mining": 1.5 },
     "Call me Mark": { "fishing": 2, "woodcutting": 1.5 },
