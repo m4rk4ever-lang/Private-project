@@ -44,6 +44,8 @@ Indeling per versie:
 
 - **Eigen naam: Realm of Eeshwar.** Wereldnaam, tabtitel, loginscherm, welkomstbericht en
   pluginlijst gebruiken de nieuwe naam in plaats van "Old School RuneScape" en "RSPS.app".
+- **Eigen logo** op het loginscherm in plaats van het RuneScape-logo, en "Realm of Eeshwar is loading"
+  op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Opgelost
 - `update` stopt het spel nu ook als een proces blijft hangen: het zoekt wat de poorten bezet

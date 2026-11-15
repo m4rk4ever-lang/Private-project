@@ -3,6 +3,7 @@ import type { LoginState } from "../../LoginState";
 import type { LoginRendererHost, RenderContext } from "../host";
 import { withContentTransform } from "../layout/geometry";
 import { drawCenteredText } from "./drawUtils";
+import { CLIENT_NAME } from "../../../../config/branding";
 
 function drawProgressBarRect(ctx: RenderContext, barX: number, barY: number, fillWidth: number): void {
     const { WIDTH: barWidth, HEIGHT: barHeight, COLOR } = LOADING_BAR;
@@ -26,7 +27,7 @@ export function drawLoadingBarToCtx(host: LoginRendererHost, ctx: RenderContext,
         const barX = centerX - LOADING_BAR.WIDTH / 2;
         drawProgressBarRect(ctx, barX, barY, Math.floor(state.loadingPercent * 3));
         const loadingText = state.loadingText || `${state.loadingPercent}%`;
-        const titleText = "RuneScape is loading - please wait...";
+        const titleText = `${CLIENT_NAME} is loading - please wait...`;
         if (host.fontBold12) {
             drawCenteredText(host, ctx, host.fontBold12, titleText, centerX, barY - 8, 0xffffff);
             drawCenteredText(host, ctx, host.fontBold12, loadingText, centerX, barY + 23, 0xffffff);
@@ -51,7 +52,7 @@ export function drawDownloadBarToCtx(host: LoginRendererHost, ctx: RenderContext
         ctx.fillStyle = "white";
         ctx.textAlign = "center";
         ctx.textBaseline = "bottom";
-        ctx.fillText("RuneScape is loading - please wait...", centerX, barY - 8);
+        ctx.fillText(`${CLIENT_NAME} is loading - please wait...`, centerX, barY - 8);
         const progress =
             state.downloadTotal > 0
                 ? Math.min(100, Math.floor((state.downloadCurrent / state.downloadTotal) * 100))

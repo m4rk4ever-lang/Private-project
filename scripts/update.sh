@@ -59,5 +59,10 @@ else
   fi
 fi
 
+# Older codespaces were set up with the server name "Codespace": use the world's name.
+if [ -f .env ] && grep -q '^REACT_APP_DEFAULT_SERVER_NAME=Codespace$' .env; then
+  sed -i 's/^REACT_APP_DEFAULT_SERVER_NAME=Codespace$/REACT_APP_DEFAULT_SERVER_NAME=Realm of Eeshwar/' .env
+fi
+
 echo "[update] Spel starten..."
 exec yarn start

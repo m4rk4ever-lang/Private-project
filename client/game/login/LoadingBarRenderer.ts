@@ -1,3 +1,4 @@
+import { CLIENT_NAME } from "../../config/branding";
 /**
  * OSRS-style Loading Bar Renderer
  * Matches OSRS loading bar rendering.
@@ -24,7 +25,7 @@ export function drawLoadingBar(
     height: number,
     progress: number,
     text: string,
-    title: string = "RuneScape is loading - please wait...",
+    title: string = `${CLIENT_NAME} is loading - please wait...`,
 ): void {
     // Clear to black
     ctx.fillStyle = "black";

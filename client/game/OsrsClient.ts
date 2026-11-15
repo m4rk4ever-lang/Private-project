@@ -6004,7 +6004,7 @@ export class OsrsClient {
                 this.loginState.loginIndex = LoginIndex.TRY_AGAIN;
                 this.loginState.setResponse(
                     "",
-                    "RuneScape has been updated!",
+                    `${CLIENT_NAME} has been updated!`,
                     "Please reload this page.",
                     "",
                 );

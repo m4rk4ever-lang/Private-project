@@ -249,7 +249,7 @@ function OsrsClientApp() {
             if (!effectivelyPersistent) {
                 if (persisted === false) {
                     console.warn(
-                        "[storage] Browser denied persistent storage; cached RuneScape data may be evicted",
+                        "[storage] Browser denied persistent storage; cached game data may be evicted",
                     );
                     // Notification removed - user is likely on iOS PWA where storage is persistent anyway
                 } else if (persisted === "unsupported") {
@@ -293,7 +293,7 @@ function OsrsClientApp() {
                     await removeCacheManifestEntry(cacheInfo.name);
                     if (!new URLSearchParams(window.location.search).has("edit")) {
                         addStorageWarning(
-                            "Cached RuneScape data was cleared by the browser; assets will be re-downloaded.",
+                            "Cached game data was cleared by the browser; assets will be re-downloaded.",
                         );
                     }
                 }

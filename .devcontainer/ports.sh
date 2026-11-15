@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
-# Runs on every codespace start. The game client's page (port 3000) stays private:
+# Runs on every codespace start.
+# Older codespaces were set up with the server name "Codespace": use the world's name.
+if [ -f .env ] && grep -q '^REACT_APP_DEFAULT_SERVER_NAME=Codespace$' .env; then
+  sed -i 's/^REACT_APP_DEFAULT_SERVER_NAME=Codespace$/REACT_APP_DEFAULT_SERVER_NAME=Realm of Eeshwar/' .env
+fi
+# The game client's page (port 3000) stays private:
 # only you, signed in to GitHub, can open it. The browser's WebSocket to the game
 # server (port 43594) cannot send that GitHub sign-in, so that port must be public.
 if [ -n "${CODESPACE_NAME:-}" ]; then
