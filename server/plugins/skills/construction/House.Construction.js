@@ -1926,6 +1926,15 @@ function leaveHouse({ player }) {
   return exitHouse(player);
 }
 function showAdvertisements({ player, objectId }) { viewAdvertisements(player, nearbyHouseLocation(player, objectId)); return true; }
+/**
+ * "construction:visit-house" { player, owner }: into `owner`'s house through the portal, as the
+ * portal's Friend's house option does (bots going to a house party; the host into its own).
+ */
+function visitHouseRequest({ player, owner }) {
+  if (!player || !owner) return;
+  visitHouse(player, String(owner));
+}
+
 function visitLastHouse({ player }) {
   const name = lastVisited.get(player);
   if (name) visitHouse(player, name, undefined, null, { loading: true });

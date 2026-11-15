@@ -49,7 +49,10 @@ a generated account. The owner follows them on `/adventurers.html` and in game w
 | Bank standers that really craft | `brain/BankCraft.PlayerBots.js`, `actions/BankStand` |
 | Doors and the toll gate (honest bots pay only with 1.000 gp+) | `brain/DoorOpening.PlayerBots.js` |
 | Clans, the race, gifts between clanmates | `adventurers/Clans.PlayerBots.js`, `clans:ensure-member` in `plugins/interface/clans/Clans.plugin.js` |
-| Slayer tasks | `adventurers/Slayer.PlayerBots.js`, activity `slayer_task` |
+| Slayer tasks; masters from the Slayer plugin's table, best tier it can walk to | `adventurers/Slayer.PlayerBots.js`, activity `slayer_task` |
+| Quests played for real (walk, Talk-to, answer, ladders into basements) | `adventurers/QuestPlay.PlayerBots.js`, `data/quest-playthroughs.json` |
+| The running job, saved and resumed after a restart | `adventurers/Tasks.PlayerBots.js` (attribute `adventurers:task`) |
+| Long walks hub to hub; what is reachable on foot; quest-locked areas | `behaviours/navigation/TravelHubs.PlayerBots.js`, `data/travel-hubs.json` |
 | `::volg` spectating | `runtime/Watch.PlayerBots.js` |
 | Adventurers page | `client/public/adventurers.html` (icons via `/wiki-icons`) |
 
@@ -73,6 +76,23 @@ Plugins talk through custom events: `ge:place-offer`, `ge:collect`, `ge:reset`,
 - **No idling.** Stuck detection (2 min), retries with exclusion, next pick at once.
 - Use what the world already knows (spawns, shops, objects, cache) instead of hand lists.
 
+## Status (15-11-2026, evening)
+
+Added this session: the running job is saved and resumed after a restart; melee rotates to the
+lowest of Attack/Strength/Defence (ranged and magic train Defence with longrange or defensive
+casting); combat spots vary among the best few, leaning to stronger monsters; supplies (arrows,
+runes) and tools are fetched at a bank in person and banked when the next job does not use them;
+bots click through level-up pop-ups; pickpocketing finds its targets (world NPC search, no client);
+long walks go hub to hub (planner box is ~640 tiles) along links checked in game, holding the hub
+until reached; places off the mainland or behind a quest are not chosen; home teleport with its
+30-minute cooldown; quests played for real (Rune Mysteries checked start to finish with the agent
+MCP); `::volg` shows quests and diary tasks; the page groups adventurers by clan.
+
+Known gaps: dungeons and other underground places need an entrance in `quest-playthroughs.json`
+`places` (only the Wizards' Tower basement so far); Slayer protective items (nose peg, earmuffs,
+anti-dragon shield), points and the slayer helm; more quests and diaries; Hunter, Farming,
+Construction, Runecraft training after Rune Mysteries; capes and quest-reward teleports.
+
 ## Status (15-11-2026)
 
 Done: honest economy, generated world bot accounts, walking errands and real teleports,
@@ -90,9 +110,12 @@ make menus, house party, GE flows, equipment mirror, the Al Kharid detour.
    Vannaka at 40 combat), `slayer:assignment`, fight only NPCs where `slayer:on-task` is true
    (TrainCombat filter, level band 1..1000, home near the nearest spawn by name), stop when
    `slayer:current-task` is empty. Planner mode `slayer`.
-2. **Hunter**, then **Runecraft** after Rune Mysteries (GotR after its quest).
-3. **Quests for real**: short F2P quests, Druidic Ritual, Rune Mysteries, only those the
-   quest runtime can play start to finish.
+2. **Runecraft** now that Rune Mysteries is played (air altar: talisman, essence from the GE),
+   then **Hunter** (chinchompas for Ranged later).
+3. **More quests for real** (QuestPlay): play one with the agent MCP first (`dialogue`,
+   `npc_option`), write its steps in `quest-playthroughs.json` with the stage each step reaches,
+   add a ladder to `places` for any basement. Druidic Ritual (Herblore) next; then short F2P quests
+   and diaries whose tasks are really playable.
 4. **Places from the world** (spawns, objects, shops) instead of hand lists.
 5. **Smarter stopping** (finish to a level), better prices, death recovery.
 6. `::volg`: more interfaces (bank, combat tab), clickable control.

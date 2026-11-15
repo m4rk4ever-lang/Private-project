@@ -59,6 +59,8 @@ const CHECK_TICKS = 10;
 const BID_WAIT_MS = 3 * 60_000;
 /** No XP and no step for this long while training: it is stuck, it picks something else. */
 const STUCK_MS = 2 * 60_000;
+/** The longest one Slayer task may take before it gives up on it for now. */
+const SLAYER_TASK_MAX_MS = 90 * 60_000;
 /** Arrows, or casts' worth of runes, it wants before it fights that way. */
 const SUPPLY_MIN = 50;
 const MAGIC_RUNES = ["AIR_RUNE", "MIND_RUNE", "WATER_RUNE", "EARTH_RUNE", "FIRE_RUNE", "CHAOS_RUNE"];
@@ -113,7 +115,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     random,
     // Adventurers only go where their quests and levels let them, and where they can walk to
     // (not Zeah by boat, not Morytania before Priest in Peril).
-    meets: (player, requires, place = null) => (!place || TravelHubs.onFoot(place)) && (!requires || (
+    meets: (player, requires, place = null) => (!place || TravelHubs.onFoot(place, null, (name) => questsByName().get(normalize(name))?.isComplete(player) === true)) && (!requires || (
       (requires.quests ?? []).every((name) => questsByName().get(normalize(name))?.isComplete(player) === true)
       && Object.entries(requires.skills ?? {}).every(([skill, level]) => (core.Skill[skill] ? player.getSkillManager().getMaxLevel(core.Skill[skill]) : 0) >= level))),
   });
@@ -174,7 +176,12 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       if (registered.get(normalize(quest.name))?.isComplete(player)) done.add(quest.name);
     }
     return {
-      levels: skillLevels(player),
+      // Recipes keyed by something other than a skill (SMELTING) go by their level skill.
+      levels: (() => {
+        const levels = skillLevels(player);
+        for (const [key, recipe] of Object.entries(data.buyToTrain ?? {})) if (recipe.levelSkill) levels[key] = levels[recipe.levelSkill] ?? 1;
+        return levels;
+      })(),
       combat: player.getSkillManager().getCombatLevel(),
       questPoints: Number(player.getAttribute(QuestRuntime.QUEST_POINTS_ATTRIBUTE)) || 0,
       done,
@@ -202,7 +209,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function buyPlan(player, skill) {
     const recipe = data.buyToTrain?.[skill];
     if (!recipe) return null;
-    const level = levelOf(player, skill);
+    const level = levelOf(player, recipe.levelSkill ?? skill);
     const [, names] = recipe.tiers.find(([needed]) => level >= needed) ?? [];
     if (!names) return null;
     const materials = (Array.isArray(names) ? names : [names]).map((name) => Shopping.idOf(core, name));
@@ -221,6 +228,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return Object.keys(data.buyToTrain ?? {}).filter((skill) => {
       // Herblore needs Druidic Ritual first, as for a player.
       if (data.buyToTrain[skill].quest && !done(data.buyToTrain[skill].quest)) return false;
+      // A tool it cannot buy (the air talisman Sedridor gives back): only with one of its own.
+      const recipe = data.buyToTrain[skill];
+      if (recipe.ownTool && !Shopping.ownsAnywhere(player, Shopping.idOf(core, recipe.tool))) return false;
       const plan = buyPlan(player, skill);
       // Its own stock (the logs it chopped, the ore it smelted) is enough; else coins to buy.
       return plan && (hasStock(player, plan) || coins >= plan.cost + 200);
@@ -531,6 +541,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       return true;
     }
     if (plan.mode === "wintertodt") {
+      // Wintertodt is in Kourend: by boat, not on foot. Not until it can get there.
+      if (!TravelHubs.onFoot(WINTERTODT)) return false;
       startActivity(player, "wintertodt", { home: WINTERTODT, nowMs });
       walkTo(entry, { ...WINTERTODT, name: "Wintertodt" }, { reason: "wintertodt", replan: false });
       entry.activity = "wintertodt";
@@ -743,6 +755,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   }
 
   function next(entry, nowMs) {
+    if (entry.questRun) world.log?.("adventurer_next_during_quest", { name: entry.name, phase: entry.phase, until: entry.until, stack: new Error().stack.split("\n").slice(2, 5).join(" | ") });
     if (errands.busy(entry.player)) return;
     // Waiting at the exchange for its materials: collect once they are in, then to work.
     if (entry.resume) {
@@ -1245,7 +1258,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const task = Slayer.currentTask(emit, player);
     const here = { x: player.getLocation().getX(), y: player.getLocation().getY() };
     if (!task) {
-      const master = Slayer.nearest(Slayer.MASTERS, (place) => walkTiles(here, place, player));
+      // The best master its levels allow and it can walk to; of equals, the nearest.
+      const options = Slayer.mastersFor({ combat: player.getSkillManager().getCombatLevel(), slayer: levelOf(player, "SLAYER") },
+        (place) => TravelHubs.onFoot(place, null, (name) => questsByName().get(normalize(name))?.isComplete(player) === true));
+      const best = options.filter((option) => option.combat === options[0]?.combat);
+      const master = Slayer.nearest(best.length > 0 ? best : Slayer.MASTERS, (place) => walkTiles(here, place, player));
       if (!master) return false;
       return walkTo(entry, master, {
         reason: "slayer",
@@ -1283,7 +1300,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     entry.activity = "slayer_task";
     entry.phase = "training";
     entry.plan = plan;
-    entry.until = nowMs + randomBetween(data.trainMinutes, random) * 60_000;
+    // A task is fought to the end (the tick ends the stretch when it is done), as a player
+    // finishes a task before doing something else; a long cap in case it cannot be finished.
+    entry.until = nowMs + SLAYER_TASK_MAX_MS;
     note(player, `Slayer-taak: ${task.count} x ${String(task.name).toLowerCase()} te gaan.`, "skill");
     return true;
   }

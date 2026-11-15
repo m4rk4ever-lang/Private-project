@@ -1786,6 +1786,7 @@ export interface PluginCoreApi {
   /** The parked owner left the world: release the controlled player and close the owner's connection. */
   endPlayerControl: (controlled: any) => boolean;
   dispatchClientMessages: (player: any, messages: any[]) => boolean;
+  operateNpc: (player: any, npcIndex: number, clickType: number) => void;
   connectHeadlessClient: (username: string, password: string) => Promise<{ player?: any; error?: string }>;
   CachePipeline: typeof import("../game/cache/CachePipeline").CachePipeline;
   CacheIndexDat2: typeof import("../game/cache/codec/rs/cache/CacheIndex").CacheIndexDat2;

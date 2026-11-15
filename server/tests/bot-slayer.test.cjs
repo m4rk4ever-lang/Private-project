@@ -31,3 +31,17 @@ test("a task comes from the master through the Slayer plugin's events", () => {
   const { task: got } = Slayer.askForTask(emit, {}, Slayer.MASTERS[0]);
   assert.equal(got.count, 15);
 });
+
+test("an adventurer asks the best Slayer master its levels allow and it can walk to", () => {
+  const Slayer = require("../plugins/bots/adventurers/Slayer.PlayerBots");
+  const Hubs = require("../plugins/bots/behaviours/navigation/TravelHubs.PlayerBots");
+  const walkable = (questsDone) => (place) => Hubs.onFoot(place, null, () => questsDone);
+  assert.deepEqual(Slayer.mastersFor({ combat: 3, slayer: 1 }, walkable(false)).map((m) => m.name).sort(), ["Spria", "Turael"]);
+  // Mazchna is in Canifis: across the Salve, only after Priest in Peril.
+  assert.ok(!Slayer.mastersFor({ combat: 40, slayer: 1 }, walkable(false)).some((m) => m.name === "Mazchna"));
+  assert.equal(Slayer.mastersFor({ combat: 40, slayer: 1 }, walkable(true))[0].combat, 20);
+  // Nieve (the Gnome Stronghold) from combat 85; Vannaka (Edgeville Dungeon) is underground.
+  const high = Slayer.mastersFor({ combat: 90, slayer: 1 }, walkable(false));
+  assert.equal(high[0].combat, 85);
+  assert.ok(!high.some((m) => m.name === "Vannaka"));
+});

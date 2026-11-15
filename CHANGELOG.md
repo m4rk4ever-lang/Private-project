@@ -14,6 +14,9 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Avonturiers smelten hun eigen erts in de oven van Falador tot de beste staaf die hun Smithing-level toelaat (brons, ijzer, staal), en smeden die daarna. Zo volgt na mining vanzelf smithing.
+- Runecraft voor avonturiers na Rune Mysteries: met hun eigen air talisman en rune essence (uit de bank of van de GE) lopen ze naar de Air-ruïnes ten zuiden van Falador, gaan naar binnen, maken runes bij het altaar en gaan via het portaal terug. (Nog niet in het spel getest.)
+- Slayer-masters komen uit de eigen tabel van de Slayer-plugin: een avonturier gaat naar de hoogste master waarvan hij de combat- en Slayer-eisen haalt en die hij te voet kan bereiken (Turael en Spria, vanaf combat 85 Nieve en Steve). Mazchna in Morytania pas na Priest in Peril.
 - `::volg` laat in de chat de quests van de gevolgde bot zien (hoeveel voltooid, welke bezig met hun stage) en hoeveel achievement diary-taken hij per gebied gedaan heeft. Bij het starten en elke keer dat het verandert.
 - Avonturiers doen echt quests, stap voor stap zoals een speler: naar de NPC lopen (ook trappen op en via ladders een kelder in), Talk-to en de dialoog doorklikken, waarbij ze de juiste antwoorden kiezen. De quest zelf zet de stages en geeft de beloningen. De eerste is Rune Mysteries (Runecraft). Ze beginnen alleen aan een quest waarvan ze alle eisen halen. Lukt een stap niet, dan leggen ze de quest een uur weg. Owners kunnen een quest starten met `::advquest <naam>:<quest>`.
 - Bots gebruiken de home teleport (Lumbridge) voor een lange wandeling: de echte spreuk met de lange animatie en de cooldown van 30 minuten.
@@ -76,6 +79,8 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Een Slayer-taak maken avonturiers af voordat ze iets anders gaan doen (hooguit anderhalf uur), in plaats van na 8 tot 18 minuten te wisselen.
+- Een tocht geldt pas als versperd als de bot een halve minuut geen stap zet, of vier minuten lang niet dichterbij komt. Een omweg rond een rivier of door een poort breekt de tocht niet meer af.
 - Alle 15 avonturiers beginnen opnieuw op level 1 (generatie 9), in Lumbridge met het starterspakket van Tutorial Island. Ze worden nu ook echt naar Lumbridge teruggezet, en hun hele savedata gaat terug naar die van een nieuw account: ook de Slayer-taak, diary-taken, minigame-standen en cooldowns.
 - Gereedschap dat de volgende klus niet gebruikt (hamer, pickaxe, chisel, messen), zetten avonturiers op de bank. Hebben ze het later nodig, dan halen ze het daar weer op in plaats van een nieuwe te kopen.
 - Avonturiers kiezen bij het vechten niet altijd de dichtstbijzijnde plek, maar een van de beste paar plekken voor hun level, met een voorkeur voor sterkere monsters. Zo zie je ze op meer plekken dan bij de ratten en mannen van Lumbridge.
@@ -88,6 +93,8 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- De Construction-plugin startte niet (een ontbrekende handler voor huisbezoek), waardoor huizen en house parties niet werkten.
+- Avonturiers proberen niet meer naar Wintertodt te lopen: dat ligt in Kourend en is alleen per boot bereikbaar.
 - Avonturiers kiezen geen bestemmingen meer die ze te voet niet kunnen bereiken, zoals Kourend (alleen per boot), Morytania (achter Priest in Peril), eilanden en dungeons zonder route ernaartoe.
 - Bij hun eerste bankbezoek zetten nieuwe avonturiers hun starter-gereedschap niet meer weg om het meteen daarna weer op te halen.
 - Een wandeling naar een andere verdieping (zoals de eerste verdieping van het kasteel van Lumbridge) gaf de bot na een minuut op voordat hij bij de trap was.

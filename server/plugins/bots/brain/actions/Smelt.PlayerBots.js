@@ -33,7 +33,15 @@ function resolveRecipe(spec) {
  * smithing plugin's bot entry point, so no interface clicking is needed.
  */
 function createSmeltAction(spec, world) {
-  const recipe = resolveRecipe(spec);
+  // "auto": the best bar its Smithing level allows that the ores in its bag make (an adventurer
+  // smelting what it mined); otherwise the one bar the spec names.
+  const fixed = spec.bar === "auto" ? null : resolveRecipe(spec);
+  const autoRecipe = (player) => {
+    const level = player?.getSkillManager?.()?.getCurrentLevel?.(world.core.Skill.SMITHING) ?? 1;
+    return [...(Smithing.SMELTING_RECIPES ?? [])]
+      .filter((entry) => (entry.levelRequired ?? entry.level ?? 1) <= level && barsFromInventory(player, entry) > 0)
+      .sort((a, b) => (b.levelRequired ?? b.level ?? 1) - (a.levelRequired ?? a.level ?? 1))[0] ?? null;
+  };
   const canReach = createObjectReachChecker(world.core);
   const stateFor = (player) =>
     playerState(action, player, () => ({ lastClickAt: 0 }));
@@ -82,10 +90,12 @@ function createSmeltAction(spec, world) {
   const action = {
     id: "smelt",
     update(ctx) {
+      const recipe = fixed ?? autoRecipe(ctx?.player);
       const { player, nowMs } = ctx;
       const bot = stateFor(player);
       if (!recipe) {
-        return "failed";
+        // Auto with no ores left to smelt: done, not failed.
+        return spec.bar === "auto" ? "success" : "failed";
       }
       if (Smithing.isSmeltingActive?.(player)) {
         return "running";

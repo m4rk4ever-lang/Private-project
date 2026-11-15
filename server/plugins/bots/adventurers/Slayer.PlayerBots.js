@@ -17,6 +17,38 @@ const MASTERS = [
   { name: "Spria", x: 3091, y: 3266, z: 0 },
 ];
 
+/**
+ * Every master from the Slayer plugin's own table (slayer-masters.json: names, combat and Slayer
+ * level), where it stands from the spawn list: [{ name, x, y, z, combat, slayer, tier }]. Not the
+ * Wilderness one (Krystilia). `tier` is the order of the table's combat requirement.
+ */
+let allMasters = null;
+function masters(spawns = require("../../../data/definitions/npc-spawns.json"), table = require("../../skills/data/slayer-masters.json")) {
+  if (allMasters && arguments.length === 0) return allMasters;
+  const rows = Object.values(table.masters ?? table).filter((row) => row && !row.wilderness);
+  const out = [];
+  for (const row of rows) {
+    for (const name of row.names ?? []) {
+      const spawn = spawns.find((entry) => entry.name === name);
+      if (!spawn) continue;
+      out.push({ name, x: spawn.x, y: spawn.y, z: spawn.z ?? 0, combat: Number(row.combat) || 0, slayer: Number(row.slayer) || 1 });
+    }
+  }
+  if (arguments.length === 0) allMasters = out;
+  return out;
+}
+
+/**
+ * The masters it may ask, best first: its combat and Slayer levels meet theirs and it can walk to
+ * them (`reachable(place)`: on the surface, outside the Wilderness, joined to its world on foot).
+ * The best tier it qualifies for gives the best tasks, as a player moves up from Turael.
+ */
+function mastersFor({ combat = 3, slayer = 1 } = {}, reachable = () => true, list = masters()) {
+  return list.filter((master) => combat >= master.combat && slayer >= master.slayer
+      && onSurface(master) && !inWilderness(master) && reachable(master))
+    .sort((a, b) => b.combat - a.combat || b.slayer - a.slayer);
+}
+
 // Monsters that need an item to finish them off: names, lower case.
 const NEEDS_FINISHER = new Set((finishers.finishers ?? []).flatMap((entry) => entry.names ?? [])
   .map((name) => String(name).toLowerCase()));
@@ -80,4 +112,4 @@ function namesNear(targets, at, radius = 40) {
     .map((target) => target.name))];
 }
 
-module.exports = { MASTERS, currentTask, askForTask, taskTargets, nearest, namesNear, NEEDS_FINISHER };
+module.exports = { MASTERS, masters, mastersFor, currentTask, askForTask, taskTargets, nearest, namesNear, NEEDS_FINISHER };

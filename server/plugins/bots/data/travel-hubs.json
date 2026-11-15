@@ -1,5 +1,5 @@
 {
- "_comment": "Stepping stones for long walks (behaviours/navigation/TravelHubs.PlayerBots.js): hubs are towns and crossroads [x, y]; links [a, b, tiles] are walks between two hubs that the route planner found in game (tiles: the walk's length). A walk too long to plan in one go goes hub to hub along these links. Add a hub with its links (checked with the agent MCP's plan_route) to open up a part of the map.",
+ "_comment": "Stepping stones for long walks (behaviours/navigation/TravelHubs.PlayerBots.js): hubs are towns and crossroads [x, y]; links [a, b, tiles] are walks between two hubs that the route planner found in game (tiles: the walk's length). A walk too long to plan in one go goes hub to hub along these links. Add a hub with its links (checked with the agent MCP's plan_route) to open up a part of the map. lockedAreas: parts of the map behind a quest [minX, minY, maxX, maxY]; a bot goes there only with that quest done.",
  "hubs": {
   "lumbridge": [
    3222,
@@ -950,5 +950,17 @@
    "wizards_tower",
    388
   ]
+ ],
+ "lockedAreas": [
+  {
+   "name": "Morytania",
+   "area": [
+    3410,
+    3150,
+    3920,
+    3610
+   ],
+   "quest": "Priest in Peril"
+  }
  ]
 }

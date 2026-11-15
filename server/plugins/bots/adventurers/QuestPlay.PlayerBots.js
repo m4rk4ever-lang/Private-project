@@ -114,6 +114,14 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     const actions = npc.getCurrentDefinition?.(player)?.getActions?.() ?? npc.getDefinition?.()?.getActions?.() ?? [];
     const clickType = actions.findIndex((action) => String(action ?? "").toLowerCase() === "talk-to") + 1;
     if (!clickType) return false;
+    // The same click a player's client sends: its walk, then the NPC's handler, the quest
+    // dialogue among them (NpcInteractionManager), not only the plugins' hooks.
+    if (core.operateNpc) {
+      world.log?.("adventurer_quest_talk", { name: player.getUsername?.(), npc: npc.getIndex(), clickType,
+        busy: player.busy?.() === true, interfaceId: player.getInterfaceId?.() ?? null, status: String(player.getStatus?.() ?? "") });
+      core.operateNpc(player, npc.getIndex(), clickType);
+      return true;
+    }
     player.getMovementQueue().walkToEntity(npc, () => {
       const at = npc.getLocation();
       player.setPositionToFace?.(at);
@@ -123,6 +131,13 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
       });
     }, 1);
     return true;
+  }
+
+  /** The stairs from this floor that lead toward the target's floor (Climbing's own search). */
+  function stairsTo(here, target, nowMs) {
+    const { findStairs } = require("../brain/Climbing.PlayerBots");
+    const ClimbLinks = require("../../objects/ClimbLinks");
+    return findStairs(here, target, target.z > here.z ? ClimbLinks.UP : ClimbLinks.DOWN, nowMs) ?? null;
   }
 
   function climb(player, hop) {
@@ -175,17 +190,45 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     const here = { x: at.getX(), y: at.getY(), z: at.getZ() };
     const target = spot(step);
     const hop = nextHop(here, target);
+    world.log?.("adventurer_quest_tick", { name: player.getUsername?.(), step: run.step, tries: run.tries, here, target, hop: hop.climb ? hop.climb.option : null,
+      stairs: here.z !== target.z ? Boolean(stairsTo(here, target, nowMs)) : null });
+    // Another floor (Duke Horacio upstairs): to the stairs that lead there, then climb them.
+    if (!hop.climb && here.z !== target.z) {
+      const stairs = stairsTo(here, target, nowMs);
+      if (!stairs) return run.tries++ >= MAX_TRIES ? "failed" : "running";
+      const at = stairs.getLocation();
+      const away = Math.max(Math.abs(here.x - at.getX()), Math.abs(here.y - at.getY()));
+      if (away <= 2) {
+        if (nowMs >= (run.climbAt ?? 0)) {
+          run.climbAt = nowMs + 4000;
+          const { climbOption } = require("../brain/Climbing.PlayerBots");
+          const clickType = climbOption(stairs.getId(), target.z > here.z ? 1 : -1);
+          if (clickType) {
+            player.getMovementQueue().walkToObject(stairs, {
+              execute: () => world.emitObjectInteraction?.({
+                player, object: stairs, objectId: stairs.getId(), clickType,
+                location: { x: at.getX(), y: at.getY(), z: at.getZ() }, handled: false,
+              }),
+            });
+          }
+        }
+        return "running";
+      }
+      // A walk that could not start (that way was blocked a moment ago) counts as a try.
+      if (!walkTo(entry, { x: at.getX(), y: at.getY(), z: here.z, name: step.npc }, { reason: "quest", replan: false, say: false })) run.tries += 1;
+      return "running";
+    }
     if (hop.climb) {
       if (Math.max(Math.abs(here.x - hop.x), Math.abs(here.y - hop.y)) <= 1 && here.z === hop.z) {
         climb(player, hop);
         return "running";
       }
-      walkTo(entry, { x: hop.x, y: hop.y, z: hop.z, name: step.npc }, { reason: "quest", replan: false, say: false });
+      if (!walkTo(entry, { x: hop.x, y: hop.y, z: hop.z, name: step.npc }, { reason: "quest", replan: false, say: false })) run.tries += 1;
       return "running";
     }
     const away = here.z === target.z ? Math.max(Math.abs(here.x - target.x), Math.abs(here.y - target.y)) : Infinity;
     if (away > NEAR_TILES) {
-      walkTo(entry, { ...target, name: step.npc }, { reason: "quest", replan: false, say: run.tries === 0 && !run.walking });
+      if (!walkTo(entry, { ...target, name: step.npc }, { reason: "quest", replan: false, say: run.tries === 0 && !run.walking })) run.tries += 1;
       run.walking = true;
       return "running";
     }

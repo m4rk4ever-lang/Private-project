@@ -2827,6 +2827,9 @@ export class PluginManager {
       releasePlayerControl: require("../net/NetworkBuilder").releasePlayerControl,
       endPlayerControl: require("../net/NetworkBuilder").endPlayerControl,
       dispatchClientMessages: require("../net/NetworkBuilder").dispatchClientMessages,
+      /** An NPC menu option clicked (1-based, as the NPC's actions): the same path as the client's packet, walk included. */
+      operateNpc: (player: any, npcIndex: number, clickType: number) =>
+        new (require("../net/packet/impl/NPCOptionPacketListener").NPCOptionPacketListener)().executeOption(player, npcIndex, clickType),
       connectHeadlessClient: require("../net/NetworkBuilder").connectHeadlessClient,
       CachePipeline: require("../game/cache/CachePipeline").CachePipeline,
       CacheIndexDat2: require("../game/cache/codec/rs/cache/CacheIndex").CacheIndexDat2,

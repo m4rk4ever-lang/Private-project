@@ -24,8 +24,13 @@ const clearMovementRequest = (...args) => navigation().clearMovementRequest(...a
 const ARRIVE_TILES = 3;
 /** A floor up or down counts as this many tiles of progress. */
 const FLOOR_TILES = 20;
-/** Not a step closer for this long: the way is blocked, give up. */
-const STALL_MS = 60_000;
+/** Not one step taken for this long: it is stuck (a door it cannot open, a wall). */
+const STALL_MS = 30_000;
+/**
+ * Walking but no closer for this long: a detour round a river or through a gate may lead away
+ * for a while, so only a long spell without getting nearer counts as a way that does not lead there.
+ */
+const NO_CLOSER_MS = 4 * 60_000;
 /** No errand takes longer than this. */
 const MAX_MS = 15 * 60_000;
 /** A teleport is worth its runes when it saves at least this many tiles of walking. */
@@ -215,7 +220,16 @@ function createErrands({ now = () => Date.now(), log = () => {}, core = null, mo
         errand.best = away;
         errand.bestAt = nowMs;
       }
-      if (nowMs - errand.bestAt > STALL_MS || nowMs - errand.since > MAX_MS) {
+      const at = player.getLocation();
+      const tile = `${at.getX()},${at.getY()},${at.getZ()}`;
+      if (tile !== errand.tile) {
+        errand.tile = tile;
+        errand.movedAt = nowMs;
+      }
+      const still = nowMs - Math.max(errand.movedAt ?? errand.walkFrom, errand.walkFrom) > STALL_MS;
+      if (still || nowMs - errand.bestAt > NO_CLOSER_MS || nowMs - errand.since > MAX_MS) {
+        log("bot_errand_failed", { username: player.getUsername?.() ?? null, reason: errand.reason, at: tile,
+          to: `${errand.to.x},${errand.to.y},${errand.to.z ?? 0}`, why: still ? "stuck" : nowMs - errand.bestAt > NO_CLOSER_MS ? "no-closer" : "too-long" });
         end(player, errand, false);
         continue;
       }
