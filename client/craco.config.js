@@ -229,6 +229,13 @@ module.exports = {
                     },
                 },
             },
+            // The adventurers page opens beside the game, once the game's own tab has (unless
+            // BROWSER=none, as on a restart by scripts/run-with-env.mjs).
+            onListening: (devServer) => {
+                if (process.env.BROWSER === "none" || process.env.OPEN_ADVENTURERS === "0") return;
+                const port = devServer.server?.address?.()?.port ?? 3000;
+                setTimeout(() => require("react-dev-utils/openBrowser")(`http://localhost:${port}/adventurers.html`), 4000);
+            },
             setupMiddlewares: (middlewares, devServer) => {
                 if (!devServer) {
                     throw new Error("webpack-dev-server is not defined");

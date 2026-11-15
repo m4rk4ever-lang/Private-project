@@ -136,6 +136,7 @@ Indeling per versie:
   questpunt + 1 per miljoen gp aan bezit), per avonturier de waarde van bank en wat hij bij zich
   heeft, en de waardevolste stacks in zijn bank. Avonturiers staan in het spel onder hun eigen
   naam (eerst kregen ze een gegenereerde botnaam).
+- Bij het starten van het spel opent de avonturierspagina vanzelf in een tabblad naast het spel.
 - **Live meekijken:** de pagina `/adventurers.html` op je spel-adres (poort 3000) toont per
   avonturier levels, combat, totaal, questpunten, wat hij doet en waar hij is, met logboeken
   voor skills, quests, bosses, drops (vanaf 10k) en activiteit. Ververst elke 5 seconden.
