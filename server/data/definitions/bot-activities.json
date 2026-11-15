@@ -161,6 +161,38 @@
           ]
         }
       ]
+    },
+    "steal_from_stalls": {
+      "mode": "thieving",
+      "repeat": true,
+      "requires": [{"skill":{"id":"thieving","min":"$level"}}],
+      "setup": [],
+      "actions": [
+        {
+          "type": "interactObject",
+          "catalog": "stall",
+          "tier": "$tier",
+          "option": "Steal-from",
+          "until": {"inventoryFull":true},
+          "stallSeconds": 120
+        },
+        {
+          "type": "choose",
+          "options": [
+            {"weight":2,"actions":[{"type":"dropItems","itemIds":"$loot"}]},
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "type": "sellItems",
+                  "itemIds": "$loot",
+                  "orElse": {"type":"dropItems","itemIds":"$loot"}
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   },
   "activities": [
@@ -271,6 +303,13 @@
         "cooked": ["anglerfish","burnt_anglerfish","raw_anglerfish"]
       }
     },
+    {"id":"bakery_stalls","template":"steal_from_stalls","capacity":60,"fields":{"level":5,"tier":["Bakery stall","Tea stall"],"loot":["cake","bread","chocolate_slice","cup_of_tea_2"]}},
+    {"id":"silk_stalls","template":"steal_from_stalls","capacity":40,"fields":{"level":20,"tier":"Silk stall","loot":["silk"]}},
+    {"id":"fruit_stalls","template":"steal_from_stalls","capacity":60,"fields":{"level":25,"tier":"Fruit Stall","loot":["cooking_apple","banana","strawberry","jangerberries","lemon","redberries","pineapple","lime","strange_fruit","golovanova_fruit_top","papaya_fruit"]}},
+    {"id":"fur_stalls","template":"steal_from_stalls","capacity":30,"fields":{"level":35,"tier":"Fur stall","loot":["grey_wolf_fur"]}},
+    {"id":"silver_stalls","template":"steal_from_stalls","capacity":30,"fields":{"level":50,"tier":"Silver stall","loot":["silver_ore"]}},
+    {"id":"spice_stalls","template":"steal_from_stalls","capacity":30,"fields":{"level":65,"tier":"Spice stall","loot":["spice"]}},
+    {"id":"gem_stalls","template":"steal_from_stalls","capacity":30,"fields":{"level":75,"tier":"Gem stall","loot":["uncut_sapphire","uncut_emerald","uncut_ruby","uncut_diamond"]}},
     {
       "id": "combat_training",
       "mode": "combat_training",
@@ -303,6 +342,7 @@
     },
     {"id":"pvp","mode":"pvp","capacity":64,"repeat":true,"failureCooldownSeconds":5,"actions":[{"type":"pvpCombat"}]},
     {"id":"pvp_engage","mode":"pvp","capacity":64,"repeat":false,"ephemeral":true,"failureCooldownSeconds":5,"actions":[{"type":"pvpCombat","exitWhenIdle":true}]},
+    {"id":"bankstand","mode":"bankstanding","capacity":1024,"repeat":true,"failureCooldownSeconds":5,"actions":[{"type":"bankStand"}]},
     {"id":"roam","mode":"roaming","capacity":1024,"repeat":true,"failureCooldownSeconds":5,"actions":[{"type":"wander"}]},
     {"id":"follow_owner","mode":"follow_owner","capacity":64,"repeat":false,"ephemeral":true,"manual":true,"failureCooldownSeconds":5,"actions":[{"type":"followOwner"}]},
     {

@@ -93,12 +93,29 @@ Indeling per versie:
   cape), keuze uit 50 team capes, cloaks, hoeden en kostuums, skilling-outfits (Lumberjack,
   Prospector, Angler, Graceful) vanaf gevorderd niveau, en een skillcape bij 99. Na het reizen
   kleedt een skiller zich om voor zijn nieuwe klus.
+- **300 bots** in de wereld (was 144): elke groep is verdubbeld.
+- **Thieving-bots:** bots stelen van stalls passend bij hun level, van de bakery- en tea stall
+  tot silk, fruit, fur, silver, spice en gem stalls, vooral op de markt van Ardougne.
+- **Bank standing:** bij drukke banken (Grand Exchange, Varrock West, Edgeville, Falador,
+  Seers, Catherby, Draynor, Al Kharid) staan bots te fletchen, potions te mixen of te craften.
+- **Bots bij minigames:** groepjes bots verzamelen zich bij Wintertodt (in Pyromancer-outfit),
+  Guardians of the Rift (Raiments of the Eye), Fishing Trawler, Giants' Foundry, Blast Furnace,
+  Tithe Farm, Mage Training Arena, en in combat-gear bij Castle Wars, Soul Wars, Pest Control,
+  Barbarian Assault, Nightmare Zone en Shades of Mort'ton. Waar al bots zijn, komen er meer bij.
+  Ze blijven in de lobby, bij Wintertodt in de veilige gang. Echt meespelen volgt per minigame.
+- **Soul Wars met bots:** wacht je in de Soul Wars-lobby, dan vullen bots de teams aan en spelen
+  ze de game echt mee (zoals al bij Castle Wars, Pest Control en Last Man Standing).
+- **Nieuwe gebieden voor bots:** Kourend (kasteel, Hosidius met de sand crabs, Land's End,
+  Port Roberts), Varlamore (Civitas illa Fortis, de haven, Aldarin, Sunset Coast), de woestijn
+  (Shantay Pass, Bedabin Camp, Pollnivneach, Nardah, Sophanem), Morytania (Mort'ton), Feldip
+  Hills, Tree Gnome Village, Corsair Cove en de Void Knights' Outpost. Hubs in het kasteel van
+  Kourend en Civitas, en bots bij de havens van Port Sarim, Piscarilius, Civitas en Catherby.
 - **Loot beam op waarde:** in de instellingen van de plugin **Ground Items** stel je met een
   schuifbalk in vanaf welke waarde een drop een loot beam krijgt (1k tot 100m, standaard 100k).
   Aan of uit met "Lootbeam by value". De kleur volgt de waardegrenzen van Ground Items.
 - **Maxed bots:** 13 extra bots bij de Grand Exchange, waarvan 10 maxed (alles 99, combat 126)
   in max gear: Torva, Masori en Ancestral, met de Scythe of Vitur, Twisted bow en Kodai wand.
-  Opgeladen wapens zijn echt opgeladen. Meestal dragen ze een max cape. Nu 144 bots.
+  Opgeladen wapens zijn echt opgeladen. Meestal dragen ze een max cape.
 - **Bots hebben een thuisbasis:** elke bot heeft per activiteit een vaste hub die erbij past.
   Vissers bij Catherby, Seers of Draynor, miners bij Falador, Varrock West of Al Kharid,
   woodcutters bij Seers, Draynor of Edgeville, vechters bij Edgeville of Varrock. Iedereen kan

@@ -2,6 +2,7 @@
   "name": "Realm of Eeshwar",
   "plugins": {},
   "pluginConfig": {
+    "SoulWars:seedBots": true,
     "PlayerBots:sites": {
       "edge_low": {
         "enabled": false
@@ -23,20 +24,20 @@
         ],
         "bots": {
           "woodcutting": {
-            "novices": 4,
-            "intermediates": 3
+            "novices": 8,
+            "intermediates": 6
           },
           "mining": {
-            "novices": 3,
-            "intermediates": 3
+            "novices": 6,
+            "intermediates": 6
           },
           "fishing": {
-            "novices": 4,
-            "intermediates": 3
+            "novices": 8,
+            "intermediates": 6
           },
           "combat_training": {
-            "novices": 6,
-            "intermediates": 4
+            "novices": 8,
+            "intermediates": 8
           }
         }
       },
@@ -50,15 +51,18 @@
         ],
         "bots": {
           "woodcutting": {
-            "intermediates": 3,
-            "advanced": 3
+            "intermediates": 6,
+            "advanced": 6
           },
           "fishing": {
-            "intermediates": 4,
-            "advanced": 4
+            "intermediates": 8,
+            "advanced": 8
           },
           "combat_training": {
-            "intermediates": 4
+            "intermediates": 8
+          },
+          "thieving": {
+            "intermediates": 6
           }
         }
       },
@@ -72,16 +76,20 @@
         ],
         "bots": {
           "woodcutting": {
-            "advanced": 3,
-            "experts": 3
+            "advanced": 6,
+            "experts": 6
           },
           "mining": {
-            "advanced": 3,
-            "experts": 3
+            "advanced": 6,
+            "experts": 6
           },
           "combat_training": {
-            "advanced": 5,
-            "experts": 5
+            "advanced": 10,
+            "experts": 10
+          },
+          "thieving": {
+            "advanced": 6,
+            "experts": 4
           }
         }
       },
@@ -95,16 +103,16 @@
         ],
         "bots": {
           "mining": {
-            "experts": 4,
-            "masters": 4
+            "experts": 8,
+            "masters": 8
           },
           "woodcutting": {
-            "experts": 3,
-            "masters": 3
+            "experts": 6,
+            "masters": 6
           },
           "combat_training": {
-            "experts": 5,
-            "masters": 5
+            "experts": 10,
+            "masters": 10
           }
         }
       },
@@ -118,16 +126,16 @@
         ],
         "bots": {
           "fishing": {
-            "experts": 4,
-            "masters": 4,
-            "legends": 2
+            "experts": 8,
+            "masters": 8,
+            "legends": 4
           },
           "woodcutting": {
-            "masters": 3
+            "masters": 6
           },
           "combat_training": {
-            "masters": 3,
-            "legends": 3
+            "masters": 6,
+            "legends": 6
           }
         }
       },
@@ -141,15 +149,15 @@
         ],
         "bots": {
           "woodcutting": {
-            "masters": 4,
-            "legends": 3
+            "masters": 8,
+            "legends": 6
           },
           "mining": {
-            "masters": 3,
-            "legends": 3
+            "masters": 6,
+            "legends": 6
           },
           "combat_training": {
-            "legends": 5
+            "legends": 10
           }
         }
       },
@@ -163,17 +171,17 @@
         ],
         "bots": {
           "combat_training": {
-            "experts": 3,
-            "maxed": 4
+            "experts": 6,
+            "maxed": 8
           },
           "woodcutting": {
-            "maxed": 2
+            "maxed": 4
           },
           "mining": {
-            "maxed": 2
+            "maxed": 4
           },
           "fishing": {
-            "maxed": 2
+            "maxed": 4
           }
         }
       }

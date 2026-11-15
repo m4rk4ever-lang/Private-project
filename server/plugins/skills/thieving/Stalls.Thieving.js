@@ -510,4 +510,6 @@ function attach(api) {
 }
 
 module.exports = attach;
+// The stalls by their object name, read by the bots' object catalog (plugins/bots/brain/ObjectCatalog.PlayerBots.js).
+module.exports.STALLS = STALLS;
 module.exports._test = { handleStealFromStall, stealFromClothesStall, stealLine, successChance, STALLS, PORT_ROBERTS_STALLS, MOR_UL_REK_STALLS, depleted, emptyStallId, merchantInteraction, login, logout, THEFT_ATTRIBUTE };

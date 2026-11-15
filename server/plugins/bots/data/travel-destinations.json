@@ -1,9 +1,11 @@
 {
-  "_comment": "Where bots may teleport to when they switch activity (brain/Travel.PlayerBots.js). destinations: places to do an activity; modes: the bot activity modes found nearby; minLevel: the skill level for a skilling mode, the combat level for combat_training; weight: how often it is picked among the fitting ones (default 1). hangouts: busy places where a bot just spends its next stretch walking around (banking, idling) as players do; weights follow how busy these places are on live OSRS (an estimate: the Grand Exchange by far, then the main banks); minCombat keeps boss and raid entrances for high-level bots, who wear their combat gear there (combatGear). Tiles are arrival tiles; never in the Wilderness. hubFor: the activity modes a hangout is a home hub for: each bot gets one hub per mode (fixed by its name, among those that fit its level), returns there between activities (ownHubChance) and prefers destinations within 300 tiles of it (weight times nearHubBonus). hubMaxLevel: a hub only for bots below this level (Lumbridge for beginners).",
+  "_comment": "Where bots may teleport to when they switch activity (brain/Travel.PlayerBots.js). destinations: places to do an activity; modes: the bot activity modes found nearby; minLevel: the skill level for a skilling mode, the combat level for combat_training; weight: how often it is picked among the fitting ones (default 1). hangouts: busy places where a bot just spends its next stretch walking around (banking, idling) as players do; weights follow how busy these places are on live OSRS (an estimate: the Grand Exchange by far, then the main banks); minCombat keeps boss and raid entrances for high-level bots, who wear their combat gear there (combatGear). Tiles are arrival tiles; never in the Wilderness. hubFor: the activity modes a hangout is a home hub for: each bot gets one hub per mode (fixed by its name, among those that fit its level), returns there between activities (ownHubChance) and prefers destinations within 300 tiles of it (weight times nearHubBonus). hubMaxLevel: a hub only for bots below this level (Lumbridge for beginners). bankstand: at this bank a bot may stand and work on a bank skill (fletching, herblore, crafting) instead of walking around (bankstandChance). minigames: lobbies where bots gather in groups (minigameChance): requires (skill levels) or minCombat, bounds the tiles they stay within, outfit what they wear there (or combatGear), maxGroup how many at once; a game with company draws more (groups form). play names the minigame's own bot code that will later take them into the game.",
   "chance": 0.6,
   "hangoutChance": 0.35,
   "ownHubChance": 0.7,
   "nearHubBonus": 3,
+  "bankstandChance": 0.5,
+  "minigameChance": 0.25,
   "destinations": [
     {
       "id": "lumbridge",
@@ -380,6 +382,219 @@
         "combat_training"
       ],
       "minLevel": 85
+    },
+    {
+      "id": "ardougne_market_stalls",
+      "x": 2662,
+      "y": 3305,
+      "z": 0,
+      "modes": [
+        "thieving"
+      ],
+      "minLevel": 5,
+      "weight": 3
+    },
+    {
+      "id": "varrock_tea_stall",
+      "x": 3213,
+      "y": 3428,
+      "z": 0,
+      "modes": [
+        "thieving"
+      ],
+      "minLevel": 5,
+      "weight": 0.5
+    },
+    {
+      "id": "kourend_castle",
+      "x": 1640,
+      "y": 3673,
+      "z": 0,
+      "modes": [
+        "woodcutting",
+        "combat_training"
+      ],
+      "minLevel": 1
+    },
+    {
+      "id": "hosidius_sand_crabs",
+      "x": 1726,
+      "y": 3453,
+      "z": 0,
+      "modes": [
+        "fishing",
+        "combat_training"
+      ],
+      "minLevel": 1,
+      "weight": 1.5
+    },
+    {
+      "id": "lands_end",
+      "x": 1506,
+      "y": 3403,
+      "z": 0,
+      "modes": [
+        "fishing",
+        "woodcutting"
+      ],
+      "minLevel": 1
+    },
+    {
+      "id": "port_roberts",
+      "x": 1862,
+      "y": 3307,
+      "z": 0,
+      "modes": [
+        "fishing"
+      ],
+      "minLevel": 1
+    },
+    {
+      "id": "civitas_illa_fortis",
+      "x": 1681,
+      "y": 3133,
+      "z": 0,
+      "modes": [
+        "woodcutting",
+        "mining",
+        "combat_training"
+      ],
+      "minLevel": 1,
+      "weight": 1.5
+    },
+    {
+      "id": "civitas_port",
+      "x": 1776,
+      "y": 3142,
+      "z": 0,
+      "modes": [
+        "fishing"
+      ],
+      "minLevel": 1
+    },
+    {
+      "id": "aldarin",
+      "x": 1452,
+      "y": 2969,
+      "z": 0,
+      "modes": [
+        "fishing",
+        "woodcutting"
+      ],
+      "minLevel": 1
+    },
+    {
+      "id": "sunset_coast",
+      "x": 1513,
+      "y": 2974,
+      "z": 0,
+      "modes": [
+        "fishing",
+        "combat_training"
+      ],
+      "minLevel": 1
+    },
+    {
+      "id": "shantay_pass",
+      "x": 3308,
+      "y": 3110,
+      "z": 0,
+      "modes": [
+        "combat_training"
+      ],
+      "minLevel": 20
+    },
+    {
+      "id": "bedabin_camp",
+      "x": 3180,
+      "y": 3044,
+      "z": 0,
+      "modes": [
+        "combat_training"
+      ],
+      "minLevel": 30
+    },
+    {
+      "id": "pollnivneach",
+      "x": 3349,
+      "y": 3003,
+      "z": 0,
+      "modes": [
+        "combat_training"
+      ],
+      "minLevel": 40
+    },
+    {
+      "id": "nardah",
+      "x": 3401,
+      "y": 2916,
+      "z": 0,
+      "modes": [
+        "combat_training"
+      ],
+      "minLevel": 30
+    },
+    {
+      "id": "sophanem",
+      "x": 3285,
+      "y": 2813,
+      "z": 0,
+      "modes": [
+        "combat_training"
+      ],
+      "minLevel": 50
+    },
+    {
+      "id": "mort_ton",
+      "x": 3506,
+      "y": 3304,
+      "z": 0,
+      "modes": [
+        "combat_training"
+      ],
+      "minLevel": 40
+    },
+    {
+      "id": "feldip_hills",
+      "x": 2488,
+      "y": 2850,
+      "z": 0,
+      "modes": [
+        "combat_training",
+        "woodcutting"
+      ],
+      "minLevel": 20
+    },
+    {
+      "id": "tree_gnome_village",
+      "x": 2542,
+      "y": 3170,
+      "z": 0,
+      "modes": [
+        "woodcutting"
+      ],
+      "minLevel": 1
+    },
+    {
+      "id": "corsair_cove",
+      "x": 2579,
+      "y": 2844,
+      "z": 0,
+      "modes": [
+        "fishing",
+        "combat_training"
+      ],
+      "minLevel": 20
+    },
+    {
+      "id": "void_knights_outpost",
+      "x": 2651,
+      "y": 2677,
+      "z": 0,
+      "modes": [
+        "fishing"
+      ],
+      "minLevel": 1
     }
   ],
   "hangouts": [
@@ -393,8 +608,10 @@
         "woodcutting",
         "mining",
         "fishing",
-        "combat_training"
-      ]
+        "combat_training",
+        "thieving"
+      ],
+      "bankstand": true
     },
     {
       "id": "varrock_west_bank",
@@ -406,14 +623,19 @@
         "mining",
         "woodcutting",
         "combat_training"
-      ]
+      ],
+      "bankstand": true
     },
     {
       "id": "varrock_square",
       "x": 3212,
       "y": 3424,
       "z": 0,
-      "weight": 2
+      "weight": 2,
+      "hubFor": [
+        "thieving",
+        "combat_training"
+      ]
     },
     {
       "id": "edgeville_bank",
@@ -424,7 +646,8 @@
       "hubFor": [
         "woodcutting",
         "combat_training"
-      ]
+      ],
+      "bankstand": true
     },
     {
       "id": "falador_west_bank",
@@ -435,7 +658,8 @@
       "hubFor": [
         "mining",
         "combat_training"
-      ]
+      ],
+      "bankstand": true
     },
     {
       "id": "falador_park",
@@ -454,7 +678,8 @@
         "woodcutting",
         "mining",
         "fishing",
-        "combat_training"
+        "combat_training",
+        "thieving"
       ],
       "hubMaxLevel": 40
     },
@@ -467,7 +692,8 @@
       "hubFor": [
         "woodcutting",
         "fishing"
-      ]
+      ],
+      "bankstand": true
     },
     {
       "id": "seers_bank",
@@ -478,7 +704,8 @@
       "hubFor": [
         "woodcutting",
         "fishing"
-      ]
+      ],
+      "bankstand": true
     },
     {
       "id": "catherby_bank",
@@ -488,7 +715,8 @@
       "weight": 1,
       "hubFor": [
         "fishing"
-      ]
+      ],
+      "bankstand": true
     },
     {
       "id": "ardougne_market",
@@ -497,8 +725,9 @@
       "z": 0,
       "weight": 1,
       "hubFor": [
+        "combat_training",
         "fishing",
-        "combat_training"
+        "thieving"
       ]
     },
     {
@@ -510,7 +739,8 @@
       "hubFor": [
         "mining",
         "combat_training"
-      ]
+      ],
+      "bankstand": true
     },
     {
       "id": "prifddinas",
@@ -523,7 +753,8 @@
         "woodcutting",
         "mining",
         "fishing",
-        "combat_training"
+        "combat_training",
+        "thieving"
       ]
     },
     {
@@ -606,6 +837,323 @@
       "weight": 0.5,
       "minCombat": 90,
       "combatGear": true
+    },
+    {
+      "id": "kourend_castle",
+      "x": 1640,
+      "y": 3673,
+      "z": 0,
+      "weight": 1.5,
+      "hubFor": [
+        "woodcutting",
+        "mining",
+        "fishing",
+        "combat_training",
+        "thieving"
+      ]
+    },
+    {
+      "id": "civitas_illa_fortis",
+      "x": 1681,
+      "y": 3133,
+      "z": 0,
+      "weight": 1.5,
+      "hubFor": [
+        "woodcutting",
+        "mining",
+        "fishing",
+        "combat_training",
+        "thieving"
+      ]
+    },
+    {
+      "id": "nardah",
+      "x": 3401,
+      "y": 2916,
+      "z": 0,
+      "weight": 0.5,
+      "hubFor": [
+        "combat_training"
+      ]
+    },
+    {
+      "id": "port_sarim_docks",
+      "x": 3050,
+      "y": 3193,
+      "z": 0,
+      "weight": 1,
+      "hubFor": [
+        "fishing"
+      ]
+    },
+    {
+      "id": "port_piscarilius_docks",
+      "x": 1845,
+      "y": 3688,
+      "z": 0,
+      "weight": 1,
+      "hubFor": [
+        "fishing"
+      ]
+    },
+    {
+      "id": "civitas_port",
+      "x": 1776,
+      "y": 3142,
+      "z": 0,
+      "weight": 0.7,
+      "hubFor": [
+        "fishing"
+      ]
+    },
+    {
+      "id": "catherby_docks",
+      "x": 2796,
+      "y": 3413,
+      "z": 0,
+      "weight": 0.7,
+      "hubFor": [
+        "fishing"
+      ]
+    }
+  ],
+  "minigames": [
+    {
+      "id": "wintertodt",
+      "x": 1630,
+      "y": 3974,
+      "z": 0,
+      "bounds": [
+        1628,
+        3971,
+        1633,
+        3986
+      ],
+      "requires": {
+        "FIREMAKING": 50
+      },
+      "maxGroup": 12,
+      "weight": 2,
+      "outfit": {
+        "head": "PYROMANCER_HOOD",
+        "body": "PYROMANCER_GARB",
+        "legs": "PYROMANCER_ROBE",
+        "feet": "PYROMANCER_BOOTS",
+        "weapon": "RUNE_AXE"
+      }
+    },
+    {
+      "id": "guardians_of_the_rift",
+      "x": 3615,
+      "y": 9477,
+      "z": 0,
+      "bounds": [
+        3611,
+        9473,
+        3619,
+        9481
+      ],
+      "requires": {
+        "RUNECRAFTING": 27
+      },
+      "maxGroup": 10,
+      "weight": 1.5,
+      "outfit": {
+        "head": "HAT_OF_THE_EYE",
+        "body": "ROBE_TOP_OF_THE_EYE",
+        "legs": "ROBE_BOTTOMS_OF_THE_EYE",
+        "feet": "BOOTS_OF_THE_EYE"
+      }
+    },
+    {
+      "id": "fishing_trawler",
+      "x": 2658,
+      "y": 3157,
+      "z": 0,
+      "bounds": [
+        2654,
+        3153,
+        2662,
+        3161
+      ],
+      "requires": {
+        "FISHING": 15
+      },
+      "maxGroup": 8,
+      "weight": 0.7,
+      "outfit": {
+        "head": "ANGLER_HAT",
+        "body": "ANGLER_TOP",
+        "legs": "ANGLER_WADERS",
+        "feet": "ANGLER_BOOTS"
+      }
+    },
+    {
+      "id": "giants_foundry",
+      "x": 3361,
+      "y": 3149,
+      "z": 0,
+      "bounds": [
+        3357,
+        3145,
+        3365,
+        3153
+      ],
+      "requires": {
+        "SMITHING": 15
+      },
+      "maxGroup": 8,
+      "weight": 0.8
+    },
+    {
+      "id": "blast_furnace",
+      "x": 2930,
+      "y": 10193,
+      "z": 0,
+      "bounds": [
+        2927,
+        10190,
+        2933,
+        10196
+      ],
+      "requires": {
+        "SMITHING": 30
+      },
+      "maxGroup": 8,
+      "weight": 0.8
+    },
+    {
+      "id": "tithe_farm",
+      "x": 1792,
+      "y": 3501,
+      "z": 0,
+      "bounds": [
+        1789,
+        3498,
+        1795,
+        3504
+      ],
+      "requires": {
+        "FARMING": 34
+      },
+      "maxGroup": 6,
+      "weight": 0.6
+    },
+    {
+      "id": "castle_wars",
+      "x": 2442,
+      "y": 3093,
+      "z": 0,
+      "bounds": [
+        2438,
+        3085,
+        2446,
+        3097
+      ],
+      "minCombat": 40,
+      "combatGear": true,
+      "maxGroup": 14,
+      "weight": 2,
+      "play": "castlewars"
+    },
+    {
+      "id": "soul_wars",
+      "x": 2206,
+      "y": 2858,
+      "z": 0,
+      "bounds": [
+        2202,
+        2850,
+        2212,
+        2866
+      ],
+      "minCombat": 40,
+      "combatGear": true,
+      "maxGroup": 14,
+      "weight": 2,
+      "play": "soulwars"
+    },
+    {
+      "id": "pest_control",
+      "x": 2658,
+      "y": 2663,
+      "z": 0,
+      "bounds": [
+        2652,
+        2656,
+        2664,
+        2668
+      ],
+      "minCombat": 40,
+      "combatGear": true,
+      "maxGroup": 14,
+      "weight": 1.5,
+      "play": "pestcontrol"
+    },
+    {
+      "id": "barbarian_assault",
+      "x": 2531,
+      "y": 3577,
+      "z": 0,
+      "bounds": [
+        2527,
+        3573,
+        2535,
+        3581
+      ],
+      "minCombat": 40,
+      "combatGear": true,
+      "maxGroup": 8,
+      "weight": 0.8
+    },
+    {
+      "id": "nightmare_zone",
+      "x": 2609,
+      "y": 3121,
+      "z": 0,
+      "bounds": [
+        2605,
+        3117,
+        2613,
+        3125
+      ],
+      "minCombat": 70,
+      "combatGear": true,
+      "maxGroup": 6,
+      "weight": 0.8
+    },
+    {
+      "id": "mage_training_arena",
+      "x": 3363,
+      "y": 3295,
+      "z": 0,
+      "bounds": [
+        3359,
+        3291,
+        3367,
+        3299
+      ],
+      "requires": {
+        "MAGIC": 40
+      },
+      "maxGroup": 6,
+      "weight": 0.6
+    },
+    {
+      "id": "shades_of_mortton",
+      "x": 3506,
+      "y": 3304,
+      "z": 0,
+      "bounds": [
+        3502,
+        3300,
+        3510,
+        3308
+      ],
+      "minCombat": 40,
+      "combatGear": true,
+      "maxGroup": 6,
+      "weight": 0.5
     }
   ]
 }

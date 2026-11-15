@@ -4,6 +4,7 @@ const Woodcutting = require("../../skills/Woodcutting.plugin");
 const Mining = require("../../skills/Mining.plugin");
 const Smithing = require("../../skills/Smithing.plugin");
 const Cooking = require("../../skills/Cooking.plugin");
+const Stalls = require("../../skills/thieving/Stalls.Thieving");
 const {
   CacheDefinitions,
 } = require("../../../src/main/typescript/elvarg/game/cache/CacheDefinitions");
@@ -29,6 +30,9 @@ const CATALOGS = {
       ids: [],
     },
   ],
+  // Thieving stalls by their object name ("Bakery stall", "Fruit Stall"); the tier is the name.
+  stall: () =>
+    [...(Stalls.STALLS ?? new Map()).keys()].map((name) => ({ name, objectNames: [name], ids: [] })),
   furnace: () => [
     {
       name: "furnace",

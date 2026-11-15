@@ -18,6 +18,14 @@
  * The hub is fixed by the bot's name, so the same bot keeps the same hubs. Between activities it
  * usually goes back to its own hub (`ownHubChance`), and it prefers destinations near it.
  *
+ * At a busy bank (`bankstand`) a bot may stand by the booths fletching, mixing potions or
+ * crafting (bankstandChance) instead of walking around.
+ *
+ * Minigames (`minigameChance`): a bot that meets a game's requirements goes to its lobby,
+ * dressed for it (Pyromancer at Wintertodt, combat gear at Castle Wars) and stays within the
+ * lobby's bounds. A game that already has bots draws more, so they gather in groups, up to
+ * `maxGroup`. `play` names the game's own bot code that will take them into the game itself.
+ *
  * The bot arrives with the normal teleport and its home moves there. Only skilling and
  * combat-training bots travel; PvP bots and bots in a fight or the Wilderness stay put, and no
  * place is in the Wilderness.
@@ -28,6 +36,7 @@ const MODE_SKILL = Object.freeze({
   woodcutting: "WOODCUTTING",
   mining: "MINING",
   fishing: "FISHING",
+  thieving: "THIEVING",
 });
 /** How far from where it stands a place must be to be worth the teleport. */
 const MIN_TRAVEL_TILES = 30;
@@ -56,6 +65,31 @@ function destinationsFor(mode, level, here, destinations = data.destinations) {
 /** The hangouts a bot of this combat level may go to, at least MIN_TRAVEL_TILES from `here`. */
 function hangoutsFor(combatLevel, here, hangouts = data.hangouts ?? []) {
   return hangouts.filter((place) => combatLevel >= (place.minCombat ?? 1) && farEnough(place, here));
+}
+
+/** Whether a bot meets a minigame's requirements: skill levels (`requires`) and `minCombat`. */
+function meetsMinigame(player, game, core, combatLevel) {
+  if (combatLevel < (game.minCombat ?? 1)) return false;
+  const skills = player.getSkillManager?.();
+  return Object.entries(game.requires ?? {}).every(([name, level]) => {
+    const skill = core.Skill?.[name];
+    return skill != null && (skills?.getMaxLevel?.(skill) ?? 1) >= level;
+  });
+}
+
+/**
+ * The minigame lobbies a bot may go to, weighted so company draws company: each bot already
+ * there adds to the game's weight, and a full game (maxGroup) takes no more.
+ */
+function minigamesFor(player, core, combatLevel, attendance, games = data.minigames ?? []) {
+  return games
+    .filter((game) => meetsMinigame(player, game, core, combatLevel))
+    .map((game) => {
+      const present = attendance.get(game.id)?.size ?? 0;
+      const full = present >= (game.maxGroup ?? Infinity);
+      return { game, weight: full ? 0 : (game.weight ?? 1) * (1 + present) };
+    })
+    .filter((entry) => entry.weight > 0);
 }
 
 /** One of `places`, by `weightOf` (default: their `weight`, else 1). */
@@ -111,8 +145,17 @@ function createTravel({
   core, log = () => {}, dress = null, equipCombatGear = null,
   random = Math.random, chance = data.chance, hangoutChance = data.hangoutChance ?? 0,
   ownHubChance = data.ownHubChance ?? 0, nearHubBonus = data.nearHubBonus ?? 1,
+  bankstandChance = data.bankstandChance ?? 0, minigameChance = data.minigameChance ?? 0,
+  wear = null,
 } = {}) {
-  return function travel(player, state, activity, nowMs) {
+  /** Who is at each minigame lobby now: game id -> usernames. */
+  const attendance = new Map();
+  function leaveMinigames(name) {
+    for (const present of attendance.values()) present.delete(name);
+  }
+  function travel(player, state, activity, nowMs) {
+    // A switch ends any stay at a minigame lobby, whether or not the bot travels.
+    if (player) leaveMinigames(player.getUsername?.() ?? "");
     const mode = activity?.mode;
     if (!player || !mode || !(mode in MODE_SKILL || mode === "combat_training")) return null;
     if (random() >= chance) return null;
@@ -121,17 +164,28 @@ function createTravel({
     if (core.Wilderness?.isIn?.(player)) return null;
     const at = player.getLocation?.();
     const here = at ? { x: at.getX(), y: at.getY(), z: at.getZ() } : null;
+    const name = player.getUsername?.() ?? "";
     const level = levelFor(player, mode, core);
     const combatLevel = combatLevelOf(player);
-    const hub = hubFor(player.getUsername?.() ?? "", mode, level, combatLevel);
+    const hub = hubFor(name, mode, level, combatLevel);
     let place = null;
-    if (random() < hangoutChance) {
+    if (random() < minigameChance) {
+      const games = minigamesFor(player, core, combatLevel, attendance);
+      if (games.length > 0) {
+        const { game } = pickWeighted(games, random, (entry) => entry.weight);
+        if (!attendance.has(game.id)) attendance.set(game.id, new Set());
+        attendance.get(game.id).add(name);
+        place = { ...game, hangout: true, minigame: game.id, activity: "roam" };
+      }
+    }
+    if (!place && random() < hangoutChance) {
       if (hub && random() < ownHubChance && farEnough(hub, here)) {
         place = { ...hub, hangout: true };
       } else {
         const hangouts = hangoutsFor(combatLevel, here);
         if (hangouts.length > 0) place = { ...pickWeighted(hangouts, random), hangout: true };
       }
+      if (place) place.activity = place.bankstand && random() < bankstandChance ? "bankstand" : "roam";
     }
     if (!place) {
       const options = destinationsFor(mode, level, here);
@@ -145,17 +199,31 @@ function createTravel({
     } else {
       player.moveTo(target);
     }
-    if (state) state.home = { x: place.x, y: place.y, z: place.z ?? 0 };
-    if (place.combatGear) {
+    if (state) {
+      state.home = { x: place.x, y: place.y, z: place.z ?? 0 };
+      // A lobby keeps its bots inside (Wintertodt's safe corridor); anywhere else they roam freely.
+      if (state.roaming) {
+        const [minX, minY, maxX, maxY] = place.bounds ?? [];
+        state.roaming.roamBounds = place.bounds
+          ? { id: place.id, minX, minY, maxX, maxY, z: place.z ?? 0 }
+          : null;
+        state.roaming.target = null;
+      }
+    }
+    if (place.outfit) {
+      wear?.(player, place.outfit);
+    } else if (place.combatGear) {
       // At a raid or boss entrance a high-level bot wears what it fights in.
       equipCombatGear?.(player, state);
     } else if (!place.hangout) {
       // New place, new job: a skiller changes into what fits it (Lumberjack, Prospector, Angler...).
       dress?.(player, mode);
     }
-    log("bot_travel", { username: player.getUsername?.() ?? null, to: place.id, mode, hub: hub?.id ?? null, hangout: place.hangout === true, at: nowMs });
+    log("bot_travel", { username: name || null, to: place.id, mode, hub: hub?.id ?? null, hangout: place.hangout === true, minigame: place.minigame ?? null, at: nowMs });
     return place;
-  };
+  }
+  travel.attendance = attendance;
+  return travel;
 }
 
-module.exports = { createTravel, destinationsFor, hangoutsFor, hubsFor, hubFor, pickWeighted, levelFor, MIN_TRAVEL_TILES, data };
+module.exports = { createTravel, minigamesFor, meetsMinigame, destinationsFor, hangoutsFor, hubsFor, hubFor, pickWeighted, levelFor, MIN_TRAVEL_TILES, data };

@@ -63,7 +63,7 @@ test("a place right next to the bot is not worth a teleport", () => {
 
 test("a switch teleports the bot and moves its home there", () => {
   const { core, player, teleports } = harness();
-  const travel = createTravel({ core, random: () => 0, chance: 1, hangoutChance: 0 });
+  const travel = createTravel({ core, random: () => 0, chance: 1, hangoutChance: 0, minigameChance: 0 });
   const state = { home: { x: 3222, y: 3218, z: 0 } };
   const place = travel(player, state, { mode: "mining" }, 0);
   assert.ok(place && place.modes.includes("mining"));
@@ -85,7 +85,7 @@ test("no travel for PvP, in a fight, in the Wilderness, or when the roll says st
   assert.equal(stay({}), 1);
 });
 
-const MODES = ["woodcutting", "mining", "fishing", "combat_training"];
+const MODES = ["woodcutting", "mining", "fishing", "combat_training", "thieving"];
 const inWilderness = (place) => place.x >= 2944 && place.x <= 3391 && place.y >= 3520 && place.y < 4000;
 
 test("every hangout is valid: unique, weighted, outside the Wilderness, hubs name real modes", () => {
@@ -130,26 +130,97 @@ test("a bot keeps its hubs, and bots spread over different hubs", () => {
 test("at a hangout a bot goes to its own hub, roams there, and a lobby puts on combat gear", () => {
   const { core, player, teleports } = harness({ level: 80, combat: 100, name: "Zezima" });
   const geared = [];
-  const travel = createTravel({ core, random: () => 0, chance: 1, hangoutChance: 1, ownHubChance: 1,
-    equipCombatGear: (bot) => geared.push(bot) });
-  const state = {};
+  const travel = createTravel({ core, random: () => 0, chance: 1, hangoutChance: 1, ownHubChance: 1, minigameChance: 0,
+    bankstandChance: 0, equipCombatGear: (bot) => geared.push(bot) });
+  const state = { roaming: {} };
   const place = travel(player, state, { mode: "fishing" }, 0);
   assert.equal(place.hangout, true);
+  assert.equal(place.activity, "roam");
   assert.equal(place.id, hubFor("Zezima", "fishing", 80, 100).id);
   assert.equal(teleports.length, 1);
   assert.deepEqual(state.home, { x: place.x, y: place.y, z: place.z ?? 0 });
+  assert.equal(state.roaming.roamBounds, null, "a hub has no bounds");
   assert.equal(geared.length, 0);
 
-  const lobby = data.hangouts.find((hangout) => hangout.combatGear);
-  const pick = createTravel({ core, random: () => 0.999, chance: 1, hangoutChance: 1, ownHubChance: 0,
+  // With the highest roll the weighted pick lands on the last fitting hangout; make it a lobby.
+  const lobbies = data.hangouts.filter((hangout) => hangout.combatGear);
+  const pick = createTravel({ core, random: () => 0.999, chance: 1, hangoutChance: 1, ownHubChance: 0, minigameChance: 0,
     equipCombatGear: (bot) => geared.push(bot) });
-  // The last hangout is a lobby; with the highest roll the weighted pick lands on it.
-  const last = hangoutsFor(126, null).at(-1);
-  assert.ok(last.combatGear, "the hangout list ends with the lobbies");
-  const lobbyPlace = pick(player, {}, { mode: "combat_training" }, 0);
-  assert.equal(lobbyPlace.id, last.id);
-  assert.equal(geared.length, 1);
-  assert.ok(lobby);
+  const original = data.hangouts.slice();
+  data.hangouts.splice(0, data.hangouts.length, ...lobbies);
+  try {
+    const lobbyPlace = pick(player, {}, { mode: "combat_training" }, 0);
+    assert.ok(lobbyPlace.combatGear);
+    assert.equal(geared.length, 1);
+  } finally {
+    data.hangouts.splice(0, data.hangouts.length, ...original);
+  }
+});
+
+test("at a busy bank a bot may stand and craft instead of walking around", () => {
+  const { core, player } = harness({ name: "Banker" });
+  const travel = createTravel({ core, random: () => 0, chance: 1, hangoutChance: 1, ownHubChance: 1, minigameChance: 0, bankstandChance: 1 });
+  const place = travel(player, {}, { mode: "woodcutting" }, 0);
+  assert.equal(place.hangout, true);
+  assert.equal(place.activity, place.bankstand ? "bankstand" : "roam");
+  assert.ok(data.hangouts.some((hangout) => hangout.bankstand && hangout.id === "grand_exchange"));
+});
+
+test("every minigame lobby is valid: requirements, bounds around the arrival tile, no Wilderness", () => {
+  const ids = new Set();
+  for (const game of data.minigames) {
+    assert.ok(!ids.has(game.id), game.id);
+    ids.add(game.id);
+    const [minX, minY, maxX, maxY] = game.bounds;
+    assert.ok(minX <= game.x && game.x <= maxX && minY <= game.y && game.y <= maxY, `${game.id} arrives inside its bounds`);
+    assert.ok(maxX - minX <= 20 && maxY - minY <= 20, `${game.id} keeps its group together`);
+    assert.ok(!inWilderness(game), game.id);
+    assert.ok(game.maxGroup >= 4, game.id);
+    assert.ok(game.minCombat || Object.keys(game.requires ?? {}).length > 0, `${game.id} has a requirement`);
+    for (const skill of Object.keys(game.requires ?? {})) assert.match(skill, /^[A-Z]+$/, game.id);
+  }
+  assert.ok(ids.has("wintertodt") && ids.has("castle_wars") && ids.has("soul_wars"));
+});
+
+test("bots gather at a minigame in groups, dressed for it and kept inside the lobby", () => {
+  const worn = [];
+  const levels = { FIREMAKING: 99, RUNECRAFTING: 1, FISHING: 1, SMITHING: 1, FARMING: 1, MAGIC: 1 };
+  const makeBot = (name) => {
+    const h = harness({ name, combat: 30 });
+    h.core.Skill = { ...h.core.Skill, FIREMAKING: "FIREMAKING", RUNECRAFTING: "RUNECRAFTING", SMITHING: "SMITHING", FARMING: "FARMING", MAGIC: "MAGIC" };
+    h.player.getSkillManager = () => ({ getMaxLevel: (skill) => levels[skill] ?? 99, getCombatLevel: () => 30 });
+    return h;
+  };
+  const { core } = makeBot("x");
+  const travel = createTravel({ core, random: () => 0, chance: 1, minigameChance: 1, wear: (bot, items) => worn.push(items) });
+  for (let i = 0; i < 3; i++) {
+    const { player } = makeBot(`Firemaker${i}`);
+    const state = { roaming: {} };
+    const place = travel(player, state, { mode: "woodcutting" }, 0);
+    // Combat 30 and only Firemaking: Wintertodt is the one game it may join.
+    assert.equal(place.minigame, "wintertodt");
+    assert.equal(state.roaming.roamBounds.minX, place.bounds[0]);
+  }
+  assert.equal(travel.attendance.get("wintertodt").size, 3);
+  assert.equal(worn.length, 3);
+  assert.equal(worn[0].body, "PYROMANCER_GARB");
+  // The next switch ends the stay.
+  const { player } = makeBot("Firemaker0");
+  travel(player, { roaming: {} }, { mode: "pvp" }, 0);
+  assert.equal(travel.attendance.get("wintertodt").size, 2);
+});
+
+test("company draws company, and a full lobby takes no more", () => {
+  const { minigamesFor } = require("../plugins/bots/brain/Travel.PlayerBots");
+  const { core, player } = harness({ combat: 126 });
+  core.Skill = new Proxy({}, { get: (_, key) => key });
+  const empty = minigamesFor(player, core, 126, new Map());
+  const castle = (entries) => entries.find((entry) => entry.game.id === "castle_wars");
+  const busy = minigamesFor(player, core, 126, new Map([["castle_wars", new Set(["a", "b", "c"])]]));
+  assert.ok(castle(busy).weight > castle(empty).weight);
+  const max = data.minigames.find((game) => game.id === "castle_wars").maxGroup;
+  const full = minigamesFor(player, core, 126, new Map([["castle_wars", new Set(Array.from({ length: max }, (_, i) => `b${i}`))]]));
+  assert.equal(castle(full), undefined);
 });
 
 test("a low-level bot never ends up in a raid or boss lobby", () => {

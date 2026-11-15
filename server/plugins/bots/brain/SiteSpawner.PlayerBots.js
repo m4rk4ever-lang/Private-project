@@ -243,6 +243,25 @@ function applyOutfit(bot, tier, options = {}) {
   bot.getUpdateFlag?.()?.flag?.(Flag.APPEARANCE);
 }
 
+const WEAR_SLOTS = Object.freeze({ ...OUTFIT_SLOTS, weapon: Equipment.WEAPON_SLOT, shield: Equipment.SHIELD_SLOT });
+
+/**
+ * Puts on a set outfit (a minigame's: Pyromancer at Wintertodt, Raiments of the Eye at the
+ * Guardians of the Rift): slot key -> ItemIdentifiers name. Slots it leaves out stay as they are.
+ */
+function wearItems(bot, items = {}) {
+  const equipment = bot?.getEquipment?.();
+  if (!equipment) return;
+  for (const [key, name] of Object.entries(items)) {
+    const slot = WEAR_SLOTS[key];
+    const id = name ? ItemIdentifiers[name] : null;
+    if (slot === undefined || (name && !Number.isInteger(id))) continue;
+    equipment.set(slot, new Item(Number.isInteger(id) ? id : -1, 1));
+  }
+  equipment.refreshItems();
+  bot.getUpdateFlag?.()?.flag?.(Flag.APPEARANCE);
+}
+
 /** Re-dresses a skilling bot for a new mode (after travelling), by its level in that skill. */
 function dressForMode(bot, mode) {
   if (!SKILL_CAPES[mode]) return;
@@ -347,6 +366,8 @@ function startBotSites(options = {}) {
 }
 
 module.exports = {
+  wearItems,
+  WEAR_SLOTS,
   applyLevels,
   applyOutfit,
   dressForMode,

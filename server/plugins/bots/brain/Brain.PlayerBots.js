@@ -250,8 +250,11 @@ class BotBrain {
     // The new activity may be done elsewhere: the bot can travel there first (Travel.PlayerBots.js).
     // At a hangout (a bank, the Grand Exchange, a raid entrance) it roams until the next switch.
     const place = this.world?.travel?.(this.player, this.ensureState(), next, nowMs);
-    const roam = place?.hangout ? this.registry?.byId?.get?.("roam") : null;
-    this.pushRoot(roam ?? next, nowMs);
+    // At a hangout or minigame lobby the place says what to do there: roam, or stand at the bank.
+    const stay = place?.hangout
+      ? this.registry?.byId?.get?.(place.activity ?? "roam") ?? this.registry?.byId?.get?.("roam")
+      : null;
+    this.pushRoot(stay ?? next, nowMs);
   }
 
   startFrame(frame, nowMs) {
