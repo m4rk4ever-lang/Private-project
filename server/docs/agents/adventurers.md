@@ -6,8 +6,12 @@ The page for an agent picking up bot work. Read it before changing anything unde
 
 ## The goal
 
-The 5 adventurers (Eeshwar, Call me Mark, Bekoek, Slayed Soul, Kram539; not ironmen) play
-like real players who choose their own path. World bots get the same honesty, starting from
+15 adventurers in three clans of 5 race each other (`adventurers.json` "clans"): Jorg Clan
+(leader Bekoek + Jorgbot 1-4), Patrick Clan (leader Slayed Soul, Eeshwar + Patrickbot 1-3),
+Mark Clan (leader Call me Mark, Kram539 + Markbot 1-3). Clans stay equal in size. The leader
+founds the clan in game (`clans:ensure-member`); clanmates hand each other spare materials
+they really have (`adventurers/Clans.PlayerBots.js`). They play like real players who choose
+their own path. World bots are kept few (about 50: `bot-sites.json` pvp pool 30, 3 per region). World bots get the same honesty, starting from
 a generated account. The owner follows them on `/adventurers.html` and in game with `::volg`.
 
 ## Rules that never bend
@@ -44,6 +48,8 @@ a generated account. The owner follows them on `/adventurers.html` and in game w
 | Generated world bot accounts | `brain/Accounts.PlayerBots.js` |
 | Bank standers that really craft | `brain/BankCraft.PlayerBots.js`, `actions/BankStand` |
 | Doors and the toll gate (honest bots pay only with 1.000 gp+) | `brain/DoorOpening.PlayerBots.js` |
+| Clans, the race, gifts between clanmates | `adventurers/Clans.PlayerBots.js`, `clans:ensure-member` in `plugins/interface/clans/Clans.plugin.js` |
+| Slayer tasks | `adventurers/Slayer.PlayerBots.js`, activity `slayer_task` |
 | `::volg` spectating | `runtime/Watch.PlayerBots.js` |
 | Adventurers page | `client/public/adventurers.html` (icons via `/wiki-icons`) |
 
@@ -60,7 +66,7 @@ Plugins talk through custom events: `ge:place-offer`, `ge:collect`, `ge:reset`,
   amount; materials for current and coming levels up to `bankCap`; sell outgrown tiers.
 - **Bank like a player.** Between jobs the last job's leftovers go to the nearest reachable
   bank. A blocked road blocks that place only. Dropping is the last resort and only for cheap
-  things (`dropValue`).
+  things (`cheapValue`).
 - **Buy to train** when there is gold, sell the products, loss is fine if efficient.
 - **Sell to fund.** Saving up for a coins goal (gear, teleport jewellery, tools), it may sell
   banked materials (logs, gems, bars) on the GE until the shortfall is covered; supplies stay.

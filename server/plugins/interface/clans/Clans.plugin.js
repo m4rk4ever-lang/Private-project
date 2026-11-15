@@ -95,6 +95,32 @@ function login({ player }) {
  * "clans:release-guest" { player }: another group takes the listened slot (the PvP Arena's 1v1
  * Duels group): the clan up on the Guest Clan tab, and its channel, are let go first.
  */
+/**
+ * "clans:ensure-member" { player, clan, leader }: puts a player (a named bot) in the clan with
+ * that name. Its leader founds the clan (owner); the others join once it exists. A player in
+ * another clan is left alone. Sets `request.joined` when the player is in that clan.
+ */
+function ensureMember(request) {
+  const { player, clan: name } = request ?? {};
+  if (!player || !name) return;
+  const own = Core.clanOf(player);
+  if (own) {
+    request.joined = own.name === name;
+    return;
+  }
+  const clan = Store.byName(name);
+  try {
+    if (!clan) {
+      if (request.leader) Core.createClan(name, [player]);
+    } else {
+      Core.addMember(clan, player, request.leader ? Core.RANK_ADMINISTRATOR : Core.RANK_RECRUIT);
+    }
+  } finally {
+    Store.save();
+  }
+  request.joined = Core.clanOf(player)?.name === name;
+}
+
 function releaseGuest({ player }) {
   Core.removeGuestViewer(player);
 }
@@ -447,6 +473,7 @@ module.exports = {
     api.onCustomEvent("player:bootstrap-complete", login);
     api.onPlayerLogout(logout);
     api.onCustomEvent("clans:release-guest", releaseGuest);
+    api.onCustomEvent("clans:ensure-member", ensureMember);
     api.onSocialPacket(chat);
     api.onSocialPacket(channelAction);
     api.onInterfaceActionClick(clickYourClan);

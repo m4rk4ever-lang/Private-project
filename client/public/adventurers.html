@@ -150,10 +150,28 @@
       + `<li class="section">Inventaris</li><li>${gearGrid(adventurer.carried ?? [])}</li>`
       + `<li class="section">Bank</li><li>${gearGrid(adventurer.bank ?? [])}</li>`;
   }
+  // The clan race: each clan's score is the sum of its members' (clans have equal sizes).
+  function clanRace(list) {
+    const clans = new Map();
+    for (const a of list) {
+      if (!a.clan) continue;
+      const clan = clans.get(a.clan) ?? { name: a.clan, score: 0, total: 0, wealth: 0, leader: null, members: 0 };
+      clan.score += a.score ?? 0;
+      clan.total += a.total ?? 0;
+      clan.wealth += a.wealth?.total ?? 0;
+      clan.members += 1;
+      if (a.leader) clan.leader = a.name;
+      clans.set(a.clan, clan);
+    }
+    if (clans.size === 0) return "";
+    const rows = [...clans.values()].sort((x, y) => y.score - x.score).map((c, i) => `<tr><td class="${i === 0 ? "medal" : ""}">#${i + 1}</td>
+      <td><b>${esc(c.name)}</b></td><td>${esc(c.leader ?? "-")}</td><td>${c.members}</td><td>${c.score}</td><td>${c.total}</td><td>${gp(c.wealth)}</td></tr>`).join("");
+    return `<h2>Clanrace</h2><table><tr><th></th><th>Clan</th><th>Leider</th><th>Leden</th><th>Score</th><th>Totaal</th><th>Bezit</th></tr>${rows}</table>`;
+  }
   function ranking(list) {
-    const rows = list.map((a) => `<tr><td class="${a.rank <= 3 ? "medal" : ""}">#${a.rank}</td><td>${esc(a.name)}</td><td>${a.score}</td>
+    const rows = list.map((a) => `<tr><td class="${a.rank <= 3 ? "medal" : ""}">#${a.rank}</td><td>${esc(a.name)}${a.leader ? " ★" : ""}</td><td>${esc(a.clan ?? "-")}</td><td>${a.score}</td>
       <td>${a.total ?? "-"}</td><td>${a.combat ?? "-"}</td><td>${a.questPoints}</td><td>${gp(a.wealth?.total)}</td></tr>`).join("");
-    return `<h2>Ranglijst</h2><table><tr><th></th><th>Naam</th><th>Score</th><th>Totaal</th><th>Combat</th><th>QP</th><th>Bezit</th></tr>${rows}</table>`;
+    return `${clanRace(list)}<h2>Ranglijst</h2><table><tr><th></th><th>Naam</th><th>Clan</th><th>Score</th><th>Totaal</th><th>Combat</th><th>QP</th><th>Bezit</th></tr>${rows}</table>`;
   }
   function logList(adventurer, tab) {
     if (tab === "bank") return bankList(adventurer);
@@ -172,6 +190,7 @@
     return `<section class="card">
       <div class="top">
         <div class="name"><span class="rank">#${adventurer.rank}</span><span class="dot ${adventurer.online ? "on" : ""}"></span>${esc(adventurer.name)}
+          ${adventurer.clan ? `<span class="tag">${esc(adventurer.clan)}${adventurer.leader ? " · leider" : ""}</span>` : ""}
           ${adventurer.group ? '<span class="tag">samen</span>' : ""}
           <button class="follow" data-follow="${esc(adventurer.name)}" title="Kopieert ::volg ${esc(adventurer.name)}">Volg</button></div>
         <div class="stats">

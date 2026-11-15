@@ -14,6 +14,8 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Drie clans racen tegen elkaar, elk met 5 avonturiers: de Jorg Clan (leider Bekoek, met Jorgbot 1 t/m 4), de Patrick Clan (leider Slayed Soul, met Eeshwar en Patrickbot 1 t/m 3) en de Mark Clan (leider Call me Mark, met Kram539 en Markbot 1 t/m 3). De leider sticht de clan in het spel; de anderen worden lid. Alle 15 zijn te volgen met `::volg` en staan op de avonturierspagina, met bovenaan een clanrace (score, totaal level en bezit per clan).
+- Clangenoten geven elkaar materialen die ze echt over hebben: wie logs, staven of edelstenen nodig heeft om te trainen, krijgt die eerst uit de bank van een clangenoot (die houdt zelf 500 achter) voordat hij gaat kopen. Beide dagboeken melden het.
 - Avonturiers doen Slayer: ze lopen naar Turael (Burthorpe) of Spria (Draynor), krijgen een echte taak en vechten alleen tegen de monsters die meetellen, op de dichtstbijzijnde plek waar dat kan. Is de taak klaar, dan halen ze een nieuwe of doen iets anders. Taken in de Wilderness, in dungeons of met een afmaak-item (zoals ijskoelers) laten ze voorlopig liggen.
 - Avonturiers vechten ook met pijl en boog of met spells: met hun eigen boog en pijlen (shortbow tot magic shortbow, bronze tot rune arrows) of hun eigen runes (Wind Strike tot Fire Bolt, met een staf). Ze kiezen dat als ze de spullen hebben, halen ze uit de bank en kopen pijlen en runes bij op de GE. Ranged- en Magic-doelen sturen die keuze.
 - Avonturiers trainen Agility: ze lopen rondjes op de beste course die hun level toelaat (Gnome Stronghold tot Seers' Village Rooftop), via de echte obstakels met slagingskans, vallen, XP en marks of grace. Marks rapen ze op en bewaren ze.
@@ -68,6 +70,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Veel minder wereldbots: hooguit 3 PvP-bots per actief gebied (was 16) en een pool van 30 (was 845). Samen met de vaste plekken zijn dat er zo'n 50 in plaats van 150 tot 180. Zo blijft er ruimte voor de avonturiers.
 - Avonturiers maken zelf de afweging bij een volle tas: is een bank of de GE onbereikbaar, dan proberen ze de volgende bank. Een versperde weg blokkeert alleen die ene plek. Alleen als niets bereikbaar is, laten ze goedkope spullen (minder dan 500 gp per stapel) vallen; duurdere spullen houden ze en ze proberen het even later opnieuw.
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 

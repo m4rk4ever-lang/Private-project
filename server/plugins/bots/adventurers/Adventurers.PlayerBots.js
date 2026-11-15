@@ -33,6 +33,7 @@ const GENERATION_ATTRIBUTE = "adventurers:generation";
 const Shopping = require("./Shopping.PlayerBots");
 const Trade = require("./Trade.PlayerBots");
 const Slayer = require("./Slayer.PlayerBots");
+const Clans = require("./Clans.PlayerBots");
 const npcSpawns = require("../../../data/definitions/npc-spawns.json");
 const { markHonest } = require("../brain/Honest.PlayerBots");
 const { errandsFor } = require("../brain/Errands.PlayerBots");
@@ -416,6 +417,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       note(player, `Traint ${plan.skill.toLowerCase()} met ${buy.materials.map(itemName).join(" en ")}.`);
       return true;
     }
+    // A clanmate with spare stock hands it over before it spends coins on it.
+    for (const id of buy.materials) {
+      if (banked(player, id) + player.getInventory().getAmount(id) <= 0) fromClan(entry, id, buy.amount);
+    }
     // Its own stock first: banked logs or bars, fetched from the nearest bank.
     if (buy.materials.every((id) => banked(player, id) + player.getInventory().getAmount(id) > 0)) {
       const bank = nearestBank(player);
@@ -693,6 +698,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     for (const entry of adventurers.values()) {
       if (!entry.player?.isRegistered?.()) continue;
       watchGear(entry);
+      joinClan(entry);
       if (entry.phase === "training" && entry.buying && entry.player.getInventory().getAmount(entry.buying) <= 0
           && !errands.busy(entry.player)) {
         entry.buying = null;
@@ -844,6 +850,53 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       return data.bankCap ?? 10000;
     }
     return useful().has(id) ? (data.bankCap ?? 10000) : 0;
+  }
+
+  /**
+   * Materials from clanmates: each gives what it really has in its bank above what it keeps
+   * for itself (data.clanReserve, or all of it when it has no use for it). Into this one's
+   * bank; both journals say so. Returns how many it got.
+   */
+  function fromClan(entry, itemId, wanted) {
+    const mates = Clans.matesOf(data, entry.name).map((name) => adventurers.get(name)).filter((mate) => mate?.player?.isRegistered?.());
+    const given = Clans.gift(mates, itemId, wanted, {
+      spare: (mate, id) => banked(mate.player, id) - Math.min(need(mate.player, id), data.clanReserve ?? 500),
+      take: (mate, amount) => {
+        let left = amount;
+        for (const bank of mate.player.getBanks?.() ?? []) {
+          const out = Math.min(left, bank?.getAmount?.(itemId) ?? 0);
+          if (out <= 0) continue;
+          bank.deleteNumber?.(itemId, out) ?? bank.delete?.(new core.Item(itemId, out));
+          left -= out;
+          if (left <= 0) break;
+        }
+        return amount - left;
+      },
+    });
+    let total = 0;
+    for (const { mate, amount } of given) {
+      const tab = core.Bank?.getTabForItem?.(entry.player, itemId) ?? 0;
+      entry.player.getBank?.(tab)?.add?.(new core.Item(itemId, amount), false);
+      acquire(entry.player, itemId);
+      total += amount;
+      note(entry.player, `Krijgt ${amount.toLocaleString("nl-NL")} x ${itemName(itemId)} van clangenoot ${mate.name}.`, "activity");
+      note(mate.player, `Geeft ${amount.toLocaleString("nl-NL")} x ${itemName(itemId)} aan clangenoot ${entry.name}.`, "activity");
+    }
+    return total;
+  }
+
+  /** In its clan in game (the Clans plugin), its leader founding it. */
+  function joinClan(entry) {
+    if (entry.clanJoined) return;
+    const clan = Clans.clanOf(data, entry.name);
+    if (!clan) return;
+    const request = { player: entry.player, clan: clan.name, leader: clan.leader === entry.name, joined: false };
+    try {
+      emit("clans:ensure-member", request);
+    } catch (error) {
+      world.log?.("adventurer_clan_failed", { name: entry.name, error: String(error?.message ?? error) });
+    }
+    entry.clanJoined = request.joined === true;
   }
 
   function banked(player, itemId) {
@@ -1160,7 +1213,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
 
   /**
    * With no bank in reach: drops the cheapest things it does not keep (worth less than
-   * data.dropValue a stack) until the bag has room. True when there is room now.
+   * data.cheapValue a stack) until the bag has room. True when there is room now.
    */
   function clearBag(player) {
     const inventory = player.getInventory();
@@ -1171,7 +1224,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const dropped = [];
     for (const good of stock) {
       if (inventory.getFreeSlots() >= room) break;
-      if (good.value >= (data.dropValue ?? 500)) break;
+      if (good.value >= (data.cheapValue ?? 500)) break;
       inventory.deleteNumber?.(good.itemId, inventory.getAmount(good.itemId));
       dropped.push(itemName(good.itemId));
     }
@@ -1196,7 +1249,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
 
   function spawn() {
     const at = data.spawn;
-    for (const name of data.names) {
+    for (const name of Clans.namesOf(data)) {
       if (adventurers.has(name)) continue;
       const bot = runtime.spawnPvpBot(new core.Location(at.x, at.y, at.z ?? 0), {
         mode: "roaming", activity: "world", username: name, persistent: true,
@@ -1300,6 +1353,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const view = online ? snapshot(player) : null;
       return {
         name: entry.name,
+        clan: Clans.clanOf(data, entry.name)?.name ?? null,
+        leader: Clans.clanOf(data, entry.name)?.leader === entry.name,
         online,
         combat: online ? player.getSkillManager().getCombatLevel() : null,
         total: online ? player.getSkillManager().getTotalLevel() : null,
@@ -1364,7 +1419,7 @@ function startAdventurers({ api, runtime, world, registry }) {
     const name = parts.slice(1).join(" ").toLowerCase();
     const entry = [...manager.adventurers.values()].find((a) => a.name.toLowerCase() === name);
     if (!entry?.player?.isRegistered?.()) {
-      player.sendMessage(`Geen avonturier "${name}". Kies uit: ${data.names.join(", ")}.`);
+      player.sendMessage(`Geen avonturier "${name}". Kies uit: ${Clans.namesOf(data).join(", ")}.`);
       return true;
     }
     player.moveTo(entry.player.getLocation().clone());
