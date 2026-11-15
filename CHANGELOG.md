@@ -58,6 +58,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Opgelost
+- Avonturiers kregen bij het reizen nog vakkleding, capes en ringen (zoals de Explorer's ring) aangetrokken die ze nooit verdiend hadden. Dat kan niet meer bij eerlijke bots; de avonturiers beginnen daarom nog één keer opnieuw.
 - De iconen op de avonturierspagina laden nu echt: de game-server haalt ze één keer op bij de OSRS Wiki en bewaart ze.
 - Stoppen vindt het spel nu ook in een codespace, waar niet te zien is welk proces een poort
   vasthoudt: op de opdrachtregel. Een achtergebleven client op poort 3000 wordt zo ook gestopt.
@@ -95,6 +96,9 @@ Indeling per versie:
   iedereen nu ook als member in de skills-tab en de questlijst (op een members-wereld).
 
 ### Gewijzigd
+- Avonturiers kiezen hun training niet meer allemaal hetzelfde: combat gaat voor op een nieuw account (loot is inkomen), elk heeft eigen favorieten, achterblijvende skills halen in en ze doen liever iets anders dan de rest.
+- Eerlijke bots begraven tussen gevechten de botten die ze oppakten.
+- Wereldbots hebben niet meer allemaal Agility 99; ook dat level is nu deel van hun eigen account.
 - Bots en avonturiers verkopen de spullen van hun vorige klus voordat ze aan een nieuwe beginnen, zodat hun inventaris niet volloopt met erts, logs en vis van drie klussen.
 - Avonturiers doen niets meer dat nog niet echt gespeeld kan worden: geen gesimuleerde quests meer. Ze beginnen daarom opnieuw (generatie 3).
 - Avonturiers krijgen geen outfits of capes meer toegewezen; ze dragen alleen wat ze zelf kochten of vonden.

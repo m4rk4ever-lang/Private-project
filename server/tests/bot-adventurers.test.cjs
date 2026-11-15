@@ -159,3 +159,16 @@ test("selling goes through the exchange's own events; coins only arrive from col
     f.restore();
   }
 });
+
+test("a new adventurer does not always mine: combat first, its favourites, and not what the others do", () => {
+  const counts = {};
+  let seed = 1;
+  const random = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < 2000; i++) {
+    const plan = chooseNext(adventurer(), [], { available: new Set(), questChance: 0, random, focus: { fishing: 2 }, busyModes: new Set(["mining"]) });
+    counts[plan.mode] = (counts[plan.mode] ?? 0) + 1;
+  }
+  assert.ok(counts.combat_training > counts.mining * 3, JSON.stringify(counts));
+  assert.ok(counts.fishing > counts.woodcutting, JSON.stringify(counts));
+  assert.ok(counts.mining > 0 && counts.thieving > 0, "everything still comes up now and then");
+});

@@ -29,6 +29,7 @@ const LOG_ATTRIBUTE = "adventurers:journal";
 const GENERATION_ATTRIBUTE = "adventurers:generation";
 const Shopping = require("./Shopping.PlayerBots");
 const Trade = require("./Trade.PlayerBots");
+const { markHonest } = require("../brain/Honest.PlayerBots");
 /** A companion joins a group if its own stretch ends within this. */
 const GROUP_JOIN_WINDOW_MS = 4 * 60_000;
 const GROUP_MAX = 5;
@@ -259,8 +260,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     entry.group = false;
     if (random() < (data.groupChance ?? 0.3) && startGroup(entry, nowMs)) return;
     const view = snapshot(entry.player);
+    // What the others are doing now, so they spread over the skills instead of all mining.
+    const busyModes = new Set([...adventurers.values()]
+      .filter((other) => other !== entry && other.phase === "training")
+      .map((other) => other.plan?.mode).filter(Boolean));
     const plan = chooseNext(view, questList(), {
       available: view.available, questChance: data.questChance, bosses: data.bosses, bossChance: data.bossChance, random,
+      focus: data.focus?.[entry.name] ?? {}, busyModes,
     });
     const started = plan.kind === "quest" ? startQuest(entry, plan)
       : plan.kind === "boss" ? startBoss(entry, plan, nowMs)
@@ -424,6 +430,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       adventurers.set(name, { name, player: bot, phase: "new", until: 0, plan: null, activity: null });
       // Honest: no conjured gear, tools, food or bait; it buys, finds or makes what it uses.
       const state = runtime.botStatesByName?.get?.(name);
+      markHonest(bot);
       if (state) {
         state.honest = true;
         // Its own planner trades for it (trade()); the world bots' upkeep leaves it alone.

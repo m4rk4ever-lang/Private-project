@@ -114,13 +114,24 @@ function bootPlayerBotsRuntime(options = {}) {
       faceTarget(event);
       return botApi.emitItemOnObject(event);
     },
+    // An inventory item's option (Bury, Drink, Eat), as a click on it sends it.
+    useItem: (player, slot, option) => {
+      const item = player.getInventory().getItems()[slot];
+      if (!item || !(item.getId() > 0)) return false;
+      return botApi.emitItemAction({
+        player, interfaceId: botApi.core.Inventory.INTERFACE_ID, item, itemId: item.getId(), slot,
+        clickType: 1, option, handled: false,
+      });
+    },
     isBusy: (player) =>
       Fishing.isFishingActive?.(player) === true ||
       Cooking.isCookingActive?.(player) === true ||
       Woodcutting.isWoodcuttingActive?.(player) === true ||
       Mining.isMiningActive?.(player) === true ||
       Firemaking.isFiremakingActive?.(player) === true ||
-      Smithing.isSmeltingActive?.(player) === true,
+      Smithing.isSmeltingActive?.(player) === true ||
+      Smithing.isSmithingActive?.(player) === true ||
+      require("../../skills/Fletching.plugin").isBotFletching?.(player) === true,
     log: (message, extra) => botApi.log(message, extra),
   };
   // Bank standers stand by a booth (BankStand.PlayerBots.js).

@@ -10,6 +10,8 @@ const { requestMovement, clearMovementRequest, peekMovementRequest, randomInRang
   require("../../behaviours/navigation/Navigation.PlayerBots");
 
 const TARGET_RETRY_MS = 1800;
+/** An honest bot buries a bone this often between fights (a Bury click's delay is 1.2 s). */
+const BURY_EVERY_MS = 1800;
 const TARGET_SPREAD = 4;
 const ATTACK_DISTANCE = 20;
 const RESERVATION_MS = 10000;
@@ -473,6 +475,16 @@ function createTrainCombatAction(spec, world) {
           const step = Loot.takeStep(world.core, player, ground, { state, nowMs });
           bot.loot = step === "walking" ? ground : null;
           if (step !== "gone") {
+            bot.lastProgressAt = nowMs;
+            return "running";
+          }
+        }
+        // Then it buries the bones it picked up, one a click, as a player does between kills.
+        const boneSlot = (player.getInventory().getItems() ?? [])
+          .findIndex((item) => item && /bones$/i.test(String(world.core.ItemDefinition.forId(item.getId())?.getName?.() ?? "")));
+        if (boneSlot >= 0 && nowMs >= (bot.buryAt ?? 0) && world.useItem) {
+          bot.buryAt = nowMs + BURY_EVERY_MS;
+          if (world.useItem(player, boneSlot, "Bury")) {
             bot.lastProgressAt = nowMs;
             return "running";
           }

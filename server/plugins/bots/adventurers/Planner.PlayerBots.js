@@ -8,7 +8,9 @@
  * - A quest is ready when its required skills, quests, quest points and recommended combat level
  *   are met. With `questChance` the adventurer takes the first ready quest on the path.
  * - Otherwise it trains. It prefers what the next quest on its path still needs (Mining 10 for
- *   The Knight's Sword, combat 45 for Dragon Slayer I); with nothing needed, its lowest skill.
+ *   The Knight's Sword, combat 45 for Dragon Slayer I); with nothing needed, a weighted pick
+ *   (trainingWeight): combat early, its own favourites, skills that lag behind, and not what
+ *   the others already do.
  *   Each choice is a mode the bots can do (woodcutting, mining, fishing, thieving, combat,
  *   Wintertodt for Firemaking from level 50) and the best activity of that mode for its level.
  */
@@ -62,6 +64,7 @@ function bossesFor(adventurer, bosses = []) {
 
 function chooseNext(adventurer, quests, {
   available = null, questChance = 0.45, bosses = [], bossChance = 0, random = Math.random,
+  focus = {}, busyModes = new Set(),
 } = {}) {
   const open = quests.filter((quest) => !adventurer.done.has(quest.name) && (!available || available.has(quest.name)));
   const fightable = bossesFor(adventurer, bosses);
@@ -85,11 +88,37 @@ function chooseNext(adventurer, quests, {
       if (option) return { kind: "train", mode: option.mode, skill, reason: `${quest.name} (${skill.toLowerCase()} ${level})` };
     }
   }
-  // Nothing in the way: bring up the lowest, with a little chance so it is not always the same.
-  const sorted = options.slice().sort((a, b) => a.level - b.level);
-  const pickFrom = sorted.slice(0, Math.min(3, sorted.length));
-  const choice = pickFrom[Math.floor(random() * pickFrom.length)];
-  return { kind: "train", mode: choice.mode, skill: choice.skill, reason: "lowest skills" };
+  // Nothing in the way: a weighted pick (trainingWeights), so each adventurer has its own way.
+  const weighted = options.map((option) => ({ option, weight: trainingWeight(option, options, adventurer, { focus, busyModes }) }));
+  const total = weighted.reduce((sum, entry) => sum + entry.weight, 0);
+  let roll = random() * total;
+  const choice = (weighted.find((entry) => (roll -= entry.weight) < 0) ?? weighted[weighted.length - 1]).option;
+  return { kind: "train", mode: choice.mode, skill: choice.skill, reason: reasonFor(choice, options, focus) };
+}
+
+/**
+ * How much it wants to train this now:
+ * - combat first on a new account: loot is its income and its way to bosses (x3 below combat 40);
+ * - its own focus (adventurers.json `focus`), so five adventurers do not all mine at once;
+ * - a skill far behind its others catches up (+20% per level under their average);
+ * - a mode another adventurer already does weighs half (no clump), unless they are a group.
+ */
+function trainingWeight(option, options, adventurer, { focus = {}, busyModes = new Set() } = {}) {
+  const average = options.reduce((sum, entry) => sum + entry.level, 0) / options.length;
+  let weight = 1;
+  if (option.mode === COMBAT && adventurer.combat < 40) weight *= 3;
+  weight *= focus[option.mode] ?? 1;
+  weight *= 1 + Math.max(0, average - option.level) * 0.2;
+  if (busyModes.has(option.mode)) weight *= 0.5;
+  return weight;
+}
+
+function reasonFor(choice, options, focus = {}) {
+  const average = options.reduce((sum, entry) => sum + entry.level, 0) / options.length;
+  if ((focus[choice.mode] ?? 1) > 1) return "favoriet";
+  if (choice.level + 5 < average) return "achterstand";
+  if (choice.mode === COMBAT) return "loot en levels";
+  return "afwisseling";
 }
 
 /** The best activity of `mode` for `level`: the highest `level` field not above it. */
@@ -108,4 +137,4 @@ function bestActivity(mode, level, definitions) {
   return best?.id ?? null;
 }
 
-module.exports = { chooseNext, bossesFor, missing, isReady, trainingOptions, bestActivity, TRAINABLE, COMBAT };
+module.exports = { trainingWeight, chooseNext, bossesFor, missing, isReady, trainingOptions, bestActivity, TRAINABLE, COMBAT };

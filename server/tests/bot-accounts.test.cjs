@@ -116,3 +116,14 @@ test("a bot that changes jobs sells the last job's things first", () => {
   upkeep.check(0);
   assert.equal(upkeep.trips.size, 1, "new job: the ores go first");
 });
+
+test("outfits skip honest bots", () => {
+  const { markHonest, isHonest } = require("../plugins/bots/brain/Honest.PlayerBots");
+  const player = {};
+  assert.equal(isHonest(player), false);
+  markHonest(player);
+  assert.equal(isHonest(player), true);
+  const src = require("node:fs").readFileSync(require.resolve("../plugins/bots/brain/SiteSpawner.PlayerBots.js"), "utf8");
+  assert.match(src, /function applyOutfit[\s\S]{0,200}isHonest\(bot\)/);
+  assert.match(src, /function wearItems[\s\S]{0,200}isHonest\(bot\)/);
+});

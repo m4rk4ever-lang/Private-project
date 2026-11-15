@@ -1429,6 +1429,8 @@ export interface PluginApi {
   emitShouldKeepItemOnDeath(player: any, item: any): boolean | null;
   emitFiremakingBlocked(event: PluginFiremakingBlockedEvent): boolean;
   emitObjectInteraction(event: PluginObjectInteractionEvent): boolean;
+  /** An inventory item's menu option, as the player's click sends it (bots that bury, drink, eat). */
+  emitItemAction(event: PluginItemActionEvent): boolean;
   /** Runs the NPC option handlers as a click would (a bot fishing a spot). */
   emitNpcInteraction(event: PluginNpcInteractionEvent): boolean;
   emitWorldEntityInteraction(event: PluginWorldEntityInteractionEvent): boolean;

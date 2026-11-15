@@ -12,6 +12,7 @@
  * newcomer beside a maxed one, without anyone waiting weeks to get there.
  */
 const Shopping = require("../adventurers/Shopping.PlayerBots");
+const { markHonest } = require("./Honest.PlayerBots");
 
 const COMBAT_MODES = new Set(["combat_training", "bossing"]);
 /** Produce an account keeps in its bank, by skill and level (best it can make first). */
@@ -84,6 +85,7 @@ function generateAccount(bot, state, { core, mode, equipCombatGear = null, rando
   }
   inventory.refreshItems?.();
   if (state) state.honest = true;
+  markHonest(bot);
   return got;
 }
 

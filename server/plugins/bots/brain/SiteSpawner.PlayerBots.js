@@ -11,6 +11,7 @@ const { Item } = require("../../../src/main/typescript/elvarg/game/model/Item");
 const { Equipment } = require("../../../src/main/typescript/elvarg/game/model/container/impl/Equipment");
 const { assignIronMode } = require("./Ironmen.PlayerBots");
 const { generateAccount } = require("./Accounts.PlayerBots");
+const { isHonest } = require("./Honest.PlayerBots");
 /** BOT_GENERATED_ACCOUNTS=0: world bots are provisioned as before (gear, food and bait on demand). */
 const GENERATED_ACCOUNTS = (process.env.BOT_GENERATED_ACCOUNTS ?? "1") !== "0";
 const { ItemIdentifiers } = require("../../../src/main/typescript/elvarg/util/ItemIdentifiers");
@@ -71,7 +72,8 @@ function applyLevels(bot, levels) {
   for (const skill of Skill.values()) {
     const name = String(skill.getName?.() ?? skill.toString?.() ?? "").toLowerCase();
     const combatIndex = combat ? COMBAT_SKILLS.indexOf(skill) : -1;
-    let level = skill === Skill.AGILITY
+    // Without generated accounts every bot had 99 Agility; an account of its own rolls it like the rest.
+    let level = skill === Skill.AGILITY && !GENERATED_ACCOUNTS
       ? 99
       : combatIndex >= 0
         ? combat[combatIndex]
@@ -237,7 +239,8 @@ function modeSkillLevel(bot, mode) {
  */
 function applyOutfit(bot, tier, options = {}) {
   const equipment = bot.getEquipment?.();
-  if (!equipment) return;
+  // An honest bot wears what it owns: no outfit is put on it (Honest.PlayerBots.js).
+  if (!equipment || isHonest(bot)) return;
   const outfit = rollOutfit(tier, { ...options, skillLevel: options.skillLevel ?? modeSkillLevel(bot, options.mode) });
   for (const [key, slot] of Object.entries(OUTFIT_SLOTS)) {
     const id = outfit[key] ? ItemIdentifiers[outfit[key]] : null;
@@ -255,7 +258,7 @@ const WEAR_SLOTS = Object.freeze({ ...OUTFIT_SLOTS, weapon: Equipment.WEAPON_SLO
  */
 function wearItems(bot, items = {}) {
   const equipment = bot?.getEquipment?.();
-  if (!equipment) return;
+  if (!equipment || isHonest(bot)) return;
   for (const [key, name] of Object.entries(items)) {
     const slot = WEAR_SLOTS[key];
     const id = name ? ItemIdentifiers[name] : null;
