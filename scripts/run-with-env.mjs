@@ -35,8 +35,8 @@ if (packageDir === resolve(rootDir, "client")) {
     // without input (concurrently): it compiled and then exited, taking the server down too.
     env.CI ??= "true";
     // No lint pass on every start and rebuild: a page of style warnings that say nothing
-    // about the game (they stay in `yarn build`).
-    env.DISABLE_ESLINT_PLUGIN ??= "true";
+    // about the game (they stay in `yarn build`). Read by craco.config.js.
+    env.CLIENT_LINT ??= "0";
   }
 }
 // Node's "SQLite is an experimental feature" notice on every server start.

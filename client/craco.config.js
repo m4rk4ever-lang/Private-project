@@ -50,6 +50,8 @@ for (const definition of browserHostInterfaces) {
 }
 
 module.exports = {
+    // `yarn start` skips the lint pass (CLIENT_LINT=0, scripts/run-with-env.mjs); builds keep it.
+    eslint: { enable: process.env.CLIENT_LINT !== "0" },
     paths: (existingPaths) => {
         existingPaths.appPath = paths.appPath;
         existingPaths.appSrc = paths.appSrc;
