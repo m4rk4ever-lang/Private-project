@@ -71,12 +71,15 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Pijlen, bogen en runes die een avonturier voor zijn volgende klus niet nodig heeft (een klus zonder vechten, of met een andere vechtstijl), zet hij op de bank als hij daar toch is. Wat zijn huidige vechtstijl gebruikt, houdt hij bij zich.
 - Alle 15 avonturiers beginnen opnieuw op level 1 (ook de eerste 5), zodat de clanrace eerlijk start: levels, spullen, bank, quests, GE-biedingen en dagboek zijn gewist.
 - Veel minder wereldbots: hooguit 3 PvP-bots per actief gebied (was 16) en een pool van 30 (was 845). Samen met de vaste plekken zijn dat er zo'n 50 in plaats van 150 tot 180. Zo blijft er ruimte voor de avonturiers.
 - Avonturiers maken zelf de afweging bij een volle tas: is een bank of de GE onbereikbaar, dan proberen ze de volgende bank. Een versperde weg blokkeert alleen die ene plek. Alleen als niets bereikbaar is, laten ze goedkope spullen (minder dan 500 gp per stapel) vallen; duurdere spullen houden ze en ze proberen het even later opnieuw.
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Nieuwe avonturiers bleven op het spawnpunt in Lumbridge staan met "Loopt naar Draynor om te banken": hun eerste klus was een wandeling, maar zonder lopende training werd die route nooit uitgevoerd. Na een minuut gaven ze het op en probeerden ze de volgende bank, eindeloos. Nu lopen ze echt.
+- Avonturiers halen hun boog, pijlen of runes niet meer op afstand uit de bank: ze lopen naar de bank en pakken ze daar. Ze beginnen pas met boogschieten of toveren als ze minstens 50 pijlen of runes voor 50 spreuken hebben.
 - Avonturiers wisselen weer tussen Attack, Strength en Defence: tussen gevechten zetten ze hun vechtstijl op de laagste van de drie. Daardoor groeien ze ook door naar sterkere monsters en blijven ze niet eindeloos op ratten en mannen in Lumbridge hangen (de plek hangt af van de laagste van de drie, en Defence bleef op 1 staan).
 - De avonturierspagina toont niet meer "Begint" terwijl een avonturier al bezig is: je ziet nu waar hij heen loopt en waarom (banken, kopen, verkopen, Slayer-taak, trainen), hoe lang al, of dat hij wacht op een GE-bod. Lukt het hem niet iets te starten, dan staat erbij wat hij probeerde.
 - Avonturiers nemen de spullen van hun vorige klus niet meer mee naar de volgende: liggen er 6 of meer vakjes aan logs, erts of vis in hun tas, dan banken ze die eerst, ook als het weinig waard is. Lukt de weg naar de bank niet, dan laten ze het goedkoopste vallen in plaats van met een volle tas verder te werken.

@@ -55,6 +55,9 @@ const CHECK_TICKS = 10;
 const BID_WAIT_MS = 3 * 60_000;
 /** No XP and no step for this long while training: it is stuck, it picks something else. */
 const STUCK_MS = 2 * 60_000;
+/** Arrows, or casts' worth of runes, it wants before it fights that way. */
+const SUPPLY_MIN = 50;
+const MAGIC_RUNES = ["AIR_RUNE", "MIND_RUNE", "WATER_RUNE", "EARTH_RUNE", "FIRE_RUNE", "CHAOS_RUNE"];
 const WINTERTODT = travelData.minigames.find((game) => game.id === "wintertodt");
 
 function normalize(name) {
@@ -259,9 +262,58 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         + ((player.getEquipment().getItems() ?? []).find((item) => item?.getId?.() === id)?.getAmount?.() ?? 0) >= amount;
     };
     const ranged = Shopping.gear.styles?.ranged ?? {};
-    if ((ranged.weapon ?? []).some((entry) => has(entry.item)) && (ranged.ammo ?? []).some((entry) => has(entry.item, 20))) styles.push("ranged");
-    if (has("AIR_RUNE", 20) && has("MIND_RUNE", 10)) styles.push("magic");
+    if ((ranged.weapon ?? []).some((entry) => has(entry.item)) && (ranged.ammo ?? []).some((entry) => has(entry.item, SUPPLY_MIN))) styles.push("ranged");
+    if (has("AIR_RUNE", SUPPLY_MIN) && has("MIND_RUNE", SUPPLY_MIN)) styles.push("magic");
     return styles;
+  }
+
+  /** The things a way of fighting uses: bows and arrows, or runes and staves. */
+  function styleSupplyIds(style) {
+    const gear = Shopping.gear.styles ?? {};
+    const names = style === "ranged" ? [...(gear.ranged?.weapon ?? []), ...(gear.ranged?.ammo ?? [])].map((entry) => entry.item)
+      : style === "magic" ? [...MAGIC_RUNES, ...(gear.magic?.weapon ?? []).map((entry) => entry.item)] : [];
+    return names.map((name) => Shopping.idOf(core, name)).filter(Number.isInteger);
+  }
+
+  /** How the job fights: "ranged", "magic", "melee", or null for a job that does not fight. */
+  function planStyle(entry, plan = entry.plan) {
+    if (!plan) return null;
+    if (plan.mode === "combat_ranged") return "ranged";
+    if (plan.mode === "combat_magic") return "magic";
+    if (plan.kind === "boss" || plan.mode === "combat_training" || plan.mode === "slayer") {
+      return plan.style ?? runtimeEntry(entry.player)?.state?.honestStyle ?? "melee";
+    }
+    return null;
+  }
+
+  /** Whether it carries enough to fight this way now: a bow and SUPPLY_MIN arrows, or runes for SUPPLY_MIN casts. */
+  function carriesSupplies(player, style) {
+    const worn = (id) => (player.getEquipment().getItems() ?? []).find((item) => item?.getId?.() === id)?.getAmount?.() ?? 0;
+    const held = (name) => { const id = Shopping.idOf(core, name); return Number.isInteger(id) ? player.getInventory().getAmount(id) + worn(id) : 0; };
+    const gear = Shopping.gear.styles ?? {};
+    if (style === "ranged") {
+      return (gear.ranged?.weapon ?? []).some((entry) => held(entry.item) > 0)
+        && (gear.ranged?.ammo ?? []).some((entry) => held(entry.item) >= SUPPLY_MIN);
+    }
+    if (style === "magic") return held("AIR_RUNE") >= SUPPLY_MIN && held("MIND_RUNE") >= SUPPLY_MIN;
+    return true;
+  }
+
+  /**
+   * At a bank: the arrows, bows and runes of the ways of fighting the job does not use go in
+   * (a woodcutter does not carry 300 arrows about). Those of its own style stay with it.
+   */
+  function bankUnusedSupplies(entry, banker, plan = entry.plan) {
+    const using = planStyle(entry, plan);
+    const goods = [];
+    for (const style of ["ranged", "magic"]) {
+      if (style === using) continue;
+      for (const id of styleSupplyIds(style)) {
+        const amount = banker.getInventory().getAmount(id);
+        if (amount > 0) goods.push({ itemId: id, amount });
+      }
+    }
+    return deposit(banker, goods);
   }
 
   /** Skills it has the materials for now: they weigh more in its next pick (one skill feeds another). */
@@ -277,6 +329,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   }
 
 
+
+  function here(player) {
+    const at = player.getLocation();
+    return { x: at.getX(), y: at.getY(), z: at.getZ() };
+  }
 
   function runtimeEntry(player) {
     return runtime.entriesByUsername?.get?.(player.getUsername?.());
@@ -302,6 +359,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // `urgent`: a full bag to bank goes even while other errands rest after a failed one.
     if (!run || errands.busy(entry.player) || (replan && !urgent && (entry.noErrandUntil ?? 0) > now())) return false;
     if (blockedPlace(entry, to)) return false;
+    // The errand walks it through its brain's navigation (doors, stairs, long routes). A new
+    // adventurer has none until its first job, and its first move is often an errand (the bank):
+    // without one it never took a step, gave up after a minute and tried the next bank forever.
+    if (!run.brain && !startActivity(entry.player, "roam", { home: here(entry.player), nowMs: now() })) return false;
     const started = errands.go(run, to, {
       reason,
       arrive: (player) => {
@@ -346,15 +407,27 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
     if (plan.mode === "combat_ranged" || plan.mode === "combat_magic") {
       const style = plan.mode === "combat_ranged" ? "ranged" : "magic";
+      // Enough arrows or runes on it before it sets off; what is in the bank it fetches there,
+      // in person, and then starts. Not enough anywhere: not this way of fighting now.
+      if (!carriesSupplies(player, style)) {
+        const bank = nearestBank(player, entry);
+        if (!fightingStyles(player).includes(style) || !bank) return false;
+        return walkTo(entry, { ...bank, name: bank.name ?? bank.id }, {
+          reason: "withdraw",
+          arrive: (banker) => {
+            let got = 0;
+            for (const id of styleSupplyIds(style)) {
+              if (banked(banker, id) > 0 && banker.getInventory().getFreeSlots() > 2) got += withdraw(banker, id, 10_000);
+            }
+            if (got > 0) {
+              note(banker, `Haalt zijn ${style === "ranged" ? "boog en pijlen" : "runes"} van de bank om te ${style === "ranged" ? "boogschieten" : "toveren"}.`, "activity");
+              entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, remainingMs: 0, savedAt: now() };
+            }
+          },
+        });
+      }
       const run = runtimeEntry(player);
       if (run?.state) run.state.honestStyle = style;
-      // Its bow and arrows, or runes, out of the bank if they are there.
-      const supplies = style === "ranged" ? [...(Shopping.gear.styles.ranged.weapon ?? []), ...(Shopping.gear.styles.ranged.ammo ?? [])].map((entry) => entry.item)
-        : ["AIR_RUNE", "MIND_RUNE", "WATER_RUNE", "EARTH_RUNE", "FIRE_RUNE", "CHAOS_RUNE", ...(Shopping.gear.styles.magic.weapon ?? []).map((entry) => entry.item)];
-      for (const name of supplies) {
-        const id = Shopping.idOf(core, name);
-        if (Number.isInteger(id) && banked(player, id) > 0 && player.getInventory().getFreeSlots() > 2) withdraw(player, id, 10_000);
-      }
       return startTraining(entry, { ...plan, mode: "combat_training", style }, nowMs);
     }
     if (plan.mode === "combat_training" && !plan.style) {
@@ -1166,10 +1239,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   }
 
   function atExchange(player) {
+    const entry = adventurers.get(player.getUsername?.());
     const bag = sortBag(player);
     dropJunk(player, bag.junk);
     // The exchange has its bank: what it keeps for later goes in there, not up for sale.
-    const stored = deposit(player, bag.keep);
+    const stored = [...deposit(player, bag.keep), ...(entry ? bankUnusedSupplies(entry, player) : [])];
     if (stored.length > 0) note(player, `Bewaart op de bank: ${stored.map((good) => itemName(good.itemId)).join(", ")}.`, "activity");
     const pulled = withdrawToSell(player);
     const goods = Trade.goodsToSell(player, core, Trade.keepIds(player, core, { isFood }), { isFood });
@@ -1228,7 +1302,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       reason: "bank",
       urgent,
       arrive: (banker) => {
-        const stored = deposit(banker, Trade.goodsToSell(banker, core, Trade.keepIds(banker, core, { isFood }), { isFood, worthless: true }));
+        const stored = [...deposit(banker, Trade.goodsToSell(banker, core, Trade.keepIds(banker, core, { isFood }), { isFood, worthless: true })),
+          ...bankUnusedSupplies(entry, banker)];
         if (stored.length > 0) note(banker, `Zet op de bank in ${bank.name ?? bank.id}: ${stored.slice(0, 5).map((good) => itemName(good.itemId)).join(", ")}${stored.length > 5 ? ` en ${stored.length - 5} meer` : ""}. Bruikbaars bewaart hij; de rest verkoopt hij later op de GE.`, "activity");
       },
     });
