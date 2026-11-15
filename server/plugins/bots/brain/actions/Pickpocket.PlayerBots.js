@@ -34,8 +34,18 @@ function chebyshev(a, b) {
   return Math.max(Math.abs(a.getX() - b.getX()), Math.abs(a.getY() - b.getY()));
 }
 
-function nameOf(npc) {
-  return String(npc?.getDefinition?.()?.getName?.() ?? "");
+function resolvedNpcDefinition(npc, player) {
+  return npc?.getCurrentDefinition?.(player) ?? npc?.getDefinition?.() ?? null;
+}
+
+function resolvedNpcId(npc, player) {
+  const id = npc?.getContentId?.(player);
+  return Number.isInteger(id) && id >= 0 ? id : (Number.isInteger(npc?.getId?.()) ? npc.getId() : undefined);
+}
+
+function nameOf(npc, player) {
+  const definition = resolvedNpcDefinition(npc, player);
+  return String(definition?.getName?.() ?? "");
 }
 
 function createPickpocketAction(spec = {}, world = {}) {
@@ -71,7 +81,7 @@ function createPickpocketAction(spec = {}, world = {}) {
     let best = null;
     let bestDistance = Infinity;
     for (const npc of player.getLocalNpcs?.() ?? []) {
-      if (!npc || npc.isRegistered?.() === false || !names.has(nameOf(npc).toLowerCase())) continue;
+      if (!npc || npc.isRegistered?.() === false || !names.has(nameOf(npc, player).toLowerCase())) continue;
       if ((avoided.get(npc) ?? 0) > nowMs) continue;
       const distance = chebyshev(npc.getLocation(), here);
       if (distance <= SEARCH_TILES && distance < bestDistance) {
@@ -161,7 +171,9 @@ function createPickpocketAction(spec = {}, world = {}) {
         move(player, npc.getLocation().getX(), npc.getLocation().getY(), { reason: "brain_pickpocket", basicPather: true, z: npc.getLocation().getZ() });
         return "running";
       }
-      plugin().pickpocket({ player, npc, npcId: npc.getId?.(), definition: npc.getDefinition(), option: "Pickpocket" });
+      const definition = resolvedNpcDefinition(npc, player);
+      const npcId = resolvedNpcId(npc, player);
+      plugin().pickpocket({ player, npc, npcId, definition, option: "Pickpocket" });
       bot.nextAt = nowMs + ATTEMPT_MS;
       return "running";
     },
