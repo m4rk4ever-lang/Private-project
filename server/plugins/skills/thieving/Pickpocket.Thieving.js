@@ -614,6 +614,8 @@ function register(api) {
 
 module.exports = {
   register,
+  // The handler itself, for the pickpocketing bots (plugins/bots/brain/actions/Pickpocket.PlayerBots.js).
+  pickpocket,
   pouchCoins,
   POUCH_COINS,
   TARGETS,

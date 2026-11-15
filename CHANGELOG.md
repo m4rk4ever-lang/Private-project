@@ -103,8 +103,8 @@ Indeling per versie:
   cape), keuze uit 50 team capes, cloaks, hoeden en kostuums, skilling-outfits (Lumberjack,
   Prospector, Angler, Graceful) vanaf gevorderd niveau, en een skillcape bij 99. Na het reizen
   kleedt een skiller zich om voor zijn nieuwe klus.
-- **Ongeveer 210 bots** in de wereld (was 144): de groepen zijn verdubbeld en daarna op 0.7 gezet
-  (`PlayerBots:population`), zodat de server het bijhoudt.
+- Meer bots in de wereld: de groepen zijn verdubbeld en met `PlayerBots:population` teruggeschaald
+  zodat de server het bijhoudt.
 - Nieuwe instelling `PlayerBots:population` in `world.json`: vermenigvuldigt het aantal bots
   (0.5 is de helft). Handig als de server het niet bijhoudt.
 - **Thieving-bots:** bots stelen van stalls passend bij hun level, van de bakery- en tea stall
@@ -118,6 +118,24 @@ Indeling per versie:
   Ze blijven in de lobby, bij Wintertodt in de veilige gang. Echt meespelen volgt per minigame.
 - Bots lopen minder rondjes: rondhangen bij een bank, de GE of een lobby is nu een korte pauze
   (2 tot 15 minuten) en gebeurt minder vaak. Daarna gaan ze weer aan het werk.
+- **Vijf avonturiers:** Sjors, Fenna, Daantje, Lotte en Joep beginnen als nieuw account in
+  Lumbridge en spelen zelf verder. Ze trainen naar de quests op hun pad (45 quests, van Cook's
+  Assistant tot Dragon Slayer I), voltooien die en houden een logboek bij. Hun voortgang wordt
+  opgeslagen. Quests zonder uitgewerkte playthrough worden gesimuleerd (ze gaan naar het begin
+  van de quest, blijven daar een tijdje, en krijgen de normale beloning); dat staat er altijd bij.
+  Af en toe doen ze iets samen: Wintertodt, of trainen op dezelfde plek.
+- **Live meekijken:** de pagina `/adventurers.html` op je spel-adres (poort 3000) toont per
+  avonturier levels, combat, totaal, questpunten, wat hij doet en waar hij is, met logboeken
+  voor skills, quests, bosses, drops (vanaf 10k) en activiteit. Ververst elke 5 seconden.
+  In het spel: `::adventurers` voor een overzicht en `::adventurer <naam>` om erheen te gaan.
+- **Pickpocketen:** thieving-bots pickpocketen ook: men en women in Lumbridge, guards,
+  knights of Ardougne, paladins en heroes in Ardougne. Ze wachten een stun uit, openen hun coin
+  pouches en eten als ze geraakt zijn.
+- **Thieving in Ardougne:** de thieving-bots staan nu op de markt van Ardougne in plaats van in
+  Varrock, waar geen stalls zijn om van te stelen.
+- **Bank standing bij de booths:** bots bankstanden naast de bank booths, ook in Varrock West
+  en Edgeville, waar nu een vaste groep bank standers staat.
+- Ongeveer 160 bots in de wereld (`PlayerBots:population` 0.48), plus de vijf avonturiers.
 - **Grand Exchange als handelsplek:** de bots bij de GE lopen geen rondjes meer. Het is nu een
   mix van alle levels die staan te handelen (wachten op hun offers en af en toe een plek
   verder schuiven) en aan het bankstanden zijn. Bots die naar de GE reizen, doen meestal

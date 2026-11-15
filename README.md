@@ -49,13 +49,17 @@ Het account **Mark** logt in als owner (instelling `OWNER_USERNAME` in `.env`).
 | `::allquests` | Alle quests, miniquests en achievement diaries voltooid, zonder beloningen |
 | `::quest <naam>` | De stand van een quest bekijken of aanpassen |
 | `::diary <naam>` | De stand van een achievement diary bekijken, voltooien of resetten |
+| `::adventurers` | De vijf avonturier-bots: levels, quests en wat ze doen |
+| `::adventurer <naam>` | Naar een avonturier toe |
 
 ## Wereld
 
 - **Getrapte XP-rate** per skill: x25 tot level 49, x15 tot 79, x10 tot 89, daarna x5.
-- **Bots:** zo'n 210 bots die hakken, minen, vissen, stelen en vechten, bij banken skillen en bij minigames rondhangen, met een vaste thuisbasis per
+- **Bots:** zo'n 160 bots die hakken, minen, vissen, stelen en vechten, bij banken skillen en bij minigames rondhangen, met een vaste thuisbasis per
   activiteit. Ze reizen door de wereld, hangen rond bij de Grand Exchange en de banken, en
   high-level bots staan bij raids en bosses.
+- **Avonturiers:** vijf bots die zelf het spel spelen. Live te volgen op `/adventurers.html`
+  (op hetzelfde adres als het spel).
 - **Loot beam op waarde:** in de instellingen van de plugin Ground Items, met een schuifbalk.
 
 ## Saves en backups

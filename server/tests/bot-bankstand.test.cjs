@@ -59,3 +59,23 @@ test("a trader stands still and only now and then moves to another spot", () => 
   assert.ok(walks.length >= 2 && walks.length <= 4, String(walks.length));
   assert.equal(player.animations.length, 0);
 });
+
+test("a bank stander stands by one of the nearest booths, not on it", () => {
+  const player = bot({ fletching: 50 });
+  const booth = { getLocation: () => ({ getX: () => 3170, getY: () => 3490 }) };
+  const walks = [];
+  const action = createBankStandAction({}, {
+    core, random: Math.random, bankBoothIds: new Set([1]),
+    objectSearch: { findCandidatesByIds: () => [booth] },
+    requestMovement: (p, x, y) => walks.push({ x, y }),
+  });
+  for (let i = 0; i < 20; i++) {
+    const state = { home: { x: 3164, y: 3486, z: 0 } };
+    action.update({ player, state, nowMs: 0 });
+  }
+  assert.equal(walks.length, 20);
+  for (const spot of walks) {
+    assert.ok(Math.abs(spot.x - 3170) <= 2 && Math.abs(spot.y - 3490) <= 2, JSON.stringify(spot));
+    assert.ok(!(spot.x === 3170 && spot.y === 3490));
+  }
+});

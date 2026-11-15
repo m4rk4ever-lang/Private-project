@@ -245,6 +245,18 @@ module.exports = {
                 if (fs.existsSync(cachesDir)) {
                     devServer.app.use("/caches", express.static(cachesDir));
                 }
+                // The adventurers page (public/adventurers.html) reads the game server's
+                // /api/adventurers through here: same origin, and in a codespace only you can open
+                // port 3000.
+                devServer.app.use("/api/adventurers", (req, res) => {
+                    const port = Number(process.env.WEBSOCKET_PORT || 43594);
+                    const upstream = require("http").get({ host: "127.0.0.1", port, path: "/api/adventurers", timeout: 5000 }, (reply) => {
+                        res.status(reply.statusCode || 502).set("Content-Type", "application/json");
+                        reply.pipe(res);
+                    });
+                    upstream.on("error", () => res.status(502).json({ error: "game server not reachable" }));
+                    upstream.on("timeout", () => upstream.destroy());
+                });
 
                 return middlewares;
             },

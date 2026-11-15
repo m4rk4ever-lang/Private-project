@@ -1,0 +1,214 @@
+{
+  "_comment": "Adventurers (adventurers/Adventurers.PlayerBots.js): a few named bots that start as new accounts and play on their own, training toward the quests below and completing them. Their progress is saved. quests: the quest path, by the quest's name as registered on this server; skills and quests are the requirements (OSRS Wiki), combat a recommended combat level. Quests are completed by playing them where a playthrough is built (playthrough: true), otherwise simulated: the bot goes to the quest's start, spends a while there, and the quest completes with its normal rewards. trainMinutes / questMinutes: how long one stretch lasts. questChance: the chance to pick a quest when one is ready. groupChance: the chance an adventurer takes the others along (Wintertodt together, or the same training spot). dropValue: the lowest value (coins) of a drop that goes in the drop log. bossLevel: the lowest combat level of a kill that goes in the boss log.",
+  "names": [
+    "Sjors",
+    "Fenna",
+    "Daantje",
+    "Lotte",
+    "Joep"
+  ],
+  "spawn": {
+    "x": 3222,
+    "y": 3218,
+    "z": 0
+  },
+  "trainMinutes": [
+    8,
+    18
+  ],
+  "questMinutes": [
+    6,
+    15
+  ],
+  "questChance": 0.45,
+  "logSize": 40,
+  "quests": [
+    {
+      "name": "Cook's Assistant"
+    },
+    {
+      "name": "Sheep Shearer"
+    },
+    {
+      "name": "Romeo & Juliet"
+    },
+    {
+      "name": "The Restless Ghost"
+    },
+    {
+      "name": "Rune Mysteries"
+    },
+    {
+      "name": "Doric's Quest"
+    },
+    {
+      "name": "Imp Catcher"
+    },
+    {
+      "name": "Witch's Potion"
+    },
+    {
+      "name": "Goblin Diplomacy"
+    },
+    {
+      "name": "Ernest the Chicken"
+    },
+    {
+      "name": "Misthalin Mystery"
+    },
+    {
+      "name": "X Marks the Spot"
+    },
+    {
+      "name": "Pirate's Treasure"
+    },
+    {
+      "name": "Prince Ali Rescue"
+    },
+    {
+      "name": "The Corsair Curse"
+    },
+    {
+      "name": "The Knight's Sword",
+      "skills": {
+        "MINING": 10
+      }
+    },
+    {
+      "name": "Vampyre Slayer",
+      "combat": 20
+    },
+    {
+      "name": "Demon Slayer",
+      "combat": 20
+    },
+    {
+      "name": "Black Knights' Fortress",
+      "questPoints": 12
+    },
+    {
+      "name": "Below Ice Mountain",
+      "questPoints": 16
+    },
+    {
+      "name": "Druidic Ritual"
+    },
+    {
+      "name": "Gertrude's Cat"
+    },
+    {
+      "name": "Witch's House",
+      "combat": 25
+    },
+    {
+      "name": "Monk's Friend"
+    },
+    {
+      "name": "Clock Tower"
+    },
+    {
+      "name": "Murder Mystery"
+    },
+    {
+      "name": "Hazeel Cult"
+    },
+    {
+      "name": "Sheep Herder"
+    },
+    {
+      "name": "Death Plateau"
+    },
+    {
+      "name": "Client of Kourend",
+      "quests": [
+        "X Marks the Spot"
+      ]
+    },
+    {
+      "name": "Fishing Contest",
+      "skills": {
+        "FISHING": 10
+      }
+    },
+    {
+      "name": "Tree Gnome Village",
+      "combat": 25
+    },
+    {
+      "name": "Waterfall Quest",
+      "combat": 30
+    },
+    {
+      "name": "Fight Arena",
+      "combat": 40
+    },
+    {
+      "name": "Plague City"
+    },
+    {
+      "name": "Biohazard",
+      "quests": [
+        "Plague City"
+      ]
+    },
+    {
+      "name": "Sea Slug",
+      "skills": {
+        "FIREMAKING": 30
+      }
+    },
+    {
+      "name": "Tribal Totem",
+      "skills": {
+        "THIEVING": 21
+      }
+    },
+    {
+      "name": "Dwarf Cannon"
+    },
+    {
+      "name": "Priest in Peril",
+      "combat": 25
+    },
+    {
+      "name": "Nature Spirit",
+      "quests": [
+        "Priest in Peril",
+        "The Restless Ghost"
+      ],
+      "combat": 30
+    },
+    {
+      "name": "Recruitment Drive",
+      "quests": [
+        "Black Knights' Fortress",
+        "Druidic Ritual"
+      ]
+    },
+    {
+      "name": "Jungle Potion",
+      "skills": {
+        "HERBLORE": 3
+      },
+      "quests": [
+        "Druidic Ritual"
+      ]
+    },
+    {
+      "name": "Lost City",
+      "skills": {
+        "CRAFTING": 31,
+        "WOODCUTTING": 36
+      },
+      "combat": 35
+    },
+    {
+      "name": "Dragon Slayer I",
+      "questPoints": 32,
+      "combat": 45
+    }
+  ],
+  "groupChance": 0.3,
+  "dropValue": 10000,
+  "bossLevel": 100
+}

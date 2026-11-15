@@ -26,6 +26,10 @@ const DEFAULT_CRAFTS = Object.freeze([
   { skill: "CRAFTING", animation: "human_glassblowing" },
 ]);
 const DEFAULT_RADIUS = 4;
+/** How far from home a bank stander looks for a booth, and how close to it it stands. */
+const BOOTH_SEARCH_TILES = 14;
+const BOOTH_SPREAD = 2;
+const SPOT_ATTEMPTS = 8;
 /** An animation every few ticks, as one fletch or one potion takes (1.8 s; 3 ticks). */
 const STEP_MS = 1800;
 /** A short pause now and then, as a player banks between inventories. */
@@ -67,16 +71,41 @@ function createBankStandAction(spec = {}, world = {}) {
     return seqIds.get(name);
   }
 
+  /** The bank booths near home, nearest first (bank standers stand by them, as players do). */
+  function boothsNear(player, home) {
+    const ids = world.bankBoothIds ? [...world.bankBoothIds] : [];
+    if (ids.length === 0) return [];
+    const found = world.objectSearch?.findCandidatesByIds?.(player, ids, { regionRadius: 1, z: home.z ?? 0 }) ?? [];
+    return found
+      .map((object) => object.getLocation())
+      .map((at) => ({ x: at.getX(), y: at.getY(), distance: Math.max(Math.abs(at.getX() - home.x), Math.abs(at.getY() - home.y)) }))
+      .filter((booth) => booth.distance <= BOOTH_SEARCH_TILES)
+      .sort((a, b) => a.distance - b.distance);
+  }
+
   function start(player, state, nowMs) {
     const home = state.home ?? (() => {
       const at = player.getLocation();
       return { x: at.getX(), y: at.getY(), z: at.getZ() };
     })();
-    const spot = {
-      x: home.x + randomInt(-radius, radius, random),
-      y: home.y + randomInt(-radius, radius, random),
-      z: home.z ?? 0,
-    };
+    // By a booth (one of the nearest few), or anywhere around home for a trader or with no booth.
+    const booths = spec.trade ? [] : boothsNear(player, home);
+    const centre = booths.length > 0 ? booths[randomInt(0, Math.min(5, booths.length) - 1, random)] : home;
+    const spread = booths.length > 0 ? BOOTH_SPREAD : radius;
+    let spot = null;
+    for (let attempt = 0; attempt < SPOT_ATTEMPTS && !spot; attempt++) {
+      const candidate = {
+        x: centre.x + randomInt(-spread, spread, random),
+        y: centre.y + randomInt(-spread, spread, random),
+        z: home.z ?? 0,
+      };
+      // Not on the booth or a wall: a free floor tile.
+      if (booths.some((booth) => booth.x === candidate.x && booth.y === candidate.y)) continue;
+      if (world.regionManager && world.core?.Location
+        && world.regionManager.blocked(new world.core.Location(candidate.x, candidate.y, candidate.z), null)) continue;
+      spot = candidate;
+    }
+    spot ??= { x: home.x, y: home.y, z: home.z ?? 0 };
     state.bankStand = { craft: chooseCraft(player, crafts, world.core, random), spot, startedAt: nowMs, nextAt: nowMs, steps: 0 };
     (world.requestMovement ?? walk)(player, spot.x, spot.y, { reason: "brain_bankstand", basicPather: true, z: spot.z });
   }

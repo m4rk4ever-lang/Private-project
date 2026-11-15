@@ -59,7 +59,7 @@ function farEnough(place, here) {
 /** The destinations for a mode and level, at least MIN_TRAVEL_TILES from `here`. */
 function destinationsFor(mode, level, here, destinations = data.destinations) {
   return destinations.filter((place) =>
-    place.modes.includes(mode) && level >= (place.minLevel ?? 1) && farEnough(place, here));
+    place.modes.includes(mode) && level >= (place.minLevel ?? 1) && level <= (place.maxLevel ?? Infinity) && farEnough(place, here));
 }
 
 /** The hangouts a bot of this combat level may go to, at least MIN_TRAVEL_TILES from `here`. */

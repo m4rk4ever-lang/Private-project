@@ -2,7 +2,7 @@
   "name": "Realm of Eeshwar",
   "plugins": {},
   "pluginConfig": {
-    "PlayerBots:population": 0.7,
+    "PlayerBots:population": 0.48,
     "SoulWars:seedBots": true,
     "PlayerBots:sites": {
       "edge_low": {
@@ -61,9 +61,6 @@
           },
           "combat_training": {
             "intermediates": 8
-          },
-          "thieving": {
-            "intermediates": 6
           }
         }
       },
@@ -87,10 +84,6 @@
           "combat_training": {
             "advanced": 10,
             "experts": 10
-          },
-          "thieving": {
-            "advanced": 6,
-            "experts": 4
           }
         }
       },
@@ -159,6 +152,55 @@
           },
           "combat_training": {
             "legends": 10
+          }
+        }
+      },
+      "varrock_west_bank": {
+        "enabled": true,
+        "x": 3185,
+        "y": 3440,
+        "switchMinutes": [
+          15,
+          25
+        ],
+        "bots": {
+          "bankskilling": {
+            "intermediates": 3,
+            "advanced": 4,
+            "experts": 3,
+            "masters": 2
+          }
+        }
+      },
+      "edgeville_bank": {
+        "enabled": true,
+        "x": 3094,
+        "y": 3493,
+        "switchMinutes": [
+          15,
+          25
+        ],
+        "bots": {
+          "bankskilling": {
+            "advanced": 3,
+            "experts": 3,
+            "maxed": 1
+          }
+        }
+      },
+      "ardougne_market": {
+        "enabled": true,
+        "x": 2662,
+        "y": 3305,
+        "switchMinutes": [
+          15,
+          25
+        ],
+        "bots": {
+          "thieving": {
+            "intermediates": 6,
+            "advanced": 6,
+            "experts": 4
           }
         }
       },

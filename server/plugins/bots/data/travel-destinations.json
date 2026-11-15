@@ -1,5 +1,5 @@
 {
-  "_comment": "Where bots may teleport to when they switch activity (brain/Travel.PlayerBots.js). destinations: places to do an activity; modes: the bot activity modes found nearby; minLevel: the skill level for a skilling mode, the combat level for combat_training; weight: how often it is picked among the fitting ones (default 1). hangouts: busy places where a bot just spends its next stretch walking around (banking, idling) as players do; weights follow how busy these places are on live OSRS (an estimate: the Grand Exchange by far, then the main banks); minCombat keeps boss and raid entrances for high-level bots, who wear their combat gear there (combatGear). Tiles are arrival tiles; never in the Wilderness. hubFor: the activity modes a hangout is a home hub for: each bot gets one hub per mode (fixed by its name, among those that fit its level), returns there between activities (ownHubChance) and prefers destinations within 300 tiles of it (weight times nearHubBonus). hubMaxLevel: a hub only for bots below this level (Lumbridge for beginners). bankstand: at this bank a bot may stand and work on a bank skill (fletching, herblore, crafting) instead of walking around (bankstandChance). minigames: lobbies where bots gather in groups (minigameChance): requires (skill levels) or minCombat, bounds the tiles they stay within, outfit what they wear there (or combatGear), maxGroup how many at once; a game with company draws more (groups form). play names the minigame's own bot code that will later take them into the game. activities: what bots do at a hangout, weighted (an activity id from bot-activities.json); without it they roam, or bank stand at a bank. stayMinutes: how long a bot stays at a hangout per activity before it goes back to work (minutes, min-max); a minigame it plays (Wintertodt) keeps the normal switch time.",
+  "_comment": "Where bots may teleport to when they switch activity (brain/Travel.PlayerBots.js). destinations: places to do an activity; modes: the bot activity modes found nearby; minLevel: the skill level for a skilling mode, the combat level for combat_training; weight: how often it is picked among the fitting ones (default 1). hangouts: busy places where a bot just spends its next stretch walking around (banking, idling) as players do; weights follow how busy these places are on live OSRS (an estimate: the Grand Exchange by far, then the main banks); minCombat keeps boss and raid entrances for high-level bots, who wear their combat gear there (combatGear). Tiles are arrival tiles; never in the Wilderness. hubFor: the activity modes a hangout is a home hub for: each bot gets one hub per mode (fixed by its name, among those that fit its level), returns there between activities (ownHubChance) and prefers destinations within 300 tiles of it (weight times nearHubBonus). hubMaxLevel: a hub only for bots below this level (Lumbridge for beginners). bankstand: at this bank a bot may stand and work on a bank skill (fletching, herblore, crafting) instead of walking around (bankstandChance). minigames: lobbies where bots gather in groups (minigameChance): requires (skill levels) or minCombat, bounds the tiles they stay within, outfit what they wear there (or combatGear), maxGroup how many at once; a game with company draws more (groups form). play names the minigame's own bot code that will later take them into the game. activities: what bots do at a hangout, weighted (an activity id from bot-activities.json); without it they roam, or bank stand at a bank. stayMinutes: how long a bot stays at a hangout per activity before it goes back to work (minutes, min-max); a minigame it plays (Wintertodt) keeps the normal switch time. maxLevel: the highest level a destination is for (pickpocketing men in Lumbridge stops being worth it).",
   "chance": 0.6,
   "hangoutChance": 0.15,
   "ownHubChance": 0.7,
@@ -395,17 +395,6 @@
       "weight": 3
     },
     {
-      "id": "varrock_tea_stall",
-      "x": 3213,
-      "y": 3428,
-      "z": 0,
-      "modes": [
-        "thieving"
-      ],
-      "minLevel": 5,
-      "weight": 0.5
-    },
-    {
       "id": "kourend_castle",
       "x": 1640,
       "y": 3673,
@@ -595,6 +584,28 @@
         "fishing"
       ],
       "minLevel": 1
+    },
+    {
+      "id": "lumbridge_men",
+      "x": 3222,
+      "y": 3218,
+      "z": 0,
+      "modes": [
+        "thieving"
+      ],
+      "minLevel": 1,
+      "maxLevel": 24
+    },
+    {
+      "id": "ardougne_knights",
+      "x": 2655,
+      "y": 3300,
+      "z": 0,
+      "modes": [
+        "thieving"
+      ],
+      "minLevel": 40,
+      "weight": 2
     }
   ],
   "hangouts": [
@@ -638,7 +649,6 @@
       "z": 0,
       "weight": 2,
       "hubFor": [
-        "thieving",
         "combat_training"
       ]
     },

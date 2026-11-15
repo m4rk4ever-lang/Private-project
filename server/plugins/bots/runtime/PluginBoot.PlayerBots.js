@@ -123,6 +123,8 @@ function bootPlayerBotsRuntime(options = {}) {
       Smithing.isSmeltingActive?.(player) === true,
     log: (message, extra) => botApi.log(message, extra),
   };
+  // Bank standers stand by a booth (BankStand.PlayerBots.js).
+  brainWorld.bankBoothIds = BANK_BOOTH_IDS;
   brainWorld.travel = createTravel({
     core: botApi.core,
     log: brainWorld.log,
