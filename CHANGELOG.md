@@ -100,7 +100,8 @@ Indeling per versie:
   cape), keuze uit 50 team capes, cloaks, hoeden en kostuums, skilling-outfits (Lumberjack,
   Prospector, Angler, Graceful) vanaf gevorderd niveau, en een skillcape bij 99. Na het reizen
   kleedt een skiller zich om voor zijn nieuwe klus.
-- **300 bots** in de wereld (was 144): elke groep is verdubbeld.
+- **Ongeveer 210 bots** in de wereld (was 144): de groepen zijn verdubbeld en daarna op 0.7 gezet
+  (`PlayerBots:population`), zodat de server het bijhoudt.
 - Nieuwe instelling `PlayerBots:population` in `world.json`: vermenigvuldigt het aantal bots
   (0.5 is de helft). Handig als de server het niet bijhoudt.
 - **Thieving-bots:** bots stelen van stalls passend bij hun level, van de bakery- en tea stall

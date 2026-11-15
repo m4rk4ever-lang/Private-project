@@ -53,7 +53,7 @@ Het account **Mark** logt in als owner (instelling `OWNER_USERNAME` in `.env`).
 ## Wereld
 
 - **Getrapte XP-rate** per skill: x25 tot level 49, x15 tot 79, x10 tot 89, daarna x5.
-- **Bots:** 300 bots die hakken, minen, vissen, stelen en vechten, bij banken skillen en bij minigames rondhangen, met een vaste thuisbasis per
+- **Bots:** zo'n 210 bots die hakken, minen, vissen, stelen en vechten, bij banken skillen en bij minigames rondhangen, met een vaste thuisbasis per
   activiteit. Ze reizen door de wereld, hangen rond bij de Grand Exchange en de banken, en
   high-level bots staan bij raids en bosses.
 - **Loot beam op waarde:** in de instellingen van de plugin Ground Items, met een schuifbalk.
