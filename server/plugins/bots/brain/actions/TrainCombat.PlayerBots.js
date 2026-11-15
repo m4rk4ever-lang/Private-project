@@ -9,14 +9,28 @@ const Loot = require("../Loot.PlayerBots");
 const HouseParty = require("../HouseParty.PlayerBots");
 const isFood = (itemId) => require("../../../items/Food.plugin").isFoodItem(itemId);
 
+/** The strike or bolt spell it can cast now with the runes it carries, best first. */
+const HONEST_SPELLS = ["FIRE_BOLT", "WIND_BOLT", "FIRE_STRIKE", "EARTH_STRIKE", "WATER_STRIKE", "WIND_STRIKE"];
+function castableSpell(player, core) {
+  const magic = player.getSkillManager().getCurrentLevel(core.Skill.MAGIC);
+  for (const key of HONEST_SPELLS) {
+    const spell = core.CombatSpells?.[key];
+    if (!spell || magic < (spell.levelRequired?.() ?? 99)) continue;
+    const runes = spell.itemsRequired?.(player) ?? [];
+    if (runes.every((rune) => player.getInventory().getAmount(rune.getId()) >= rune.getAmount() * 5)) return spell;
+  }
+  return null;
+}
+
 /** An honest bot puts on the best fighting gear it carries (Trade.wearBest's lists and rules). */
-function wearOwnGear(player, core) {
+function wearOwnGear(player, core, style = "melee") {
   const Trade = require("../../adventurers/Trade.PlayerBots");
   const QuestRuntime = require("../../../quests/QuestRuntime");
   const levelOf = (name) => (core.Skill[name] ? player.getSkillManager().getMaxLevel(core.Skill[name]) : 1);
   const norm = (name) => String(name).toLowerCase().replace(/[^a-z0-9]/g, "");
   const questDone = (name) => QuestRuntime.getRegisteredQuests().find((quest) => norm(quest.name) === norm(name))?.isComplete(player) === true;
-  Trade.wearBest(player, core, { levelOf, questDone });
+  Trade.wearBest(player, core, { levelOf, questDone }, style);
+  if (style === "magic") core.Autocasting?.setAutocast(player, castableSpell(player, core));
 }
 const Value = require("../../../interface/ValueWarning");
 const { requestMovement, clearMovementRequest, peekMovementRequest, randomInRange } =
@@ -158,6 +172,7 @@ function createTrainCombatAction(spec, world) {
     claimedAt: 0, failedTargets: 0, progressFlag: false, avoided: new WeakMap(), avoidedSites: new Map(),
   }));
   const styleFor = (player, state) => {
+    if (state.honestStyle) return state.honestStyle;
     if (!state.combatStyle) {
       const index = combatStyles.length
         ? hashSeed(`${player.getUsername?.() ?? "bot"}:style`) % combatStyles.length
@@ -209,8 +224,9 @@ function createTrainCombatAction(spec, world) {
     // An honest bot (an adventurer) fights in what it owns and eats what it carries.
     if (state?.honest || isHonest(player)) {
       // Into the best weapon and armour it owns and may wear (an axe it chopped with goes back
-      // in the bag for its scimitar): through the game's own equip.
-      wearOwnGear(player, core);
+      // in the bag for its scimitar): through the game's own equip. Its way of fighting is its
+      // own choice (state.honestStyle: melee, a bow, or spells with its runes).
+      wearOwnGear(player, core, state?.honestStyle ?? "melee");
       return false;
     }
     let changed = false;

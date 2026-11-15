@@ -1,5 +1,5 @@
 {
-  "_comment": "What adventurers buy from shops as they level (adventurers/Shopping.PlayerBots.js), best first per slot. level: the skill level to use it (attack for weapons, defence for armour, the tool's skill for tools); quests: quests needed to buy or wear it (OSRS Wiki). They only buy what a shop in the world really stocks, at its price, with their own coins, and only when it costs at most budgetShare of what they have. food: what they buy to eat when they carry none, from a shop that stocks it. tools.hammer and tools.knife: to smith their bars and fletch their logs (Smith/Fletch.PlayerBots.js).",
+  "_comment": "What adventurers buy from shops as they level (adventurers/Shopping.PlayerBots.js), best first per slot. level: the skill level to use it (attack for weapons, defence for armour, the tool's skill for tools); quests: quests needed to buy or wear it (OSRS Wiki). They only buy what a shop in the world really stocks, at its price, with their own coins, and only when it costs at most budgetShare of what they have. styles: the weapon (and ammunition) lists for fighting with a bow or a staff, worn instead of the melee weapon when it fights that way. food: what they buy to eat when they carry none, from a shop that stocks it. tools.hammer and tools.knife: to smith their bars and fletch their logs (Smith/Fletch.PlayerBots.js).",
   "budgetShare": 0.6,
   "slots": {
     "weapon": [
@@ -41,6 +41,32 @@
       { "item": "STEEL_KITESHIELD", "skill": "DEFENCE", "level": 5 },
       { "item": "IRON_KITESHIELD", "skill": "DEFENCE", "level": 1 }
     ]
+  },
+  "styles": {
+    "ranged": {
+      "weapon": [
+        { "item": "MAGIC_SHORTBOW", "skill": "RANGED", "level": 50 },
+        { "item": "YEW_SHORTBOW", "skill": "RANGED", "level": 40 },
+        { "item": "MAPLE_SHORTBOW", "skill": "RANGED", "level": 30 },
+        { "item": "WILLOW_SHORTBOW", "skill": "RANGED", "level": 20 },
+        { "item": "OAK_SHORTBOW", "skill": "RANGED", "level": 5 },
+        { "item": "SHORTBOW", "skill": "RANGED", "level": 1 }
+      ],
+      "ammo": [
+        { "item": "RUNE_ARROW", "skill": "RANGED", "level": 40 },
+        { "item": "ADAMANT_ARROW", "skill": "RANGED", "level": 30 },
+        { "item": "MITHRIL_ARROW", "skill": "RANGED", "level": 20 },
+        { "item": "STEEL_ARROW", "skill": "RANGED", "level": 5 },
+        { "item": "IRON_ARROW", "skill": "RANGED", "level": 1 },
+        { "item": "BRONZE_ARROW", "skill": "RANGED", "level": 1 }
+      ]
+    },
+    "magic": {
+      "weapon": [
+        { "item": "STAFF_OF_FIRE", "skill": "MAGIC", "level": 1 },
+        { "item": "STAFF_OF_AIR", "skill": "MAGIC", "level": 1 }
+      ]
+    }
   },
   "tools": {
     "hammer": [{ "item": "HAMMER", "skill": "SMITHING", "level": 1 }],

@@ -34,6 +34,7 @@ function candidates(view, { gear, levelOf, owns, worn, priceOf, questDone, idOf,
     }
   };
   for (const list of Object.values(gear.slots ?? {})) consider(list);
+  for (const style of Object.values(gear.styles ?? {})) for (const list of Object.values(style)) consider(list);
   for (const list of [gear.tools?.axe, gear.tools?.pickaxe].filter(Boolean)) consider(list);
   if (levelOf("FIREMAKING") < 50) out.push({ kind: "level", skill: "FIREMAKING", level: 50, why: "Wintertodt" });
   for (const save of SAVE_FOR) {
@@ -72,6 +73,8 @@ function goalWeight(goal, option) {
   if (!goal) return 1;
   if (goal.kind === "level") {
     if (COMBAT_SKILLS.has(goal.skill)) return option.mode === "combat_training" ? 4 : 1;
+    if (goal.skill === "RANGED") return option.mode === "combat_ranged" ? 4 : 1;
+    if (goal.skill === "MAGIC") return option.mode === "combat_magic" ? 4 : 1;
     return option.skill === goal.skill ? 4 : 1;
   }
   // Saving up: what earns (loot, pickpockets, produce to sell) more, spending on materials less.

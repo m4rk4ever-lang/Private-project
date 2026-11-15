@@ -140,6 +140,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       done,
       buyable: buyableSkills(player),
       stocked: stockedSkills(player),
+      styles: fightingStyles(player),
       // Only quests a bot can really play (none yet): nothing is simulated.
       available: new Set(questList().filter((quest) => quest.playthrough === true && registered.has(normalize(quest.name)))
         .map((quest) => quest.name)),
@@ -214,6 +215,20 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return goal;
   }
 
+  /** The ways it can fight now: a bow it owns with arrows, runes for a spell. */
+  function fightingStyles(player) {
+    const styles = [];
+    const has = (name, amount = 1) => {
+      const id = Shopping.idOf(core, name);
+      return Number.isInteger(id) && player.getInventory().getAmount(id) + banked(player, id)
+        + ((player.getEquipment().getItems() ?? []).find((item) => item?.getId?.() === id)?.getAmount?.() ?? 0) >= amount;
+    };
+    const ranged = Shopping.gear.styles?.ranged ?? {};
+    if ((ranged.weapon ?? []).some((entry) => has(entry.item)) && (ranged.ammo ?? []).some((entry) => has(entry.item, 20))) styles.push("ranged");
+    if (has("AIR_RUNE", 20) && has("MIND_RUNE", 10)) styles.push("magic");
+    return styles;
+  }
+
   /** Skills it has the materials for now: they weigh more in its next pick (one skill feeds another). */
   function stockedSkills(player) {
     return Object.keys(data.buyToTrain ?? {}).filter((skill) => {
@@ -275,6 +290,23 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const view = snapshot(player);
     if (plan.mode.startsWith("buy_")) {
       return startBuyTraining(entry, plan, nowMs);
+    }
+    if (plan.mode === "combat_ranged" || plan.mode === "combat_magic") {
+      const style = plan.mode === "combat_ranged" ? "ranged" : "magic";
+      const run = runtimeEntry(player);
+      if (run?.state) run.state.honestStyle = style;
+      // Its bow and arrows, or runes, out of the bank if they are there.
+      const supplies = style === "ranged" ? [...(Shopping.gear.styles.ranged.weapon ?? []), ...(Shopping.gear.styles.ranged.ammo ?? [])].map((entry) => entry.item)
+        : ["AIR_RUNE", "MIND_RUNE", "WATER_RUNE", "EARTH_RUNE", "FIRE_RUNE", "CHAOS_RUNE", ...(Shopping.gear.styles.magic.weapon ?? []).map((entry) => entry.item)];
+      for (const name of supplies) {
+        const id = Shopping.idOf(core, name);
+        if (Number.isInteger(id) && banked(player, id) > 0 && player.getInventory().getFreeSlots() > 2) withdraw(player, id, 10_000);
+      }
+      return startTraining(entry, { ...plan, mode: "combat_training", style }, nowMs);
+    }
+    if (plan.mode === "combat_training" && !plan.style) {
+      const run = runtimeEntry(player);
+      if (run?.state) run.state.honestStyle = "melee";
     }
     if (plan.mode === "agility") {
       const level = levelOf(player, "AGILITY");
@@ -890,6 +922,27 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (bids.length > 0) note(player, `Biedt op de GE op: ${bids.join(", ")}.`, "activity");
   }
 
+  /** Arrows for its bow, runes for its spells: bought when they run low (and it fights that way). */
+  function bidForSupplies(player) {
+    const styles = fightingStyles(player);
+    const bids = [];
+    const top = (name, amount) => {
+      const id = Shopping.idOf(core, name);
+      if (!Number.isInteger(id) || player.getInventory().getAmount(id) + banked(player, id) >= amount / 3) return;
+      if (Trade.buyAtExchange(player, core, emit, id, amount)) bids.push(`${amount} x ${itemName(id)}`);
+    };
+    if (styles.includes("ranged") || (Shopping.gear.styles?.ranged?.weapon ?? []).some((entry) => Shopping.owns(player, Shopping.idOf(core, entry.item)))) {
+      const level = levelOf(player, "RANGED");
+      const arrow = (Shopping.gear.styles?.ranged?.ammo ?? []).find((entry) => level >= entry.level);
+      if (arrow) top(arrow.item, 300);
+    }
+    if (styles.includes("magic")) {
+      top("AIR_RUNE", 600);
+      top("MIND_RUNE", 300);
+    }
+    if (bids.length > 0) note(player, `Koopt voorraad op de GE: ${bids.join(", ")}.`, "activity");
+  }
+
   function atExchange(player) {
     const bag = sortBag(player);
     dropJunk(player, bag.junk);
@@ -908,6 +961,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       note(player, `Zet te koop op de GE${pulled ? " (ook uit de bank)" : ""}: ${names.join(", ")}${offered.length > 4 ? ` en ${offered.length - 4} meer` : ""} (~${total.toLocaleString("nl-NL")} gp).`, "activity");
     }
     bidForUpgrades(player);
+    bidForSupplies(player);
     for (const name of Trade.wearBest(player, core, { levelOf: (skill) => levelOf(player, skill), questDone: questDone(player) })) {
       note(player, `Draagt nu ${name.toLowerCase().replace(/_/g, " ")} (gekocht op de GE).`, "activity");
     }

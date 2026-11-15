@@ -49,6 +49,9 @@ function isReady(quest, adventurer) {
 function trainingOptions(adventurer) {
   const options = Object.entries(TRAINABLE).map(([skill, mode]) => ({ mode, skill, level: adventurer.levels[skill] ?? 1 }));
   options.push({ mode: COMBAT, skill: "COMBAT", level: adventurer.combat });
+  // Fighting with a bow and arrows, or spells with runes, when it has them (adventurer.styles).
+  if ((adventurer.styles ?? []).includes("ranged")) options.push({ mode: "combat_ranged", skill: "RANGED", level: adventurer.levels.RANGED ?? 1 });
+  if ((adventurer.styles ?? []).includes("magic")) options.push({ mode: "combat_magic", skill: "MAGIC", level: adventurer.levels.MAGIC ?? 1 });
   // Agility: laps on the best course its level allows (adventurers.json agilityCourses).
   options.push({ mode: "agility", skill: "AGILITY", level: adventurer.levels.AGILITY ?? 1 });
   if ((adventurer.levels.FIREMAKING ?? 1) >= WINTERTODT_LEVEL) {

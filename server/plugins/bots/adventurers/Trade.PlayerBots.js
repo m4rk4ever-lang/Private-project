@@ -20,8 +20,8 @@ const PLATINUM_TOKEN = 13204;
 const KEEP_TOOLS = ["TINDERBOX", "HAMMER", "CHISEL", "NEEDLE", "KNIFE", "FEATHER", "FISHING_BAIT"];
 
 function gearLists() {
-  const { slots = {}, tools = {} } = Shopping.gear;
-  return [...Object.values(slots), ...Object.values(tools)];
+  const { slots = {}, tools = {}, styles = {} } = Shopping.gear;
+  return [...Object.values(slots), ...Object.values(tools), ...Object.values(styles).flatMap((style) => Object.values(style))];
 }
 
 function inventoryIds(player) {
@@ -51,9 +51,19 @@ function wornRank(list, core, worn) {
  * Wears found gear that beats what it wears and that its levels and quests allow, through the
  * game's equip. Returns the names it put on.
  */
-function wearBest(player, core, { levelOf, questDone }) {
+function listsFor(style = "melee") {
+  const lists = { ...(Shopping.gear.slots ?? {}) };
+  const own = Shopping.gear.styles?.[style];
+  if (own?.weapon) lists.weapon = own.weapon;
+  if (own?.ammo) lists.ammo = own.ammo;
+  // A bow takes both hands: no shield with it.
+  if (style === "ranged") delete lists.shield;
+  return lists;
+}
+
+function wearBest(player, core, { levelOf, questDone }, style = "melee") {
   const put = [];
-  for (const list of Object.values(Shopping.gear.slots ?? {})) {
+  for (const list of Object.values(listsFor(style))) {
     const held = inventoryIds(player);
     const rank = wornRank(list, core, equippedIds(player));
     for (let index = 0; index < rank; index += 1) {
@@ -164,4 +174,4 @@ function finishedOffers(player, emit) {
   return peek.finished ?? 0;
 }
 
-module.exports = { isSupply, wearBest, keepIds, goodsToSell, sellAtExchange, buyAtExchange, finishedOffers, COINS, KEEP_TOOLS };
+module.exports = { listsFor, isSupply, wearBest, keepIds, goodsToSell, sellAtExchange, buyAtExchange, finishedOffers, COINS, KEEP_TOOLS };
