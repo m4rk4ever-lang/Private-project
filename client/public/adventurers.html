@@ -57,6 +57,19 @@
   .ranking tr:last-child td { border-bottom: 0; }
   .medal { color: var(--gold); font-weight: 700; }
   .rank { font-size: 13px; color: var(--gold); font-weight: 700; }
+  img.ic { width: 18px; height: 18px; object-fit: contain; vertical-align: -4px; margin-right: 3px; image-rendering: pixelated; }
+  .skill img.ic { display: block; margin: 0 auto 1px; width: 20px; height: 20px; }
+  .tabs img.ic { width: 16px; height: 16px; }
+  .log li img.ic { width: 24px; height: 22px; flex: 0 0 24px; }
+  .gear { display: grid; grid-template-columns: repeat(auto-fill, minmax(36px, 1fr)); gap: 4px; padding: 6px 0 10px; }
+  .gear div { position: relative; background: var(--panel-2); border-radius: 4px; height: 36px; display: flex; align-items: center; justify-content: center; }
+  .gear img.ic { width: 32px; height: 30px; margin: 0; }
+  .gear div { font-size: 10px; color: var(--muted); overflow: hidden; }
+  .worn { padding: 4px 16px 10px; border-top: 1px solid var(--line); }
+  .worn .gear { grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); padding: 4px 0 0; }
+  .gear small { position: absolute; left: 2px; top: 0; font-size: 10px; color: #ff0; text-shadow: 1px 1px #000; }
+  .section { color: var(--muted); font-size: 12px; padding-top: 6px; }
+  .follow { margin-left: auto; font-size: 12px; background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 2px 8px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -66,13 +79,37 @@
 </header>
 <section class="ranking" id="ranking"></section>
 <main id="cards"></main>
-<p class="note">Score: totaal level + 2 per questpunt + 1 per miljoen gp aan bezit. Ververst elke 5 seconden. Ga in het spel naar een avonturier met <code>::adventurer &lt;naam&gt;</code>. Quests zonder uitgewerkte playthrough zijn gesimuleerd, en dat staat erbij.</p>
+<p class="note">Score: totaal level + 2 per questpunt + 1 per miljoen gp aan bezit. Ververst elke 5 seconden. Volg een avonturier live in het spel met <code>::volg &lt;naam&gt;</code> (de knop Volg kopieert het commando), en stop met <code>::volg</code>. Naar een avonturier toe: <code>::adventurer &lt;naam&gt;</code>. Niets is gesimuleerd: quests doen ze pas als er een bot-playthrough voor is, en coins komen alleen uit drops en verkopen. Iconen: OSRS Wiki.</p>
 <script>
   const SKILLS = ["attack", "hitpoints", "mining", "strength", "agility", "smithing", "defence", "herblore", "fishing",
     "ranged", "thieving", "cooking", "prayer", "crafting", "firemaking", "magic", "fletching", "woodcutting",
     "runecraft", "runecrafting", "slayer", "farming", "construction", "hunter", "sailing"];
-  const TABS = [["skill", "Skills"], ["quest", "Quests"], ["boss", "Bosses"], ["drop", "Drops"], ["bank", "Bank"], ["activity", "Activiteit"]];
+  const TABS = [["skill", "Skills"], ["quest", "Quests"], ["boss", "Bosses"], ["drop", "Drops"], ["bank", "Spullen"], ["activity", "Activiteit"]];
   const chosenTab = {};
+  const SKILL_NAMES = { runecrafting: "Runecraft" };
+  const TAB_ICONS = { skill: "Stats_icon", quest: "Quest_point_icon", boss: "Combat_icon", drop: "Coins_10000", bank: "Bank_icon", activity: "Grand_Exchange_icon" };
+
+  /** An image from the OSRS Wiki by its file name; a missing one simply disappears. */
+  function wikiFile(file) {
+    return `https://oldschool.runescape.wiki/images/${encodeURIComponent(file.replace(/ /g, "_"))}.png`;
+  }
+  /** Without the picture (offline, or no such file) its short text stands in. */
+  function icon(file, title = "", fallback = "") {
+    return `<img class="ic" src="${wikiFile(file)}" alt="" title="${esc(title)}" data-alt="${esc(fallback)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(document.createTextNode(this.dataset.alt))">`;
+  }
+  /** An item's inventory picture: its name, coins by stack size as in game. */
+  function itemIcon(name, amount = 1, short = false) {
+    if (/^coins$/i.test(name)) {
+      const stack = [10000, 1000, 250, 100, 25, 5, 4, 3, 2, 1].find((size) => amount >= size) ?? 1;
+      return icon(`Coins_${stack}`, name);
+    }
+    const file = String(name).charAt(0).toUpperCase() + String(name).slice(1);
+    return icon(file, name, short ? String(name).slice(0, 6) : "");
+  }
+  function skillIcon(name) {
+    const cap = SKILL_NAMES[name] ?? name.charAt(0).toUpperCase() + name.slice(1);
+    return icon(`${cap}_icon`, cap, cap.slice(0, 4));
+  }
 
   function esc(text) {
     return String(text ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -90,7 +127,7 @@
     for (const name of Object.keys(skills)) if (!names.includes(name)) names.push(name);
     return names.map((name) => {
       const level = skills[name].level;
-      return `<div class="skill ${level >= 90 ? "hi" : ""}" title="${esc(name)}: ${skills[name].xp.toLocaleString("nl-NL")} xp"><b>${level}</b>${esc(name.slice(0, 4))}</div>`;
+      return `<div class="skill ${level >= 90 ? "hi" : ""}" title="${esc(name)}: ${skills[name].xp.toLocaleString("nl-NL")} xp">${skillIcon(name)}<b>${level}</b></div>`;
     }).join("");
   }
   function gp(value) {
@@ -99,12 +136,16 @@
     if (v >= 100_000) return `${Math.round(v / 1_000).toLocaleString("nl-NL")}k`;
     return v.toLocaleString("nl-NL");
   }
+  function gearGrid(stacks) {
+    if (stacks.length === 0) return `<div class="empty">Niets.</div>`;
+    return `<div class="gear">${stacks.map((stack) => `<div title="${esc(stack.name)}${stack.amount > 1 ? ` x ${stack.amount.toLocaleString("nl-NL")}` : ""} · ${gp(stack.value)} gp">${stack.amount > 1 ? `<small>${gp(stack.amount)}</small>` : ""}${itemIcon(stack.name, stack.amount, true)}</div>`).join("")}</div>`;
+  }
   function bankList(adventurer) {
-    const stacks = adventurer.bank ?? [];
     const w = adventurer.wealth;
-    const head = w ? `<li><span>Bank <b>${gp(w.bank)}</b> · bij zich <b>${gp(w.carried)}</b> · totaal <b>${gp(w.total)}</b> gp</span></li>` : "";
-    if (stacks.length === 0) return head + `<li class="empty">De bank is nog leeg.</li>`;
-    return head + stacks.map((stack) => `<li><time>${gp(stack.value)}</time><span>${stack.amount > 1 ? `${stack.amount.toLocaleString("nl-NL")} x ` : ""}${esc(stack.name)}</span></li>`).join("");
+    const head = w ? `<li><span>${itemIcon("Coins", w.total)} Bank <b>${gp(w.bank)}</b> · bij zich <b>${gp(w.carried)}</b> · totaal <b>${gp(w.total)}</b> gp</span></li>` : "";
+    return head
+      + `<li class="section">Inventaris</li><li>${gearGrid(adventurer.carried ?? [])}</li>`
+      + `<li class="section">Bank</li><li>${gearGrid(adventurer.bank ?? [])}</li>`;
   }
   function ranking(list) {
     const rows = list.map((a) => `<tr><td class="${a.rank <= 3 ? "medal" : ""}">#${a.rank}</td><td>${esc(a.name)}</td><td>${a.score}</td>
@@ -128,19 +169,21 @@
     return `<section class="card">
       <div class="top">
         <div class="name"><span class="rank">#${adventurer.rank}</span><span class="dot ${adventurer.online ? "on" : ""}"></span>${esc(adventurer.name)}
-          ${adventurer.group ? '<span class="tag">samen</span>' : ""}</div>
+          ${adventurer.group ? '<span class="tag">samen</span>' : ""}
+          <button class="follow" data-follow="${esc(adventurer.name)}" title="Kopieert ::volg ${esc(adventurer.name)}">Volg</button></div>
         <div class="stats">
-          <span>Combat <b>${adventurer.combat ?? "-"}</b></span>
-          <span>Totaal <b>${adventurer.total ?? "-"}</b></span>
-          <span>QP <b>${adventurer.questPoints}</b></span>
-          <span>Quests <b>${adventurer.quests.length}/${adventurer.questsOnPath}</b></span>
-          <span>Bezit <b>${gp(adventurer.wealth?.total)}</b></span>
+          <span>${icon("Combat_icon", "Combat")}Combat <b>${adventurer.combat ?? "-"}</b></span>
+          <span>${icon("Stats_icon", "Totaal level")}Totaal <b>${adventurer.total ?? "-"}</b></span>
+          <span>${icon("Quest_point_icon", "Questpunten")}QP <b>${adventurer.questPoints}</b></span>
+          <span>Quests <b>${adventurer.quests.length}/${adventurer.questsTotal ?? "-"}</b></span>
+          <span>${itemIcon("Coins", adventurer.wealth?.total ?? 0)}Bezit <b>${gp(adventurer.wealth?.total)}</b></span>
         </div>
         <div class="doing">${esc(adventurer.doing)}${minutesLeft(adventurer.until)}</div>
         <div class="where">${where}</div>
       </div>
+      <div class="worn"><div class="section">Uitrusting</div>${gearGrid(adventurer.worn ?? [])}</div>
       <div class="skills">${skillGrid(adventurer.skills ?? {})}</div>
-      <div class="tabs">${TABS.map(([key, label]) => `<button data-name="${esc(adventurer.name)}" data-tab="${key}" class="${key === tab ? "on" : ""}">${label}</button>`).join("")}</div>
+      <div class="tabs">${TABS.map(([key, label]) => `<button data-name="${esc(adventurer.name)}" data-tab="${key}" class="${key === tab ? "on" : ""}">${icon(TAB_ICONS[key], label)}${label}</button>`).join("")}</div>
       <ul class="log">${logList(adventurer, tab)}</ul>
     </section>`;
   }
@@ -151,7 +194,19 @@
     document.getElementById("ranking").innerHTML = ranking(last.adventurers);
     document.getElementById("cards").innerHTML = last.adventurers.map(card).join("");
   }
-  document.addEventListener("click", (event) => {
+  document.addEventListener("click", async (event) => {
+    const follow = event.target.closest("button.follow");
+    if (follow) {
+      const command = `::volg ${follow.dataset.follow}`;
+      try {
+        await navigator.clipboard.writeText(command);
+        follow.textContent = "Gekopieerd";
+      } catch {
+        window.prompt("Typ dit in het spel:", command);
+      }
+      setTimeout(render, 1500);
+      return;
+    }
     const button = event.target.closest(".tabs button");
     if (!button) return;
     chosenTab[button.dataset.name] = button.dataset.tab;

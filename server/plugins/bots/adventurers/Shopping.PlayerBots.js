@@ -40,7 +40,7 @@ function shopsSelling(itemId) {
 }
 
 function idOf(core, name) {
-  return core.ItemIdentifiers?.[name] ?? require("../../../src/main/typescript/elvarg/util/ItemIdentifiers").ItemIdentifiers[name];
+  return core.ItemIdentifiers?.[name];
 }
 
 /** The nearest shop that sells `itemId`, from `from` (x, y). */

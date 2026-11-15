@@ -81,7 +81,7 @@ function killGroup(signal) {
 let runs = 0;
 function run() {
   // A restart opens no new browser tabs: the game and the adventurers page are already open.
-  const runEnv = runs++ === 0 ? env : { ...env, BROWSER: "none", OPEN_ADVENTURERS: "0" };
+  const runEnv = runs++ === 0 ? env : { ...env, BROWSER: "none" };
   child = spawn(process.execPath, command, { env: runEnv, stdio: "inherit", detached: true });
   child.on("exit", (code, signal) => {
     // Its dev server too, before anything starts again.

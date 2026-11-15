@@ -69,3 +69,93 @@ test("from a boss's combat level an adventurer sometimes goes bossing", () => {
   const ids = require("../data/definitions/bot-activities.json").activities.map((activity) => activity.id);
   for (const boss of data.bosses) assert.ok(ids.includes(boss.id), boss.id);
 });
+
+test("every quest on the server is on the list, the path first, requirements from the cache", () => {
+  const { buildQuestList } = require("../plugins/bots/adventurers/Quests.PlayerBots");
+  const skill = (name, id) => ({ getName: () => name, getClientId: () => id });
+  const Skill = { values: () => [skill("Attack", 0), skill("Mining", 14)] };
+  const rows = new Map([
+    ["cooksassistant", { rowId: 1, displayname: ["Cook's Assistant"], difficulty: [0], length: [0] }],
+    ["theknightssword", { rowId: 2, displayname: ["The Knight's Sword"], requirement_stats: [14, 10], difficulty: [1], length: [1] }],
+    ["dragonslayeri", { rowId: 3, displayname: ["Dragon Slayer I"], requirement_questpoints: [32], recommended_combat: [45], requirement_quests: [2], difficulty: [2], length: [2] }],
+    ["sheepshearer", { rowId: 4, displayname: ["Sheep Shearer"], difficulty: [0], length: [0] }],
+  ]);
+  const registered = ["Dragon Slayer I", "Sheep Shearer", "The Knight's Sword", "Cook's Assistant"].map((name) => ({ name }));
+  const list = buildQuestList([{ name: "The Knight's Sword" }], registered, rows, Skill);
+  assert.deepEqual(list.map((quest) => quest.name), ["The Knight's Sword", "Cook's Assistant", "Sheep Shearer", "Dragon Slayer I"]);
+  assert.deepEqual(list[0].skills, { MINING: 10 });
+  const dragon = list.find((quest) => quest.name === "Dragon Slayer I");
+  assert.equal(dragon.questPoints, 32);
+  assert.equal(dragon.combat, 45);
+  assert.deepEqual(dragon.quests, ["The Knight's Sword"]);
+  assert.equal(list.every((quest) => quest.playthrough !== true), true);
+});
+
+test("nothing is simulated: without a bot playthrough no quest is chosen", () => {
+  const plan = chooseNext(adventurer(), data.quests, { available: new Set(), questChance: 1, random: () => 0 });
+  assert.equal(plan.kind, "train");
+});
+
+function tradeFixture(inventoryItems, equipped = []) {
+  const Shopping = require("../plugins/bots/adventurers/Shopping.PlayerBots");
+  const ids = { COINS: 995, BRONZE_SCIMITAR: 1321, IRON_SCIMITAR: 1323, MITHRIL_SCIMITAR: 1329, RUNE_SCIMITAR: 1333, BONES: 526, SHRIMPS: 315, BRONZE_AXE: 1351, TINDERBOX: 590 };
+  const item = (id, amount = 1) => ({ getId: () => id, getAmount: () => amount });
+  let inventory = inventoryItems.map(([name, amount]) => item(ids[name], amount));
+  let worn = equipped.map((name) => item(ids[name]));
+  const player = {
+    getInventory: () => ({
+      getItems: () => inventory,
+      contains: (id) => inventory.some((held) => held.getId() === id),
+      getAmount: (id) => inventory.filter((held) => held.getId() === id).reduce((sum, held) => sum + held.getAmount(), 0),
+    }),
+    getEquipment: () => ({ getItems: () => worn }),
+  };
+  const core = {
+    ItemIdentifiers: ids,
+    ItemDefinition: { forId: (id) => ({ isTradeable: () => true, unNote: () => id, getGrandExchangeValue: () => (id === 995 ? 1 : 100), isNoted: () => false }) },
+    CacheDefinitions: { hasItem: () => true, getItem: () => ({ tradeable: true }) },
+  };
+  const wearCalls = [];
+  const originalWear = Shopping.wear;
+  Shopping.wear = (p, c, id) => {
+    wearCalls.push(id);
+    inventory = inventory.filter((held) => held.getId() !== id);
+    worn = [item(id)];
+    return true;
+  };
+  return { player, core, ids, wearCalls, restore: () => { Shopping.wear = originalWear; } };
+}
+
+test("found gear it may wear goes on; it keeps coins, food and tools and sells the rest", () => {
+  const Trade = require("../plugins/bots/adventurers/Trade.PlayerBots");
+  const f = tradeFixture([["COINS", 50], ["MITHRIL_SCIMITAR", 1], ["RUNE_SCIMITAR", 1], ["BONES", 3], ["SHRIMPS", 2], ["BRONZE_AXE", 1], ["TINDERBOX", 1], ["IRON_SCIMITAR", 1]], ["BRONZE_SCIMITAR"]);
+  try {
+    const rules = { levelOf: (skill) => (skill === "ATTACK" ? 25 : 1), questDone: () => false };
+    assert.deepEqual(Trade.wearBest(f.player, f.core, rules), ["MITHRIL_SCIMITAR"]);
+    const keep = Trade.keepIds(f.player, f.core, { isFood: (id) => id === f.ids.SHRIMPS });
+    const goods = Trade.goodsToSell(f.player, f.core, keep).map((good) => good.itemId).sort();
+    // The rune scimitar beats what it wears (kept for later); the iron one is worse (sold).
+    assert.deepEqual(goods, [f.ids.BONES, f.ids.IRON_SCIMITAR].sort());
+  } finally {
+    f.restore();
+  }
+});
+
+test("selling goes through the exchange's own events; coins only arrive from collected sales", () => {
+  const Trade = require("../plugins/bots/adventurers/Trade.PlayerBots");
+  const f = tradeFixture([["BONES", 3]]);
+  const events = [];
+  const emit = (name, payload) => {
+    events.push(name);
+    if (name === "ge:place-offer") payload.placed = true;
+    if (name === "ge:collect") payload.finished = 0;
+  };
+  try {
+    const result = Trade.sellAtExchange(f.player, f.core, emit, [{ itemId: f.ids.BONES, amount: 3, value: 300 }]);
+    assert.deepEqual(events, ["ge:collect", "ge:place-offer"]);
+    assert.equal(result.offered.length, 1);
+    assert.equal(result.collectedCoins, 0);
+  } finally {
+    f.restore();
+  }
+});

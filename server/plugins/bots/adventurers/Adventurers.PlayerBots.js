@@ -2,15 +2,16 @@
 
 /**
  * Adventurers: a few named bots that start as new accounts in Lumbridge and play the game on
- * their own, for good: they train toward the quests on their path (data/adventurers.json),
- * complete them, and keep a journal. Their progress is saved like a player's.
+ * their own, for good, and keep a journal. Their progress is saved like a player's.
  *
  * Every few seconds the planner (Planner.PlayerBots.js) is asked what each adventurer does
  * next once its current stretch is over. Training runs a normal bot activity at a fitting place
- * (Travel.PlayerBots.js picks it); Firemaking from 50 is Wintertodt, played for real. A quest is
- * played where a playthrough is built; the others are simulated: the adventurer goes to the
- * quest's start point (from the cache's quest table), stays a while, and the quest completes with
- * its normal rewards. The journal says which.
+ * (Travel.PlayerBots.js picks it); Firemaking from 50 is Wintertodt, played for real.
+ *
+ * Nothing is simulated: what a bot cannot really do yet, it does not do. Quests are done only
+ * where a bot playthrough is built (playthrough: true in adventurers.json); none is built yet,
+ * so for now they train, fight and earn. Every quest on the server (Quests.PlayerBots.js, from
+ * the cache's quest table) counts on the page, so their progress shows against all of them.
  *
  * Shown live at /api/adventurers (the page client/public/adventurers.html), and in game with
  * ::adventurers (an overview) and ::adventurer <name> (go there).
@@ -18,15 +19,16 @@
 const definitions = require("../../../data/definitions/bot-activities.json");
 const data = require("../data/adventurers.json");
 const { chooseNext, bestActivity } = require("./Planner.PlayerBots");
+const { createQuestList } = require("./Quests.PlayerBots");
 const { createTravel } = require("../brain/Travel.PlayerBots");
 const { startActivity } = require("../brain/BrainActivities.PlayerBots");
-const { dressForMode } = require("../brain/SiteSpawner.PlayerBots");
 const travelData = require("../data/travel-destinations.json");
 
 const LOG_ATTRIBUTE = "adventurers:journal";
 /** Which start an adventurer belongs to; a lower one than data.generation starts it over. */
 const GENERATION_ATTRIBUTE = "adventurers:generation";
 const Shopping = require("./Shopping.PlayerBots");
+const Trade = require("./Trade.PlayerBots");
 /** A companion joins a group if its own stretch ends within this. */
 const GROUP_JOIN_WINDOW_MS = 4 * 60_000;
 const GROUP_MAX = 5;
@@ -51,12 +53,15 @@ function unpackCoord(coord) {
 
 function createAdventurers({ api, runtime, world, registry, random = Math.random, now = () => Date.now() }) {
   const core = api.core;
+  const emit = (name, payload) => api.emitCustomEvent(name, payload);
   const QuestRuntime = require("../../quests/QuestRuntime");
-  const { questMetadata } = require("../../quests/QuestList.QuestRuntime");
+  // All quests on this server, the path first; requirements from the cache.
+  const questList = createQuestList({ core, path: data.quests, getRegistered: () => QuestRuntime.getRegisteredQuests() });
   const travel = createTravel({
     core,
     log: world.log,
-    dress: dressForMode,
+    // No outfits, capes or job clothes: an adventurer wears only what it bought, found or made.
+    dress: null,
     equipCombatGear: (player, state) => world.equipCombatGear?.(player, state),
     chance: 1,
     hangoutChance: 0,
@@ -113,7 +118,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function snapshot(player) {
     const registered = questsByName();
     const done = new Set();
-    for (const quest of data.quests) {
+    for (const quest of questList()) {
       if (registered.get(normalize(quest.name))?.isComplete(player)) done.add(quest.name);
     }
     return {
@@ -121,7 +126,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       combat: player.getSkillManager().getCombatLevel(),
       questPoints: Number(player.getAttribute(QuestRuntime.QUEST_POINTS_ATTRIBUTE)) || 0,
       done,
-      available: new Set(data.quests.filter((quest) => registered.has(normalize(quest.name))).map((quest) => quest.name)),
+      // Only quests a bot can really play (none yet): nothing is simulated.
+      available: new Set(questList().filter((quest) => quest.playthrough === true && registered.has(normalize(quest.name)))
+        .map((quest) => quest.name)),
     };
   }
 
@@ -189,26 +196,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return true;
   }
 
-  function startQuest(entry, plan, nowMs) {
-    const { player } = entry;
-    const row = questMetadata({ name: plan.quest.name }, core.CacheDefinitions);
-    const start = unpackCoord(row?.startcoord?.[0]);
-    if (start) teleport(player, start);
-    startActivity(player, "roam", { home: start ?? stateOf(player)?.home ?? null, nowMs });
-    entry.phase = "quest";
-    entry.plan = plan;
-    entry.activity = "roam";
-    entry.until = nowMs + randomBetween(data.questMinutes, random) * 60_000;
-    note(player, `Begint aan ${plan.quest.name}${entry.group ? " (samen)" : ""}.`, "quest");
-    return true;
-  }
-
-  function finishQuest(entry) {
-    const quest = questsByName().get(normalize(entry.plan.quest.name));
-    if (!quest || quest.isComplete(entry.player)) return;
-    // Simulated: no playthrough is built for this quest yet. The normal rewards apply.
-    quest.complete(entry.player, { scroll: false, announce: false });
-    note(entry.player, `${quest.name} voltooid (gesimuleerd). Questpunten: ${Number(entry.player.getAttribute(QuestRuntime.QUEST_POINTS_ATTRIBUTE)) || 0}.`, "quest");
+  /**
+   * A quest with a bot playthrough. None is built yet, so the planner never offers one
+   * (snapshot().available is empty); when one is, it starts here.
+   */
+  function startQuest(entry, plan) {
+    note(entry.player, `${plan.quest.name} heeft nog geen bot-playthrough; overgeslagen.`, "quest");
+    return false;
   }
 
   /** Adventurers whose stretch is over or nearly so, and that are online: free to join a group. */
@@ -244,7 +238,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       return true;
     }
     const view = snapshot(entry.player);
-    const plan = chooseNext(view, data.quests, { available: view.available, questChance: 0, random });
+    const plan = chooseNext(view, questList(), { available: view.available, questChance: 0, random });
     if (plan.kind !== "train") return false;
     entry.group = true;
     if (!startTraining(entry, { ...plan, reason: `${plan.reason}, samen` }, nowMs)) return false;
@@ -260,15 +254,15 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   }
 
   function next(entry, nowMs) {
-    if (entry.phase === "quest") finishQuest(entry);
+    trade(entry);
     upgrade(entry.player);
     entry.group = false;
     if (random() < (data.groupChance ?? 0.3) && startGroup(entry, nowMs)) return;
     const view = snapshot(entry.player);
-    const plan = chooseNext(view, data.quests, {
+    const plan = chooseNext(view, questList(), {
       available: view.available, questChance: data.questChance, bosses: data.bosses, bossChance: data.bossChance, random,
     });
-    const started = plan.kind === "quest" ? startQuest(entry, plan, nowMs)
+    const started = plan.kind === "quest" ? startQuest(entry, plan)
       : plan.kind === "boss" ? startBoss(entry, plan, nowMs)
       : startTraining(entry, plan, nowMs);
     if (!started) entry.until = nowMs + 60_000;
@@ -306,7 +300,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const nowMs = now();
     for (const entry of adventurers.values()) {
       if (!entry.player?.isRegistered?.()) continue;
-      if (nowMs >= entry.until) next(entry, nowMs);
+      // A full bag ends the stretch: off to sell (trade()), as a player banks or sells.
+      if (nowMs >= entry.until || (entry.phase !== "new" && entry.player.getInventory().getFreeSlots() === 0)) next(entry, nowMs);
     }
   }
 
@@ -365,6 +360,42 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const paid = coinsBefore - Shopping.coinsOf(player);
     note(player, `Gekocht: ${got > 1 ? `${got} x ` : ""}${name.toLowerCase().replace(/_/g, " ")} bij ${shop.name} (${paid.toLocaleString("nl-NL")} gp).`, "activity");
     return true;
+  }
+
+  function isFood(itemId) {
+    return require("../../items/Food.plugin").isFoodItem(itemId);
+  }
+
+  /**
+   * Its income: found gear it may wear goes on, the rest of its loot and produce is sold at the
+   * Grand Exchange, and coins from earlier sales are collected. Only when there is something
+   * worth the trip (data.sellValue), its bag is nearly full, or sales are waiting.
+   */
+  function trade(entry) {
+    const { player } = entry;
+    const rules = { levelOf: (skill) => levelOf(player, skill), questDone: questDone(player) };
+    for (const name of Trade.wearBest(player, core, rules)) {
+      note(player, `Draagt nu ${name.toLowerCase().replace(/_/g, " ")} (gevonden).`, "activity");
+    }
+    const goods = Trade.goodsToSell(player, core, Trade.keepIds(player, core, { isFood }));
+    const worth = goods.reduce((sum, good) => sum + good.value, 0);
+    const full = player.getInventory().getFreeSlots() <= (data.fullSlots ?? 4);
+    const waiting = Trade.finishedOffers(player, emit) > 0;
+    if (!waiting && worth < (data.sellValue ?? 2000) && !(full && goods.length > 0)) return;
+    teleport(player, data.grandExchange);
+    const { collectedCoins, offered } = Trade.sellAtExchange(player, core, emit, goods);
+    if (collectedCoins > 0) {
+      note(player, `Haalt ${collectedCoins.toLocaleString("nl-NL")} gp op bij de Grand Exchange.`, "activity");
+    }
+    if (offered.length > 0) {
+      const names = offered.slice(0, 4).map((good) => `${good.amount > 1 ? `${good.amount} x ` : ""}${itemName(good.itemId)}`);
+      const total = offered.reduce((sum, good) => sum + good.value, 0);
+      note(player, `Zet te koop op de GE: ${names.join(", ")}${offered.length > 4 ? ` en ${offered.length - 4} meer` : ""} (~${total.toLocaleString("nl-NL")} gp).`, "activity");
+    }
+  }
+
+  function itemName(itemId) {
+    return String(core.ItemDefinition?.forId?.(itemId)?.getName?.() ?? itemId).toLowerCase();
   }
 
   /** Better gear and tools it can afford now, bought and worn before its next stretch. */
@@ -427,18 +458,23 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   }
 
   /** The bank's most valuable stacks, for the page. */
-  function bankTop(player, count = 8) {
+  /** The stacks in containers, most valuable first: { itemId, name, amount, value }. */
+  function stacksIn(containers, count = Infinity, byValue = true) {
     const stacks = [];
-    for (const bank of player.getBanks?.() ?? []) {
-      for (const item of bank?.getItems?.() ?? []) {
+    for (const container of containers) {
+      for (const item of container?.getItems?.() ?? []) {
         const id = item?.getId?.() ?? -1;
         const amount = item?.getAmount?.() ?? 0;
         if (!(id > 0) || !(amount > 0)) continue;
         const value = id === COINS ? amount : Value.itemValue(core, id, amount);
-        stacks.push({ name: core.ItemDefinition?.forId?.(id)?.getName?.() ?? `item ${id}`, amount, value });
+        stacks.push({ itemId: id, name: core.ItemDefinition?.forId?.(id)?.getName?.() ?? `item ${id}`, amount, value });
       }
     }
-    return stacks.sort((a, b) => b.value - a.value).slice(0, count);
+    return (byValue ? stacks.sort((a, b) => b.value - a.value) : stacks).slice(0, count);
+  }
+
+  function bankTop(player, count = 8) {
+    return stacksIn(player.getBanks?.() ?? [], count);
   }
 
   function wealthOf(player) {
@@ -478,17 +514,18 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         total: online ? player.getSkillManager().getTotalLevel() : null,
         questPoints: view?.questPoints ?? 0,
         quests: view ? [...view.done] : [],
-        questsOnPath: data.quests.length,
+        questsTotal: questList().length,
         skills,
-        doing: entry.phase === "quest"
-          ? `Quest: ${entry.plan?.quest?.name} (gesimuleerd)`
-          : entry.phase === "boss" ? `Boss: ${entry.plan?.boss?.name}`
+        doing: entry.phase === "boss" ? `Boss: ${entry.plan?.boss?.name}`
           : entry.plan ? `Training: ${String(entry.activity).replace(/_/g, " ")} (${entry.plan.reason})` : "Begint",
         group: entry.group === true,
         until: entry.until,
         location: online ? describeLocation(player) : null,
         wealth: online ? wealthOf(player) : null,
         bank: online ? bankTop(player) : [],
+        carried: online ? stacksIn([player.getInventory()]) : [],
+        // In slot order (head, cape, neck, weapon, body, shield, ...), as the equipment tab shows.
+        worn: online ? stacksIn([player.getEquipment()], Infinity, false) : [],
         journal: online ? journal(player).slice().reverse() : [],
       };
     }).map((entry) => ({ ...entry, score: scoreOf(entry) }))

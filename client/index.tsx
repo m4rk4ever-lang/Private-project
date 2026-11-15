@@ -5,6 +5,7 @@ import { BrowserRouter } from "react-router-dom";
 import "./index.css";
 import reportWebVitals from "./reportWebVitals";
 import { registerServiceWorker } from "./serviceWorkerRegistration";
+import { openAdventurersBesideGame } from "./game/AdventurersTab";
 
 const Page = lazy(() => import("./game/GamePage"));
 
@@ -25,3 +26,6 @@ root.render(
 reportWebVitals();
 
 registerServiceWorker();
+
+// The adventurers page in its own tab beside the game (dev server only).
+openAdventurersBesideGame();

@@ -14,6 +14,11 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- `::volg <naam>`: volg een bot of avonturier live met de camera. Je bent onzichtbaar en loopt vanzelf mee. `::volg` zonder naam stopt.
+- Avonturiers rapen hun eigen loot op en verkopen die op de Grand Exchange. De coins halen ze later op en gebruiken ze voor uitrusting en eten.
+- Gevonden uitrusting die beter is en die ze mogen dragen, trekken avonturiers zelf aan.
+- De avonturierspagina toont RuneScape-iconen (van de OSRS Wiki) voor skills, coins en items, de uitrusting die elke avonturier draagt, de inventaris en een Volg-knop.
+- De avonturierspagina opent bij het starten van het spel in een eigen tabblad naast de game. Blokkeert de browser dat, dan staat er rechtsboven een link.
 - `CHANGELOG.md` om ons werk bij te houden.
 - Het spel draait in GitHub Codespaces: open de repo in een codespace en het spel start
   vanzelf in je browser (uitleg in `.devcontainer/README.md`).
@@ -86,6 +91,9 @@ Indeling per versie:
   iedereen nu ook als member in de skills-tab en de questlijst (op een members-wereld).
 
 ### Gewijzigd
+- Avonturiers doen niets meer dat nog niet echt gespeeld kan worden: geen gesimuleerde quests meer. Ze beginnen daarom opnieuw (generatie 3).
+- Avonturiers krijgen geen outfits of capes meer toegewezen; ze dragen alleen wat ze zelf kochten of vonden.
+- De avonturierspagina telt alle quests van de server (ongeveer 200) in plaats van alleen de 45 op hun pad.
 - De server start in ontwikkelmodus ongeveer twee keer zo snel en gebruikt zo'n 450 MB minder geheugen.
   Typefouten zoek je voortaan met `yarn --cwd server typecheck`.
 - De ontwikkel-client leest geen bronkaarten van bibliotheken meer: sneller opstarten, minder geheugen.

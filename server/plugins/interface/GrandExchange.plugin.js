@@ -377,7 +377,8 @@ function itemPricesResource() {
 }
 
 function active(player, offer) {
-  return player.getInterfaceId() === GE && offers.get(player) === offer;
+  // A bot places its offer without the interface ("ge:place-offer").
+  return offers.get(player) === offer && (offer.direct === true || player.getInterfaceId() === GE);
 }
 
 function completedOffers(player) {
@@ -1183,6 +1184,47 @@ function collectAll(player, action) {
   if (heard.has(SOUND_COLLECT_COINS)) playSound(player, SOUND_COLLECT_COINS, COLLECT_ALL_COINS_DELAY);
 }
 
+/** A free offer slot, or null when all are in use. */
+function freeSlot(player) {
+  const taken = completedOffers(player);
+  for (let slot = 0; slot < usableSlots(); slot += 1) if (!Object.hasOwn(taken, slot)) return slot;
+  return null;
+}
+
+/**
+ * "ge:place-offer" { player, sell, itemId, quantity, price? }: an offer placed as through the
+ * interface, by content without one (a bot). The same checks, limits, payment and fill times
+ * apply; the price defaults to the guide. Sets `placed` (and `slot`) on the payload.
+ */
+function placeOfferEvent(request) {
+  const { player, sell, itemId, quantity } = request ?? {};
+  if (!player || !Number.isInteger(itemId) || !(quantity > 0) || !exchangeable(itemId)) return;
+  const slot = freeSlot(player);
+  if (slot === null) return;
+  const unit = Number.isInteger(request.price) && request.price > 0 ? request.price : (sell ? sellPrice(itemId) : price(itemId));
+  const offer = { sell: sell === true, slot, itemId, quantity: Math.trunc(quantity), price: unit, direct: true };
+  offers.set(player, offer);
+  confirm(player, offer, { itemId, price: unit, quantity: offer.quantity });
+  if (offers.get(player) === offer) offers.delete(player);
+  request.placed = completedOffers(player)[slot]?.placedAt != null && completedOffers(player)[slot]?.itemId === itemId;
+  if (request.placed) request.slot = slot;
+}
+
+/**
+ * "ge:collect" { player, peek? }: everything finished goes to the inventory; sets `collected`
+ * (offers), `waiting` (still trading) and `freeSlots`. With `peek` it only counts (`finished`).
+ */
+function collectEvent(request) {
+  const player = request?.player;
+  if (!player) return;
+  const finished = Object.values(completedOffers(player)).filter((offer) => offer?.finished).length;
+  request.finished = finished;
+  if (finished > 0 && request.peek !== true) collectAll(player, 1);
+  request.collected = finished - Object.values(completedOffers(player)).filter((offer) => offer?.finished).length;
+  request.waiting = Object.values(completedOffers(player)).filter((offer) => offer && !offer.finished).length;
+  request.freeSlots = Array.from({ length: usableSlots() }, (_, i) => i).filter((i) => !Object.hasOwn(completedOffers(player), i)).length;
+}
+
 /** "grand-exchange:can-open": other content may keep a player out. */
 function refusedEntry(player) {
   const request = { player, allow: true, message: null };
@@ -1429,6 +1471,8 @@ module.exports = {
     confirm,
     setApi: (api) => { pluginApi = api; },
     setOffer: (player, offer) => offers.set(player, offer),
+    placeOfferEvent,
+    collectEvent,
     price,
     sellPrice,
     changePrice,
@@ -1482,6 +1526,8 @@ module.exports = {
       completionTimers.delete(player);
     });
     api.registerContentEndpoint("item-prices", itemPricesResource);
+    api.onCustomEvent("ge:place-offer", placeOfferEvent);
+    api.onCustomEvent("ge:collect", collectEvent);
     api.registerCommand("ge", openGrandExchange, undefined, "Open the Grand Exchange");
     api.registerCommand("gecollect", openCollectionBox, undefined, "Open the Grand Exchange collection box");
 

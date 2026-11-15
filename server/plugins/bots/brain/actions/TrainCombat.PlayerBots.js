@@ -3,6 +3,8 @@
 const { playerState } = require("../ActionState.PlayerBots");
 const { nearestClusters, npcClustersFor } = require("../NpcClusterIndex.PlayerBots");
 const { canReachSpot } = require("../../behaviours/navigation/LongRoutes.PlayerBots");
+const Loot = require("../Loot.PlayerBots");
+const Value = require("../../../interface/ValueWarning");
 const { requestMovement, clearMovementRequest, peekMovementRequest, randomInRange } =
   require("../../behaviours/navigation/Navigation.PlayerBots");
 
@@ -452,6 +454,18 @@ function createTrainCombatAction(spec, world) {
               requestMovement(player, destination.getX?.() ?? destination.x, destination.getY?.() ?? destination.y,
                 { state, nowMs, z: destination.getZ?.() ?? destination.z ?? 0, reason: "brain_combat_training", basicPather: true });
             }
+            return "running";
+          }
+        }
+      }
+      if (!bot.target && state.honest) {
+        // An honest bot (an adventurer) takes its own loot between fights: its income.
+        const ground = bot.loot ?? Loot.lootNear(world.core, player, { valueOf: (id, amount) => Value.itemValue(world.core, id, amount) });
+        if (ground) {
+          const step = Loot.takeStep(world.core, player, ground, { state, nowMs });
+          bot.loot = step === "walking" ? ground : null;
+          if (step !== "gone") {
+            bot.lastProgressAt = nowMs;
             return "running";
           }
         }

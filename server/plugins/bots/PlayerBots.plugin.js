@@ -1,6 +1,7 @@
 const path = require("path");
 const { startChatter } = require("./brain/Chatter.PlayerBots");
 const { startAdventurers } = require("./adventurers/Adventurers.PlayerBots");
+const { startWatching } = require("./runtime/Watch.PlayerBots");
 const { startIronmen } = require("./brain/Ironmen.PlayerBots");
 const { startProgression } = require("./brain/Progression.PlayerBots");
 const { initPvpTierLoadouts } = require("./behaviours/pvp/PvpTierLoadouts.PlayerBots");
@@ -289,6 +290,8 @@ module.exports = {
     startIronmen(api, boot.runtime);
     // Five named bots that play the game for good, shown at /api/adventurers.
     startAdventurers({ api, runtime: boot.runtime, world: boot.brainWorld, registry: boot.brainRegistry });
+    // ::volg <naam>: the camera follows a bot live.
+    startWatching(api);
 
     registerBotStatusInteractions({
       api,

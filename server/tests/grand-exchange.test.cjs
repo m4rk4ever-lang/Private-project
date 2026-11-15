@@ -1237,3 +1237,31 @@ test("an untradeable item clicked in the side panel says the recorded line", (t)
   hooks.onItemFirstAction({ player: p, itemId: UNTRADEABLE, slot: inventory.getSlotForItemId(UNTRADEABLE) });
   assert.ok(messages.includes("You can't trade that item on the Grand Exchange."), messages.join(' | '));
 });
+
+test('content without the interface (a bot) sells through ge:place-offer and collects through ge:collect', t => {
+  const { p, inventory, emitEvent, timers } = exchange(t);
+  p.setInterfaceId(-1);
+  inventory.add(new Item(PRICED, 3), false);
+  const request = { player: p, sell: true, itemId: PRICED, quantity: 3 };
+  emitEvent('ge:place-offer', request);
+  assert.equal(request.placed, true);
+  assert.equal(inventory.getAmount(PRICED), 0, 'the items went into the offer');
+  const offer = p.getAttribute(OFFERS_ATTRIBUTE)[request.slot];
+  assert.equal(offer.sell, true);
+  assert.equal(offer.price, sellPrice(PRICED), 'the guide price');
+  timers.at(-1).callback();
+  const collect = { player: p };
+  emitEvent('ge:collect', collect);
+  assert.equal(collect.collected, 1);
+  assert.ok(inventory.getAmount(995) >= 3 * sellPrice(PRICED) - tax({ ...offer, traded: 3 * sellPrice(PRICED) }) - 1);
+  assert.deepEqual(p.getAttribute(OFFERS_ATTRIBUTE), {});
+});
+
+test('ge:place-offer cannot sell what is not held, and takes nothing', t => {
+  const { p, inventory, emitEvent } = exchange(t);
+  p.setInterfaceId(-1);
+  const request = { player: p, sell: true, itemId: PRICED, quantity: 1 };
+  emitEvent('ge:place-offer', request);
+  assert.equal(request.placed, false);
+  assert.equal(inventory.getAmount(995), 0, 'no coins from nothing');
+});
