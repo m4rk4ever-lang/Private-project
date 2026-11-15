@@ -60,6 +60,20 @@ function unpackCoord(coord) {
   return { x: (coord >> 14) & 0x3fff, y: coord & 0x3fff, z: (coord >> 28) & 0x3 };
 }
 
+// Al Kharid behind its wall and toll gate: a walker that does not pay goes round by the path
+// north to Varrock, about this many tiles further.
+const AL_KHARID = { minX: 3267, maxX: 3330, minY: 3130, maxY: 3240 };
+const AL_KHARID_DETOUR = 260;
+const inAlKharid = (at) => at.x >= AL_KHARID.minX && at.x <= AL_KHARID.maxX && at.y >= AL_KHARID.minY && at.y <= AL_KHARID.maxY;
+
+/** About how far it walks there: straight, plus the way round the toll gate when it would not pay. */
+function walkTiles(here, place, player) {
+  const straight = Math.max(Math.abs(place.x - here.x), Math.abs(place.y - here.y));
+  if (inAlKharid(here) === inAlKharid(place)) return straight;
+  const { paysToll } = require("../brain/DoorOpening.PlayerBots");
+  return player && paysToll(player, "Pay-toll(10gp)") ? straight : straight + AL_KHARID_DETOUR;
+}
+
 function createAdventurers({ api, runtime, world, registry, random = Math.random, now = () => Date.now(), errands = errandsFor(api) }) {
   const core = api.core;
   const emit = (name, payload) => api.emitCustomEvent(name, payload);
@@ -76,7 +90,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     hangoutChance: 0,
     // Adventurers walk (walkTo below), and so prefer places near them: a far one is a long walk.
     moveTo: () => {},
-    nearness: (here, place) => (here ? 1 / (1 + Math.max(Math.abs(place.x - here.x), Math.abs(place.y - here.y)) / 150) : 1),
+    nearness: (here, place, player) => (here ? 1 / (1 + walkTiles(here, place, player) / 150) : 1),
     minigameChance: 0,
     random,
     // Adventurers only go where their quests and levels let them.
@@ -508,6 +522,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
     // Errands first, each a walk; the planner looks again when it is back.
     if (trade(entry) || upgrade(entry)) return;
+    // No bank or exchange to walk to now (the road was blocked): it does not start a new job
+    // with a full bag, it drops the cheapest of the last job's things, as a player does.
+    clearBag(entry.player);
     entry.group = false;
     if (random() < (data.groupChance ?? 0.3) && startGroup(entry, nowMs)) return;
     const view = snapshot(entry.player);
@@ -827,7 +844,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const at = player.getLocation();
     let best = null;
     for (const bank of data.banks ?? []) {
-      const away = Math.max(Math.abs(bank.x - at.getX()), Math.abs(bank.y - at.getY()));
+      const away = walkTiles({ x: at.getX(), y: at.getY() }, bank, player);
       if (!best || away < best.away) best = { ...bank, away };
     }
     return best;
@@ -981,11 +998,16 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
     // Junk goes at once, wherever it is.
     dropJunk(player, sortBag(player).junk);
-    const goods = Trade.goodsToSell(player, core, Trade.keepIds(player, core, { isFood }), { isFood });
+    const keep = Trade.keepIds(player, core, { isFood });
+    const goods = Trade.goodsToSell(player, core, keep, { isFood });
+    // Everything the last job left in the bag, priced or not: logs from woodcutting do not go
+    // fishing with it.
+    const stock = Trade.goodsToSell(player, core, keep, { isFood, worthless: true });
     const worth = goods.reduce((sum, good) => sum + good.value, 0);
     const full = player.getInventory().getFreeSlots() <= (data.fullSlots ?? 4);
+    const cluttered = Trade.slotsOf(player, stock) >= (data.storeSlots ?? 6);
     const waiting = Trade.finishedOffers(player, emit) > 0;
-    if (!waiting && worth < (data.keepValue ?? 200) && !(full && goods.length > 0)) return false;
+    if (!waiting && worth < (data.keepValue ?? 200) && !((full || cluttered) && stock.length > 0)) return false;
     const ge = { ...data.grandExchange, name: "de Grand Exchange" };
     const bank = nearestBank(player);
     const toExchange = waiting || worth >= (data.sellValue ?? 5000) || !bank || distanceTo(player, ge) <= bank.away + 40;
@@ -993,10 +1015,27 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return walkTo(entry, { ...bank, name: bank.name ?? bank.id }, {
       reason: "bank",
       arrive: (banker) => {
-        const stored = deposit(banker, Trade.goodsToSell(banker, core, Trade.keepIds(banker, core, { isFood }), { isFood }));
+        const stored = deposit(banker, Trade.goodsToSell(banker, core, Trade.keepIds(banker, core, { isFood }), { isFood, worthless: true }));
         if (stored.length > 0) note(banker, `Zet op de bank in ${bank.name ?? bank.id}: ${stored.slice(0, 5).map((good) => itemName(good.itemId)).join(", ")}${stored.length > 5 ? ` en ${stored.length - 5} meer` : ""}. Bruikbaars bewaart hij; de rest verkoopt hij later op de GE.`, "activity");
       },
     });
+  }
+
+  /** Drops the least valuable things it does not keep until the bag has room again. */
+  function clearBag(player) {
+    const inventory = player.getInventory();
+    const room = (data.fullSlots ?? 4) + 1;
+    if (inventory.getFreeSlots() >= room) return;
+    const stock = Trade.goodsToSell(player, core, Trade.keepIds(player, core, { isFood }), { isFood, worthless: true })
+      .sort((a, b) => a.value - b.value);
+    const dropped = [];
+    for (const good of stock) {
+      if (inventory.getFreeSlots() >= room) break;
+      inventory.deleteNumber?.(good.itemId, inventory.getAmount(good.itemId));
+      dropped.push(itemName(good.itemId));
+    }
+    inventory.refreshItems?.();
+    if (dropped.length > 0) note(player, `Kon niet naar de bank; laat vallen: ${dropped.slice(0, 4).join(", ")}.`, "activity");
   }
 
   function itemName(itemId) {

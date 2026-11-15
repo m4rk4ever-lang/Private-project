@@ -228,7 +228,7 @@ function createTravel({
       if (options.length === 0) return null;
       place = pickWeighted(options, random,
         (option) => (option.weight ?? 1) * (nearHub(option, hub) ? nearHubBonus : 1) * crowding(option)
-          * (nearness ? nearness(here, option) : 1));
+          * (nearness ? nearness(here, option, player) : 1));
     }
     settle(name, place.minigame ? null : place.id);
     const target = new core.Location(place.x, place.y, place.z ?? 0);

@@ -59,6 +59,16 @@ function definitionFor(object, player) {
   }
 }
 
+// An honest bot pays a toll only with at least this many times the toll in its bag.
+const TOLL_SPARE = 100;
+
+/** Whether an honest bot pays this toll option ("Pay-toll(10gp)") from what it carries. */
+function paysToll(player, option) {
+  const toll = TOLL_OPTION.exec(String(option ?? ""));
+  if (!toll) return true;
+  return (player.getInventory?.()?.getAmount?.(COINS_ID) ?? 0) >= Number(toll[1]) * TOLL_SPARE;
+}
+
 /**
  * The click option (1-based) that gets this player through a closed door/gate,
  * or 0. A toll gate uses its "Pay-toll(10gp)" option (its "Open" starts a guard
@@ -72,7 +82,10 @@ function passOption(object, player) {
   const options = definition.getInteractions?.() ?? [];
   const tollIndex = options.findIndex((action) => TOLL_OPTION.test(String(action ?? "")));
   if (tollIndex >= 0) {
-    return tollIndex + 1;
+    // An honest bot (an adventurer) pays from its own coins, and only when the toll is small
+    // change to it; otherwise the gate is a wall to it and its routes go the long way round
+    // (Al Kharid by the path north to Varrock) instead of standing at the gate.
+    return player && isHonest(player) && !paysToll(player, options[tollIndex]) ? 0 : tollIndex + 1;
   }
   // Some gates (60760/60763 in the Lumbridge cow field) offer "Release" instead.
   const openIndex = options.findIndex((action) => /^(open|release)$/i.test(String(action ?? "")));
@@ -405,6 +418,7 @@ function maybeOpenDoor({ player, state, world, request, select = false }) {
 }
 
 module.exports = {
+  paysToll,
   isClosedDoor,
   maybeOpenDoor,
   sharedRouteFinder,

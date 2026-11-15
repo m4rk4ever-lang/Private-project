@@ -41,6 +41,15 @@ function doorCheck() {
   return isClosedDoor;
 }
 
+let honestCheck = null;
+/** "" for bots that pass toll gates; honest bots by whether they pay one (DoorOpening). */
+function routeClass(player) {
+  honestCheck ??= require("../../brain/Honest.PlayerBots").isHonest;
+  if (!player || !honestCheck(player)) return "";
+  const { paysToll } = require("../../brain/DoorOpening.PlayerBots");
+  return paysToll(player, "Pay-toll(10gp)") ? ":honest-pays" : ":honest";
+}
+
 const chebyshev = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 const areaKey = (x, y, z) => `${x >> 4},${y >> 4},${z}`;
 
@@ -75,7 +84,9 @@ function sweep(nowMs) {
 /** A route toward `goal` this player can follow from where it stands; undefined = try later. */
 function routeFor(player, here, goal, nowMs) {
   sweep(nowMs);
-  const goalKey = areaKey(goal.x, goal.y, goal.z);
+  // Honest bots do not pass a toll gate (DoorOpening): their routes are planned and shared
+  // apart, or one would follow a route through the gate and stand in front of it.
+  const goalKey = areaKey(goal.x, goal.y, goal.z) + routeClass(player);
   const plans = (routesByGoal.get(goalKey) ?? []).filter((plan) => nowMs - plan.at < ROUTE_TTL_MS);
   for (const plan of plans) {
     // Join at the furthest nearby waypoint actually walkable from here: a near one

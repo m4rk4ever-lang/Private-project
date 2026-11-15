@@ -109,11 +109,17 @@ function keepIds(player, core, { isFood = () => false } = {}) {
 /** Food it carries for itself; more than this (a bag of fish it caught and cooked) is stock. */
 const FOOD_CARRY = 10;
 
+/** How many bag slots these goods take (a stack takes one, each unstackable item one). */
+function slotsOf(player, goods) {
+  const ids = new Set(goods.map((good) => good.itemId));
+  return (player.getInventory().getItems() ?? []).filter((item) => item && ids.has(item.getId())).length;
+}
+
 /**
  * What it would bank or sell: [{ itemId, amount, value }], tradeable items it does not keep, and
  * food beyond what it carries for itself (cooked fish fill a bag too).
  */
-function goodsToSell(player, core, keep, { isFood = null } = {}) {
+function goodsToSell(player, core, keep, { isFood = null, worthless = false } = {}) {
   const totals = new Map();
   const food = new Map();
   for (const item of player.getInventory().getItems() ?? []) {
@@ -133,7 +139,8 @@ function goodsToSell(player, core, keep, { isFood = null } = {}) {
     if (amount > kept) totals.set(id, amount - kept);
   }
   return [...totals].map(([itemId, amount]) => ({ itemId, amount, value: Value.itemValue(core, itemId, amount) }))
-    .filter((good) => good.value > 0)
+    // For the bank (`worthless`) also what has no exchange price: it still takes up the bag.
+    .filter((good) => worthless || good.value > 0)
     .sort((a, b) => b.value - a.value);
 }
 
@@ -174,4 +181,5 @@ function finishedOffers(player, emit) {
   return peek.finished ?? 0;
 }
 
-module.exports = { listsFor, isSupply, wearBest, keepIds, goodsToSell, sellAtExchange, buyAtExchange, finishedOffers, COINS, KEEP_TOOLS };
+module.exports = {
+  slotsOf, listsFor, isSupply, wearBest, keepIds, goodsToSell, sellAtExchange, buyAtExchange, finishedOffers, COINS, KEEP_TOOLS };

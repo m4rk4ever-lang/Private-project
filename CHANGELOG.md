@@ -67,6 +67,9 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Opgelost
+- Avonturiers nemen de spullen van hun vorige klus niet meer mee naar de volgende: liggen er 6 of meer vakjes aan logs, erts of vis in hun tas, dan banken ze die eerst, ook als het weinig waard is. Lukt de weg naar de bank niet, dan laten ze het goedkoopste vallen in plaats van met een volle tas verder te werken.
+- Avonturiers blijven niet meer hangen bij de tolpoort van Al Kharid. Ze betalen alleen als 10 gp kleingeld voor ze is (1.000 gp of meer op zak); anders lopen ze om via het pad naar Varrock. Plekken en banken achter de poort tellen voor hen als verder weg, dus ze kiezen ze minder snel.
+- Na een paar keer `::volg` wisselen gaat de camera bij stoppen weer naar je eigen character, niet naar de laatst gevolgde avonturier.
 - Bots liepen lang met een volle inventaris rond. Gebakken vis telde als eten en werd nooit gebankt, wereldbots kwamen pas na minuten aan de beurt, en het enige alternatief was de verre GE. Nu: eten boven de 10 stuks gaat naar de bank, bots met een volle tas komen eerst aan de beurt en lopen naar de dichtstbijzijnde bank, en lukt niets anders dan laten ze de lading vallen. Al Kharid staat niet meer op de banklijst (de tolpoort).
 - Zakkenrollende bots bleven aan de verkeerde kant van een muur of heg staan bij een doelwit dat ze niet konden bereiken. Zo'n doelwit slaan ze nu een minuut over en ze kiezen er een die wel bereikbaar is.
 - Avonturiers kregen nog op drie manieren iets wat ze niet verdienden: een PvP-uitrusting als ze niets aan hadden (de iron scimitar na een reset), coins voor tolpoorten, en het geld van GE-verkopen uit hun vorige start. Alle drie zijn dicht, en de avonturiers beginnen daarom nog één keer opnieuw. Ze hebben nu ook een eigen tinderbox nodig om vuur te maken.

@@ -80,16 +80,19 @@ function far(a, b) {
 }
 
 function start(player, target) {
+  // Switching from one bot to another keeps what the watcher had before the first ::volg:
+  // its own place and camera, not the camera on the bot it watched last.
+  const previous = watching.get(player);
   stop(player, false);
   const sender = player.getPacketSender();
   const state = {
     target,
-    location: player.getLocation().clone(),
-    camera: sender.getCameraState(),
-    hidden: player.isAppearanceHidden(),
-    blocked: player.getMovementQueue().isMovementBlocked(),
-    untargetable: player.isUntargetable(),
-    fixedDistance: player.getFixedViewDistance(),
+    location: previous?.location ?? player.getLocation().clone(),
+    camera: previous?.camera ?? ownCamera(sender.getCameraState()),
+    hidden: previous?.hidden ?? player.isAppearanceHidden(),
+    blocked: previous?.blocked ?? player.getMovementQueue().isMovementBlocked(),
+    untargetable: previous?.untargetable ?? player.isUntargetable(),
+    fixedDistance: previous?.fixedDistance ?? player.getFixedViewDistance(),
     pendingCamera: true,
   };
   watching.set(player, state);
@@ -99,6 +102,11 @@ function start(player, target) {
   player.setFixedViewDistance(32);
   player.moveTo(target.getLocation().clone());
   player.sendMessage(`Je volgt ${nameOf(target)}. Typ ::volg om te stoppen.`);
+}
+
+/** A camera left on another player (an earlier ::volg) is not the watcher's own: back to follow. */
+function ownCamera(camera) {
+  return camera?.mode === "target" && camera.target && "player" in camera.target ? { mode: "follow" } : camera;
 }
 
 function stop(player, restore = true) {
@@ -116,7 +124,8 @@ function stop(player, restore = true) {
   player.getPacketSender().sendInventory?.(WORN_INVENTORY_ID, Math.max(14, ownWorn.length), ownWorn);
   if (restore) {
     player.moveTo(state.location);
-    player.getPacketSender().restoreCameraState(state.camera);
+    const camera = state.camera?.mode === "controlled" ? { mode: "follow" } : state.camera;
+    player.getPacketSender().restoreCameraState(camera);
     player.sendMessage(`Je volgt ${nameOf(state.target)} niet meer.`);
   }
   return true;
