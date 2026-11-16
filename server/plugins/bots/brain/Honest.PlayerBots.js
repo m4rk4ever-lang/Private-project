@@ -21,4 +21,19 @@ function isHonest(player) {
   return Boolean(player) && honest.has(player);
 }
 
-module.exports = { markHonest, isHonest, HONEST_ATTRIBUTE };
+/**
+ * The adventurers themselves (15 player-like accounts): their brain runs every server cycle, as a
+ * player clicks on, so a kill is followed by the next attack and a full fish spot by the next
+ * cast without seconds of standing around. World bots stay on the cheaper far-away schedule.
+ */
+const adventurers = new WeakSet();
+
+function markAdventurer(player) {
+  if (player) adventurers.add(player);
+}
+
+function isAdventurer(player) {
+  return Boolean(player) && adventurers.has(player);
+}
+
+module.exports = { markHonest, isHonest, markAdventurer, isAdventurer, HONEST_ATTRIBUTE };

@@ -49,7 +49,7 @@ const Slayer = require("./Slayer.PlayerBots");
 const Clans = require("./Clans.PlayerBots");
 const { runPaced } = require("../runtime/SpawnPacing.PlayerBots");
 const npcSpawns = require("../../../data/definitions/npc-spawns.json");
-const { markHonest } = require("../brain/Honest.PlayerBots");
+const { markHonest, markAdventurer } = require("../brain/Honest.PlayerBots");
 const { errandsFor } = require("../brain/Errands.PlayerBots");
 /** Within this many tiles of its job's place it is there, and its stretch runs. */
 const ARRIVED_TILES = 25;
@@ -60,7 +60,9 @@ const GROUP_JOIN_WINDOW_MS = 4 * 60_000;
 const GROUP_MAX = 5;
 const Value = require("../../interface/ValueWarning");
 const COINS = 995;
-const CHECK_TICKS = 10;
+// Every two ticks (1.2 s): eating, the next job and the next step follow without standing around.
+const CHECK_TICKS = 2;
+const QUEST_TICK_MS = 6_000;
 /** How long it waits at the exchange for a bid on training materials to fill. */
 const BID_WAIT_MS = 3 * 60_000;
 /** How much further than a bank it walks to the Grand Exchange to sell (saving up, offers in). */
@@ -152,6 +154,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       return { write: () => {} };
     }
   })();
+
+  /** Quests blocked for every adventurer (noteQuestFailure): name -> until; and recent failures. */
+  const questsBlocked = new Map();
+  const questFailuresAll = new Map();
 
   /** The last stuck quests, newest first (recordQuestFeedback). */
   const questFeedback = [];
@@ -455,7 +461,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         for (const id of ids) got += withdraw(banker, id, 1000);
         if (got > 0) {
           note(banker, `Haalt zijn ${ids.map(itemName).join(" en ").toLowerCase()} van de bank.`, "activity");
-          entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, remainingMs: 0, savedAt: now() };
+          entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, remainingMs: 0, savedAt: now() };
         }
       },
     });
@@ -617,7 +623,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
             }
             if (got > 0) {
               note(banker, `Haalt zijn ${style === "ranged" ? "boog en pijlen" : "runes"} van de bank om te ${style === "ranged" ? "boogschieten" : "toveren"}.`, "activity");
-              entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, remainingMs: 0, savedAt: now() };
+              entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, remainingMs: 0, savedAt: now() };
             }
           },
         });
@@ -838,7 +844,22 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   /** A quest it could not finish lately (an NPC it could not find, a stuck walk). */
   function questAside(player, name) {
     const entry = adventurers.get(player.getUsername?.());
-    return (entry?.questsAside?.get(name) ?? 0) > now();
+    return (entry?.questsAside?.get(name) ?? 0) > now() || (questsBlocked.get(name) ?? 0) > now();
+  }
+
+  /**
+   * A quest two different adventurers got stuck in within two hours is blocked for all of them
+   * for three hours (logged): the others do not each walk into the same wall.
+   */
+  function noteQuestFailure(name, bot) {
+    const recent = (questFailuresAll.get(name) ?? []).filter((failure) => now() - failure.at < 2 * 60 * 60_000);
+    recent.push({ bot, at: now() });
+    questFailuresAll.set(name, recent);
+    if (new Set(recent.map((failure) => failure.bot)).size >= 2 && !((questsBlocked.get(name) ?? 0) > now())) {
+      questsBlocked.set(name, now() + 3 * 60 * 60_000);
+      world.log?.("adventurer_quest_blocked", { quest: name, bots: [...new Set(recent.map((failure) => failure.bot))] });
+      recordQuestFeedback({ name: "(alle avonturiers)" }, { quest: name, reason: `blocked for every adventurer for 3 h: stuck for ${new Set(recent.map((failure) => failure.bot)).size} bots` });
+    }
   }
 
   /** The quest's planning tick: walking, climbing, talking; done or put aside. */
@@ -862,6 +883,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       failures.set(run.name, (failures.get(run.name) ?? 0) + 1);
       (entry.questsAside ??= new Map()).set(run.name, nowMs + QUEST_ASIDE_MS * Math.min(8, 2 ** (failures.get(run.name) - 1)));
       recordQuestFeedback(entry, questPlay.describeFailure({ ...entry, questRun: run }));
+      noteQuestFailure(run.name, entry.name);
       note(entry.player, `Legt ${run.name} even weg (stap ${run.step + 1} lukte niet).`, "quest");
     }
     entry.phase = "new";
@@ -971,7 +993,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (entry.phase === "training" && entry.plan?.kind === "train" && entry.plan.mode !== "slayer"
         && Number.isFinite(entry.until) && entry.until - nowMs > 2 * 60_000 && !entry.savedTask) {
       entry.savedTask = { kind: "train", mode: entry.plan.mode, skill: entry.plan.skill, reason: entry.plan.reason,
-        style: entry.plan.style ?? null, activity: entry.activity, remainingMs: entry.until - nowMs, savedAt: now(), afterTrip: true };
+        style: entry.plan.style ?? null, target: entry.plan.target ?? null, activity: entry.activity, remainingMs: entry.until - nowMs, savedAt: now(), afterTrip: true };
     }
     if (waitForOffers(entry, nowMs)) return;
     // Waiting at the exchange for its materials: collect once they are in, then to work.
@@ -1188,6 +1210,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         entry.until = 0;
       }
       if (entry.phase === "quest" && entry.questRun) {
+        // A quest step is tried every six seconds (its tries count on that pace): a walk or a
+        // dialogue gets time to happen before the step counts as not advancing.
+        if (nowMs < (entry.questTickAt ?? 0)) continue;
+        entry.questTickAt = nowMs + QUEST_TICK_MS;
         questTick(entry, nowMs);
         rememberTask(entry, nowMs);
         continue;
@@ -1310,7 +1336,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         emit("ge:collect", { player: buyer });
         acquire(buyer, itemId);
         note(buyer, `Koopt ${amount > 1 ? `${amount} x ` : ""}${label} op de GE (~${Math.ceil(guide * 1.05 * amount).toLocaleString("nl-NL")} gp).`, "activity");
-        if (plan?.mode) entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, remainingMs: 0, savedAt: now() };
+        if (plan?.mode) entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, remainingMs: 0, savedAt: now() };
       },
     });
   }
@@ -1392,7 +1418,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const hitpoints = player.getSkillManager().getMaxLevel(core.Skill.HITPOINTS);
     if (hitpoints >= TRAVEL_FOOD_UNTIL_HP || foodSlots(player).length > 0 || nowMs < (entry.foodTriedAt ?? 0)) return false;
     entry.foodTriedAt = nowMs + 20 * 60_000;
-    const resume = () => { entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, remainingMs: 0, savedAt: now() }; };
+    const resume = () => { entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, remainingMs: 0, savedAt: now() }; };
     const inBank = (Shopping.gear.food ?? []).map((entry) => Shopping.idOf(core, entry.item))
       .find((id) => Number.isInteger(id) && banked(player, id) >= 3);
     const bank = inBank !== undefined ? nearestBank(player, entry) : null;
@@ -2177,6 +2203,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       // Honest: no conjured gear, tools, food or bait; it buys, finds or makes what it uses.
       const state = runtime.botStatesByName?.get?.(name);
       markHonest(bot);
+      markAdventurer(bot);
       // Monsters attack it as they attack a player; like a new player's, its auto-retaliate is on.
       bot.setAutoRetaliate?.(true);
       if (state) {
@@ -2454,7 +2481,7 @@ function startAdventurers({ api, runtime, world, registry }) {
       execute() {
         manager.tick();
         // The firsts are looked at every half minute too, not only when the page is open.
-        if ((this.looks = (this.looks ?? 0) + 1) % 5 === 0) achievements.update(manager.report());
+        if ((this.looks = (this.looks ?? 0) + 1) % 25 === 0) achievements.update(manager.report());
       }
     })());
     // Dialogue is clicked through a tick or so at a time, as a player reads it.

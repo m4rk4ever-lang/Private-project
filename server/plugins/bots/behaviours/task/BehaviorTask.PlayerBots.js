@@ -29,6 +29,7 @@ const {
   needsLoadoutRestore,
 } = require("../policies/PvpLoadoutPolicy.PlayerBots");
 const { startActivity } = require("../../brain/BrainActivities.PlayerBots");
+const { isAdventurer } = require("../../brain/Honest.PlayerBots");
 
 const NS_PER_MS = 1_000_000n;
 const MOVING_MODE_DECISION_DELAY_MS = 1500;
@@ -733,6 +734,10 @@ class BotBehaviorTask extends Task {
     // Temporal sharding for performance: calm/idle bots skip brain ticks on
     // some cycles. Urgent bots (combat, traversal, transient, pvp) are
     // always processed every cycle for responsiveness.
+    // Adventurers play as players do: every cycle, no standing around between kills or actions.
+    if (isAdventurer(entry?.player)) {
+      return true;
+    }
     const stride = this.resolveEntryStride(entry, nowMs);
     if (stride <= 1) {
       return true;

@@ -22,6 +22,8 @@ function taskRecord(entry, nowMs, wallMs) {
     skill: plan.skill ?? null,
     reason: plan.reason ?? null,
     style: plan.style ?? null,
+    // The level the stretch was for (a quest's combat 10): without it a resumed job ran on.
+    target: plan.target?.skill ? { skill: plan.target.skill, level: plan.target.level } : null,
     bossId: plan.boss?.id ?? null,
     activity: entry.activity ?? null,
     remainingMs: Math.max(0, Math.round((entry.until ?? nowMs) - nowMs)),
@@ -47,6 +49,7 @@ function planOf(task, bosses = []) {
   return {
     kind: "train", mode: task.mode, skill: task.skill, reason: task.reason ?? "verder",
     ...(task.style ? { style: task.style } : {}),
+    ...(task.target?.skill ? { target: { skill: task.target.skill, level: task.target.level } } : {}),
   };
 }
 

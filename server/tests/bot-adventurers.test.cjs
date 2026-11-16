@@ -34,7 +34,7 @@ test("it trains what the next quest still needs", () => {
   const before = data.quests.slice(0, data.quests.indexOf(knight));
   const a = adventurer({}, { done: new Set(before.map((quest) => quest.name)) });
   assert.deepEqual(missing(knight, a).skills, { MINING: 10 });
-  const plan = chooseNext(a, data.quests, { random: () => 0.99 });
+  const plan = chooseNext(a, data.quests, { random: () => 0.99, questGapChance: 1 });
   assert.equal(plan.kind, "train");
   assert.equal(plan.mode, "mining");
   assert.match(plan.reason, /Knight's Sword/);
@@ -42,7 +42,7 @@ test("it trains what the next quest still needs", () => {
 
 test("combat goals train combat, and Firemaking 50 opens Wintertodt", () => {
   const a = adventurer({ MINING: 99 }, { done: new Set(data.quests.slice(0, 16).map((quest) => quest.name)) });
-  const plan = chooseNext(a, data.quests, { random: () => 0.99 });
+  const plan = chooseNext(a, data.quests, { random: () => 0.99, questGapChance: 1 });
   assert.equal(plan.mode, "combat_training");
   // Every other skill trained (an untouched skill would come first, as it should).
   const firemaker = adventurer({ WOODCUTTING: 99, MINING: 99, FISHING: 99, THIEVING: 99, HUNTER: 99, AGILITY: 99, FIREMAKING: 50 }, { combat: 126, questPoints: 200, done: new Set(data.quests.map((q) => q.name)) });
@@ -162,7 +162,7 @@ test("selling goes through the exchange's own events; coins only arrive from col
   }
 });
 
-test("a new adventurer does not always mine: combat first, its favourites, and not what the others do", () => {
+test("a new adventurer does not always mine: combat a bit more, its favourites, and not what the others do", () => {
   const counts = {};
   let seed = 1;
   const random = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
@@ -170,7 +170,9 @@ test("a new adventurer does not always mine: combat first, its favourites, and n
     const plan = chooseNext(adventurer(), [], { available: new Set(), questChance: 0, random, focus: { fishing: 2 }, busyModes: new Set(["mining"]) });
     counts[plan.mode] = (counts[plan.mode] ?? 0) + 1;
   }
-  assert.ok(counts.combat_training > counts.mining * 3, JSON.stringify(counts));
+  assert.ok(counts.combat_training > counts.mining * 1.5, JSON.stringify(counts));
+  // Combat comes up more than one skill, not more than all the others together.
+  assert.ok(counts.combat_training < 2000 * 0.3, JSON.stringify(counts));
   assert.ok(counts.fishing > counts.woodcutting, JSON.stringify(counts));
   assert.ok(counts.mining > 0 && counts.thieving > 0, "everything still comes up now and then");
 });

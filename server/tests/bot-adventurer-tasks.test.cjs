@@ -8,7 +8,7 @@ test("a running job is saved as one plain record with the time it has left", () 
   const entry = { phase: "training", activity: "oak_trees", until: 10_000 + 5 * 60_000,
     plan: { kind: "train", mode: "woodcutting", skill: "WOODCUTTING", reason: "doel" } };
   const record = Tasks.taskRecord(entry, 10_000, 1_700_000_000_000);
-  assert.deepEqual(record, { kind: "train", mode: "woodcutting", skill: "WOODCUTTING", reason: "doel", style: null,
+  assert.deepEqual(record, { kind: "train", mode: "woodcutting", skill: "WOODCUTTING", reason: "doel", style: null, target: null,
     bossId: null, activity: "oak_trees", remainingMs: 5 * 60_000, savedAt: 1_700_000_000_000 });
   assert.deepEqual(JSON.parse(JSON.stringify(record)), record);
   assert.equal(Tasks.taskRecord({ ...entry, phase: "errand" }, 0, 0), null);
@@ -34,4 +34,11 @@ test("a stale, broken or future-dated save is ignored", () => {
   assert.equal(Tasks.freshTask({ kind: "quest", savedAt: wall }, wall), null);
   assert.equal(Tasks.freshTask("oops", wall), null);
   assert.equal(Tasks.freshTask({ kind: "train", mode: "mining", savedAt: wall + 3_600_000 }, wall), null);
+});
+
+test("a saved job keeps the level it was for, so a resumed stretch still stops there", () => {
+  const entry = { phase: "training", until: 60_000, plan: { kind: "train", mode: "combat_training", skill: "COMBAT", reason: "The Restless Ghost (combat 10)", target: { skill: "COMBAT", level: 10 } } };
+  const record = Tasks.taskRecord(entry, 0, 1000);
+  assert.deepEqual(record.target, { skill: "COMBAT", level: 10 });
+  assert.deepEqual(Tasks.planOf(record).target, { skill: "COMBAT", level: 10 });
 });

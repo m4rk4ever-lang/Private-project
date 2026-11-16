@@ -101,6 +101,9 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Avonturiers kiezen minder vaak combat of een quest: een quest wordt in ongeveer 1 op de 5 keuzes gestart en training voor een quest-eis in 1 op de 4, zodat de 15 avonturiers meer verschillende skills trainen.
+- Een quest waarin twee verschillende avonturiers vastlopen, wordt drie uur lang voor alle avonturiers overgeslagen.
+- Avonturiers staan minder stil: ze denken elke servertick en gaan na een kill of actie meteen door naar de volgende, en eten en kiezen hun volgende taak binnen ruim een seconde.
 - Avonturiers kennen nu elke bank in de wereld (elke bankbalie die echt opent), niet alleen een vaste lijst, en lopen naar de bank die het kortst lopen is.
 - Alle avonturiers en de achievementsrace beginnen opnieuw bij nul in Lumbridge, met alle verbeteringen van vandaag.
 - Een spaardoel voor een uitrustingsstuk dat een avonturier inmiddels heeft (of iets beters), vervalt; hij kiest een nieuw doel. Op de avonturierspagina staat onder Achievements nu ook waar quests vastlopen.
@@ -144,6 +147,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Een avonturier die trainde voor een doel (zoals combat 10 voor The Restless Ghost) stopte niet meer bij dat doel nadat hij tussendoor had gebankt, verkocht of de server herstartte.
 - Een avonturier begint geen Quest Helper-quest als de bridge niet antwoordt, en een quest waarin de helper geen stap geeft legt hij na twee minuten weg in plaats van niets te doen. De questfeedback staat niet meer op de avonturierspagina, maar uitgebreider (tijdlijn per stap, duur, fout van de helper) in logs/adventurer-quest-feedback.jsonl.
 - Avonturiers vinden questspullen die een paar vakjes verderop op de grond liggen (zoals de eieren bij de boerderij voor Cook's Assistant), en verkopen hun pot, emmer en kan niet meer: die zijn nodig voor quests en koken.
 - Een avonturier die op zijn klus niets kan doen (geen XP, niet bewegen), kiest al na ruim een minuut iets anders in plaats van na twee minuten of langer.

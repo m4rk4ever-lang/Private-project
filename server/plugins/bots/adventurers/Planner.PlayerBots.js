@@ -79,7 +79,7 @@ function bossesFor(adventurer, bosses = []) {
 }
 
 function chooseNext(adventurer, quests, {
-  available = null, questChance = 0.45, bosses = [], bossChance = 0, random = Math.random,
+  available = null, questChance = 0.45, questGapChance = 0.25, bosses = [], bossChance = 0, random = Math.random,
   focus = {}, busyModes = new Set(), exclude = new Set(), goal = null,
 } = {}) {
   const open = quests.filter((quest) => !adventurer.done.has(quest.name) && (!available || available.has(quest.name)));
@@ -94,8 +94,9 @@ function chooseNext(adventurer, quests, {
   // Modes that could not start just now (no tool, no place) are left out of this pick.
   const options = trainingOptions(adventurer).filter((option) => !exclude.has(option.mode));
   if (options.length === 0) return { kind: "train", mode: COMBAT, skill: "COMBAT", reason: "loot en levels" };
-  // What the nearest quest that is not ready still needs, and that the bots can train.
-  for (const quest of open) {
+  // What the nearest quest that is not ready still needs, and that the bots can train: now and
+  // then (a quarter of the picks), not every time, or every new account would only fight.
+  for (const quest of random() < questGapChance ? open : []) {
     if (isReady(quest, adventurer)) continue;
     const gap = missing(quest, adventurer);
     if (gap.combat) {
@@ -118,7 +119,7 @@ function chooseNext(adventurer, quests, {
 
 /**
  * How much it wants to train this now:
- * - combat first on a new account: loot is its income and its way to bosses (x3 below combat 40);
+ * - combat a bit more on a new account: loot is its income and its way to bosses (x2 below combat 40);
  * - its own focus (adventurers.json `focus`), so five adventurers do not all mine at once;
  * - a skill far behind its others catches up (+20% per level under their average);
  * - a mode another adventurer already does weighs half (no clump), unless they are a group;
@@ -128,7 +129,7 @@ function trainingWeight(option, options, adventurer, { focus = {}, busyModes = n
   const average = options.reduce((sum, entry) => sum + entry.level, 0) / options.length;
   let weight = 1;
   // Early on combat a little more often (loot, levels for quests), not all the time.
-  if (option.mode === COMBAT && adventurer.combat < 40) weight *= 4;
+  if (option.mode === COMBAT && adventurer.combat < 40) weight *= 2;
   // A skill it has hardly touched (level 1-9) comes up often: every account tries them all.
   if (option.mode !== COMBAT && option.level < 10) weight *= 1.5;
   weight *= focus[option.mode] ?? 1;
