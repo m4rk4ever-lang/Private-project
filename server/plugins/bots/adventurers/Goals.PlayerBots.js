@@ -37,7 +37,13 @@ function candidates(view, { gear, levelOf, owns, worn, priceOf, questDone, idOf,
   // Ranged or Magic gear only for a style it can train now (a bow and arrows, runes): a Ranged
   // goal without them would leave it fighting with a sword "for" Ranged.
   for (const [name, style] of Object.entries(gear.styles ?? {})) {
-    if (styles && !styles.includes(name)) continue;
+    if (styles && !styles.includes(name)) {
+      // Not yet: the coins for a start (a bow it owns or can use and 300 arrows; 200 air and
+      // 100 mind runes), earned first, as a player saves up for a bow before ranging.
+      const kit = styleKit(name, style, { levelOf, owns, priceOf, idOf });
+      if (kit) out.push({ kind: "coins", amount: kit.amount, item: kit.item, why: kit.why });
+      continue;
+    }
     for (const list of Object.values(style)) consider(list);
   }
   for (const list of [gear.tools?.axe, gear.tools?.pickaxe].filter(Boolean)) consider(list);
@@ -51,6 +57,24 @@ function candidates(view, { gear, levelOf, owns, worn, priceOf, questDone, idOf,
     }
   }
   return out;
+}
+
+/** The coins to start a fighting style with: { amount, item, why }, or null when it is free. */
+function styleKit(name, style, { levelOf, owns, priceOf, idOf }) {
+  if (name === "ranged") {
+    const bows = (style.weapon ?? []).filter((entry) => levelOf(entry.skill) >= (entry.level ?? 1));
+    const bow = bows[bows.length - 1];
+    const ammo = (style.ammo ?? []).filter((entry) => levelOf(entry.skill) >= (entry.level ?? 1)).pop();
+    if (!bow || !ammo) return null;
+    const bowCost = bows.some((entry) => owns(idOf(entry.item))) ? 0 : priceOf(idOf(bow.item));
+    const amount = bowCost + 300 * priceOf(idOf(ammo.item));
+    return amount > 0 ? { amount, item: bowCost > 0 ? bow.item : ammo.item, why: `een boog en pijlen (Ranged)` } : null;
+  }
+  if (name === "magic") {
+    const amount = 200 * priceOf(idOf("AIR_RUNE")) + 100 * priceOf(idOf("MIND_RUNE"));
+    return amount > 0 ? { amount, item: "MIND_RUNE", why: "runes om te toveren (Magic)" } : null;
+  }
+  return null;
 }
 
 /** How far off a goal is, roughly in effort: levels to go, or coins short per 2,000. */
@@ -86,6 +110,8 @@ function goalWeight(goal, option) {
   if (option.mode.startsWith("buy_")) return 0.3;
   if (option.mode === "thieving") return 2;
   if (option.mode === "combat_training") return 1.5;
+  // Logs, ore and fish sell too (willows, iron, a bag of cowhides from combat above).
+  if (["woodcutting", "mining", "fishing"].includes(option.mode)) return 1.5;
   return 1;
 }
 

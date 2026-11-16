@@ -90,6 +90,8 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Een avonturier zonder boog en pijlen of runes spaart daar nu voor (met houthakken, mijnen, vissen, stelen of vechten) en koopt ze zodra het geld er is; daarna kan hij Ranged of Magic trainen.
+- Na het verkopen of banken van een volle tas gaat een avonturier verder met dezelfde klus voor de tijd die nog over was, in plaats van na één tas iets anders te kiezen.
 - Een avonturier maakt zijn klus af als hij een level haalt dat een betere plek opent (zoals Thieving 5), in plaats van meteen naar de andere kant van de kaart te lopen; de betere plek kiest hij bij zijn volgende klus.
 - Avonturiers banken ook bij de Grand Exchange, Al Kharid, Ardougne en Yanille, en lopen niet meer voor een verkoop helemaal naar de GE als een bank veel dichterbij is; ze verkopen later.
 - Een avonturier die al op een goede plek staat (mannen om hem heen) traint daar, in plaats van naar Lumbridge te lopen; ook bij Edgeville en Seers' Village kunnen ze mannen bestelen.

@@ -868,6 +868,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
 
   function next(entry, nowMs) {
     if (errands.busy(entry.player)) return;
+    // A full bag halfway through a job (a money-making stretch above all): it sells or banks and
+    // then goes back to the same job for the time it had left, not to something new after one load.
+    if (entry.phase === "training" && entry.plan?.kind === "train" && entry.plan.mode !== "slayer"
+        && Number.isFinite(entry.until) && entry.until - nowMs > 2 * 60_000 && !entry.savedTask) {
+      entry.savedTask = { kind: "train", mode: entry.plan.mode, skill: entry.plan.skill, reason: entry.plan.reason,
+        style: entry.plan.style ?? null, activity: entry.activity, remainingMs: entry.until - nowMs, savedAt: now(), afterTrip: true };
+    }
     if (waitForOffers(entry, nowMs)) return;
     // Waiting at the exchange for its materials: collect once they are in, then to work.
     if (entry.resume) {
@@ -1718,11 +1725,6 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (bids.length > 0) note(player, `Biedt op de GE op: ${bids.join(", ")}.`, "activity");
   }
 
-  function ownsSome(player, name) {
-    const id = Shopping.idOf(core, name);
-    return Number.isInteger(id) && player.getInventory().getAmount(id) + banked(player, id) > 0;
-  }
-
   /** Arrows for its bow, runes for its spells: bought when they run low (and it fights that way). */
   function bidForSupplies(player) {
     const styles = fightingStyles(player);
@@ -1732,6 +1734,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       if (!Number.isInteger(id) || player.getInventory().getAmount(id) + banked(player, id) >= amount / 3) return;
       if (bid(player, core, emit, id, amount)) bids.push(`${amount} x ${itemName(id)}`);
     };
+    // Saved up for a bow (its goal): the best one its Ranged allows, then arrows next visit.
+    const bows = (Shopping.gear.styles?.ranged?.weapon ?? []).filter((entry) => levelOf(player, "RANGED") >= (entry.level ?? 1));
+    if (!styles.includes("ranged") && bows.length > 0 && !bows.some((entry) => Shopping.owns(player, Shopping.idOf(core, entry.item)))
+        && Shopping.coinsOf(player) >= Shopping.estimatedPrice(core, Shopping.idOf(core, bows[bows.length - 1].item), 1)
+          + 300 * Shopping.estimatedPrice(core, Shopping.idOf(core, "IRON_ARROW"), 1) + 500) {
+      top(bows[bows.length - 1].item, 1);
+    }
     if (styles.includes("ranged") || (Shopping.gear.styles?.ranged?.weapon ?? []).some((entry) => Shopping.owns(player, Shopping.idOf(core, entry.item)))) {
       const level = levelOf(player, "RANGED");
       const arrow = (Shopping.gear.styles?.ranged?.ammo ?? []).find((entry) => level >= entry.level);
@@ -1740,7 +1749,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (styles.includes("magic")) {
       top("AIR_RUNE", 600);
       top("MIND_RUNE", 300);
-    } else if (ownsSome(player, "AIR_RUNE") && ownsSome(player, "MIND_RUNE") && Shopping.coinsOf(player) >= MAGIC_START_BUDGET) {
+    } else if (Shopping.coinsOf(player) >= MAGIC_START_BUDGET) {
       // The starter kit's few runes: a first supply to begin Magic with, as a player buys one.
       top("AIR_RUNE", 200);
       top("MIND_RUNE", 100);
@@ -1990,7 +1999,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
     // The same job, for what was left of it.
     entry.until = nowMs + Tasks.resumeMs(task);
-    note(entry.player, `Pakt na de herstart zijn klus weer op: ${String(task.activity ?? plan.mode ?? "").replace(/_/g, " ")}.`, "activity");
+    note(entry.player, `${task.afterTrip ? "Gaat verder met" : "Pakt na de herstart zijn klus weer op:"} ${String(task.activity ?? plan.mode ?? "").replace(/_/g, " ")}.`, "activity");
     return true;
   }
 
