@@ -106,6 +106,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers blijven niet meer eindeloos vechten met een monster dat ze niet kunnen bereiken, zoals de gevangenen achter de tralies in Edgeville; ze laten het gevecht los en gaan verder met hun klus.
 - Bij een quest kiest de avonturier de deur naar de NPC met de deur-opener van de bots zelf: die opent alleen een deur die de weg echt korter maakt, in plaats van de dichtstbijzijnde deur in een kamer met meerdere deuren.
 - De Construction-plugin startte nog steeds niet: er ontbrak een tweede handler (een huis adverteren voor een house party). Huizen werken weer.
 - Een avonturier op weg naar de trap voor een quest kon eindeloos blijven staan: op 3 tegels gold hij als aangekomen, maar hij klikte pas op 2 tegels. Nu klikt hij de trap of ladder aan en loopt het laatste stuk zelf, zoals een speler.

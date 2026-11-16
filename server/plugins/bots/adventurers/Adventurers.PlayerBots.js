@@ -453,6 +453,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * goes on (a walk to the trees is part of the stretch). False when it cannot go now.
    */
   function walkTo(entry, to, { reason, arrive = () => {}, replan = true, say = true, urgent = false } = {}) {
+    if (entry.questRun && reason !== "quest") world.log?.("adventurer_walk_during_quest", { name: entry.name, reason, phase: entry.phase, stack: new Error().stack.split("\n").slice(2, 6).join(" | ") });
     const run = runtimeEntry(entry.player);
     // `urgent`: a full bag to bank goes even while other errands rest after a failed one.
     if (!run || errands.busy(entry.player) || (replan && !urgent && (entry.noErrandUntil ?? 0) > now())) return false;
@@ -973,6 +974,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         entry.until += Math.max(0, nowMs - entry.lastTickAt);
       }
       entry.lastTickAt = nowMs;
+      leaveUnreachableFight(entry, nowMs);
       // Out of breath it walks; rested (40%) it runs again, as a player clicks run back on.
       if (entry.player.isRunningReturn?.() === false && (entry.player.getRunEnergy?.() ?? 0) >= 40) entry.player.setRunning?.(true);
       if (entry.phase === "training" && entry.buying && entry.player.getInventory().getAmount(entry.buying) <= 0
@@ -1255,6 +1257,42 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         }
       },
     });
+  }
+
+  /**
+   * Fighting something it cannot get to (a prisoner behind bars in Edgeville, a monster across a
+   * fence): it stops hitting back and goes on with its job, as a player walks away. Looked at every
+   * few seconds with the route finder.
+   */
+  let fightRouteFinder = null;
+  function leaveUnreachableFight(entry, nowMs) {
+    const player = entry.player;
+    const combat = player.getCombat?.();
+    const foe = combat?.getTarget?.() ?? combat?.getAttacker?.();
+    if (!foe || foe.isNpc?.() !== true) {
+      entry.unreachableSince = 0;
+      return;
+    }
+    if (nowMs < (entry.fightCheckAt ?? 0)) return;
+    entry.fightCheckAt = nowMs + 3_000;
+    fightRouteFinder ??= new core.RsmodRouteFinding();
+    const from = player.getLocation();
+    const to = foe.getLocation();
+    const size = Math.max(1, Math.floor(foe.getSize?.() ?? 1));
+    const reachable = from.getZ() === to.getZ() && fightRouteFinder.findRoute({
+      level: from.getZ(), srcX: from.getX(), srcY: from.getY(), srcSize: 1, destX: to.getX(), destY: to.getY(),
+      destWidth: size, destLength: size, locAngle: 0, locShape: -2, moveNear: false, blockAccessFlags: 0, maxWaypoints: 25,
+      privateArea: player.getPrivateArea?.() ?? null,
+    }).success === true;
+    if (reachable) {
+      entry.unreachableSince = 0;
+      return;
+    }
+    entry.unreachableSince ||= nowMs;
+    if (nowMs - entry.unreachableSince < 6_000) return;
+    entry.unreachableSince = 0;
+    combat.reset?.();
+    note(player, `Laat ${String(foe.getDefinition?.()?.getName?.() ?? "een monster").toLowerCase()} achter tralies liggen.`, "activity");
   }
 
   /** A death: the journal says where, and its next job starts after the respawn. */
@@ -1915,6 +1953,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
 
   /** Owner test hook: starts a quest with a playthrough for this adventurer now. */
   function forceQuest(name, questName) {
+    world.log?.("adventurer_force_quest", { name, questName });
     const entry = adventurers.get(name);
     if (!entry?.player?.isRegistered?.() || !questPlay.has(questName)) return false;
     errands.errands?.delete?.(entry.player);
