@@ -309,6 +309,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         where: [at.getX(), at.getY(), at.getZ()], place: describeLocation(entry.player, { x: at.getX(), y: at.getY() }),
         xpGained: gained, xpPerHour: Math.round(Object.values(gained).reduce((sum, v) => sum + v, 0) / Math.max(1, (nowMs - m.since) / 3_600_000)),
         coins, coinsGained: m.coins === null ? null : coins - m.coins,
+        // Which processing skills it could take up now (coins or own stock) and has stock for.
+        canProcess: buyableSkills(entry.player), stocked: stockedSkills(entry.player),
         time: Object.fromEntries(Object.entries(m.time).map(([kind, ms]) => [kind, minutes(ms)])), events: m.events,
       });
       entry.metrics = { since: nowMs, time: {}, xp, coins, events: {} };
@@ -480,7 +482,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
 
   /** Skills it can afford to train on bought materials (with coins to spare for food and tools). */
   function buyableSkills(player) {
-    const coins = Shopping.coinsOf(player);
+    // Its coins in the bag and in the bank: at the exchange it takes them out of its bank.
+    const coins = Shopping.coinsOf(player) + banked(player, Trade.COINS);
     const done = questDone(player);
     return Object.keys(data.buyToTrain ?? {}).filter((skill) => {
       // Herblore needs Druidic Ritual first, as for a player.
@@ -490,7 +493,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       if (recipe.ownTool && !Shopping.ownsAnywhere(player, Shopping.idOf(core, recipe.tool))) return false;
       const plan = buyPlan(player, skill);
       // Its own stock (the logs it chopped, the ore it smelted) is enough; else coins to buy.
-      return plan && (hasStock(player, plan) || coins >= plan.cost + 200);
+      // Enough for a smaller lot (ten at least) is enough to start: it buys what it can pay.
+      return plan && (hasStock(player, plan) || coins >= Math.ceil(plan.cost * Math.min(1, 10 / plan.amount)) + 200);
     });
   }
 
@@ -985,11 +989,17 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         emit("ge:collect", { player: buyer });
         const missing = buy.materials.filter((id) => buyer.getInventory().getAmount(id) <= 0);
         if (missing.length === 0) return;
-        if (!missing.every((id) => bid(buyer, core, emit, id, buy.amount))) {
+        // As many as its coins pay for (bag and bank; the exchange has a bank), keeping 200 over.
+        const perLot = buy.cost / buy.amount;
+        const wealth = Shopping.coinsOf(buyer) + banked(buyer, Trade.COINS);
+        const amount = Math.max(1, Math.min(buy.amount, Math.floor((wealth - 200) / Math.max(1, perLot))));
+        const short = Math.ceil(perLot * amount) + 50 - Shopping.coinsOf(buyer);
+        if (short > 0) withdraw(buyer, Trade.COINS, short);
+        if (!missing.every((id) => bid(buyer, core, emit, id, amount))) {
           note(buyer, `Kon niet op alles bieden (${missing.map(itemName).join(", ")}).`, "activity");
           return;
         }
-        note(buyer, `Biedt op ${buy.amount} x ${missing.map(itemName).join(" en ")} (~${buy.cost.toLocaleString("nl-NL")} gp) om ${plan.skill.toLowerCase()} te trainen.`, "activity");
+        note(buyer, `Biedt op ${amount} x ${missing.map(itemName).join(" en ")} (~${Math.ceil(perLot * amount).toLocaleString("nl-NL")} gp) om ${plan.skill.toLowerCase()} te trainen.`, "activity");
         entry.resume = plan;
         entry.waitingSince = now();
       },
@@ -1489,7 +1499,19 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return index >= 0 ? profiles[index % profiles.length] : null;
   }
 
+  const settingProfile = new WeakSet();
+
   function applyTestProfile(player, profile) {
+    settingProfile.add(player);
+    try {
+      applyTestProfileLevels(player, profile);
+    } finally {
+      // Level-up events of the profile may come a tick later: ignored for a few seconds.
+      setTimeout(() => settingProfile.delete(player), 5_000);
+    }
+  }
+
+  function applyTestProfileLevels(player, profile) {
     const { SkillManager } = core;
     const skills = player.getSkillManager();
     // The same "random" levels in every clan: from the profile's name, not from the bot's.
@@ -2036,7 +2058,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   /** Out of its bank, unnoted, as many as fit (up to `amount`). Returns how many. */
   function withdraw(player, itemId, amount) {
     const inventory = player.getInventory();
-    let wanted = Math.min(amount, inventory.getFreeSlots());
+    // A stack (coins, runes, noted goods) takes one slot whatever the amount.
+    const stacks = core.ItemDefinition?.forId?.(itemId)?.isStackable?.() === true || itemId === Trade.COINS;
+    const room = stacks ? (inventory.getAmount(itemId) > 0 || inventory.getFreeSlots() > 0 ? Infinity : 0) : inventory.getFreeSlots();
+    let wanted = Math.min(amount, room);
     let got = 0;
     for (const bank of player.getBanks?.() ?? []) {
       const have = bank?.getAmount?.(itemId) ?? 0;
@@ -2604,6 +2629,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
 
   function onLevelUp({ player, skill, newLevel }) {
     if (!player || !adventurers.has(player.getUsername?.())) return;
+    // A test start set its levels (applyTestProfile): not levels it gained.
+    if (settingProfile.has(player)) return;
     const name = String(skill?.getName?.() ?? skill ?? "").toLowerCase();
     note(player, `Level ${newLevel} ${name}!`, "skill");
   }
@@ -2752,7 +2779,30 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return true;
   }
 
-  return { adventurers, questFeedback, spawn, tick, talkTick, forceQuest, forceTraining, onDeath, onLevelUp, onDrops, onNpcDeath, report, next, startGroup, acquire };
+  /**
+   * On shutdown: a last metrics round, then the logs pushed to the bot-logs branch at once
+   * (scripts/share-bot-logs.sh), so the last minutes of quests and adventurers are not lost.
+   */
+  function onShutdown() {
+    try {
+      writeMetrics(now());
+      for (const stream of [activityLog, metricsLog]) stream.end?.();
+    } catch {
+      // A help, not a must.
+    }
+    if ((process.env.ADVENTURER_SHARE_LOGS_ON_SHUTDOWN ?? "1") === "0") return;
+    try {
+      const path = require("path");
+      const script = path.join(__dirname, "..", "..", "..", "..", "scripts", "share-bot-logs.sh");
+      if (!require("fs").existsSync(script)) return;
+      // The streams flush on end; a moment for that, then one push (at most 60 s).
+      require("child_process").spawnSync("bash", ["-c", `sleep 1; bash "${script}"`], { stdio: "inherit", timeout: 60_000 });
+    } catch (error) {
+      world.log?.("adventurer_logs_share_failed", { error: String(error?.message ?? error) });
+    }
+  }
+
+  return { adventurers, questFeedback, spawn, tick, onShutdown, talkTick, forceQuest, forceTraining, onDeath, onLevelUp, onDrops, onNpcDeath, report, next, startGroup, acquire };
 }
 
 /** Starts the adventurers on server start; serves /api/adventurers and the commands. */
@@ -2819,6 +2869,8 @@ function startAdventurers({ api, runtime, world, registry }) {
       ? `${entry.name} gaat ${mode} doen.` : "Gebruik: ::advtrain <naam>:<modus, bv. slayer>.");
     return true;
   }, rights.OWNER, "Start a training mode for an adventurer: ::advtrain <name>:<mode>");
+  // The last minutes of logs out before the server goes down (manager.onShutdown).
+  api.onServerShutdown?.(() => manager.onShutdown());
   api.onServerStartup?.(() => setTimeout(() => {
     // First in, one per tick; the world bots wait until they are in (SpawnPacing).
     runPaced(Clans.namesOf(data).map((name) => () => manager.spawn(name)));

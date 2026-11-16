@@ -9,6 +9,8 @@
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 root="$(pwd)"
+# Another branch for a test run (BOT_LOGS_BRANCH=bot-logs-test), so the real one is left alone.
+branch="${BOT_LOGS_BRANCH:-bot-logs}"
 
 share() {
   local tmp index tree commit
@@ -29,10 +31,10 @@ share() {
   tree="$(GIT_INDEX_FILE="$index" git write-tree)"
   commit="$(git -c user.name="bot-logs" -c user.email="bot-logs@localhost" commit-tree "$tree" -m "Bot logs $(date -u +%Y-%m-%dT%H:%MZ)")"
   rm -rf "$tmp"
-  if git push -q -f origin "$commit:refs/heads/bot-logs" 2>/dev/null; then
-    echo "$(date -u +%H:%MZ) gedeeld op branch bot-logs"
+  if git push -q -f origin "$commit:refs/heads/$branch" 2>/dev/null; then
+    echo "$(date -u +%H:%MZ) gedeeld op branch $branch"
   else
-    echo "$(date -u +%H:%MZ) pushen naar bot-logs mislukt (netwerk of rechten); volgende keer opnieuw"
+    echo "$(date -u +%H:%MZ) pushen naar $branch mislukt (netwerk of rechten); volgende keer opnieuw"
   fi
 }
 

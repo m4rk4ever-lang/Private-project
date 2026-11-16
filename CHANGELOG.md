@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Bij het afsluiten van de server worden de logboeken van de avonturiers nog één keer gedeeld op de branch `bot-logs`, zodat de laatste minuten van quests en avonturiers niet verloren gaan.
 - Bij het begin van een quest halen avonturiers wat Quest Helper aanraadt om mee te nemen (eten, een teleport, antipoison), als ze het kunnen krijgen.
 - Avonturiers kunnen verder kijken dan rune: een abyssal whip (70 attack) en granite (50 defence/strength), Helm of Neitiznot (55, na The Fremennik Isles), dragon (60/70), Bandos (65) en Dharok's (70) armour, als ze het geld hebben; anders wordt het een spaardoel.
 - Elke clan heeft tijdelijk 5 extra avonturiers (Jorgbot 5–9, Patrickbot 4–8, Markbot 4–8) voor een langere testrun, elk met een eigen testprofiel (vroege vechter, skiller, middenmoot, gevorderd, mix) met andere levels, al gedane quests en startgeld; ze tellen niet mee voor de achievements. In te stellen met "extraPerClan" en "testProfiles" in adventurers.json.
@@ -153,6 +154,8 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers trainen weer fletching, firemaking, smithing en cooking: ze tellen hun bankgeld mee, kopen een kleinere partij materialen als het geld niet voor een volle reikt, en hun eigen logs of erts verwerken telt niet langer als geld uitgeven bij een spaardoel.
+- Het opzetten van een testaccount zet geen tientallen "Level N"-regels meer in zijn logboek.
 - Avonturiers betalen de tol van 10 gp bij de poort van Al Kharid als ze die bij zich hebben, zoals een speler; eerst moesten ze 1.000 gp op zak hebben en stonden ze vast in Al Kharid.
 - Bij een quest-stap die geen praten is (schapen scheren voor Sheep Shearer) gebruiken avonturiers de juiste optie van het NPC en nemen ze steeds een ander schaap.
 - Avonturiers nemen ook eten mee voor een Slayer-taak, en pakken daarvoor eerst eten van hun bank voordat ze iets kopen.

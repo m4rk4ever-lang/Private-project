@@ -64,7 +64,9 @@ function trainingOptions(adventurer) {
   }
   // Skills trained on bought materials (logs to fletch or burn, bars to smith), when it can pay.
   for (const skill of adventurer.buyable ?? []) {
-    options.push({ mode: `buy_${skill.toLowerCase()}`, skill, level: adventurer.levels[skill] ?? 1 });
+    options.push({ mode: `buy_${skill.toLowerCase()}`, skill, level: adventurer.levels[skill] ?? 1,
+      // Materials of its own (the logs it chopped): nothing to buy (Goals.goalWeight).
+      stocked: (adventurer.stocked ?? []).includes(skill) });
   }
   return options;
 }

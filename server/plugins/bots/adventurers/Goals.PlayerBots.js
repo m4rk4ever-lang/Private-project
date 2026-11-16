@@ -108,8 +108,9 @@ function goalWeight(goal, option) {
     if (goal.skill === "MAGIC") return option.mode === "combat_magic" ? 4 : 1;
     return option.skill === goal.skill ? 4 : 1;
   }
-  // Saving up: what earns (loot, pickpockets, produce to sell) more, spending on materials less.
-  if (option.mode.startsWith("buy_")) return 0.3;
+  // Saving up: what earns (loot, pickpockets, produce to sell) more, spending on materials less;
+  // but its own logs, ore or fish cost nothing to work up, and the bows, bars and food sell.
+  if (option.mode.startsWith("buy_")) return option.stocked ? 1.2 : 0.3;
   if (option.mode === "thieving") return 1.5;
   if (option.mode === "combat_training") return 1.2;
   // Logs, ore and fish sell too (willows, iron, a bag of cowhides from combat above).
