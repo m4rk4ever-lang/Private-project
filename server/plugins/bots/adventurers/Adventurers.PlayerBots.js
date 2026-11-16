@@ -138,6 +138,21 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       (requires.quests ?? []).every((name) => questsByName().get(normalize(name))?.isComplete(player) === true)
       && Object.entries(requires.skills ?? {}).every(([skill, level]) => (core.Skill[skill] ? player.getSkillManager().getMaxLevel(core.Skill[skill]) : 0) >= level)));
   }
+  /** logs/adventurers-activity.jsonl: every journal line of every adventurer, as it happens. */
+  const activityLog = (() => {
+    try {
+      const fs = require("fs");
+      const path = require("path");
+      const file = path.join(process.cwd(), "logs", "adventurers-activity.jsonl");
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      // A long-running server keeps the last part: the file is started over past 20 MB.
+      try { if (fs.statSync(file).size > 20 * 1024 * 1024) fs.renameSync(file, `${file}.old`); } catch {}
+      return fs.createWriteStream(file, { flags: "a" });
+    } catch {
+      return { write: () => {} };
+    }
+  })();
+
   /** The last stuck quests, newest first (recordQuestFeedback). */
   const questFeedback = [];
   /** name -> { name, player, phase, until, plan, startedAt } */
@@ -206,6 +221,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   /** A journal line of a kind: "skill", "quest", "boss", "drop" or "activity" (the page's tabs). */
   function note(player, text, type = "activity") {
     const entries = [...journal(player), { at: now(), type, text }];
+    // Every line also in the activity log, to look back at what an adventurer did and where.
+    try {
+      const at = player.getLocation?.();
+      activityLog.write(`${JSON.stringify({ at: new Date().toISOString(), bot: player.getUsername?.(), type, text,
+        where: at ? [at.getX(), at.getY(), at.getZ()] : null })}\n`);
+    } catch {
+      // A help, not a must.
+    }
     // Each kind keeps its own last `logSize` lines, so a run of level-ups never pushes out a drop.
     const kept = [];
     const counts = new Map();
@@ -1626,9 +1649,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function nearestBank(player, entry = [...adventurers.values()].find((other) => other.player === player)) {
     const at = player.getLocation();
     let best = null;
-    for (const bank of data.banks ?? []) {
-      if (blockedPlace(entry, bank)) continue;
-      const away = walkTiles({ x: at.getX(), y: at.getY() }, bank, player);
+    // The three nearest as the crow flies, then the shortest walk among them: a walk estimate
+    // never sends it from Port Sarim to Seers' Village.
+    const near = (data.banks ?? []).filter((bank) => !blockedPlace(entry, bank))
+      .map((bank) => ({ bank, straight: Math.max(Math.abs(bank.x - at.getX()), Math.abs(bank.y - at.getY())) }))
+      .sort((a, b) => a.straight - b.straight).slice(0, 3);
+    for (const { bank, straight } of near) {
+      const walk = walkTiles({ x: at.getX(), y: at.getY() }, bank, player);
+      const away = Number.isFinite(walk) ? Math.min(walk, straight * 3) : straight * 3;
       if (!best || away < best.away) best = { ...bank, away };
     }
     return best;

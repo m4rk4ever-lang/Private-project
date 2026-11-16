@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Alles wat de avonturiers doen staat ook in logs/adventurers-activity.jsonl (met tijd en plek), om terug te zien waar het misging.
 - In een Codespace wordt de Quest Helper-bridge vanzelf opgezet en gestart: Java 21, de geheime sleutel in .env, Quest Helper ophalen en bouwen bij het aanmaken (of op de achtergrond bij het starten), en de bridge start mee met het spel. Een bestaande Codespace heeft één keer 'Rebuild Container' nodig voor Java.
 - Avonturiers proberen (met de Quest Helper) elke quest waarvan ze de eisen halen. Lopen ze vast, dan stoppen ze, laten ze de quest een tijd liggen (steeds langer) en schrijven ze op waar en waarom: in logs/adventurer-quest-feedback.jsonl en als questFeedback in /api/adventurers.
 - Beheerders kunnen een avonturier een quest laten beginnen vanaf een bepaalde stap: `::advquest <naam>:<quest>:<stage>` (om één stap te testen).
@@ -137,6 +138,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers kiezen een logische bank (een van de dichtstbijzijnde), niet meer een bank aan de andere kant van de kaart; een queststap die met de Quest Helper 6 minuten niet opschiet, leggen ze weg (met feedback) in plaats van er lang op te blijven staan.
 - Het spel loopt in een codespace niet meer vast op geheugen. Gradle-processen (van de Quest Helper-bouw en de Java-extensies van VS Code) namen samen ruim 3 GB in. `start.sh`, `yarn start` en `update` stoppen die nu eerst. De bridge wordt zonder blijvend Gradle-proces gebouwd. VS Code importeert de Java/Gradle-projecten in de repo niet meer vanzelf.
 - Het spel valt niet meer helemaal om als de client stopt: crasht de client steeds (bijvoorbeeld door te weinig geheugen in de codespace), dan blijft de gameserver draaien.
 - De Quest Helper-bridge gebruikt hooguit 512 MB geheugen (was een kwart van de codespace). Daardoor raakt het geheugen minder snel op en wordt de server niet meer afgeschoten ("Killed").

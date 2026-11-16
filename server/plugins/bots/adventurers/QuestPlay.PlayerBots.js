@@ -20,6 +20,7 @@ const NEAR_TILES = 8;
 const MAX_TRIES = 4;
 /** The longest a step may take, the walk included. */
 const STEP_MS = 20 * 60_000;
+const HELPER_STEP_MS = 6 * 60_000;
 /** What a closed door, gate or passage on the way offers (caves, gaps, stiles too). */
 const PASSAGE_OPTIONS = ["open", "enter", "climb-through", "squeeze-through", "climb-over", "pass", "go-through", "walk-through"];
 /** How far around it looks for such a passage. */
@@ -349,7 +350,8 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     let step;
     if (run.helperKey) {
       step = helperStep(run, player, nowMs);
-      if (nowMs - run.stepSince > STEP_MS || run.tries >= MAX_TRIES) return "failed";
+      // A helper step that does not move on in 6 minutes is stuck (logged, put aside).
+      if (nowMs - run.stepSince > HELPER_STEP_MS || run.tries >= MAX_TRIES) return "failed";
       // The helper's first answer comes back a moment later.
       if (!step) return "running";
       if (step.kind === "complete") return "done";
