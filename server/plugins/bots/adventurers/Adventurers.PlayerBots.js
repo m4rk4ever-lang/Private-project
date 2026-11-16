@@ -714,6 +714,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       return false;
     }
     entry.phase = "quest";
+    if (!entry.phaseTraced) {
+      entry.phaseTraced = true;
+      let phase = entry.phase;
+      Object.defineProperty(entry, "phase", { configurable: true, enumerable: true, get: () => phase, set: (value) => {
+        if (phase === "quest" && value !== "quest") world.log?.("adventurer_left_quest", { name: entry.name, to: value, run: entry.questRun?.name ?? null, stack: new Error().stack.split("\n").slice(2, 7).join(" | ") });
+        phase = value;
+      } });
+    }
     entry.plan = plan;
     entry.activity = null;
     entry.until = Infinity;
@@ -1961,7 +1969,18 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return startQuest(entry, { kind: "quest", quest: { name: questName } });
   }
 
-  return { adventurers, spawn, tick, talkTick, forceQuest, onDeath, onLevelUp, onDrops, onNpcDeath, report, next, startGroup, acquire };
+  /** An owner's test: this training mode now (::advtrain <name>:slayer). */
+  function forceTraining(name, mode) {
+    const entry = adventurers.get(name);
+    if (!entry?.player?.isRegistered?.() || !mode) return false;
+    errands.errands?.delete?.(entry.player);
+    entry.questRun = null;
+    const skill = mode === "slayer" ? "SLAYER" : String(mode).replace(/^combat_/, "").toUpperCase();
+    startTraining(entry, { kind: "train", mode, skill, reason: "op verzoek" }, now());
+    return true;
+  }
+
+  return { adventurers, spawn, tick, talkTick, forceQuest, forceTraining, onDeath, onLevelUp, onDrops, onNpcDeath, report, next, startGroup, acquire };
 }
 
 /** Starts the adventurers on server start; serves /api/adventurers and the commands. */
@@ -2017,6 +2036,13 @@ function startAdventurers({ api, runtime, world, registry }) {
       : "Gebruik: ::advquest <naam>:<quest met een bot-playthrough>.");
     return true;
   }, rights.OWNER, "Start a quest with a bot playthrough for an adventurer: ::advquest <name>:<quest>");
+  api.registerCommand("advtrain", ({ player, parts }) => {
+    const [name, mode] = parts.slice(1).join(" ").split(":").map((part) => part.trim());
+    const entry = [...manager.adventurers.values()].find((a) => a.name.toLowerCase() === String(name).toLowerCase());
+    player.sendMessage(entry && manager.forceTraining(entry.name, mode)
+      ? `${entry.name} gaat ${mode} doen.` : "Gebruik: ::advtrain <naam>:<modus, bv. slayer>.");
+    return true;
+  }, rights.OWNER, "Start a training mode for an adventurer: ::advtrain <name>:<mode>");
   api.onServerStartup?.(() => setTimeout(() => {
     manager.spawn();
     const { Task } = api.core;

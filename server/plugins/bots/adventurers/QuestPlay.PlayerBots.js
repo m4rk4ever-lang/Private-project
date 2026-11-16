@@ -279,8 +279,10 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     world.log?.("adventurer_quest_tick", { name: player.getUsername?.(), step: run.step, tries: run.tries, here, target, hop: hop.climb ? hop.climb.option : null,
       stairs: here.z !== target.z ? Boolean(stairsTo(here, target, nowMs)) : null });
     // Another floor (Duke Horacio upstairs): to the stairs that lead there, then climb them.
-    if (!hop.climb && here.z !== target.z) {
-      const stairs = stairsTo(here, target, nowMs);
+    // The ladder of the next hop on another floor too (down from the Duke to the Wizards' Tower).
+    const floorGoal = hop.climb ? { x: hop.x, y: hop.y, z: hop.z } : target;
+    if (here.z !== floorGoal.z) {
+      const stairs = stairsTo(here, floorGoal, nowMs);
       if (!stairs) return run.tries++ >= MAX_TRIES ? "failed" : "running";
       const at = stairs.getLocation();
       const away = Math.max(Math.abs(here.x - at.getX()), Math.abs(here.y - at.getY()));
@@ -290,7 +292,7 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
         if (nowMs >= (run.climbAt ?? 0)) {
           run.climbAt = nowMs + 4000;
           const { climbOption } = require("../brain/Climbing.PlayerBots");
-          const clickType = climbOption(stairs.getId(), target.z > here.z ? 1 : -1);
+          const clickType = climbOption(stairs.getId(), floorGoal.z > here.z ? 1 : -1);
           if (clickType) {
             player.getMovementQueue().walkToObject(stairs, {
               execute: () => world.emitObjectInteraction?.({

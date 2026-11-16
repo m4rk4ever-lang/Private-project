@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Beheerders kunnen een avonturier met `::advtrain <naam>:<modus>` (bv. `slayer`) meteen een trainingsklus laten beginnen.
 - Avonturiers vangen vogels (Hunter, vanaf level 1): ze kopen bird snares (in een winkel of op de GE), lopen naar de crimson swifts in de Feldip Hills, zetten snares, controleren een snare met een vogel erin en rapen een omgevallen snare weer op. Vangst, XP en buit (botten, vogelvlees, veren) komen van de Hunter-plugin zelf.
 - Gereedschap dat geen winkel in de buurt verkoopt (zoals een bird snare), kopen avonturiers op de GE.
 - Avonturiers met geld over kopen ook een geladen teleport-sieraad op de GE (games necklace, ring of dueling of amulet of glory). Elke lading is een teleport voor een lange tocht, naar bestemmingen zonder quest-eis.
@@ -106,6 +107,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers in een quest nemen eerst de trap naar de juiste verdieping voordat ze naar een ladder op een andere verdieping lopen (zoals van Duke Horacio naar de kelder van de Wizards' Tower).
 - Avonturiers blijven niet meer eindeloos vechten met een monster dat ze niet kunnen bereiken, zoals de gevangenen achter de tralies in Edgeville; ze laten het gevecht los en gaan verder met hun klus.
 - Bij een quest kiest de avonturier de deur naar de NPC met de deur-opener van de bots zelf: die opent alleen een deur die de weg echt korter maakt, in plaats van de dichtstbijzijnde deur in een kamer met meerdere deuren.
 - De Construction-plugin startte nog steeds niet: er ontbrak een tweede handler (een huis adverteren voor een house party). Huizen werken weer.
