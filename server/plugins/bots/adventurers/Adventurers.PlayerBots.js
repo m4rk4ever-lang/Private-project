@@ -1339,9 +1339,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * bank; both journals say so. Returns how many it got.
    */
   function fromClan(entry, itemId, wanted) {
-    const mates = Clans.matesOf(data, entry.name).map((name) => adventurers.get(name)).filter((mate) => mate?.player?.isRegistered?.());
+    // The leader comes first: the others give it more of their own reserve, and they do not take
+    // from the leader's stock (it must progress fastest, the clan's race runs through it).
+    const leader = isLeader(entry.name);
+    const mates = Clans.matesOf(data, entry.name).filter((name) => leader || !isLeader(name))
+      .map((name) => adventurers.get(name)).filter((mate) => mate?.player?.isRegistered?.());
+    const reserve = (data.clanReserve ?? 500) / (leader ? 4 : 1);
     const given = Clans.gift(mates, itemId, wanted, {
-      spare: (mate, id) => banked(mate.player, id) - Math.min(need(mate.player, id), data.clanReserve ?? 500),
+      spare: (mate, id) => banked(mate.player, id) - Math.min(need(mate.player, id), reserve),
       take: (mate, amount) => {
         let left = amount;
         for (const bank of mate.player.getBanks?.() ?? []) {
@@ -1666,17 +1671,24 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * than is short. Bank to bank, once an hour per adventurer; both journals say so. The rest it
    * earns itself, so it stays a race of the whole clan without anyone being carried.
    */
+  function isLeader(name) {
+    return Clans.clanOf(data, name)?.leader === name;
+  }
+
   function clanFunds(entry, nowMs) {
     const player = entry.player;
     const short = shortfall(player);
     if (short <= 0 || nowMs < (entry.clanFundsAt ?? 0)) return 0;
-    entry.clanFundsAt = nowMs + 60 * 60_000;
-    for (const name of Clans.matesOf(data, entry.name)) {
+    // The leader is helped first and most: half a mate's surplus, every half hour; the others a
+    // quarter, once an hour, and never out of the leader's purse.
+    const leader = isLeader(entry.name);
+    entry.clanFundsAt = nowMs + (leader ? 30 : 60) * 60_000;
+    for (const name of Clans.matesOf(data, entry.name).filter((other) => leader || !isLeader(other))) {
       const mate = adventurers.get(name);
       if (!mate?.player?.isRegistered?.()) continue;
       const own = mate.player.getAttribute(GOAL_ATTRIBUTE);
       const surplus = allCoins(mate.player) - (own?.kind === "coins" ? own.amount : 0) - CLAN_KEEP;
-      const give = Math.min(short, Math.floor(surplus / 4));
+      const give = Math.min(short, Math.floor(surplus / (leader ? 2 : 4)));
       if (give < 100) continue;
       let left = give;
       for (const bank of mate.player.getBanks?.() ?? []) {

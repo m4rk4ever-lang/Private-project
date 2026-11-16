@@ -93,6 +93,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- De clanleider krijgt voorrang bij hulp van clangenoten: hij krijgt meer materialen en tot de helft van hun overschot aan geld (elk half uur), en de anderen nemen niets uit de voorraad van de leider.
 - Avonturierspagina: 'Per clan' toont de clanrace met de kaarten per clan, 'Ranglijst' de ranglijst van alle avonturiers.
 - Een avonturier zonder boog en pijlen of runes spaart daar nu voor (met houthakken, mijnen, vissen, stelen of vechten) en koopt ze zodra het geld er is; daarna kan hij Ranged of Magic trainen.
 - Na het verkopen of banken van een volle tas gaat een avonturier verder met dezelfde klus voor de tijd die nog over was, in plaats van na één tas iets anders te kiezen.
