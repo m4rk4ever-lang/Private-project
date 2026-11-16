@@ -1653,17 +1653,33 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function nearestBank(player, entry = [...adventurers.values()].find((other) => other.player === player)) {
     const at = player.getLocation();
     let best = null;
-    // The three nearest as the crow flies, then the shortest walk among them: a walk estimate
-    // never sends it from Port Sarim to Seers' Village.
-    const near = (data.banks ?? []).filter((bank) => !blockedPlace(entry, bank))
+    // Every bank in the world counts: the nearest usable booth from the object index (any
+    // town, not only the named list), and the three nearest named banks; then the shortest walk
+    // among them. A walk estimate never sends it from Port Sarim to Seers' Village.
+    const named = (data.banks ?? []).filter((bank) => !blockedPlace(entry, bank));
+    const booth = nearestBooth(player);
+    const candidates = booth && !blockedPlace(entry, booth) ? [...named, booth] : named;
+    const near = candidates
       .map((bank) => ({ bank, straight: Math.max(Math.abs(bank.x - at.getX()), Math.abs(bank.y - at.getY())) }))
-      .sort((a, b) => a.straight - b.straight).slice(0, 3);
+      .sort((a, b) => a.straight - b.straight).slice(0, 4);
     for (const { bank, straight } of near) {
       const walk = walkTiles({ x: at.getX(), y: at.getY() }, bank, player);
       const away = Number.isFinite(walk) ? Math.min(walk, straight * 3) : straight * 3;
       if (!best || away < best.away) best = { ...bank, away };
     }
     return best;
+  }
+
+  /** The nearest bank booth that opens the bank (Bank or Use), from the bots' object index. */
+  function nearestBooth(player) {
+    const { BANK_BOOTH_IDS, isUsableBankBooth } = require("../lib/BankBooths.PlayerBots");
+    const found = world.objectSearch?.findNearestIndexedLocation?.(player, [...BANK_BOOTH_IDS], {
+      regionRadius: 6, accept: (objectId) => isUsableBankBooth(objectId),
+    });
+    if (!found) return null;
+    // Named after the bank of the list it belongs to, else after where it is.
+    const own = (data.banks ?? []).find((bank) => Math.max(Math.abs(bank.x - found.x), Math.abs(bank.y - found.y)) <= 15);
+    return { id: own?.id ?? `bank_${found.x}_${found.y}`, name: own?.name ?? describeLocation(player, found).near ?? "de bank", x: found.x, y: found.y, z: found.z };
   }
 
   function distanceTo(player, place) {
@@ -2220,9 +2236,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     note(player, `Level ${newLevel} ${name}!`, "skill");
   }
 
-  function describeLocation(player) {
+  function describeLocation(player, point = null) {
     const at = player.getLocation();
-    const here = { x: at.getX(), y: at.getY() };
+    const here = point ? { x: point.x, y: point.y } : { x: at.getX(), y: at.getY() };
     let best = null;
     for (const place of [...LANDMARKS, ...travelData.destinations, ...travelData.hangouts, ...travelData.minigames]) {
       const distance = Math.max(Math.abs(place.x - here.x), Math.abs(place.y - here.y));

@@ -100,6 +100,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Avonturiers kennen nu elke bank in de wereld (elke bankbalie die echt opent), niet alleen een vaste lijst, en lopen naar de bank die het kortst lopen is.
 - Alle avonturiers en de achievementsrace beginnen opnieuw bij nul in Lumbridge, met alle verbeteringen van vandaag.
 - Een spaardoel voor een uitrustingsstuk dat een avonturier inmiddels heeft (of iets beters), vervalt; hij kiest een nieuw doel. Op de avonturierspagina staat onder Achievements nu ook waar quests vastlopen.
 - Avonturiers doen meer verschillende skills: vechten komt minder vaak voorbij, en skills die ze nog nauwelijks hebben getraind (woodcutting, fletching, firemaking, smithing, agility, hunter) juist vaker.
