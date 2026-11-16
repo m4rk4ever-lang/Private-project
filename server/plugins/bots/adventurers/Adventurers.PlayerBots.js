@@ -933,6 +933,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       if (!entry.player?.isRegistered?.()) continue;
       watchGear(entry);
       joinClan(entry);
+      // On its way to the job (a long walk to the Gnome Stronghold): the walk does not count
+      // against the stretch, which starts when it gets there.
+      if ((entry.phase === "training" || entry.phase === "boss") && Number.isFinite(entry.until)
+          && errands.busy(entry.player) && Number.isFinite(entry.lastTickAt)) {
+        entry.until += Math.max(0, nowMs - entry.lastTickAt);
+      }
+      entry.lastTickAt = nowMs;
       // Out of breath it walks; rested (40%) it runs again, as a player clicks run back on.
       if (entry.player.isRunningReturn?.() === false && (entry.player.getRunEnergy?.() ?? 0) >= 40) entry.player.setRunning?.(true);
       if (entry.phase === "training" && entry.buying && entry.player.getInventory().getAmount(entry.buying) <= 0
