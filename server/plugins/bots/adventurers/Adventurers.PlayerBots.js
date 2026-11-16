@@ -63,6 +63,8 @@ const CHECK_TICKS = 10;
 const BID_WAIT_MS = 3 * 60_000;
 /** How much further than a bank it walks to the Grand Exchange to sell (saving up, offers in). */
 const SELL_DETOUR_TILES = 120;
+/** Coins a clanmate always keeps for itself before it chips in toward another's goal. */
+const CLAN_KEEP = 5_000;
 /** No XP and no step for this long while training: it is stuck, it picks something else. */
 const STUCK_MS = 2 * 60_000;
 /** The longest one Slayer task may take before it gives up on it for now. */
@@ -866,6 +868,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
 
   function next(entry, nowMs) {
     if (errands.busy(entry.player)) return;
+    clanFunds(entry, nowMs);
     // A full bag halfway through a job (a money-making stretch above all): it sells or banks and
     // then goes back to the same job for the time it had left, not to something new after one load.
     if (entry.phase === "training" && entry.plan?.kind === "train" && entry.plan.mode !== "slayer"
@@ -1650,6 +1653,48 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const goal = entry ? player.getAttribute(GOAL_ATTRIBUTE) ?? null : null;
     if (goal?.kind !== "coins") return 0;
     return Math.max(0, goal.amount - (Shopping.coinsOf(player) + banked(player, Trade.COINS)));
+  }
+
+  /** Coins it has, carried and banked. */
+  function allCoins(player) {
+    return Shopping.coinsOf(player) + banked(player, Trade.COINS);
+  }
+
+  /**
+   * Clanmates chip in toward a gear goal, as clan members do: a mate with plenty to spare (more
+   * than its own goal and CLAN_KEEP besides) gives at most a quarter of that surplus, never more
+   * than is short. Bank to bank, once an hour per adventurer; both journals say so. The rest it
+   * earns itself, so it stays a race of the whole clan without anyone being carried.
+   */
+  function clanFunds(entry, nowMs) {
+    const player = entry.player;
+    const short = shortfall(player);
+    if (short <= 0 || nowMs < (entry.clanFundsAt ?? 0)) return 0;
+    entry.clanFundsAt = nowMs + 60 * 60_000;
+    for (const name of Clans.matesOf(data, entry.name)) {
+      const mate = adventurers.get(name);
+      if (!mate?.player?.isRegistered?.()) continue;
+      const own = mate.player.getAttribute(GOAL_ATTRIBUTE);
+      const surplus = allCoins(mate.player) - (own?.kind === "coins" ? own.amount : 0) - CLAN_KEEP;
+      const give = Math.min(short, Math.floor(surplus / 4));
+      if (give < 100) continue;
+      let left = give;
+      for (const bank of mate.player.getBanks?.() ?? []) {
+        const out = Math.min(left, bank?.getAmount?.(Trade.COINS) ?? 0);
+        if (out <= 0) continue;
+        bank.deleteNumber?.(Trade.COINS, out);
+        left -= out;
+        if (left <= 0) break;
+      }
+      const moved = give - left;
+      if (moved <= 0) continue;
+      player.getBank?.(core.Bank?.getTabForItem?.(player, Trade.COINS) ?? 0)?.add?.(new core.Item(Trade.COINS, moved), false);
+      const goal = Goals.describe(player.getAttribute(GOAL_ATTRIBUTE));
+      note(player, `Krijgt ${moved.toLocaleString("nl-NL")} gp van clangenoot ${mate.name} voor zijn doel (${goal}).`, "activity");
+      note(mate.player, `Geeft ${moved.toLocaleString("nl-NL")} gp aan clangenoot ${entry.name} voor diens doel (${goal}).`, "activity");
+      return moved;
+    }
+    return 0;
   }
 
   /** What its banked materials (not the supplies it uses up) fetch on the GE, roughly. */

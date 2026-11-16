@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Clanleden helpen elkaar met geld: een avonturier met ruim geld over geeft een clangenoot hooguit een kwart van zijn overschot voor diens doel (zoals nieuwe uitrusting), maximaal eens per uur; de rest verdient die zelf. Beide logboeken vermelden het.
 - Avonturierspagina: nieuw tabblad Achievements met de clanrace in eerste keren: wie als eerste een level, totaal level, combat level, quest, questpunten, bezit of boss haalt, en welke clan als eerste samen een mijlpaal bereikt (met datum en tijd).
 - Avonturiers sparen ook voor een staff (Magic) en kopen bij een stijl passende uitrusting: leather en d'hide voor Ranged, wizard- en mystic robes voor Magic, en betere bogen en staves. Ze trekken die aan als ze zo vechten.
 - Met `::volg` zie je in de chat wat de gevolgde avonturier doet: klussen, lopen, kopen, verkopen en banken, met de items en de prijs.
