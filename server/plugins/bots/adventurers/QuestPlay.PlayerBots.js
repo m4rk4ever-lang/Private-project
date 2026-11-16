@@ -153,6 +153,10 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
           const options = (core.ObjectDefinition.forId(object.getId())?.getInteractions?.() ?? []).map((o) => String(o ?? "").toLowerCase());
           const index = options.findIndex((o) => PASSAGE_OPTIONS.includes(o));
           if (index < 0) continue;
+          // "Open" is a door's or a gate's (a wall object, or so named), not a chest's or drawers'.
+          const name = String(core.ObjectDefinition.forId(object.getId())?.getName?.() ?? "");
+          const wall = Number(object.getType?.() ?? 10) <= 3 || Number(object.getType?.()) === 9;
+          if (options[index] === "open" && !wall && !/door|gate/i.test(name)) continue;
           const score = Math.max(Math.abs(x - here.getX()), Math.abs(y - here.getY()))
             + Math.max(Math.abs(x - target.x), Math.abs(y - target.y));
           if (!best || score < best.score) best = { object, clickType: index + 1, score, x, y };
@@ -300,7 +304,7 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     if (nowMs < run.talkAt) return "running";
     const npc = findNpc(player, step);
     // A closed door between it and the NPC (Duke Horacio's room): open the way first.
-    if (npc && !canReach(player, npc) && openWayTo(player, target, nowMs)) {
+    if (npc && !canReach(player, npc) && openWayTo(player, { x: npc.getLocation().getX(), y: npc.getLocation().getY() }, nowMs)) {
       run.talkAt = nowMs + 3_000;
       return "running";
     }
