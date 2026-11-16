@@ -18,7 +18,7 @@ Indeling per versie:
 - Bij het begin van een quest halen avonturiers wat Quest Helper aanraadt om mee te nemen (eten, een teleport, antipoison), als ze het kunnen krijgen.
 - Avonturiers kunnen verder kijken dan rune: een abyssal whip (70 attack) en granite (50 defence/strength), Helm of Neitiznot (55, na The Fremennik Isles), dragon (60/70), Bandos (65) en Dharok's (70) armour, als ze het geld hebben; anders wordt het een spaardoel.
 - Elke clan heeft tijdelijk 5 extra avonturiers (Jorgbot 5–9, Patrickbot 4–8, Markbot 4–8) voor een langere testrun, elk met een eigen testprofiel (vroege vechter, skiller, middenmoot, gevorderd, mix) met andere levels, al gedane quests en startgeld; ze tellen niet mee voor de achievements. In te stellen met "extraPerClan" en "testProfiles" in adventurers.json.
-- De server deelt elke 5 minuten zelf de logboeken van de avonturiers op de branch `bot-logs`, zonder dat iemand een commando hoeft te draaien.
+- De server deelt elke 5 minuten zelf de logboeken van de avonturiers op de branch `bot-logs`, zolang het spel draait (ook na een herstart), zonder dat iemand een commando hoeft te draaien.
 - Een nieuw ontwikkelaarslogboek (logs/adventurers-metrics.jsonl) houdt per avonturier bij waar de tijd heen gaat (werken, lopen, boodschappen, quests, stilstaan), hoeveel XP en geld er per 5 minuten bijkomt, hoe elke taak afliep (doel gehaald, tijd op, tas vol, vastgelopen) en of gekozen doelen worden gehaald, welke skills wel en niet getraind worden en via welke activiteit, plus waar een route versperd was en hoe zwaar de avonturiers voor de server zijn.
 - `yarn logs` deelt de logboeken van de avonturiers (wat ze deden en waar quests vastliepen) via de repo in docs/bot-logs/, zodat ze ook van een andere machine te lezen zijn.
 - Met `::volg` toont je questtab de quests van de gevolgde avonturier (wat hij heeft gedaan en waar hij mee bezig is) en je combattab zijn wapensoort; als je stopt met volgen, krijg je je eigen tabs terug.
@@ -154,6 +154,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers die pickpocketen klikken nu op het NPC zoals een speler: ze kijken het aan en je ziet de thieving-animatie.
 - Een avonturier die voor een quest iets van de grond moet pakken (het ei voor Cook's Assistant) zoekt de hele ren af en wacht tot anderhalve minuut op een nieuw exemplaar, in plaats van na een paar pogingen op te geven.
 - Avonturiers gooien quest- en cluebeloningen niet meer weg als waardeloos: een antique lamp wrijven ze op (XP in hun laagste skill die de lamp toestaat), een casket maken ze open en een scroll box of clue scroll bewaren ze.
 - Avonturiers die materialen op de GE wilden kopen (logs om te fletchen, bars om te smithen) liepen op een fout vast; ze kopen ze nu en gaan aan de slag.

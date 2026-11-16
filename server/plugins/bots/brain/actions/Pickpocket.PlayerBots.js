@@ -176,7 +176,17 @@ function createPickpocketAction(spec = {}, world = {}) {
       }
       const definition = resolvedNpcDefinition(npc, player);
       const npcId = resolvedNpcId(npc, player);
-      plugin().pickpocket({ player, npc, npcId, definition, option: "Pickpocket" });
+      // The click a player's client sends (face the NPC, the interaction, the handler with its
+      // animation), when the game has it; the handler itself otherwise.
+      const actions = (definition?.getActions?.() ?? []).map((action) => String(action ?? "").toLowerCase());
+      const clickType = actions.indexOf("pickpocket") + 1;
+      if (clickType > 0 && world.core?.operateNpc) {
+        player.setPositionToFace?.(npc.getLocation());
+        world.core.operateNpc(player, npc.getIndex(), clickType);
+      } else {
+        player.setPositionToFace?.(npc.getLocation());
+        plugin().pickpocket({ player, npc, npcId, definition, option: "Pickpocket" });
+      }
       bot.nextAt = nowMs + ATTEMPT_MS;
       return "running";
     },

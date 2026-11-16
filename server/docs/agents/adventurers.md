@@ -188,8 +188,8 @@ Next, in order:
 
 De server schrijft drie logs in `server/logs/`: `adventurers-activity.jsonl` (elke journaalregel),
 `adventurer-quest-feedback.jsonl` (vastgelopen quests met stappen en tijden) en
-`adventurers-metrics.jsonl` (voor ontwikkelaars). `start.sh` start `scripts/share-bot-logs.sh --loop`,
-dat elke 5 minuten de laatste 20.000 regels van elk log als één commit naar de branch `bot-logs` pusht
+`adventurers-metrics.jsonl` (voor ontwikkelaars). De server zelf draait elke 5 minuten (en bij afsluiten)
+`scripts/share-bot-logs.sh`, dat de laatste 20.000 regels van elk log als één commit naar de branch `bot-logs` pusht
 (force, zodat de repo niet groeit). Ophalen: `git fetch origin bot-logs && git show origin/bot-logs:bot-logs/adventurers-metrics.jsonl`.
 
 De metrics-regels, op `kind`:

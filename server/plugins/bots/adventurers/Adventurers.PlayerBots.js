@@ -2843,6 +2843,32 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * On shutdown: a last metrics round, then the logs pushed to the bot-logs branch at once
    * (scripts/share-bot-logs.sh), so the last minutes of quests and adventurers are not lost.
    */
+  const SHARE_SCRIPT = require("path").join(__dirname, "..", "..", "..", "..", "scripts", "share-bot-logs.sh");
+  /** Off with ADVENTURER_SHARE_LOGS=0 (a test server that must not overwrite the real logs). */
+  function sharingLogs() {
+    return (process.env.ADVENTURER_SHARE_LOGS ?? process.env.ADVENTURER_SHARE_LOGS_ON_SHUTDOWN ?? "1") !== "0"
+      && require("fs").existsSync(SHARE_SCRIPT);
+  }
+
+  /**
+   * Every five minutes while the game runs, the logs go to the bot-logs branch (in the background,
+   * never two at once). The server does it itself: a loop started beside it stopped with a restart.
+   */
+  let sharing = null;
+  function shareLogsNow() {
+    if (sharing || !sharingLogs()) return;
+    try {
+      sharing = require("child_process").spawn("bash", [SHARE_SCRIPT], { stdio: "ignore" });
+      sharing.on("exit", (code) => {
+        if (code) world.log?.("adventurer_logs_share_failed", { code });
+        sharing = null;
+      });
+      sharing.on("error", () => { sharing = null; });
+    } catch {
+      sharing = null;
+    }
+  }
+
   function onShutdown() {
     try {
       writeMetrics(now());
@@ -2850,19 +2876,16 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     } catch {
       // A help, not a must.
     }
-    if ((process.env.ADVENTURER_SHARE_LOGS_ON_SHUTDOWN ?? "1") === "0") return;
+    if (!sharingLogs()) return;
     try {
-      const path = require("path");
-      const script = path.join(__dirname, "..", "..", "..", "..", "scripts", "share-bot-logs.sh");
-      if (!require("fs").existsSync(script)) return;
       // The streams flush on end; a moment for that, then one push (at most 60 s).
-      require("child_process").spawnSync("bash", ["-c", `sleep 1; bash "${script}"`], { stdio: "inherit", timeout: 60_000 });
+      require("child_process").spawnSync("bash", ["-c", `sleep 1; bash "${SHARE_SCRIPT}"`], { stdio: "inherit", timeout: 60_000 });
     } catch (error) {
       world.log?.("adventurer_logs_share_failed", { error: String(error?.message ?? error) });
     }
   }
 
-  return { adventurers, questFeedback, spawn, tick, onShutdown, onXpReward, talkTick, forceQuest, forceTraining, onDeath, onLevelUp, onDrops, onNpcDeath, report, next, startGroup, acquire };
+  return { adventurers, questFeedback, spawn, tick, onShutdown, onXpReward, shareLogsNow, talkTick, forceQuest, forceTraining, onDeath, onLevelUp, onDrops, onNpcDeath, report, next, startGroup, acquire };
 }
 
 /** Starts the adventurers on server start; serves /api/adventurers and the commands. */
@@ -2931,6 +2954,12 @@ function startAdventurers({ api, runtime, world, registry }) {
   }, rights.OWNER, "Start a training mode for an adventurer: ::advtrain <name>:<mode>");
   // The last minutes of logs out before the server goes down (manager.onShutdown).
   api.onServerShutdown?.(() => manager.onShutdown());
+  // The logs to the bot-logs branch every five minutes, from the game itself (manager.shareLogsNow).
+  api.onServerStartup?.(() => {
+    const timer = setInterval(() => manager.shareLogsNow(), 5 * 60_000);
+    timer.unref?.();
+    setTimeout(() => manager.shareLogsNow(), 60_000).unref?.();
+  });
   // An adventurer rubbing a lamp picks its skill as a player does (manager.onXpReward).
   api.onCustomEvent?.("xpreward:open", (event) => manager.onXpReward(event));
   api.onServerStartup?.(() => setTimeout(() => {
