@@ -127,6 +127,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers lopen voor een Slayer-taak niet meer naar monsters die alleen in een kerker leven waar ze de weg nog niet naartoe kennen (zoals de minotaurs in de Stronghold of Security); zo'n taak laten ze even liggen.
 - Avonturiers die sparen en ver van de GE zijn, liepen steeds opnieuw naar een bank zonder iets te doen; nu gaan ze alleen naar de bank met een tas om te legen en beginnen ze anders aan hun klus.
 - Bots stelen nu echt van kramen: ze klikten de verkeerde menu-optie van de kraam aan en kregen daardoor nooit XP of buit. Dit geldt voor elk object waarvan de actie niet de eerste in het menu is.
 - Avonturiers stellen zich bij een kraam eerst op een plek op waar de eigenaar en de wachten hen niet zien; ziet iedereen hen, dan wachten ze even en wagen ze daarna toch een poging.

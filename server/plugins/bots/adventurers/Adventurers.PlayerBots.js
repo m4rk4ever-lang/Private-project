@@ -65,6 +65,8 @@ const BID_WAIT_MS = 3 * 60_000;
 const SELL_DETOUR_TILES = 120;
 /** Coins a clanmate always keeps for itself before it chips in toward another's goal. */
 const CLAN_KEEP = 5_000;
+/** From this y the map is underground (dungeons, caves): no walking route there yet. */
+const UNDERGROUND_Y = 6400;
 /** No XP and no step for this long while training: it is stuck, it picks something else. */
 const STUCK_MS = 2 * 60_000;
 /** The longest one Slayer task may take before it gives up on it for now. */
@@ -1610,7 +1612,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     });
     // A spot it could not get to (behind Draynor Manor's locked door) is left for a while: the
     // next nearest one of its task's monsters instead.
-    const open = targets.filter((place) => !blockedNear(entry, place, 15));
+    // Underground spots (the Stronghold of Security's minotaurs, y 9000+) need a dungeon route it
+    // does not know yet; a task with only those waits (task #18: dungeon routes).
+    const open = targets.filter((place) => !blockedNear(entry, place, 15) && place.y < UNDERGROUND_Y);
     const spot = Slayer.nearest(open, (place) => walkTiles(here, place, player));
     if (!spot) {
       note(player, `Kan zijn Slayer-taak (${String(task.name).toLowerCase()}) hier nog niet doen; laat Slayer even liggen.`, "activity");
