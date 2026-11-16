@@ -47,6 +47,7 @@ const Shopping = require("./Shopping.PlayerBots");
 const Trade = require("./Trade.PlayerBots");
 const Slayer = require("./Slayer.PlayerBots");
 const Clans = require("./Clans.PlayerBots");
+const { runPaced } = require("../runtime/SpawnPacing.PlayerBots");
 const npcSpawns = require("../../../data/definitions/npc-spawns.json");
 const { markHonest } = require("../brain/Honest.PlayerBots");
 const { errandsFor } = require("../brain/Errands.PlayerBots");
@@ -2072,10 +2073,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return list.some((want) => shopFor(entry, want.itemId, want.name));
   }
 
-  function spawn() {
+  /** Logs in the adventurers (or just `only`). */
+  function spawn(only = null) {
     const at = data.spawn;
     for (const name of Clans.namesOf(data)) {
-      if (adventurers.has(name)) continue;
+      if (adventurers.has(name) || (only && name !== only)) continue;
       const bot = runtime.spawnPvpBot(new core.Location(at.x, at.y, at.z ?? 0), {
         mode: "roaming", activity: "world", username: name, persistent: true, keepSavedLocation: true,
       });
@@ -2357,7 +2359,8 @@ function startAdventurers({ api, runtime, world, registry }) {
     return true;
   }, rights.OWNER, "Start a training mode for an adventurer: ::advtrain <name>:<mode>");
   api.onServerStartup?.(() => setTimeout(() => {
-    manager.spawn();
+    // First in, one per tick; the world bots wait until they are in (SpawnPacing).
+    runPaced(Clans.namesOf(data).map((name) => () => manager.spawn(name)));
     const { Task } = api.core;
     api.getTaskManager().submit(new (class extends Task {
       constructor() { super(CHECK_TICKS, "adventurers", false); }
@@ -2372,7 +2375,7 @@ function startAdventurers({ api, runtime, world, registry }) {
       constructor() { super(1, "adventurers-talk", false); }
       execute() { manager.talkTick(); }
     })());
-  }, 5000));
+  }, 2000));
   return manager;
 }
 

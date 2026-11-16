@@ -91,12 +91,11 @@ function run() {
     restarts.push(now);
     while (restarts.length > 0 && now - restarts[0] > 60_000) restarts.shift();
     const why = signal ? `signaal ${signal}` : `code ${code}`;
-    if (restarts.length > 3) {
-      console.log(`[client] De client stopte steeds (${why}). Ik stop met herstarten.`);
-      process.exit(code ?? 1);
-    }
-    console.log(`[client] De client stopte onverwacht (${why}). Opnieuw starten...`);
-    setTimeout(run, 2000);
+    // It keeps trying (the game server runs on without it), waiting longer the more often it
+    // stopped in the last minute: 2, 4, 8 ... up to 60 seconds.
+    const wait = Math.min(60_000, 2000 * 2 ** Math.max(0, restarts.length - 1));
+    console.log(`[client] De client stopte onverwacht (${why}). Opnieuw starten over ${Math.round(wait / 1000)} s...`);
+    setTimeout(run, wait);
   });
 }
 run();

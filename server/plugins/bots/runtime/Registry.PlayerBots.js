@@ -13,7 +13,7 @@ const {
 const {
   ATTR_SKIP_PERSISTENCE,
 } = require("./PersistenceConstants.PlayerBots");
-const { SPAWNS_PER_BATCH, SPAWN_BATCH_DELAY_MS, runPaced } = require("./SpawnPacing.PlayerBots");
+const { SPAWNS_PER_BATCH, SPAWN_BATCH_DELAY_MS, runPaced, worldBotWaitMs } = require("./SpawnPacing.PlayerBots");
 
 // The crater keeps its own BhBot population; PvP-world roamers stay out of it.
 const BOUNTY_HUNTER_ARENA = require("../../minigames/bountyhunter/data/crater.json").arena;
@@ -678,10 +678,24 @@ function createBotRegistry(options) {
     }, SPAWN_BATCH_DELAY_MS));
   }
 
+  // World bots wait for the adventurers to be in first (SpawnPacing); then the reconcile runs.
+  function heldBack(kind, reconcile) {
+    const wait = worldBotWaitMs();
+    if (wait <= 0) return false;
+    if (!topUpTimers.has(kind)) {
+      topUpTimers.set(kind, setTimeout(() => {
+        topUpTimers.delete(kind);
+        reconcile();
+      }, wait));
+    }
+    return true;
+  }
+
   function reconcilePersistentHotspotBots() {
     if (wildernessRoamerBotCount <= 0 || !pvpAllowed()) {
       return;
     }
+    if (heldBack("hotspot-start", () => reconcilePersistentHotspotBots())) return;
     const plans = buildPersistentHotspotPlans();
     const desiredCountsByHotspot = new Map();
     for (const plan of plans) {
@@ -752,6 +766,7 @@ function createBotRegistry(options) {
   }
 
   function reconcileRegionalWildernessBots(snapshot = null) {
+    if (heldBack("regional-start", () => reconcileRegionalWildernessBots())) return;
     if (wildernessRoamerBotCount <= 0 || !pvpAllowed()) {
       return;
     }
@@ -1012,7 +1027,7 @@ function createBotRegistry(options) {
     if (Object.keys(regionalTargets).length > 0 && typeof onPlayerMapSquareChange === "function") {
       onPlayerMapSquareChange(regionalBotMoved);
     }
-    setTimeout(() => spawnConfiguredBots(), 0);
+    setTimeout(() => spawnConfiguredBots(), worldBotWaitMs());
   }
 
   function regionalBotMoved({ player }) {

@@ -2,7 +2,7 @@
 
 const { Location } = require("../../../src/main/typescript/elvarg/game/model/Location");
 const { attachBrain } = require("./AttachBrain.PlayerBots");
-const { runPaced } = require("../runtime/SpawnPacing.PlayerBots");
+const { runPaced, worldBotWaitMs } = require("../runtime/SpawnPacing.PlayerBots");
 const { botActivityAllowed } = require("../behaviours/spawn/PlayerFactory.PlayerBots");
 const { Skill } = require("../../../src/main/typescript/elvarg/game/model/Skill");
 const { SkillManager } = require("../../../src/main/typescript/elvarg/game/content/skill/SkillManager");
@@ -378,7 +378,8 @@ function startBotSites(options = {}) {
   }
 
   if (typeof api?.onServerStartup === "function") {
-    api.onServerStartup(() => setTimeout(start, 1000));
+    // After the adventurers (SpawnPacing): world bots fill in slowly once they are in.
+    api.onServerStartup(() => setTimeout(start, Math.max(1000, worldBotWaitMs())));
   }
   return { start };
 }
