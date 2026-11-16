@@ -1552,8 +1552,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     entry.wearables = now;
     if (!before) return;
     const known = acquired.get(entry.name) ?? new Set();
+    // The same piece with a charge less (games necklace(7) -> (6)) is not a new one.
+    const base = (id) => String(itemName(id)).toLowerCase().replace(/\s*\(\d+\)$/, "");
+    const hadBase = new Set([...before.keys()].map(base));
     for (const [id, amount] of now) {
-      if (amount <= (before.get(id) ?? 0) || known.has(id)) continue;
+      if (amount <= (before.get(id) ?? 0) || known.has(id) || hadBase.has(base(id))) continue;
       note(entry.player, `Onverklaard: ${itemName(id)} kwam erbij zonder koop, vondst of eigen werk. Dit is een fout in de botcode.`, "activity");
       world.log?.("adventurer_unexplained_item", { username: entry.name, itemId: id, name: itemName(id), activity: entry.activity ?? null });
     }
@@ -2115,10 +2118,18 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * ("gravestones:reclaim" pays the fee from its Coffer, bag or bank). Without the coins the paid
    * items stay; after the grave's time they go to Death's Office, as for a player.
    */
+  /** Back from its grave: its own things, not unexplained ones (the audit). */
+  function fromGrave(player) {
+    for (const container of [player.getInventory(), player.getEquipment()]) {
+      for (const item of container.getItems() ?? []) if (item && item.getId() > 0) acquire(player, item.getId());
+    }
+  }
+
   function reclaimGrave(entry) {
     const query = { player: entry.player, location: null, taken: false };
     emit("gravestones:reclaim", query);
     if (query.taken) {
+      fromGrave(entry.player);
       note(entry.player, "Haalt zijn spullen op bij zijn graf.", "activity");
       return false;
     }
@@ -2132,6 +2143,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         emit("gravestones:reclaim", back);
         if (back.taken) {
           entry.graveTries = 0;
+          fromGrave(player);
           note(player, "Haalt zijn spullen op bij zijn graf.", "activity");
         } else if (back.location) {
           note(player, "Kan het graf niet helemaal leeghalen (te weinig geld voor het fee).", "activity");
