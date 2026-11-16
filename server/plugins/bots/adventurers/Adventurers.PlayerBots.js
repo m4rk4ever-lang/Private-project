@@ -63,6 +63,11 @@ const STUCK_MS = 2 * 60_000;
 const SLAYER_TASK_MAX_MS = 90 * 60_000;
 /** Teleport tablets an adventurer may buy for long walks, and the coins it keeps before it does. */
 const TABLETS = ["VARROCK_TELEPORT", "LUMBRIDGE_TELEPORT", "FALADOR_TELEPORT", "CAMELOT_TELEPORT"];
+/**
+ * Charged teleport jewellery it may buy on the GE, as players do: a games necklace, a ring of
+ * dueling, an amulet of glory. Each charge is one errand teleport (Errands.PlayerBots.js).
+ */
+const JEWELLERY = ["GAMES_NECKLACE_8_", "RING_OF_DUELING_8_", "AMULET_OF_GLORY_4_"];
 const TABLET_BUDGET = 5000;
 /** Arrows, or casts' worth of runes, it wants before it fights that way. */
 const SUPPLY_MIN = 50;
@@ -1495,6 +1500,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const held = TABLETS.reduce((sum, name) => sum + (Number.isInteger(Shopping.idOf(core, name))
         ? player.getInventory().getAmount(Shopping.idOf(core, name)) + banked(player, Shopping.idOf(core, name)) : 0), 0);
       if (held < 2) top(TABLETS[Math.floor(random() * TABLETS.length)], 3);
+      const owned = (name) => {
+        const id = Shopping.idOf(core, name);
+        return Number.isInteger(id) ? player.getInventory().getAmount(id) + banked(player, id) : 0;
+      };
+      if (JEWELLERY.reduce((sum, name) => sum + owned(name), 0) < 1) top(JEWELLERY[Math.floor(random() * JEWELLERY.length)], 1);
     }
     if (bids.length > 0) note(player, `Koopt voorraad op de GE: ${bids.join(", ")}.`, "activity");
   }
