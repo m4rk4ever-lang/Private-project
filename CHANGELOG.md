@@ -154,6 +154,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Een avonturier die voor een quest iets van de grond moet pakken (het ei voor Cook's Assistant) zoekt de hele ren af en wacht tot anderhalve minuut op een nieuw exemplaar, in plaats van na een paar pogingen op te geven.
 - Avonturiers gooien quest- en cluebeloningen niet meer weg als waardeloos: een antique lamp wrijven ze op (XP in hun laagste skill die de lamp toestaat), een casket maken ze open en een scroll box of clue scroll bewaren ze.
 - Avonturiers die materialen op de GE wilden kopen (logs om te fletchen, bars om te smithen) liepen op een fout vast; ze kopen ze nu en gaan aan de slag.
 - Avonturiers vechten niet meer door zonder eten: is het op, dan halen ze eerst nieuw eten (bank, winkel), en lukt kopen niet, dan gaan ze eerst zelf vissen en koken.

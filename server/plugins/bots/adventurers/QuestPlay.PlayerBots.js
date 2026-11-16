@@ -157,7 +157,9 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     const [x, y, z] = step.at;
     // On that tile or near it, nearest first: eggs, flour and the like spawn a few tiles from
     // where the helper points (the farm's eggs lie all over the coop).
-    for (let radius = 0; radius <= 8; radius += 1) {
+    // The whole pen or field (14 tiles): with many players about the nearest egg is often gone,
+    // another lies further on, as a player walking round the coop finds.
+    for (let radius = 0; radius <= 14; radius += 1) {
       for (let dx = -radius; dx <= radius; dx += 1) {
         for (let dy = -radius; dy <= radius; dy += 1) {
           if (Math.max(Math.abs(dx), Math.abs(dy)) !== radius) continue;
@@ -528,9 +530,20 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
       if (step.kind === "object" && !useObject(player, step, nowMs)) run.reason = `object not found at ${step.at.join(",")} (ids ${step.ids.join("/")})`;
       else if (step.kind === "object") run.reason = "object used, but the step did not advance";
       if (step.kind === "item" && !takeItem(player, step, nowMs)) {
-        // Not lying there (taken, not spawned yet): fetched from its bank or bought instead.
+        // Not lying there (another took it, it has not spawned again yet): it waits for the
+        // respawn as a player does, up to 90 seconds, without counting that as failing.
+        run.itemWaitSince ??= nowMs;
+        if (nowMs - run.itemWaitSince < 90_000) {
+          run.tries = Math.max(0, run.tries - 1);
+          run.reason = `waiting for the item to appear at ${step.at.join(",")}`;
+          run.talkAt = nowMs + 3_000;
+          return "running";
+        }
+        // Still none: fetched from its bank or bought instead.
         run.reason = `item not on the ground at ${step.at.join(",")}`;
         if (acquire(entry, step.ids, 1, step.text)) return "running";
+      } else if (step.kind === "item") {
+        run.itemWaitSince = null;
       }
       return "running";
     }
