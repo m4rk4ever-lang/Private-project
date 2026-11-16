@@ -90,6 +90,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Een avonturier maakt zijn klus af als hij een level haalt dat een betere plek opent (zoals Thieving 5), in plaats van meteen naar de andere kant van de kaart te lopen; de betere plek kiest hij bij zijn volgende klus.
 - Avonturiers banken ook bij de Grand Exchange, Al Kharid, Ardougne en Yanille, en lopen niet meer voor een verkoop helemaal naar de GE als een bank veel dichterbij is; ze verkopen later.
 - Een avonturier die al op een goede plek staat (mannen om hem heen) traint daar, in plaats van naar Lumbridge te lopen; ook bij Edgeville en Seers' Village kunnen ze mannen bestelen.
 - Avonturiers kiezen een quest pas zelf als een bot die quest in het spel helemaal heeft uitgespeeld; Rune Mysteries staat daarom voorlopig niet op hun lijst.

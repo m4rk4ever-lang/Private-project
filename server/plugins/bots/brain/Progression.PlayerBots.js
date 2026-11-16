@@ -66,6 +66,10 @@ function startProgression(api, runtime, registry) {
     const brain = runtime.entriesByUsername?.get?.(player.getUsername?.())?.brain;
     const current = brain?.currentRoot?.();
     if (!current || String(skill?.getName?.() ?? "").toUpperCase() !== MODE_SKILLS[current.mode]) return;
+    // An adventurer finishes its stretch where it is (men still give quick levels at Thieving 5,
+    // and Ardougne is a long walk): its planner takes the better place for its next stretch.
+    const state = runtime.botStatesByName?.get?.(player.getUsername?.());
+    if (state?.adventurer === true) return;
     const next = upgradeFor(current, newLevel);
     const activity = next ? registry.byId?.get(next) : null;
     if (activity) brain.upgradeRoot(activity, Date.now());
