@@ -552,6 +552,9 @@ function createBotRegistry(options) {
     if (!bot) {
       return false;
     }
+    // Where it starts now: its saved spot for a bot that keeps one (an adventurer), else the spawn.
+    // Its respawn after a death stays the spawn.
+    const startAt = plan.keepSavedLocation === true ? bot.getLocation().clone() : botSpawn;
     bot.setPlayerBot?.(true);
     const displayName = generateBotName(username, (name) => botNameTaken(username, name));
     if (displayName) bot.setDisplayName(displayName);
@@ -574,9 +577,9 @@ function createBotRegistry(options) {
     const nowMs = Date.now();
     const state = createInitialState(
       {
-        x: botSpawn.getX(),
-        y: botSpawn.getY(),
-        z: botSpawn.getZ(),
+        x: startAt.getX(),
+        y: startAt.getY(),
+        z: startAt.getZ(),
       },
       behaviorMode
     );
@@ -620,8 +623,8 @@ function createBotRegistry(options) {
       if (!applyInitialPvpLoadout(bot, state)) state.pvp.loadoutPending = true;
     }
     applyForcedModeForDiagnosis(bot, state);
-    bot.setLocation?.(botSpawn.clone());
-    bot.setLastKnownRegion?.(botSpawn.clone());
+    bot.setLocation?.(startAt.clone());
+    bot.setLastKnownRegion?.(startAt.clone());
     botStatesByName.set(username, state);
     playerBotUsernames.add(username);
     assignmentMap?.set(username, assignmentValue);
@@ -636,7 +639,7 @@ function createBotRegistry(options) {
       player: bot,
       username,
     });
-    bot.moveTo?.(botSpawn.clone());
+    bot.moveTo?.(startAt.clone());
     ensureBehaviorTaskStarted();
     spawned++;
     if (assignmentMap) wildernessRoamersAssigned++;
