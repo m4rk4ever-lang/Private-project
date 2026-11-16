@@ -143,13 +143,22 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     const manager = core.ItemOnGroundManager;
     if (!manager) return false;
     const [x, y, z] = step.at;
-    const at = new core.Location(x, y, z);
-    for (const id of step.ids) {
-      const ground = manager.getOperableGroundItem?.(player, id, at, manager.takeOperation?.(id) ?? 3);
-      if (!ground) continue;
-      const Loot = require("../brain/Loot.PlayerBots");
-      Loot.takeStep(core, player, ground, { state: stateOf(player), nowMs });
-      return true;
+    // On that tile or near it, nearest first: eggs, flour and the like spawn a few tiles from
+    // where the helper points (the farm's eggs lie all over the coop).
+    for (let radius = 0; radius <= 8; radius += 1) {
+      for (let dx = -radius; dx <= radius; dx += 1) {
+        for (let dy = -radius; dy <= radius; dy += 1) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== radius) continue;
+          const at = new core.Location(x + dx, y + dy, z);
+          for (const id of step.ids) {
+            const ground = manager.getOperableGroundItem?.(player, id, at, manager.takeOperation?.(id) ?? 3);
+            if (!ground) continue;
+            const Loot = require("../brain/Loot.PlayerBots");
+            Loot.takeStep(core, player, ground, { state: stateOf(player), nowMs });
+            return true;
+          }
+        }
+      }
     }
     return false;
   }

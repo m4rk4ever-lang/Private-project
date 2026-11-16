@@ -250,7 +250,7 @@
   "junkValue": 3,
   "bankKeep": ["COPPER_ORE", "TIN_ORE", "IRON_ORE", "COAL", "MITHRIL_ORE", "ADAMANTITE_ORE", "RUNITE_ORE",
     "RAW_SHRIMPS", "RAW_ANCHOVIES", "RAW_TROUT", "RAW_SALMON", "RAW_TUNA", "RAW_LOBSTER", "RAW_SWORDFISH", "RAW_SHARK",
-    "BIG_BONES", "FEATHER", "MARK_OF_GRACE"],
+    "BIG_BONES", "FEATHER", "POT", "BUCKET", "JUG", "MARK_OF_GRACE"],
   "buyToTrain": {
     "SMELTING": { "levelSkill": "SMITHING", "activity": "process_smelting", "amount": 13,
       "station": { "name": "de oven van Falador", "x": 2974, "y": 3369, "z": 0 },

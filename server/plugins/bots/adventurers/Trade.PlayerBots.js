@@ -17,7 +17,9 @@ const Value = require("../../interface/ValueWarning");
 const COINS = 995;
 const PLATINUM_TOKEN = 13204;
 /** Tools and bait an adventurer keeps, beside its axes, pickaxes and fishing gear. */
-const KEEP_TOOLS = ["TINDERBOX", "HAMMER", "CHISEL", "NEEDLE", "KNIFE", "FEATHER", "FISHING_BAIT"];
+// A pot, a bucket and a jug too: quests and cooking ask for them (Cook's Assistant), and they
+// fetch next to nothing on the exchange.
+const KEEP_TOOLS = ["TINDERBOX", "HAMMER", "CHISEL", "NEEDLE", "KNIFE", "FEATHER", "FISHING_BAIT", "POT", "BUCKET", "JUG"];
 
 function gearLists() {
   const { slots = {}, tools = {}, styles = {} } = Shopping.gear;

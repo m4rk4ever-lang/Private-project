@@ -143,6 +143,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers vinden questspullen die een paar vakjes verderop op de grond liggen (zoals de eieren bij de boerderij voor Cook's Assistant), en verkopen hun pot, emmer en kan niet meer: die zijn nodig voor quests en koken.
 - Een avonturier die op zijn klus niets kan doen (geen XP, niet bewegen), kiest al na ruim een minuut iets anders in plaats van na twee minuten of langer.
 - Avonturiers kopen in de dichtstbijzijnde winkel: een winkelier die in meerdere dorpen staat (zoals de Shop keeper van de general stores) telde maar op één plek, waardoor een bot uit Lumbridge naar Varrock liep voor een pot.
 - Avonturiers kiezen een logische bank (een van de dichtstbijzijnde), niet meer een bank aan de andere kant van de kaart; een queststap die met de Quest Helper 6 minuten niet opschiet, leggen ze weg (met feedback) in plaats van er lang op te blijven staan.
