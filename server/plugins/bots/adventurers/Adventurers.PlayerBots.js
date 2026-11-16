@@ -1946,7 +1946,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const extra = bank ? distanceTo(player, ge) - bank.away : 0;
     const toExchange = geOpen && (!bank || extra <= 40 || ((fund || waiting || worth >= (data.sellValue ?? 5000)) && extra <= SELL_DETOUR_TILES));
     if (toExchange) return walkTo(entry, ge, { reason: "exchange", arrive: atExchange, urgent });
-    if (!bank) return false;
+    // Saving up or offers waiting are reasons for the exchange only: to a bank it goes with
+    // a bag to empty, else it would walk there for nothing, again and again.
+    if (!bank || !(full || cluttered || worth >= (data.keepValue ?? 200))) return false;
     return walkTo(entry, { ...bank, name: bank.name ?? bank.id }, {
       reason: "bank",
       urgent,
