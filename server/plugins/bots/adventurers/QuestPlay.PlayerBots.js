@@ -97,6 +97,11 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     return Boolean(playthroughs[name]) && Boolean(questOf(name));
   }
 
+  /** A playthrough a bot has finished in game: only those are offered (verified: false is not). */
+  function ready(name) {
+    return has(name) && playthroughs[name].verified !== false;
+  }
+
   /** Starts `name` for this adventurer. */
   function start(entry, name, nowMs = now()) {
     const playthrough = playthroughs[name];
@@ -352,7 +357,7 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     return "running";
   }
 
-  return { start, tick, talkTick, has, questOf };
+  return { start, tick, talkTick, has, ready, questOf };
 }
 
 module.exports = { createQuestPlay, chooseOption, nextHop, placeOf, stepDone, data };

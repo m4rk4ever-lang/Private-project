@@ -90,6 +90,8 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Avonturiers kiezen een quest pas zelf als een bot die quest in het spel helemaal heeft uitgespeeld; Rune Mysteries staat daarom voorlopig niet op hun lijst.
+- De avonturierspagina noemt meer plekken bij naam, zoals de Wizards' Tower in plaats van de haven van Port Sarim.
 - Avonturiers die veel verder zijn met houthakken of mijnen dan met fletching, firemaking, smelten of smithing kiezen die verwerkende skills nu veel vaker.
 - De tijd voor een trainingsklus van een avonturier loopt pas als hij op de plek is, niet al tijdens het lopen.
 - Avonturiers blijven langer bij één klus (20 tot 40 minuten), zodat ze meer levels en geld halen in plaats van vooral te reizen.

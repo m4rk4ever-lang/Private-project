@@ -74,6 +74,13 @@ const TABLETS = ["VARROCK_TELEPORT", "LUMBRIDGE_TELEPORT", "FALADOR_TELEPORT", "
 const JEWELLERY = ["GAMES_NECKLACE_8_", "RING_OF_DUELING_8_", "AMULET_OF_GLORY_4_"];
 const TABLET_BUDGET = 5000;
 /** Arrows, or casts' worth of runes, it wants before it fights that way. */
+/** Places the travel data has no stop for, named on the page when an adventurer is there. */
+const LANDMARKS = Object.freeze([
+  { id: "wizards_tower", x: 3109, y: 3164 },
+  { id: "wizards_tower_basement", x: 3104, y: 9571 },
+  { id: "lumbridge_castle", x: 3209, y: 3218 },
+  { id: "draynor_manor", x: 3109, y: 3353 },
+]);
 const SUPPLY_MIN = 50;
 /** Below this many hitpoints (its level) an adventurer takes food along on its jobs and walks. */
 const TRAVEL_FOOD_UNTIL_HP = 40;
@@ -208,7 +215,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       styles: fightingStyles(player),
       slayer: slayerView(player),
       // Only quests a bot can really play (none yet): nothing is simulated.
-      available: new Set(questList().filter((quest) => (quest.playthrough === true || questPlay.has(quest.name))
+      available: new Set(questList().filter((quest) => questPlay.ready(quest.name)
         && registered.has(normalize(quest.name)) && !questAside(player, quest.name))
         .map((quest) => quest.name)),
     };
@@ -1921,7 +1928,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const at = player.getLocation();
     const here = { x: at.getX(), y: at.getY() };
     let best = null;
-    for (const place of [...travelData.destinations, ...travelData.hangouts, ...travelData.minigames]) {
+    for (const place of [...LANDMARKS, ...travelData.destinations, ...travelData.hangouts, ...travelData.minigames]) {
       const distance = Math.max(Math.abs(place.x - here.x), Math.abs(place.y - here.y));
       if (!best || distance < best.distance) best = { id: place.id, distance };
     }
