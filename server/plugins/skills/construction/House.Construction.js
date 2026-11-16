@@ -1926,6 +1926,12 @@ function leaveHouse({ player }) {
   return exitHouse(player);
 }
 function showAdvertisements({ player, objectId }) { viewAdvertisements(player, nearbyHouseLocation(player, objectId)); return true; }
+/** "construction:advertise-house" { player }: the board's Advertise, for its own house (a bot hosting a house party). */
+function advertiseHouseRequest({ player }) {
+  if (!player || isAdvertised(player)) return;
+  placeAdvert(player);
+}
+
 /**
  * "construction:visit-house" { player, owner }: into `owner`'s house through the portal, as the
  * portal's Friend's house option does (bots going to a house party; the host into its own).

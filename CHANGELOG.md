@@ -104,6 +104,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- De Construction-plugin startte nog steeds niet: er ontbrak een tweede handler (een huis adverteren voor een house party). Huizen werken weer.
 - Een avonturier op weg naar de trap voor een quest kon eindeloos blijven staan: op 3 tegels gold hij als aangekomen, maar hij klikte pas op 2 tegels. Nu klikt hij de trap of ladder aan en loopt het laatste stuk zelf, zoals een speler.
 - Avonturiers bleven voor een dichte deur staan als de NPC voor hun quest erachter stond (zoals Duke Horacio in het kasteel van Lumbridge). Nu openen ze eerst de deur, poort of doorgang (ook grotingangen en gaten) die tussen hen en die NPC ligt; kisten en laden laten ze daarbij dicht.
 - Avonturiers gooiden de coin pouches van het zakkenrollen weg als "waardeloos". Nu openen ze ze (Open-all) en houden ze de coins.
