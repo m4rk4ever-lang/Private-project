@@ -111,6 +111,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Een avonturier legt een quest niet meer na een paar seconden weg als één wandeling ernaartoe mislukte; hij probeert het opnieuw.
 - Avonturiers in een quest openen nu ook deuren op weg naar een trap of ladder, zoals de deur van de Wizards' Tower naar de kelder.
 - Avonturiers in een quest nemen eerst de trap naar de juiste verdieping voordat ze naar een ladder op een andere verdieping lopen (zoals van Duke Horacio naar de kelder van de Wizards' Tower).
 - Avonturiers blijven niet meer eindeloos vechten met een monster dat ze niet kunnen bereiken, zoals de gevangenen achter de tralies in Edgeville; ze laten het gevecht los en gaan verder met hun klus.

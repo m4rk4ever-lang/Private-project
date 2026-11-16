@@ -457,7 +457,6 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * goes on (a walk to the trees is part of the stretch). False when it cannot go now.
    */
   function walkTo(entry, to, { reason, arrive = () => {}, replan = true, say = true, urgent = false } = {}) {
-    if (entry.questRun && reason !== "quest") world.log?.("adventurer_walk_during_quest", { name: entry.name, reason, phase: entry.phase, stack: new Error().stack.split("\n").slice(2, 6).join(" | ") });
     const run = runtimeEntry(entry.player);
     // `urgent`: a full bag to bank goes even while other errands rest after a failed one.
     if (!run || errands.busy(entry.player) || (replan && !urgent && (entry.noErrandUntil ?? 0) > now())) return false;
@@ -485,7 +484,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         entry.errand = null;
         note(player, `Kwam niet bij ${placeName(to)}: de weg was versperd.`, "activity");
         // That place is out for a while; the next bank or shop is still fine.
-        (entry.blockedPlaces ??= new Map()).set(placeKey(to), now() + BLOCKED_MS);
+        // A quest's walk tries again (doors, another way); its own tries decide when to give up.
+        if (reason !== "quest") (entry.blockedPlaces ??= new Map()).set(placeKey(to), now() + BLOCKED_MS);
         if (replan) {
           if (!["bank", "exchange"].includes(reason)) entry.noErrandUntil = now() + 10 * 60_000;
           entry.until = 0;
@@ -719,14 +719,6 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       return false;
     }
     entry.phase = "quest";
-    if (!entry.phaseTraced) {
-      entry.phaseTraced = true;
-      let phase = entry.phase;
-      Object.defineProperty(entry, "phase", { configurable: true, enumerable: true, get: () => phase, set: (value) => {
-        if (phase === "quest" && value !== "quest") world.log?.("adventurer_left_quest", { name: entry.name, to: value, run: entry.questRun?.name ?? null, stack: new Error().stack.split("\n").slice(2, 7).join(" | ") });
-        phase = value;
-      } });
-    }
     entry.plan = plan;
     entry.activity = null;
     entry.until = Infinity;
@@ -801,7 +793,6 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   }
 
   function next(entry, nowMs) {
-    if (entry.questRun) world.log?.("adventurer_next_during_quest", { name: entry.name, phase: entry.phase, until: entry.until, stack: new Error().stack.split("\n").slice(2, 5).join(" | ") });
     if (errands.busy(entry.player)) return;
     // Waiting at the exchange for its materials: collect once they are in, then to work.
     if (entry.resume) {
@@ -1978,7 +1969,6 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
 
   /** Owner test hook: starts a quest with a playthrough for this adventurer now. */
   function forceQuest(name, questName) {
-    world.log?.("adventurer_force_quest", { name, questName });
     const entry = adventurers.get(name);
     if (!entry?.player?.isRegistered?.() || !questPlay.has(questName)) return false;
     errands.errands?.delete?.(entry.player);
