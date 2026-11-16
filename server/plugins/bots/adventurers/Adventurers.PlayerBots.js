@@ -262,6 +262,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         ended: entry.jobEnd ?? (key === null ? `then ${entry.phase}` : "replaced") });
     }
     entry.jobEnd = null;
+    // A new job starts its own "no progress" clock (stuck()): standing still at the GE before
+    // it began is not standing still at the job.
+    entry.lastMark = null;
+    entry.lastMarkAt = nowMs;
     if (!key) {
       entry.job = null;
       return;
@@ -739,6 +743,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    */
   function walkTo(entry, to, { reason, arrive = () => {}, replan = true, say = true, urgent = false } = {}) {
     const run = runtimeEntry(entry.player);
+    // On a rooftop course it first runs the course down (getOffRoof); no errand from up there.
+    if (entry.offRoof && entry.player.getLocation().getZ() > 0 && reason !== "agility") return false;
     // `urgent`: a full bag to bank goes even while other errands rest after a failed one.
     if (!run || errands.busy(entry.player) || (replan && !urgent && (entry.noErrandUntil ?? 0) > now())) return false;
     if (blockedPlace(entry, to)) return false;
@@ -1194,9 +1200,37 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return true;
   }
 
+  /**
+   * Left on a rooftop course (a lap broken off halfway: Al Kharid, Varrock, Falador): the only way
+   * down is on along the course, as for a player. It runs the course until it is on the ground,
+   * then picks its next job; without this it stood on the roof and every quest failed there.
+   */
+  function getOffRoof(entry, nowMs) {
+    const player = entry.player;
+    const at = player.getLocation();
+    if (at.getZ() === 0) return false;
+    const course = (data.agilityCourses ?? []).find((option) => option.course !== "gnome"
+      && Math.max(Math.abs(at.getX() - option.x), Math.abs(at.getY() - option.y)) <= 70);
+    if (!course || !registry?.byId?.get(`agility_${course.course}`)) return false;
+    startActivity(player, `agility_${course.course}`, { home: course, nowMs });
+    entry.activity = `agility_${course.course}`;
+    entry.phase = "training";
+    entry.plan = { kind: "train", mode: "agility", skill: "AGILITY", reason: "van het dak af" };
+    entry.until = nowMs + 5 * 60_000;
+    entry.lastMark = null;
+    entry.lastMarkAt = nowMs;
+    // Once a minute at most, not a line a tick when the course cannot help it either.
+    if (entry.offRoof && nowMs - (entry.offRoofAt ?? 0) < 60_000) return true;
+    entry.offRoofAt = nowMs;
+    entry.offRoof = true;
+    note(player, `Staat nog op de ${course.name}; loopt de baan af om beneden te komen.`, "activity");
+    return true;
+  }
+
   function next(entry, nowMs) {
     if (errands.busy(entry.player)) return;
     clanFunds(entry, nowMs);
+    if (getOffRoof(entry, nowMs)) return;
     // A full bag halfway through a job (a money-making stretch above all): it sells or banks and
     // then goes back to the same job for the time it had left, not to something new after one load.
     if (entry.phase === "training" && entry.plan?.kind === "train" && entry.plan.mode !== "slayer"
@@ -1469,6 +1503,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         }
       }
       if (entry.needFood && carriesFood(entry.player)) entry.needFood = false;
+      // Down from the roof: the course was only the way down; its next job now.
+      if (entry.offRoof && entry.player.getLocation().getZ() === 0) {
+        entry.offRoof = false;
+        entry.until = 0;
+      }
       // Out of food in the middle of a fight stretch: it stops and restocks (bank, shop), as a
       // player does, rather than fighting on with nothing to eat.
       if ((entry.phase === "training" && ["combat_training", "slayer", "combat_ranged", "combat_magic"].includes(entry.plan?.mode))
@@ -2896,6 +2935,8 @@ function startAdventurers({ api, runtime, world, registry }) {
   api.persistAttribute(GENERATION_ATTRIBUTE, 0);
   api.persistAttribute(GOAL_ATTRIBUTE, null);
   api.persistAttribute(TASK_ATTRIBUTE, null);
+  // Saved too: without it every restart started the test accounts over (applyTestProfile).
+  api.persistAttribute(TEST_PROFILE_ATTRIBUTE, null);
   const manager = createAdventurers({ api, runtime, world, registry });
   api.onPlayerLevelUp(manager.onLevelUp);
   api.onCustomEvent("npc-drops:roll", manager.onDrops);

@@ -87,7 +87,22 @@ function createRunCourseAction(spec, world) {
         return "running";
       }
       const obstacle = obstacles.find((entry) => entry.index === index) ?? obstacles[0];
-      const object = nearestObject(player, obstacle);
+      let object = nearestObject(player, obstacle);
+      // Up on the roof without its lap's progress (a restart, a lap broken off): the nearest
+      // obstacle on its own floor, and on from there, as a player stranded up there goes on.
+      if (!object && player.getLocation().getZ() > 0) {
+        const here = player.getLocation();
+        let best = Infinity;
+        for (const other of obstacles) {
+          const found = nearestObject(player, other);
+          if (!found) continue;
+          const away = Math.max(Math.abs(found.getLocation().getX() - here.getX()), Math.abs(found.getLocation().getY() - here.getY()));
+          if (away < best) {
+            best = away;
+            object = found;
+          }
+        }
+      }
       if (!object) {
         // Not in sight: the first obstacle is near the start; a later one means it fell.
         if (index !== 1) player.setAttribute?.(PROGRESS_ATTRIBUTE, null);

@@ -154,6 +154,9 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Testaccounts beginnen niet meer bij elke herstart van de server opnieuw (hun testprofiel wordt bewaard).
+- Een nieuwe klus wordt niet meer meteen als "vastgelopen" afgebroken omdat de avonturier vóór de klus even stilstond (bij de GE of de bank).
+- Een avonturier die op een dakbaan (Al Kharid, Varrock, Falador) is blijven staan, probeert de baan af te lopen om beneden te komen in plaats van van daaruit quests te starten.
 - Avonturiers die pickpocketen klikken nu op het NPC zoals een speler: ze kijken het aan en je ziet de thieving-animatie.
 - Een avonturier die voor een quest iets van de grond moet pakken (het ei voor Cook's Assistant) zoekt de hele ren af en wacht tot anderhalve minuut op een nieuw exemplaar, in plaats van na een paar pogingen op te geven.
 - Avonturiers gooien quest- en cluebeloningen niet meer weg als waardeloos: een antique lamp wrijven ze op (XP in hun laagste skill die de lamp toestaat), een casket maken ze open en een scroll box of clue scroll bewaren ze.
