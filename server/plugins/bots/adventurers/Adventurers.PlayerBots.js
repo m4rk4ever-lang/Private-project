@@ -351,6 +351,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       if (goal.kind === "coins" && goal.item) entry.buyGoal = goal.item;
       goal = null;
     }
+    // A goal for a piece it has by now (bought, found, or something better on): no longer a goal.
+    if (goal?.item && !Goals.candidates(null, helpers).some((other) => other.item === goal.item || other.why === goal.why)) {
+      if (goal.kind === "coins") goal = null;
+    }
     // A Ranged or Magic goal it can no longer work at (no bow and arrows, no runes): a new one.
     const styleOf = { RANGED: "ranged", MAGIC: "magic" };
     if (goal?.kind === "level" && styleOf[goal.skill] && !helpers.styles.includes(styleOf[goal.skill])) goal = null;
