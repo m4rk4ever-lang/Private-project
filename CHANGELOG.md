@@ -162,6 +162,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Een avonturier die ergens gestrand is (het eiland van Misthalin Mystery na een mislukte quest, binnen het hek van Draynor Manor, onder de grond) en drie keer vanaf dezelfde plek nergens heen kan, gebruikt de home teleport naar Lumbridge, zoals een speler die vastzit.
 - Avonturiers rapen quest-items op zoals een speler erop klikt (de echte route, om meubels heen), ook tijdens een quest; Freds shears achter zijn tafel bleven anders liggen.
 - Een queststap die zelf oplevert wat er ontbreekt (schapen scheren voor de wol bij Sheep Shearer) wordt gewoon gedaan, in plaats van als mislukt te tellen omdat de wol er nog niet is.
 - Avonturiers gaan als een speler naar de Giant Mole: ze halen een spade en een brandende kaars (de Mole Hole is donker), lopen naar een molshoop in Falador Park en graven zich naar binnen. Sarachnis (Kourend, alleen per boot of teleport) kiezen ze voorlopig niet meer; daar liepen ze steeds vast.

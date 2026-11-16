@@ -840,6 +840,31 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * looks again once it is there (after a sale or a purchase); without it the job it started
    * goes on (a walk to the trees is part of the stretch). False when it cannot go now.
    */
+  /**
+   * Stranded (an island after a quest, behind Draynor Manor's fence, down a dungeon): three walks
+   * that failed from about the same spot in fifteen minutes and it casts the home teleport, as a
+   * player who is stuck does (its plugin keeps the 30-minute cooldown and the combat check).
+   */
+  function unstrand(entry, player) {
+    const at = player.getLocation();
+    const recent = (entry.blockedFrom ?? []).filter((spot) => now() - spot.at < 15 * 60_000
+      && spot.z === at.getZ() && Math.max(Math.abs(spot.x - at.getX()), Math.abs(spot.y - at.getY())) <= 10);
+    recent.push({ x: at.getX(), y: at.getY(), z: at.getZ(), at: now() });
+    entry.blockedFrom = recent;
+    if (recent.length < 3) return;
+    const check = { player, check: true, ready: false, destination: null };
+    emit("home-teleport:cast", check);
+    if (!check.ready) return;
+    const cast = { player, started: false };
+    emit("home-teleport:cast", cast);
+    if (cast.started) {
+      entry.blockedFrom = [];
+      countEvent(entry, "teleportedOut");
+      metric({ kind: "stranded", bot: entry.name, where: [at.getX(), at.getY(), at.getZ()] });
+      note(player, "Zit vast en kan nergens heen; teleporteert naar huis (Lumbridge).", "activity");
+    }
+  }
+
   function walkTo(entry, to, { reason, arrive = () => {}, replan = true, say = true, urgent = false } = {}) {
     const run = runtimeEntry(entry.player);
     // On a rooftop course it first runs the course down (getOffRoof); no errand from up there.
@@ -880,6 +905,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         }
         note(player, `Kwam niet bij ${placeName(to)}: de weg was versperd.`, "activity");
         countEvent(entry, "walkBlocked");
+        unstrand(entry, player);
         const at = player.getLocation();
         metric({ kind: "walk_blocked", bot: entry.name, reason, to: { name: placeName(to), x: to.x, y: to.y, z: to.z ?? 0 },
           where: [at.getX(), at.getY(), at.getZ()], tilesLeft: Math.max(Math.abs(at.getX() - to.x), Math.abs(at.getY() - to.y)),
@@ -1756,6 +1782,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         note(entry.player, `Kon bij ${String(entry.activity ?? "zijn klus").replace(/_/g, " ")} niets doen; kiest iets anders.`, "activity");
         countEvent(entry, "stuck");
         entry.jobEnd = "stuck";
+        unstrand(entry, entry.player);
         const stuckAt = entry.player.getLocation();
         metric({ kind: "stuck", bot: entry.name, mode: entry.plan?.mode ?? null, reason: entry.plan?.reason ?? null,
           combat: entry.player.getSkillManager().getCombatLevel(), where: [stuckAt.getX(), stuckAt.getY(), stuckAt.getZ()],
