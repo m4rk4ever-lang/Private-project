@@ -148,6 +148,25 @@ make menus, house party, GE flows, equipment mirror, the Al Kharid detour.
 7. Later: diaries when tasks are really doable, Construction, leather crafting, Tempoross
    and other minigames, Graceful from marks (Rogues' Den), Wintertodt rewards in the audit.
 
+## Status (16-11-2026) and next steps
+
+Working: job sites chosen per job (Sites), real stall stealing (menu option, out of sight),
+GE purchases collected, saved position after a restart, clan help (leader first), achievements
+race, Prayer by burying bones, Quest Helper guided quests with a feedback loop. Codespaces set up
+and start the Quest Helper bridge themselves (`scripts/quest-helper-setup.sh`, `.devcontainer/start.sh`).
+
+Next, in order:
+1. **Quest Helper "unavailable" around Lumbridge castle**: the bridge asks for object definitions
+   the server does not fill (`requestsUnresolved: objectDefinitions` in the MCP `quest_helper`
+   result). Fill them in the runtime's request handling; this blocks Rune Mysteries.
+2. **Read `logs/adventurer-quest-feedback.jsonl`** from the live game and fix the most common
+   reasons first (doors, gates, shops, items on the ground).
+3. **Dungeon routes** (Taverley dungeon for Druidic Ritual and Herblore, Stronghold of Security,
+   underground Slayer spots: `UNDERGROUND_Y` filter in Adventurers).
+4. Rune essence mining after Rune Mysteries; arrows (fletching) and runes (runecrafting) for
+   their own Ranged and Magic.
+5. Finish separating adventurers from the world bots (shared activity templates and claims).
+
 ## Testing quickly
 
 - `::advtrain <name>:<mode>` starts a job now (e.g. `slayer`, `hunter`, `thieving`, `buy_prayer`); watch its XP in `/api/adventurers` for a minute.
