@@ -31,6 +31,8 @@ const GOAL_ATTRIBUTE = "adventurers:goal";
 const GENERATION_ATTRIBUTE = "adventurers:generation";
 /** The test start an extra member got (applyTestProfile): shown, and kept out of the firsts. */
 const TEST_PROFILE_ATTRIBUTE = "adventurers:test-profile";
+/** Quest and clue rewards (useRewards): never dropped as junk. */
+const REWARD_NAME = /antique lamp|casket|scroll box|clue scroll|clue bottle|clue nest|reward/i;
 /**
  * Its current job ({ kind, mode, skill, reason, style, bossId, activity, remainingMs, savedAt }),
  * one record that is overwritten, never appended: when a job starts and every TASK_SAVE_MS while
@@ -1992,6 +1994,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const wearable = Number.isInteger(definition?.getEquipmentType?.()?.getSlot?.()) && definition.getEquipmentType().getSlot() >= 0;
       const each = Value.itemValue(core, id, 1);
       const pouch = /^coin pouch/i.test(String(core.ItemDefinition.forId(id)?.getName?.() ?? ""));
+      // Rewards are never junk, worth nothing at the shop or not (a lamp's XP, a casket, a clue).
+      if (REWARD_NAME.test(String(definition?.getName?.() ?? ""))) continue;
       if (!wearable && !pouch && each < (data.junkValue ?? 3) && !Trade.keepIds(player, core, { isFood }).has(id)) junk.push(id);
     }
     return { keep, sell, junk: [...new Set(junk)] };
@@ -2002,6 +2006,38 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * Coin pouches from pickpocketing are opened (Open-all, the game's own item option), not
    * dropped as worthless: they are its coins.
    */
+  /**
+   * Quest and clue rewards are used as a player uses them: an antique lamp is rubbed (its XP goes
+   * to the skill furthest behind among those it may pick, see the xpreward:open handler), a
+   * casket opened. A scroll box or clue scroll is kept (banked) for later.
+   */
+  function useRewards(player) {
+    const items = player.getInventory().getItems() ?? [];
+    for (let slot = 0; slot < items.length; slot += 1) {
+      const item = items[slot];
+      if (!item || !(item.getId() > 0)) continue;
+      const name = String(core.ItemDefinition.forId(item.getId())?.getName?.() ?? "");
+      const option = /^antique lamp$/i.test(name) ? "Rub" : /^casket/i.test(name) ? "Open" : null;
+      if (!option) continue;
+      api.emitItemAction?.({ player, interfaceId: core.Inventory.INTERFACE_ID, item, itemId: item.getId(), slot,
+        clickType: 1, option, handled: false });
+      // One a click (the lamp waits for its skill choice); the next on the next look.
+      return;
+    }
+  }
+
+  /** Its pick on a lamp's skill menu: the skill furthest behind of those offered. */
+  function onXpReward(event) {
+    const player = event?.player;
+    if (!player || !adventurers.has(player.getUsername?.()) || typeof event.onConfirm !== "function") return;
+    const offered = Array.isArray(event.skills) && event.skills.length > 0 ? event.skills : core.Skill.values();
+    const manager = player.getSkillManager();
+    const lowest = [...offered].sort((a, b) => manager.getMaxLevel(a) - manager.getMaxLevel(b))[0];
+    if (!lowest) return;
+    const message = event.onConfirm(lowest, lowest.getName());
+    if (message) note(player, `Wrijft over een antique lamp: XP in ${String(lowest.getName()).toLowerCase()}.`, "skill");
+  }
+
   function openPouches(player) {
     const items = player.getInventory().getItems() ?? [];
     items.forEach((item, slot) => {
@@ -2454,6 +2490,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     buryLowBones(player);
     // Coin pouches are opened; junk goes at once, wherever it is.
     openPouches(player);
+    useRewards(player);
     dropJunk(player, sortBag(player).junk);
     const keep = Trade.keepIds(player, core, { isFood });
     const goods = Trade.goodsToSell(player, core, keep, { isFood });
@@ -2825,7 +2862,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
   }
 
-  return { adventurers, questFeedback, spawn, tick, onShutdown, talkTick, forceQuest, forceTraining, onDeath, onLevelUp, onDrops, onNpcDeath, report, next, startGroup, acquire };
+  return { adventurers, questFeedback, spawn, tick, onShutdown, onXpReward, talkTick, forceQuest, forceTraining, onDeath, onLevelUp, onDrops, onNpcDeath, report, next, startGroup, acquire };
 }
 
 /** Starts the adventurers on server start; serves /api/adventurers and the commands. */
@@ -2894,6 +2931,8 @@ function startAdventurers({ api, runtime, world, registry }) {
   }, rights.OWNER, "Start a training mode for an adventurer: ::advtrain <name>:<mode>");
   // The last minutes of logs out before the server goes down (manager.onShutdown).
   api.onServerShutdown?.(() => manager.onShutdown());
+  // An adventurer rubbing a lamp picks its skill as a player does (manager.onXpReward).
+  api.onCustomEvent?.("xpreward:open", (event) => manager.onXpReward(event));
   api.onServerStartup?.(() => setTimeout(() => {
     // First in, one per tick; the world bots wait until they are in (SpawnPacing).
     runPaced(Clans.namesOf(data).map((name) => () => manager.spawn(name)));
