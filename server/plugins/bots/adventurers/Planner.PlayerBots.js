@@ -99,11 +99,11 @@ function chooseNext(adventurer, quests, {
     if (isReady(quest, adventurer)) continue;
     const gap = missing(quest, adventurer);
     if (gap.combat) {
-      return { kind: "train", mode: COMBAT, skill: "COMBAT", reason: `${quest.name} (combat ${gap.combat})` };
+      return { kind: "train", mode: COMBAT, skill: "COMBAT", reason: `${quest.name} (combat ${gap.combat})`, target: { skill: "COMBAT", level: gap.combat } };
     }
     for (const [skill, level] of Object.entries(gap.skills)) {
       const option = options.find((entry) => entry.skill === skill);
-      if (option) return { kind: "train", mode: option.mode, skill, reason: `${quest.name} (${skill.toLowerCase()} ${level})` };
+      if (option) return { kind: "train", mode: option.mode, skill, reason: `${quest.name} (${skill.toLowerCase()} ${level})`, target: { skill, level } };
     }
   }
   // Nothing in the way: a weighted pick (trainingWeights), so each adventurer has its own way.
@@ -112,7 +112,8 @@ function chooseNext(adventurer, quests, {
   let roll = random() * total;
   const choice = (weighted.find((entry) => (roll -= entry.weight) < 0) ?? weighted[weighted.length - 1]).option;
   const forGoal = goal && goalWeight(goal, choice) > 1;
-  return { kind: "train", mode: choice.mode, skill: choice.skill, reason: forGoal ? `doel: ${describe(goal)}` : reasonFor(choice, options, focus) };
+  return { kind: "train", mode: choice.mode, skill: choice.skill, reason: forGoal ? `doel: ${describe(goal)}` : reasonFor(choice, options, focus),
+    ...(forGoal && goal.kind === "level" ? { target: { skill: goal.skill, level: goal.level } } : {}) };
 }
 
 /**

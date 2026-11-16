@@ -253,11 +253,34 @@ function createTrainCombatAction(spec, world) {
    * defensive on some): then the next lowest it has. Done between fights, so it switches as the
    * levels change.
    */
+  // An honest bot's own taste in melee (from its name, so it keeps it): how much it favours
+  // Attack, Strength and Defence, as players do ("strength first", "a bit of defence").
+  const TASTES = [[1, 1.25, 0.8], [1.2, 1, 0.85], [1, 1, 1], [0.9, 1.3, 0.7], [1.1, 1.1, 0.9], [1, 0.9, 1.15]];
+  const tasteOf = (player) => TASTES[hashSeed(`${player.getUsername?.() ?? "bot"}:melee`) % TASTES.length];
+  const meleeChoice = new WeakMap();
+
   function meleeStyleForLowest(player) {
     const manager = player.getSkillManager();
     const fightTypes = Object.values(player.getWeapon()?.getFightType?.() ?? {}).filter(Boolean);
-    const order = skills.map((skill, index) => ({ index, level: manager.getMaxLevel(skill) }))
+    // One skill well behind (3+ levels): that one, at once. Close together: its own taste and a
+    // little chance, kept a while (5-15 minutes), as a player does not switch after every kill.
+    const levels = skills.map((skill) => manager.getMaxLevel(skill));
+    const spread = Math.max(...levels) - Math.min(...levels);
+    const nowMs = Date.now();
+    const kept = meleeChoice.get(player);
+    if (spread >= 3) meleeChoice.delete(player);
+    else if (kept && nowMs < kept.until) {
+      const fightType = fightTypes.find((type) => type?.getStyle?.() === styles[kept.index]);
+      if (fightType) {
+        if (player.getFightType?.() !== fightType) WeaponInterfaceManager.changeCombatStyle(player, fightType.getChildId());
+        return styles[kept.index];
+      }
+    }
+    // The skill furthest behind its own taste, with a little chance on top.
+    const taste = tasteOf(player);
+    const order = skills.map((skill, index) => ({ index, level: spread >= 3 ? levels[index] : levels[index] / taste[index] * (0.9 + Math.random() * 0.2) }))
       .sort((a, b) => a.level - b.level || a.index - b.index);
+    if (spread < 3) meleeChoice.set(player, { index: order[0].index, until: nowMs + (5 + Math.random() * 10) * 60_000 });
     for (const { index } of order) {
       const fightType = fightTypes.find((type) => type?.getStyle?.() === styles[index]);
       if (!fightType) continue;

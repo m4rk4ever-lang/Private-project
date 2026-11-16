@@ -324,6 +324,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     let goal = player.getAttribute(GOAL_ATTRIBUTE) ?? null;
     if (goal && Goals.reached(goal, helpers)) {
       note(player, `Doel gehaald: ${Goals.describe(goal)}.`, "skill");
+      // Saved up for a piece: it goes and buys it now (the shop, else the exchange).
+      if (goal.kind === "coins" && goal.item) entry.buyGoal = goal.item;
       goal = null;
     }
     // A Ranged or Magic goal it can no longer work at (no bow and arrows, no runes): a new one.
@@ -963,6 +965,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         note(entry.player, "Het bod liep niet vol; doet iets anders.", "activity");
       }
     }
+    // A goal it saved up for: bought first, then worn (Trade.wearBest at the next look).
+    if (entry.buyGoal) {
+      const item = entry.buyGoal;
+      entry.buyGoal = null;
+      const id = Shopping.idOf(core, item);
+      if (Number.isInteger(id) && !Shopping.owns(entry.player, id) && shopFor(entry, id, itemName(id), 1)) return;
+    }
     // Died and left a grave: back for its things first, as a player runs back to the grave.
     if (reclaimGrave(entry)) return;
     // Errands first, each a walk; the planner looks again when it is back.
@@ -1159,6 +1168,19 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       if (stuck(entry, nowMs)) {
         note(entry.player, `Kon bij ${String(entry.activity ?? "zijn klus").replace(/_/g, " ")} niets doen; kiest iets anders.`, "activity");
         entry.until = 0;
+      }
+      // Trained to what the job was for (a quest's combat level, a goal's level) and a little
+      // past it (0-3 levels, not the same every time): the stretch ends, something else next.
+      const target = entry.phase === "training" ? entry.plan?.target : null;
+      if (target) {
+        entry.overshoot ??= Math.floor(random() * 4);
+        const level = target.skill === "COMBAT" ? entry.player.getSkillManager().getCombatLevel() : levelOf(entry.player, target.skill);
+        if (level >= target.level + entry.overshoot) {
+          note(entry.player, `Heeft ${target.skill === "COMBAT" ? "combat" : target.skill.toLowerCase()} ${level} gehaald; doet nu iets anders.`, "skill");
+          entry.plan = { ...entry.plan, target: null };
+          entry.overshoot = null;
+          entry.until = 0;
+        }
       }
       // A finished Slayer task ends the stretch: back to a master, or something else.
       if (entry.phase === "training" && entry.activity === "slayer_task" && !Slayer.currentTask(emit, entry.player)) {
