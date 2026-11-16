@@ -1183,12 +1183,27 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const definition = core.ItemDefinition?.forId?.(id);
       const wearable = Number.isInteger(definition?.getEquipmentType?.()?.getSlot?.()) && definition.getEquipmentType().getSlot() >= 0;
       const each = Value.itemValue(core, id, 1);
-      if (!wearable && each < (data.junkValue ?? 3) && !Trade.keepIds(player, core, { isFood }).has(id)) junk.push(id);
+      const pouch = /^coin pouch/i.test(String(core.ItemDefinition.forId(id)?.getName?.() ?? ""));
+      if (!wearable && !pouch && each < (data.junkValue ?? 3) && !Trade.keepIds(player, core, { isFood }).has(id)) junk.push(id);
     }
     return { keep, sell, junk: [...new Set(junk)] };
   }
 
   /** Junk out of the bag, as a player drops it. */
+  /**
+   * Coin pouches from pickpocketing are opened (Open-all, the game's own item option), not
+   * dropped as worthless: they are its coins.
+   */
+  function openPouches(player) {
+    const items = player.getInventory().getItems() ?? [];
+    items.forEach((item, slot) => {
+      if (!item || !(item.getId() > 0)) return;
+      if (!/^coin pouch/i.test(String(core.ItemDefinition.forId(item.getId())?.getName?.() ?? ""))) return;
+      api.emitItemAction?.({ player, interfaceId: core.Inventory.INTERFACE_ID, item, itemId: item.getId(), slot,
+        clickType: 1, option: "Open-all", handled: false });
+    });
+  }
+
   function dropJunk(player, junk) {
     const inventory = player.getInventory();
     for (const id of junk) inventory.deleteNumber?.(id, inventory.getAmount(id));
@@ -1518,7 +1533,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       note(player, `Draagt nu ${name.toLowerCase().replace(/_/g, " ")} (gevonden).`, "activity");
     }
     fillEmptySlots(player);
-    // Junk goes at once, wherever it is.
+    // Coin pouches are opened; junk goes at once, wherever it is.
+    openPouches(player);
     dropJunk(player, sortBag(player).junk);
     const keep = Trade.keepIds(player, core, { isFood });
     const goods = Trade.goodsToSell(player, core, keep, { isFood });

@@ -98,6 +98,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers gooiden de coin pouches van het zakkenrollen weg als "waardeloos". Nu openen ze ze (Open-all) en houden ze de coins.
 - Een avonturier die voor een quest bij een trap of NPC aankwam, liep soms meteen weer weg (zijn vorige klus nam het over). Tijdens een quest blijft hij nu staan tot de quest de volgende stap zet.
 - De wandeling naar een klus telde mee als trainingstijd, waardoor avonturiers na een lange tocht (zoals naar de Gnome Stronghold) al weer omdraaiden voordat ze iets gedaan hadden. Nu begint de tijd pas als ze er zijn.
 - Avonturiers hadden onbeperkte run energy. Nu raken ze buiten adem zoals spelers, lopen dan verder en gaan weer rennen als ze tot 40% zijn bijgekomen. Gewone wereldbots blijven onvermoeibaar.
