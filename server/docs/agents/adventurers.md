@@ -51,6 +51,9 @@ a generated account. The owner follows them on `/adventurers.html` and in game w
 | Clans, the race, gifts between clanmates | `adventurers/Clans.PlayerBots.js`, `clans:ensure-member` in `plugins/interface/clans/Clans.plugin.js` |
 | Slayer tasks; masters from the Slayer plugin's table, best tier it can walk to | `adventurers/Slayer.PlayerBots.js`, activity `slayer_task` |
 | Quests played for real (walk, Talk-to, answer, ladders into basements) | `adventurers/QuestPlay.PlayerBots.js`, `data/quest-playthroughs.json` |
+| Quests guided by the real Quest Helper (talk, use objects, take items, buy, dialogue) when the quest-helper bridge runs; stuck quests put aside and logged to `logs/adventurer-quest-feedback.jsonl` (also `questFeedback` in `/api/adventurers`) | `adventurers/QuestHelperSteps.PlayerBots.js`, `helperAll`/`helperQuests` in `data/quest-playthroughs.json`, bridge: `tools/quest-helper-bridge` (`yarn bridge`, `QUEST_HELPER_TOKEN`) |
+| Where a job is done: the nearest fitting site (mode, level, `activities`, quests), apart from the world bots' Travel | `adventurers/Sites.PlayerBots.js`, `data/travel-destinations.json` |
+| Achievements race (first player / clan to a milestone) | `adventurers/Achievements.PlayerBots.js`, `data/saves/adventurer-achievements.json` |
 | The running job, saved and resumed after a restart | `adventurers/Tasks.PlayerBots.js` (attribute `adventurers:task`) |
 | Long walks hub to hub; what is reachable on foot; quest-locked areas | `behaviours/navigation/TravelHubs.PlayerBots.js`, `data/travel-hubs.json` |
 | `::volg` spectating | `runtime/Watch.PlayerBots.js` |
@@ -144,6 +147,12 @@ make menus, house party, GE flows, equipment mirror, the Al Kharid detour.
 6. `::volg`: more interfaces (bank, combat tab), clickable control.
 7. Later: diaries when tasks are really doable, Construction, leather crafting, Tempoross
    and other minigames, Graceful from marks (Rogues' Den), Wintertodt rewards in the audit.
+
+## Testing quickly
+
+- `::advtrain <name>:<mode>` starts a job now (e.g. `slayer`, `hunter`, `thieving`, `buy_prayer`); watch its XP in `/api/adventurers` for a minute.
+- `::advquest <name>:<quest>[:<stage>]` starts a quest, optionally at a stage, to test one step.
+- The agent MCP's `quest_helper` shows what the helper tells a bot (`player`: the bot's name).
 
 ## How to extend safely
 
