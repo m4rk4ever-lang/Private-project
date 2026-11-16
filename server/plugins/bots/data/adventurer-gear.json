@@ -4,8 +4,8 @@
   "slots": {
     "weapon": [
       { "item": "DRAGON_SCIMITAR", "skill": "ATTACK", "level": 60, "quests": ["Monkey Madness I"] },
-      { "item": "RUNE_SCIMITAR", "skill": "ATTACK", "level": 40, "quests": ["Song of the Elves"] },
-      { "item": "ADAMANT_SCIMITAR", "skill": "ATTACK", "level": 30, "quests": ["Children of the Sun"] },
+      { "item": "RUNE_SCIMITAR", "skill": "ATTACK", "level": 40 },
+      { "item": "ADAMANT_SCIMITAR", "skill": "ATTACK", "level": 30 },
       { "item": "MITHRIL_SCIMITAR", "skill": "ATTACK", "level": 20 },
       { "item": "STEEL_SCIMITAR", "skill": "ATTACK", "level": 5 },
       { "item": "IRON_SCIMITAR", "skill": "ATTACK", "level": 1 },

@@ -151,7 +151,8 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
-- Avonturiers kopen hun melee-uitrusting als één set van hetzelfde metaal (het beste setje dat ze in één keer kunnen betalen), in plaats van een mix van rune, adamant en mithril.
+- Avonturiers kopen eerst het beste wapen dat ze kunnen betalen en daarna hun armour als één set van hetzelfde metaal (het beste setje dat er nog bij past), in plaats van een mix van rune, adamant en mithril.
+- Rune en adamant scimitars vragen geen quest meer voordat een avonturier ze koopt (alleen de dragon scimitar vraagt Monkey Madness I en de rune platebody Dragon Slayer I).
 - Een avonturier met genoeg geld koopt zijn uitrusting nu in één bezoek aan de Grand Exchange, in plaats van voor elk stuk opnieuw "naar de GE" te lopen terwijl hij er al stond; en een gekocht stuk heet in zijn logboek niet langer "gevonden".
 - Avonturiers kiezen in een gesprek de optie waarmee ze een quest aannemen ("I'm looking for a quest", "Perhaps I could help…"), zodat Sheep Shearer en Romeo & Juliet niet meer bij het eerste gesprek vastlopen.
 - Een avonturier die trainde voor een doel (zoals combat 10 voor The Restless Ghost) stopte niet meer bij dat doel nadat hij tussendoor had gebankt, verkocht of de server herstartte; ook taken die vóór deze update waren opgeslagen stoppen nu bij hun doel, en een gehaald doel wordt na een tussentijdse trip niet opnieuw opgepakt.

@@ -111,13 +111,24 @@ function shoppingList(player, core, { levelOf, questDone, modes = [], exchange =
     const guide = Number(core.ItemDefinition?.forId?.(itemId)?.getGrandExchangeValue?.() ?? 0);
     return guide > 0 ? Math.ceil(guide * 1.05) : 0;
   };
-  const slots = Object.values(gear.slots).map((list) => {
+  const usableOf = (list) => {
     const usable = list.filter((entry) => allowed(entry, { levelOf, questDone }))
       .map((entry) => ({ ...entry, itemId: idOf(core, entry.item), tier: tierOf(entry.item) }))
       .filter((entry) => Number.isInteger(entry.itemId));
     const ownedAt = usable.findIndex((entry) => ownsAnywhere(player, entry.itemId));
     return ownedAt < 0 ? usable : usable.slice(0, ownedAt);
-  });
+  };
+  // The weapon first and on its own: the best one it can pay for (a rune scimitar beside
+  // adamant armour, as a player does), then the armour as one set.
+  for (const entry of usableOf(gear.slots.weapon ?? [])) {
+    const price = priceOf(entry.itemId);
+    if (price > 0 && price <= budget) {
+      wants.push({ itemId: entry.itemId, name: entry.item, price });
+      budget -= price;
+      break;
+    }
+  }
+  const slots = Object.entries(gear.slots).filter(([slot]) => slot !== "weapon").map(([, list]) => usableOf(list));
   const tiers = [...new Set(slots.flatMap((list) => list.map((entry) => entry.tier)))].sort((a, b) => tierRank(a) - tierRank(b));
   let setChosen = false;
   for (const tier of tiers) {
@@ -133,7 +144,7 @@ function shoppingList(player, core, { levelOf, questDone, modes = [], exchange =
     }
   }
   // No whole set within reach: a single cheaper piece now and then (a weapon first, see below).
-  if (!setChosen) for (const list of Object.values(gear.slots)) consider(list);
+  if (!setChosen) for (const [slot, list] of Object.entries(gear.slots)) if (slot !== "weapon") consider(list);
   if (modes.includes("woodcutting")) {
     consider(gear.tools.axe);
     consider(gear.tools.knife ?? []);
@@ -148,9 +159,11 @@ function shoppingList(player, core, { levelOf, questDone, modes = [], exchange =
   const isWeapon = (want) => unarmed && Object.values(gear.slots).some((list, index) => Object.keys(gear.slots)[index] === "weapon"
     && list.some((entry) => idOf(core, entry.item) === want.itemId));
   const bought = [];
+  // The whole list against the whole budget once (the weapon and set above were picked to fit).
+  let spendable = Math.floor(coins * (gear.budgetShare ?? 0.6));
   for (const want of wants.sort((a, b) => (isWeapon(b) ? 1 : 0) - (isWeapon(a) ? 1 : 0) || a.price - b.price)) {
-    if (want.price > budget) continue;
-    budget -= want.price;
+    if (want.price > spendable) continue;
+    spendable -= want.price;
     bought.push(want);
   }
   return bought;
