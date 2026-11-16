@@ -413,6 +413,12 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   /** Fetches or buys an item a quest step needs; true when an errand for it started. */
   function acquireForQuest(entry, ids, amount = 1, name = null) {
     const player = entry.player;
+    // What the quest needs first: a walk to its next step (to Doric with no clay) gives way to
+    // the errand for it; a second errand beside the first was refused ("cannot get it").
+    if (errands.busy(player) && entry.errand?.reason === "quest") {
+      errands.errands?.delete?.(player);
+      entry.errand = null;
+    }
     const banked_ = ids.find((id) => banked(player, id) > 0);
     if (banked_ !== undefined) {
       const bank = nearestBank(player, entry);
