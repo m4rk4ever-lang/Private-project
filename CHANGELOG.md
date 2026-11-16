@@ -161,6 +161,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Een avonturier die halverwege een dakbaan staat (Al Kharid, Varrock, Falador), vindt het volgende obstakel op zijn eigen verdieping en loopt de baan af, in plaats van daar vast te blijven staan.
 - Een avonturier die onderweg is naar een queststap en merkt dat hij een quest-item mist (clay voor Doric's Quest, fish food voor Ernest the Chicken), haalt dat eerst op of koopt het, in plaats van te melden dat hij het "nu niet kan krijgen".
 - Een avonturier die houthakt of mijnt, wisselt niet meer telkens tussen zijn wapen en zijn bijl of pickaxe; zijn wapen gaat pas weer aan na de klus.
 - Wat een avonturier tijdens een quest krijgt of maakt (een beloning, geverfde goblin mail), staat niet meer als "onverklaard" in zijn logboek.

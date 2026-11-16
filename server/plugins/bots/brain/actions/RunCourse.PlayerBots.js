@@ -37,7 +37,22 @@ function createRunCourseAction(spec, world) {
   function nearestObject(player, obstacle) {
     const ids = (Array.isArray(obstacle.object) ? obstacle.object : [obstacle.object]).filter(Number.isInteger);
     const here = player.getLocation();
-    const found = world.objectSearch?.findCandidatesByIds?.(player, ids, { regionRadius: SEARCH_REGIONS, z: here.getZ() }) ?? [];
+    let found = world.objectSearch?.findCandidatesByIds?.(player, ids, { regionRadius: SEARCH_REGIONS, z: here.getZ() }) ?? [];
+    // Up on a roof the bots' object index can come up empty: the map itself, 12 tiles round, on
+    // its own floor (Al Kharid's tropical tree right beside a bot left on the roof).
+    if (found.length === 0 && here.getZ() > 0) {
+      const MapObjects = world.core?.MapObjects;
+      const wanted = new Set(ids);
+      found = [];
+      for (let dx = -12; dx <= 12; dx += 1) {
+        for (let dy = -12; dy <= 12; dy += 1) {
+          for (const object of MapObjects?.mapObjects?.get?.(MapObjects.getHash(here.getX() + dx, here.getY() + dy, here.getZ())) ?? []) {
+            const at = object.getLocation();
+            if (wanted.has(object.getId()) && at.getX() === here.getX() + dx && at.getY() === here.getY() + dy) found.push(object);
+          }
+        }
+      }
+    }
     let best = null;
     let bestDistance = Infinity;
     for (const object of found) {
