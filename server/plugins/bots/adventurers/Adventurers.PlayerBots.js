@@ -18,7 +18,7 @@
  */
 const definitions = require("../../../data/definitions/bot-activities.json");
 const data = require("../data/adventurers.json");
-const { chooseNext, bestActivity } = require("./Planner.PlayerBots");
+const { chooseNext, bestActivity, isReady } = require("./Planner.PlayerBots");
 const { createQuestList } = require("./Quests.PlayerBots");
 const Goals = require("./Goals.PlayerBots");
 const { startActivity } = require("../brain/BrainActivities.PlayerBots");
@@ -1695,7 +1695,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         entry.until = 0;
       }
       // A full bag ends the stretch: off to sell (trade()), as a player banks or sells.
-      if (nowMs >= entry.until || (entry.phase === "training" && entry.player.getInventory().getFreeSlots() === 0)) {
+      // A full bag ends a gathering stretch; a processing one (fletching, burning: buy_) starts
+      // with a bag full of its materials, and runs out of them instead.
+      const gathering = !String(entry.plan?.mode ?? "").startsWith("buy_");
+      if (nowMs >= entry.until || (entry.phase === "training" && gathering && entry.player.getInventory().getFreeSlots() === 0)) {
         entry.jobEnd ??= nowMs >= entry.until ? "time up" : "full bag";
         next(entry, nowMs);
       }
@@ -2707,12 +2710,17 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     useRewards(player);
     dropJunk(player, sortBag(player).junk);
     const keep = Trade.keepIds(player, core, { isFood });
+    // The materials of the job it is about to do (logs it just took out to fletch): kept in the
+    // bag, not counted as a full bag, never banked straight back (that was a loop of 260 trips).
+    const working = workingMaterials(entry);
+    for (const id of working) keep.add(id);
     const goods = Trade.goodsToSell(player, core, keep, { isFood });
     // Everything the last job left in the bag, priced or not: logs from woodcutting do not go
     // fishing with it.
     const stock = Trade.goodsToSell(player, core, keep, { isFood, worthless: true });
     const worth = goods.reduce((sum, good) => sum + good.value, 0);
-    const full = player.getInventory().getFreeSlots() <= (data.fullSlots ?? 4);
+    const workingSlots = (player.getInventory().getItems() ?? []).filter((item) => item && working.has(item.getId())).length;
+    const full = player.getInventory().getFreeSlots() + workingSlots <= (data.fullSlots ?? 4);
     const cluttered = Trade.slotsOf(player, stock) >= (data.storeSlots ?? 6);
     const waiting = Trade.finishedOffers(player, emit) > 0;
     // Saving up and its banked logs, gems or bars would cover a good part of it: off to sell.
@@ -2744,6 +2752,18 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         if (stored.length > 0) note(banker, `Zet op de bank in ${bank.name ?? bank.id}: ${stored.slice(0, 5).map((good) => itemName(good.itemId)).join(", ")}${stored.length > 5 ? ` en ${stored.length - 5} meer` : ""}. Bruikbaars bewaart hij; de rest verkoopt hij later op de GE.`, "activity");
       },
     });
+  }
+
+  /** The materials its current or next job uses up (a buy_ job's logs, bars, raw fish). */
+  function workingMaterials(entry) {
+    const ids = new Set();
+    for (const plan of [entry.resume, entry.plan, entry.savedTask]) {
+      const mode = String(plan?.mode ?? "");
+      if (!mode.startsWith("buy_") || !plan.skill) continue;
+      const buy = buyPlan(entry.player, plan.skill);
+      for (const id of buy?.materials ?? []) ids.add(id);
+    }
+    return ids;
   }
 
   /**
@@ -3042,6 +3062,33 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return startQuest(entry, { kind: "quest", quest: { name: questName } });
   }
 
+  /**
+   * An owner's quest sweep (::advquestall): every adventurer at once on a different quest, so one
+   * run shows where each of them gets stuck (adventurer-quest-feedback.jsonl, quest_done). The
+   * blocks are lifted for it. Each takes the first quest on the path it has not done and is ready
+   * for (its levels, its quests), else the first it has not done; never one another already has.
+   * Returns [[name, quest]].
+   */
+  function questSweep() {
+    questsBlocked.clear();
+    questFailuresAll.clear();
+    const taken = new Set();
+    const out = [];
+    const path = (data.quests ?? []).filter((quest) => questPlay.has(quest.name));
+    for (const entry of adventurers.values()) {
+      if (!entry.player?.isRegistered?.()) continue;
+      entry.questsAside?.clear?.();
+      const view = snapshot(entry.player);
+      const open = path.filter((quest) => !view.done.has(quest.name) && !taken.has(quest.name));
+      const quest = open.find((candidate) => isReady(candidate, view)) ?? open[0];
+      if (!quest) continue;
+      taken.add(quest.name);
+      if (forceQuest(entry.name, quest.name)) out.push([entry.name, quest.name]);
+    }
+    world.log?.("adventurer_quest_sweep", { assignments: out });
+    return out;
+  }
+
   /** An owner's test: this training mode now (::advtrain <name>:slayer). */
   function forceTraining(name, mode) {
     const entry = adventurers.get(name);
@@ -3099,7 +3146,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
   }
 
-  return { adventurers, questFeedback, spawn, tick, onShutdown, onXpReward, shareLogsNow, talkTick, forceQuest, forceTraining, onDeath, onLevelUp, onDrops, onNpcDeath, report, next, startGroup, acquire };
+  return { adventurers, questFeedback, spawn, tick, onShutdown, onXpReward, shareLogsNow, questSweep, talkTick, forceQuest, forceTraining, onDeath, onLevelUp, onDrops, onNpcDeath, report, next, startGroup, acquire };
 }
 
 /** Starts the adventurers on server start; serves /api/adventurers and the commands. */
@@ -3153,6 +3200,11 @@ function startAdventurers({ api, runtime, world, registry }) {
     player.sendMessage(`Je staat bij ${entry.name}.`);
     return true;
   }, rights.OWNER, "Go to an adventurer bot: ::adventurer <name>");
+  api.registerCommand("advquestall", ({ player }) => {
+    const out = manager.questSweep();
+    player.sendMessage(`${out.length} avonturiers proberen elk een andere quest: ${out.map(([name, quest]) => `${name} → ${quest}`).join("; ").slice(0, 400)}`);
+    return true;
+  }, rights.OWNER, "Every adventurer at once on a different quest (blocks lifted), to see where each gets stuck: ::advquestall");
   api.registerCommand("advquest", ({ player, parts }) => {
     const [name, quest, stage] = parts.slice(1).join(" ").split(":").map((part) => part.trim());
     const entry = [...manager.adventurers.values()].find((a) => a.name.toLowerCase() === String(name).toLowerCase());

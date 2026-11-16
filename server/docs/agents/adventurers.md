@@ -210,3 +210,9 @@ De metrics-regels, op `kind`:
 - `skills` (elke 5 min): per skill hoeveel avonturiers XP kregen, hoeveel XP en via welke activiteit, en welke skills niemand trainde (`untouched`).
 - `server`: aantal avonturiers en bots, gemiddelde en maximale duur van de avonturiers-tick, geheugen,
   quests die voor iedereen geblokkeerd zijn.
+
+## Quest-sweep
+
+`::advquestall` (eigenaar): elke avonturier tegelijk op een andere quest uit het pad (eerst een waarvoor hij klaar is), met de
+blokkades opgeheven. Na een paar minuten staan de vastlopers in `adventurer-quest-feedback.jsonl` (stap, plek, helperstap, gesprekskeuzes)
+en de geslaagde in de metrics als `quest_done`.

@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Eigenaarscommando `::advquestall`: alle avonturiers proberen tegelijk elk een andere quest (blokkades opgeheven), zodat in één run te zien is waar elke quest vastloopt.
 - Avonturiers gaan af en toe (ongeveer 1 op de 10 keuzes) 20–40 minuten puur geld verdienen: met de klus die hen tot nu toe het meeste geld per uur opleverde (dat meten ze zelf per klus), soms iets nieuws om te proberen, of een boss als ze sterk genoeg zijn. In te stellen met "moneyChance" in adventurers.json.
 - De questlogboeken van de avonturiers bevatten nu ook de gesprekskeuzes (welke opties er waren en welke de avonturier koos), bij vastlopen én bij een voltooide quest.
 - Het ontwikkelaarslogboek zegt bij vastlopen, stilstaan en versperde routes ook waarom: wat de bot-actie op dat moment deed, welke monsters er in de buurt waren (met level), HP, vrije slots en hoe ver het doel nog was.
@@ -159,6 +160,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Een avonturier die materialen van de bank haalt om te fletchen of te firemaken, zet ze niet meer meteen terug omdat zijn tas "vol" is (een lus van honderden banktripjes zonder XP).
 - Een avonturier verkoopt het wapen of pantser van zijn eigen smaak (zoals een battleaxe) niet meer als handelswaar om het daarna opnieuw te kopen; dat gaf een eindeloze koop-en-verkooplus bij de GE.
 - Avonturiers vechten ook tegen monsters net onder hun eigen niveau (combat 37 tegen barbarians van level 10–17), zodat ze niet in Barbarian Village staan met "niets te doen" terwijl er genoeg vijanden rondlopen.
 - Een avonturier die onder de helft van zijn HP zakt zonder eten (in een gevecht, bij Slayer, een boss of bij thieving met de wachten achter zich aan), stopt meteen en kiest de komende tien minuten geen gevaarlijke klus meer tot hij eten heeft, in plaats van door te gaan tot hij sterft en alles verliest.
