@@ -443,7 +443,11 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
       run.talkAt = nowMs + 8_000;
       if (step.kind === "object" && !useObject(player, step, nowMs)) run.reason = `object not found at ${step.at.join(",")} (ids ${step.ids.join("/")})`;
       else if (step.kind === "object") run.reason = "object used, but the step did not advance";
-      if (step.kind === "item" && !takeItem(player, step, nowMs)) run.reason = `item not on the ground at ${step.at.join(",")}`;
+      if (step.kind === "item" && !takeItem(player, step, nowMs)) {
+        // Not lying there (taken, not spawned yet): fetched from its bank or bought instead.
+        run.reason = `item not on the ground at ${step.at.join(",")}`;
+        if (acquire(entry, step.ids, 1, step.text)) return "running";
+      }
       return "running";
     }
     const npc = findNpc(player, step);

@@ -1269,7 +1269,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const at = player.getLocation();
     const shop = Shopping.nearestShop(itemId, { x: at.getX(), y: at.getY() });
     // No shop for it near: the Grand Exchange has it, as players buy a bird snare or a harpoon.
-    if (!shop || shop.distance > (data.shopRadius ?? 80)) return buyOnExchange(entry, itemId, name, amount, { replan });
+    const empty = shop && (entry.emptyShops?.get(`${shop.shopId}:${itemId}`) ?? 0) > now();
+    if (!shop || empty || shop.distance > (data.shopRadius ?? 80)) return buyOnExchange(entry, itemId, name, amount, { replan });
     const label = name.toLowerCase().replace(/_/g, " ");
     return walkTo(entry, { x: shop.keeper.x, y: shop.keeper.y, z: shop.keeper.z, name: shop.name }, {
       reason: replan ? "shop" : "quest", replan,
@@ -1277,8 +1278,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         const coinsBefore = Shopping.coinsOf(buyer);
         const got = Shopping.buy(buyer, core, shop.shopId, itemId, amount);
         if (got <= 0) {
-          note(buyer, `${shop.name} had geen ${label} voor hem.`, "activity");
-          entry.noErrandUntil = now() + 10 * 60_000;
+          note(buyer, `${shop.name} had geen ${label} voor hem; probeert de Grand Exchange.`, "activity");
+          // Out of stock: the exchange instead, as a player does (not the same shop again).
+          (entry.emptyShops ??= new Map()).set(`${shop.shopId}:${itemId}`, now() + 30 * 60_000);
+          if (!buyOnExchange(entry, itemId, name, amount, { replan })) entry.noErrandUntil = now() + 10 * 60_000;
           return;
         }
         acquire(buyer, itemId);
