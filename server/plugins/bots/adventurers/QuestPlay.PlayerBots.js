@@ -398,6 +398,12 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
         return "running";
       }
       if (step.kind === "complete") return "done";
+      // The guide asks for the quest journal to be opened to read its state (Pirate's Treasure):
+      // nothing a bot can answer; stopped at once with that reason, not tried for six minutes.
+      if (/quest journal to sync/i.test(step.text ?? "")) {
+        run.reason = "quest helper needs the quest journal opened to sync (not supported for bots)";
+        return "failed";
+      }
       // The helper cannot answer here (missing cache data): stop now, with the reason logged.
       if (step.kind === "unavailable") {
         run.reason = step.reason;
