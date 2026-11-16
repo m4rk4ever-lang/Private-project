@@ -27,10 +27,19 @@ const PASSAGE_OPTIONS = ["open", "enter", "climb-through", "squeeze-through", "c
 const PASSAGE_RADIUS = 8;
 const REFUSAL = /^(no\b|no,|no thank|actually|nevermind|never mind|nothing|bye|goodbye|i'?m not|i don'?t)|not interested|no thanks/i;
 
+/**
+ * Options a player picks to take on a quest or help, when the guide names none: "I'm looking for
+ * a quest", "Perhaps I could help to find her for you?", "Can I help?". Without them the first
+ * option that is not a refusal was taken ("Yes, I have seen her actually!"), and the quest never
+ * started.
+ */
+const QUEST_OPTIONS = ["looking for a quest", "i'm looking for a quest", "could help", "can i help", "i can help", "help you",
+  "i'll help", "i will help", "what's wrong", "what is wrong", "what's the matter", "any quests", "quest"];
+
 /** The option to pick: the first preferred word that matches, else the first that is not a refusal. */
 function chooseOption(options, prefer = []) {
   const lower = options.map((option) => String(option).toLowerCase());
-  for (const word of prefer) {
+  for (const word of [...prefer, ...QUEST_OPTIONS]) {
     const index = lower.findIndex((option) => option.includes(String(word).toLowerCase()));
     if (index >= 0) return index;
   }

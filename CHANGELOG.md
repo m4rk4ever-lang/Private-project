@@ -151,6 +151,8 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Een avonturier met genoeg geld koopt zijn uitrusting nu in één bezoek aan de Grand Exchange, in plaats van voor elk stuk opnieuw "naar de GE" te lopen terwijl hij er al stond; en een gekocht stuk heet in zijn logboek niet langer "gevonden".
+- Avonturiers kiezen in een gesprek de optie waarmee ze een quest aannemen ("I'm looking for a quest", "Perhaps I could help…"), zodat Sheep Shearer en Romeo & Juliet niet meer bij het eerste gesprek vastlopen.
 - Een avonturier die trainde voor een doel (zoals combat 10 voor The Restless Ghost) stopte niet meer bij dat doel nadat hij tussendoor had gebankt, verkocht of de server herstartte; ook taken die vóór deze update waren opgeslagen stoppen nu bij hun doel, en een gehaald doel wordt na een tussentijdse trip niet opnieuw opgepakt.
 - Een avonturier begint geen Quest Helper-quest als de bridge niet antwoordt, en een quest waarin de helper geen stap geeft legt hij na twee minuten weg in plaats van niets te doen. De questfeedback staat niet meer op de avonturierspagina, maar uitgebreider (tijdlijn per stap, duur, fout van de helper) in logs/adventurer-quest-feedback.jsonl.
 - Avonturiers vinden questspullen die een paar vakjes verderop op de grond liggen (zoals de eieren bij de boerderij voor Cook's Assistant), en verkopen hun pot, emmer en kan niet meer: die zijn nodig voor quests en koken.

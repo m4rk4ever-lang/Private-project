@@ -229,3 +229,10 @@ test("goals: the next gear's level first, then its price; a goal steers the pick
   assert.equal(Goals.goalWeight(low, { mode: "combat_training", skill: "COMBAT" }), 4);
   assert.equal(Goals.goalWeight(ready, { mode: "buy_fletching", skill: "FLETCHING" }) < 1, true, "saving: no spending on materials");
 });
+
+test("to start a quest it picks the option that offers help, not the first yes", () => {
+  const { chooseOption } = require("../plugins/bots/adventurers/QuestPlay.PlayerBots");
+  assert.equal(chooseOption(["Yes, I have seen her actually!", "No, sorry, I haven't seen her.", "Perhaps I could help to find her for you?"]), 2);
+  assert.equal(chooseOption(["What are you doing on my land?", "I'm looking for a quest.", "I'm lost."]), 1);
+  assert.equal(chooseOption(["Sure.", "No thanks."], ["sure"]), 0);
+});

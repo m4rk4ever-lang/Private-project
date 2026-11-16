@@ -778,7 +778,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       entry.phase = "errand";
       entry.until = Infinity;
     }
-    if (say) note(entry.player, `Loopt naar ${placeName(to)}.`, "activity");
+    // Already there (a second purchase at the GE): no "walks to" for a walk it does not make.
+    const at = entry.player.getLocation();
+    const there = at.getZ() === (to.z ?? 0) && Math.max(Math.abs(at.getX() - to.x), Math.abs(at.getY() - to.y)) <= 6;
+    if (say && !there) note(entry.player, `Loopt naar ${placeName(to)}.`, "activity");
     return true;
   }
 
@@ -2367,7 +2370,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const { player } = entry;
     const rules = { levelOf: (skill) => levelOf(player, skill), questDone: questDone(player) };
     for (const name of Trade.wearBest(player, core, rules)) {
-      note(player, `Draagt nu ${name.toLowerCase().replace(/_/g, " ")} (gevonden).`, "activity");
+      note(player, `Draagt nu ${name.toLowerCase().replace(/_/g, " ")}.`, "activity");
     }
     fillEmptySlots(player);
     buryLowBones(player);
@@ -2448,8 +2451,47 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       // not a hammer and a knife on every round while it fights bare-handed.
       levelOf: (skill) => levelOf(player, skill), questDone: questDone(player), modes: [],
     });
-    // One purchase per walk; the next is looked at when it is back.
-    return list.some((want) => shopFor(entry, want.itemId, want.name));
+    if (list.length === 0) return false;
+    // What only the exchange has (no shop near): every piece it can pay for in one visit, as a
+    // player buys a whole set at once, not one walk to the GE per piece.
+    const at = player.getLocation();
+    const viaShop = (want) => {
+      const shop = Shopping.nearestShop(want.itemId, { x: at.getX(), y: at.getY() });
+      return shop && shop.distance <= (data.shopRadius ?? 80) && !((entry.emptyShops?.get(`${shop.shopId}:${want.itemId}`) ?? 0) > now());
+    };
+    const first = list[0];
+    if (viaShop(first)) return shopFor(entry, first.itemId, first.name);
+    const atExchange = list.filter((want) => !viaShop(want));
+    return buyManyOnExchange(entry, atExchange) || list.some((want) => shopFor(entry, want.itemId, want.name));
+  }
+
+  /** To the Grand Exchange once for several pieces: each bought while the coins last. */
+  function buyManyOnExchange(entry, wants) {
+    const { player } = entry;
+    const priced = wants.map((want) => ({ ...want, guide: Number(core.ItemDefinition?.forId?.(want.itemId)?.getGrandExchangeValue?.() ?? 0) }))
+      .filter((want) => want.guide > 0);
+    if (priced.length === 0 || Shopping.coinsOf(player) < Math.ceil(priced[0].guide * 1.05) + 50) return false;
+    if (blockedPlace(entry, data.grandExchange)) return false;
+    const plan = entry.plan;
+    return walkTo(entry, { ...data.grandExchange, name: "de Grand Exchange" }, {
+      reason: "buy_materials",
+      arrive: (buyer) => {
+        emit("ge:collect", { player: buyer });
+        const bought = [];
+        let spent = 0;
+        for (const want of priced) {
+          const cost = Math.ceil(want.guide * 1.05);
+          if (Shopping.coinsOf(buyer) < cost + 50) continue;
+          if (!bid(buyer, core, emit, want.itemId, 1)) continue;
+          emit("ge:collect", { player: buyer });
+          acquire(buyer, want.itemId);
+          bought.push(String(want.name).toLowerCase().replace(/_/g, " "));
+          spent += cost;
+        }
+        if (bought.length > 0) note(buyer, `Koopt op de GE: ${bought.join(", ")} (~${spent.toLocaleString("nl-NL")} gp).`, "activity");
+        if (plan?.mode) entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, remainingMs: 0, savedAt: now() };
+      },
+    });
   }
 
   /** Logs in the adventurers (or just `only`). */
