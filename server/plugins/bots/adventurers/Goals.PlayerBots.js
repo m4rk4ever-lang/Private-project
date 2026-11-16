@@ -17,9 +17,11 @@ const COMBAT_SKILLS = new Set(["ATTACK", "STRENGTH", "DEFENCE", "HITPOINTS"]);
 const SAVE_FOR = Object.freeze([{ item: "AMULET_OF_GLORY_4_", why: "een amulet of glory" }]);
 
 /** Candidate goals: { kind: "level", skill, level, why } | { kind: "coins", amount, why, item }. */
-function candidates(view, { gear, levelOf, owns, worn, priceOf, questDone, idOf, coins, styles = null }) {
+function candidates(view, { gear, levelOf, owns, worn, priceOf, questDone, idOf, coins, styles = null, variant = (entry) => entry }) {
   const out = [];
-  const consider = (list, label) => {
+  const consider = (raw, label) => {
+    // Its own taste (a longsword, a chainbody: Shopping.variantOf), as it buys them.
+    const list = raw.map(variant);
     // The first piece better than what it has; lists run best first.
     const have = list.findIndex((entry) => owns(idOf(entry.item)) || worn(idOf(entry.item)));
     const better = (have < 0 ? list : list.slice(0, have)).filter((entry) => (entry.quests ?? []).every(questDone));

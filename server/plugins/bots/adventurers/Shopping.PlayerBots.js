@@ -95,7 +95,7 @@ function shoppingList(player, core, { levelOf, questDone, modes = [], exchange =
   let budget = Math.floor(coins * (gear.budgetShare ?? 0.6));
   const wants = [];
   const consider = (list) => {
-    for (const entry of list) {
+    for (const entry of list.map((piece) => variantOf(core, piece, player))) {
       if (!allowed(entry, { levelOf, questDone })) continue;
       const itemId = idOf(core, entry.item);
       if (!Number.isInteger(itemId) || ownsAnywhere(player, itemId)) return; // has the best it may use
@@ -114,7 +114,7 @@ function shoppingList(player, core, { levelOf, questDone, modes = [], exchange =
     return guide > 0 ? Math.ceil(guide * 1.05) : 0;
   };
   const usableOf = (list) => {
-    const usable = list.filter((entry) => allowed(entry, { levelOf, questDone }))
+    const usable = list.map((entry) => variantOf(core, entry, player)).filter((entry) => allowed(entry, { levelOf, questDone }))
       .map((entry) => ({ ...entry, itemId: idOf(core, entry.item), tier: entry.tier ?? tierOf(entry.item) }))
       .filter((entry) => Number.isInteger(entry.itemId));
     const ownedAt = usable.findIndex((entry) => ownsAnywhere(player, entry.itemId));
@@ -145,6 +145,13 @@ function shoppingList(player, core, { levelOf, questDone, modes = [], exchange =
       break;
     }
   }
+  // A cape of its own colour once it has a few coins over, as players wear one for the look.
+  const wearsCape = Number.isInteger(core.Equipment?.CAPE_SLOT) && (player.getEquipment().getItems() ?? [])[core.Equipment.CAPE_SLOT]?.getId?.() > 0;
+  const capeId = idOf(core, capeOf(player));
+  if (!wearsCape && Number.isInteger(capeId) && !ownsAnywhere(player, capeId) && coins >= 2000) {
+    const price = priceOf(capeId);
+    if (price > 0) wants.push({ itemId: capeId, name: capeOf(player), price });
+  }
   // No whole set within reach: a single cheaper piece now and then (a weapon first, see below).
   if (!setChosen) for (const [slot, list] of Object.entries(gear.slots)) if (slot !== "weapon") consider(list);
   if (modes.includes("woodcutting")) {
@@ -169,6 +176,48 @@ function shoppingList(player, core, { levelOf, questDone, modes = [], exchange =
     bought.push(want);
   }
   return bought;
+}
+
+/**
+ * Each adventurer's own taste in gear (fixed by its name, so it keeps it): a longsword or a
+ * battleaxe instead of a scimitar, a square shield, a medium helm, a chainbody, a plateskirt,
+ * and a cape colour. Same metal, same levels; the dragon pieces keep their own names and quests.
+ */
+const VARIANTS = Object.freeze({
+  SCIMITAR: [["SCIMITAR", 4], ["LONGSWORD", 2], ["BATTLEAXE", 2], ["WARHAMMER", 1], ["MACE", 1]],
+  KITESHIELD: [["KITESHIELD", 2], ["SQ_SHIELD", 1]],
+  FULL_HELM: [["FULL_HELM", 2], ["MED_HELM", 1]],
+  PLATEBODY: [["PLATEBODY", 2], ["CHAINBODY", 1]],
+  PLATELEGS: [["PLATELEGS", 2], ["PLATESKIRT", 1]],
+});
+const CAPES = ["RED_CAPE", "BLUE_CAPE", "GREEN_CAPE", "YELLOW_CAPE", "BLACK_CAPE", "PURPLE_CAPE", "ORANGE_CAPE", "PINK_CAPE"];
+const METALS = new Set(["BRONZE", "IRON", "STEEL", "BLACK", "MITHRIL", "ADAMANT", "RUNE"]);
+
+function tasteRoll(name, key) {
+  let hash = 2166136261;
+  for (const char of `${name}:${key}`) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619) >>> 0;
+  return (hash % 1000) / 1000;
+}
+
+/** The piece this adventurer would take for `entry` (its own taste), with its quests. */
+function variantOf(core, entry, player) {
+  const name = player?.getUsername?.() ?? "";
+  const [metal, ...rest] = String(entry.item).split("_");
+  const part = rest.join("_");
+  if (!name || !METALS.has(metal) || !VARIANTS[part]) return entry;
+  const options = VARIANTS[part];
+  const total = options.reduce((sum, [, weight]) => sum + weight, 0);
+  let roll = tasteRoll(name, part) * total;
+  const [choice] = options.find(([, weight]) => (roll -= weight) < 0) ?? options[0];
+  const item = `${metal}_${choice}`;
+  if (item === entry.item || !Number.isInteger(idOf(core, item))) return entry;
+  // The quest of the piece it replaces is that piece's (Dragon Slayer I for a rune platebody).
+  return { ...entry, item, quests: [] };
+}
+
+/** Its cape colour (CAPES), by taste. */
+function capeOf(player) {
+  return CAPES[Math.floor(tasteRoll(player?.getUsername?.() ?? "", "CAPE") * CAPES.length)];
 }
 
 /** The metal of a gear piece ("RUNE_PLATEBODY" -> "RUNE") and its rank, best first. */
@@ -234,6 +283,7 @@ function wear(player, core, itemId) {
 }
 
 module.exports = {
+  variantOf, capeOf,
   ownsAnywhere,
   shopsSelling, nearestShop, shoppingList, missingTools, foodToBuy, buy, wear, coinsOf, owns, estimatedPrice, allowed, idOf, gear, COINS,
 };

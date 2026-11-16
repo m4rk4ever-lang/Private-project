@@ -107,6 +107,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Elke avonturier heeft een eigen smaak in uitrusting: een scimitar, longsword, battleaxe, mace of warhammer, een kite- of square shield, een full of medium helm, een platebody of chainbody, platelegs of een plateskirt, en een cape in zijn eigen kleur zodra hij wat geld over heeft. Zo lopen ze niet meer allemaal in hetzelfde rond.
 - Er draaien nog maar half zoveel wereldbots als eerst (bevolking 0,24), zodat er ruimte is voor de extra avonturiers.
 - Avonturiers kiezen minder vaak combat of een quest: een quest wordt in ongeveer 1 op de 5 keuzes gestart en training voor een quest-eis in 1 op de 4, zodat de 15 avonturiers meer verschillende skills trainen.
 - Een quest waarin twee verschillende avonturiers vastlopen, wordt drie uur lang voor alle avonturiers overgeslagen.

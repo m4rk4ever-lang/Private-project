@@ -523,6 +523,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       },
       questDone: questDone(player),
       idOf: (name) => Shopping.idOf(core, name),
+      variant: (entry) => Shopping.variantOf(core, entry, player),
       coins: Shopping.coinsOf(player) + banked(player, Trade.COINS),
     };
   }
