@@ -90,6 +90,8 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Avonturiers banken ook bij de Grand Exchange, Al Kharid, Ardougne en Yanille, en lopen niet meer voor een verkoop helemaal naar de GE als een bank veel dichterbij is; ze verkopen later.
+- Een avonturier die al op een goede plek staat (mannen om hem heen) traint daar, in plaats van naar Lumbridge te lopen; ook bij Edgeville en Seers' Village kunnen ze mannen bestelen.
 - Avonturiers kiezen een quest pas zelf als een bot die quest in het spel helemaal heeft uitgespeeld; Rune Mysteries staat daarom voorlopig niet op hun lijst.
 - De avonturierspagina noemt meer plekken bij naam, zoals de Wizards' Tower in plaats van de haven van Port Sarim.
 - Avonturiers die veel verder zijn met houthakken of mijnen dan met fletching, firemaking, smelten of smithing kiezen die verwerkende skills nu veel vaker.

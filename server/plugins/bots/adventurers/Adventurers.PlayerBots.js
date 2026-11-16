@@ -63,6 +63,8 @@ const COINS = 995;
 const CHECK_TICKS = 10;
 /** How long it waits at the exchange for a bid on training materials to fill. */
 const BID_WAIT_MS = 3 * 60_000;
+/** How much further than a bank it walks to the Grand Exchange to sell (saving up, offers in). */
+const SELL_DETOUR_TILES = 120;
 /** No XP and no step for this long while training: it is stuck, it picks something else. */
 const STUCK_MS = 2 * 60_000;
 /** The longest one Slayer task may take before it gives up on it for now. */
@@ -1837,7 +1839,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const bank = nearestBank(player);
     const urgent = full || cluttered;
     const geOpen = !blockedPlace(entry, ge);
-    const toExchange = geOpen && (fund || waiting || worth >= (data.sellValue ?? 5000) || !bank || distanceTo(player, ge) <= bank.away + 40);
+    // The exchange when it is about as near as a bank, or for a sale worth the detour (saving up,
+    // offers to collect, a valuable bag) when it is not much further. Far off it banks, as a
+    // player does in the middle of a woodcutting trip, and sells another time.
+    const extra = bank ? distanceTo(player, ge) - bank.away : 0;
+    const toExchange = geOpen && (!bank || extra <= 40 || ((fund || waiting || worth >= (data.sellValue ?? 5000)) && extra <= SELL_DETOUR_TILES));
     if (toExchange) return walkTo(entry, ge, { reason: "exchange", arrive: atExchange, urgent });
     if (!bank) return false;
     return walkTo(entry, { ...bank, name: bank.name ?? bank.id }, {

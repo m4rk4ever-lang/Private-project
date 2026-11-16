@@ -273,6 +273,11 @@
       "tiers": [[85, "RUNITE_BAR"], [70, "ADAMANTITE_BAR"], [50, "MITHRIL_BAR"], [30, "STEEL_BAR"], [15, "IRON_BAR"], [1, "BRONZE_BAR"]] }
   },
   "banks": [
+    { "id": "grand_exchange_bank", "name": "de Grand Exchange", "x": 3167, "y": 3489, "z": 0 },
+    { "id": "al_kharid_bank", "name": "Al Kharid", "x": 3269, "y": 3167, "z": 0 },
+    { "id": "ardougne_north_bank", "name": "Ardougne Noord", "x": 2616, "y": 3332, "z": 0 },
+    { "id": "ardougne_south_bank", "name": "Ardougne Zuid", "x": 2655, "y": 3283, "z": 0 },
+    { "id": "yanille_bank", "name": "Yanille", "x": 2612, "y": 3093, "z": 0 },
     { "id": "draynor_bank", "name": "Draynor", "x": 3092, "y": 3245, "z": 0 },
     { "id": "varrock_west_bank", "name": "Varrock West", "x": 3185, "y": 3440, "z": 0 },
     { "id": "varrock_east_bank", "name": "Varrock East", "x": 3253, "y": 3420, "z": 0 },

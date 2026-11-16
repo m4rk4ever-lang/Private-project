@@ -662,6 +662,28 @@
       "maxLevel": 24
     },
     {
+      "id": "edgeville_men",
+      "x": 3094,
+      "y": 3505,
+      "z": 0,
+      "modes": [
+        "thieving"
+      ],
+      "minLevel": 1,
+      "maxLevel": 24
+    },
+    {
+      "id": "seers_village_men",
+      "x": 2715,
+      "y": 3490,
+      "z": 0,
+      "modes": [
+        "thieving"
+      ],
+      "minLevel": 1,
+      "maxLevel": 24
+    },
+    {
       "id": "ardougne_knights",
       "x": 2655,
       "y": 3300,

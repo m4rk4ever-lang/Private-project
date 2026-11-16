@@ -210,7 +210,9 @@ function createTravel({
       if (place) place.stayMs = stayFor(place.activity);
     }
     if (!place) {
-      const options = destinationsFor(mode, level, here).filter((option) => !meets || meets(player, option.requires, option));
+      // An adventurer may stay where it is when that is a good place (men all round it): it does
+      // not walk across the map for the sake of moving, as world bots spread out.
+      const options = destinationsFor(mode, level, state?.adventurer ? null : here).filter((option) => !meets || meets(player, option.requires, option));
       if (options.length === 0) return null;
       place = pickWeighted(options, random,
         (option) => (option.weight ?? 1) * (nearHub(option, hub) ? nearHubBonus : 1) * crowding(option)
