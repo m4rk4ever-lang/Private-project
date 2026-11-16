@@ -21,7 +21,6 @@ const data = require("../data/adventurers.json");
 const { chooseNext, bestActivity } = require("./Planner.PlayerBots");
 const { createQuestList } = require("./Quests.PlayerBots");
 const Goals = require("./Goals.PlayerBots");
-const { createTravel } = require("../brain/Travel.PlayerBots");
 const { startActivity } = require("../brain/BrainActivities.PlayerBots");
 const travelData = require("../data/travel-destinations.json");
 
@@ -39,6 +38,7 @@ const TASK_ATTRIBUTE = "adventurers:task";
 const TASK_SAVE_MS = 3 * 60_000;
 const Tasks = require("./Tasks.PlayerBots");
 const TravelHubs = require("../behaviours/navigation/TravelHubs.PlayerBots");
+const Sites = require("./Sites.PlayerBots");
 const { createQuestPlay } = require("./QuestPlay.PlayerBots");
 /** A quest a bot could not finish is put aside this long. */
 const QUEST_ASIDE_MS = 60 * 60_000;
@@ -128,25 +128,12 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   const QuestRuntime = require("../../quests/QuestRuntime");
   // All quests on this server, the path first; requirements from the cache.
   const questList = createQuestList({ core, path: data.quests, getRegistered: () => QuestRuntime.getRegisteredQuests() });
-  const travel = createTravel({
-    core,
-    log: world.log,
-    // No outfits, capes or job clothes: an adventurer wears only what it bought, found or made.
-    dress: null,
-    equipCombatGear: (player, state) => world.equipCombatGear?.(player, state),
-    chance: 1,
-    hangoutChance: 0,
-    // Adventurers walk (walkTo below), and so prefer places near them: a far one is a long walk.
-    moveTo: () => {},
-    nearness: (here, place, player) => (here ? 1 / (1 + walkTiles(here, place, player) / 150) : 1),
-    minigameChance: 0,
-    random,
-    // Adventurers only go where their quests and levels let them, and where they can walk to
-    // (not Zeah by boat, not Morytania before Priest in Peril).
-    meets: (player, requires, place = null) => (!place || TravelHubs.onFoot(place, null, (name) => questsByName().get(normalize(name))?.isComplete(player) === true, (item) => Shopping.owns(player, Shopping.idOf(core, item)))) && (!requires || (
+  /** Whether it may go there: on foot with its quests and items, and its levels and quests met. */
+  function travelMeets(player, requires, place = null) {
+    return (!place || TravelHubs.onFoot(place, null, (name) => questsByName().get(normalize(name))?.isComplete(player) === true, (item) => Shopping.owns(player, Shopping.idOf(core, item)))) && (!requires || (
       (requires.quests ?? []).every((name) => questsByName().get(normalize(name))?.isComplete(player) === true)
-      && Object.entries(requires.skills ?? {}).every(([skill, level]) => (core.Skill[skill] ? player.getSkillManager().getMaxLevel(core.Skill[skill]) : 0) >= level))),
-  });
+      && Object.entries(requires.skills ?? {}).every(([skill, level]) => (core.Skill[skill] ? player.getSkillManager().getMaxLevel(core.Skill[skill]) : 0) >= level)));
+  }
   /** name -> { name, player, phase, until, plan, startedAt } */
   const adventurers = new Map();
   // Quests played for real (QuestPlay.PlayerBots.js): walk, Talk-to, answer.
@@ -656,7 +643,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       if (tool) return shopFor(entry, tool.itemId, tool.name, tool.name === "FEATHER" || tool.name === "FISHING_BAIT" ? 200 : 1);
       const activity = id ? registry?.byId?.get(id) ?? null : null;
       if (!activity) return false;
-      const place = travel(player, stateOf(player), activity, nowMs);
+      // Its own choice of spot (Sites.PlayerBots.js): the nearest fitting one, not the world
+      // bots' travel with its hubs and spreading.
+      const place = Sites.pickSite(player, activity, {
+        core, random, distance: (from, to, who) => (from.z !== (to.z ?? 0) ? walkTiles(from, to, who) + 50 : walkTiles(from, to, who)),
+        meets: (who, requires, site) => travelMeets(who, requires, site),
+      });
+      Sites.settleAt(stateOf(player), place);
+      if (place) world.log?.("adventurer_site", { name: entry.name, activity: id, site: place.id });
       const home = stateOf(player)?.home ?? null;
       startActivity(player, id, { home, nowMs });
       if (place && home) walkTo(entry, { ...home, name: place.id }, { reason: "training", replan: false });

@@ -94,6 +94,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Avonturiers kiezen hun klusplek nu zelf: de dichtstbijzijnde plek die bij hun klus, level en quests past, los van de regels waarmee de gewone bots zich over de wereld verspreiden.
 - Het logboek van een avonturier vermeldt waarom hij niet kan gaan jagen (geen geld voor een bird snare, plek niet bereikbaar).
 - Alle avonturiers en de achievementsrace beginnen opnieuw bij nul in Lumbridge, met alleen het startpakket, voor een eerlijk speelveld met alle verbeteringen.
 - De clanleider krijgt voorrang bij hulp van clangenoten: hij krijgt meer materialen en tot de helft van hun overschot aan geld (elk half uur), en de anderen nemen niets uit de voorraad van de leider.
