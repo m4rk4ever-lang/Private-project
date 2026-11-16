@@ -89,7 +89,7 @@
     ]
   },
   "fishingTools": {
-    "net_fishing": ["SMALL_FISHING_NET"],
+    "net_fishing": ["SMALL_FISHING_NET"], "hunter_crimson_swift": ["BIRD_SNARE"],
     "fly_fishing": ["FLY_FISHING_ROD", "FEATHER"],
     "lobster_fishing": ["LOBSTER_POT"],
     "harpoon_fishing": ["HARPOON"],

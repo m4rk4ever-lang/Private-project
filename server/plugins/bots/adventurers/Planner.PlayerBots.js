@@ -21,6 +21,7 @@ const TRAINABLE = Object.freeze({
   MINING: "mining",
   FISHING: "fishing",
   THIEVING: "thieving",
+  HUNTER: "hunter",
 });
 const COMBAT = "combat_training";
 const WINTERTODT_LEVEL = 50;

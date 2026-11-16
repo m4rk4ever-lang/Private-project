@@ -14,6 +14,8 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Avonturiers vangen vogels (Hunter, vanaf level 1): ze kopen bird snares (in een winkel of op de GE), lopen naar de crimson swifts in de Feldip Hills, zetten snares, controleren een snare met een vogel erin en rapen een omgevallen snare weer op. Vangst, XP en buit (botten, vogelvlees, veren) komen van de Hunter-plugin zelf.
+- Gereedschap dat geen winkel in de buurt verkoopt (zoals een bird snare), kopen avonturiers op de GE.
 - Avonturiers met geld over kopen ook een geladen teleport-sieraad op de GE (games necklace, ring of dueling of amulet of glory). Elke lading is een teleport voor een lange tocht, naar bestemmingen zonder quest-eis.
 - Avonturiers die sterven, krijgen een grafsteen zoals spelers (gewone wereldbots niet). Na het respawnen lopen ze terug naar hun graf, pakken de gratis spullen en betalen het fee voor de rest (uit de Coffer, hun tas of bank). Hebben ze daar het geld niet voor, dan blijft dat deel liggen en gaat het daarna naar Death's Office. Het dagboek meldt waar ze stierven.
 - Nieuw event `gravestones:reclaim` voor plugins: bij het graf Loot en Pay zoals een speler.

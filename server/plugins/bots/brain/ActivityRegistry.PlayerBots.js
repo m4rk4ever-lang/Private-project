@@ -30,6 +30,7 @@ const { createBankStandAction } = require("./actions/BankStand.PlayerBots");
 const { createWintertodtAction } = require("./actions/Wintertodt.PlayerBots");
 const { createPickpocketAction } = require("./actions/Pickpocket.PlayerBots");
 const { createCraftRunesAction } = require("./actions/CraftRunes.PlayerBots");
+const { createHuntBirdsAction } = require("./actions/HuntBirds.PlayerBots");
 
 const DEFAULT_DEFINITIONS_PATH = path.join(
   process.cwd(),
@@ -235,6 +236,9 @@ function createAction(spec, world) {
   }
   if (spec.type === "craftRunes") {
     return createCraftRunesAction(spec, world);
+  }
+  if (spec.type === "huntBirds") {
+    return createHuntBirdsAction(spec, world);
   }
   if (spec.type === "wintertodt") {
     return createWintertodtAction(spec, world);

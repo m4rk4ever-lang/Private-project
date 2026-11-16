@@ -340,7 +340,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const bySkill = { FIREMAKING: ["TINDERBOX"], SMITHING: ["HAMMER"], FLETCHING: ["KNIFE"], CRAFTING: ["CHISEL", "NEEDLE"] };
     if (mode === "woodcutting") return { any: names(gear.tools.axe), all: [] };
     if (mode === "mining") return { any: names(gear.tools.pickaxe), all: [] };
-    if (mode === "fishing") return { any: [], all: gear.fishingTools[activityId] ?? [] };
+    if (mode === "fishing" || mode === "hunter") return { any: [], all: gear.fishingTools[activityId] ?? [] };
     if (String(mode).startsWith("buy_") || mode === "wintertodt") {
       const recipe = data.buyToTrain?.[skill];
       return { any: recipe?.tool ? [recipe.tool] : bySkill[skill] ?? [], all: [] };
@@ -551,6 +551,28 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       entry.plan = plan;
       entry.until = nowMs + randomBetween(data.trainMinutes, random) * 60_000;
       note(player, `Loopt rondjes op de ${course.name}.`);
+      return true;
+    }
+    if (plan.mode === "hunter") {
+      // Bird snaring where its level's birds live (bot-activities.json: the action's site): its
+      // snares first (bank, shop or GE), then the walk there, and the stretch from arrival.
+      const id = bestActivity("hunter", levelOf(player, "HUNTER"), definitions);
+      const activity = id ? registry?.byId?.get(id) ?? null : null;
+      const site = definitions.activities.find((entry) => entry.id === id)?.actions?.[0]?.site;
+      if (!activity || !site) return false;
+      const place = { x: site[0], y: site[1], z: 0 };
+      if (!TravelHubs.onFoot(place)) return false;
+      const bankedTools = toolsInBank(player, "hunter", id);
+      if (bankedTools.length > 0) return fetchTools(entry, plan, bankedTools);
+      const snare = Shopping.missingTools(player, core, id)[0];
+      if (snare) return shopFor(entry, snare.itemId, snare.name, 2);
+      startActivity(player, id, { home: place, nowMs });
+      walkTo(entry, { ...place, name: "de Feldip Hills" }, { reason: "training", replan: false });
+      entry.activity = id;
+      entry.phase = "training";
+      entry.plan = plan;
+      entry.until = nowMs + randomBetween(data.trainMinutes, random) * 60_000;
+      note(player, "Gaat vogels vangen met een bird snare in de Feldip Hills.");
       return true;
     }
     if (plan.mode === "wintertodt") {
@@ -1042,11 +1064,33 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * Walks to the nearest shop that sells it and buys there, through the shop itself. True when
    * it set off. Only shops within data.shopRadius tiles: a longer walk is not worth one item.
    */
+  /** To the Grand Exchange for one thing it needs (a tool no shop near sells), then the job again. */
+  function buyOnExchange(entry, itemId, name, amount = 1) {
+    const { player } = entry;
+    const guide = Number(core.ItemDefinition?.forId?.(itemId)?.getGrandExchangeValue?.() ?? 0);
+    if (!(guide > 0) || Shopping.coinsOf(player) < Math.ceil(guide * 1.05) * amount + 50) return false;
+    if (blockedPlace(entry, data.grandExchange)) return false;
+    const plan = entry.plan;
+    const label = String(name).toLowerCase().replace(/_/g, " ");
+    return walkTo(entry, { ...data.grandExchange, name: "de Grand Exchange" }, {
+      reason: "buy_materials",
+      arrive: (buyer) => {
+        emit("ge:collect", { player: buyer });
+        if (!Trade.buyAtExchange(buyer, core, emit, itemId, amount)) return;
+        emit("ge:collect", { player: buyer });
+        acquire(buyer, itemId);
+        note(buyer, `Koopt ${amount > 1 ? `${amount} x ` : ""}${label} op de GE.`, "activity");
+        if (plan?.mode) entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, remainingMs: 0, savedAt: now() };
+      },
+    });
+  }
+
   function shopFor(entry, itemId, name, amount = 1) {
     const { player } = entry;
     const at = player.getLocation();
     const shop = Shopping.nearestShop(itemId, { x: at.getX(), y: at.getY() });
-    if (!shop || shop.distance > (data.shopRadius ?? 80)) return false;
+    // No shop for it near: the Grand Exchange has it, as players buy a bird snare or a harpoon.
+    if (!shop || shop.distance > (data.shopRadius ?? 80)) return buyOnExchange(entry, itemId, name, amount);
     const label = name.toLowerCase().replace(/_/g, " ");
     return walkTo(entry, { x: shop.keeper.x, y: shop.keeper.y, z: shop.keeper.z, name: shop.name }, {
       reason: "shop",

@@ -366,6 +366,7 @@
     {"id":"follow_owner","mode":"follow_owner","capacity":64,"repeat":false,"ephemeral":true,"manual":true,"failureCooldownSeconds":5,"actions":[{"type":"followOwner"}]},
     {"id":"process_fletching","mode":"processing","capacity":64,"repeat":true,"manual":true,"failureCooldownSeconds":5,"actions":[{"type":"fletch","itemIds":["logs","oak_logs","willow_logs","maple_logs","yew_logs","magic_logs"]}]},
     {"id":"process_firemaking","mode":"processing","capacity":64,"repeat":true,"manual":true,"failureCooldownSeconds":5,"actions":[{"type":"lightFire"}]},
+    {"id":"hunter_crimson_swift","mode":"hunter","capacity":64,"repeat":true,"manual":true,"failureCooldownSeconds":10,"fields":{"level":1},"actions":[{"type":"huntBirds","site":[2604,2910],"radius":7}]},
     {"id":"process_smelting","mode":"processing","capacity":64,"repeat":true,"manual":true,"failureCooldownSeconds":10,"actions":[{"type":"smelt","bar":"auto"}]},
     {"id":"process_runecrafting_air","mode":"processing","capacity":64,"repeat":true,"manual":true,"failureCooldownSeconds":10,"actions":[{"type":"craftRunes","talisman":"AIR_TALISMAN","essence":["PURE_ESSENCE","RUNE_ESSENCE"],"ruins":[2984,3291],"inside":[2841,4829],"altar":[2843,4833],"portal":[2841,4828]}]},
     {"id":"process_smithing","mode":"processing","capacity":64,"repeat":true,"manual":true,"failureCooldownSeconds":5,"actions":[{"type":"smith","bar":"any"}]},
