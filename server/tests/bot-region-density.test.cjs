@@ -162,7 +162,7 @@ test('world density mapping reaches the population settings while shipped defaul
     const { PVP_BOT_SETTINGS, getEnabledWildernessHotspots } = require(modulePath);
     assert.deepEqual({ ...PVP_BOT_SETTINGS.activeRegionBotsByRegion }, { '0:50:158': 3, '0:50:159': 0 });
     assert.equal(PVP_BOT_SETTINGS.activeRegionBotsPerRegion, 3);
-    assert.equal(PVP_BOT_SETTINGS.botPool, 30);
+    assert.equal(PVP_BOT_SETTINGS.botPool, 15);
     assert.deepEqual(getEnabledWildernessHotspots().map(h => h.targetBots), [5, 5, 5, 10]);
   } finally { require.cache[modulePath] = original; }
 });

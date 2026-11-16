@@ -98,6 +98,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Nog minder wereldbots voor minder lag: 3 per Edgeville-plek (was 5), 5 bij de Varrock-ditch (was 10) en een PvP-pool van 15 (was 30).
 - Avonturiers kiezen hun klusplek nu zelf: de dichtstbijzijnde plek die bij hun klus, level en quests past, los van de regels waarmee de gewone bots zich over de wereld verspreiden.
 - Het logboek van een avonturier vermeldt waarom hij niet kan gaan jagen (geen geld voor een bird snare, plek niet bereikbaar).
 - Alle avonturiers en de achievementsrace beginnen opnieuw bij nul in Lumbridge, met alleen het startpakket, voor een eerlijk speelveld met alle verbeteringen.
@@ -131,6 +132,9 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Het spel valt niet meer helemaal om als de client stopt: crasht de client steeds (bijvoorbeeld door te weinig geheugen in de codespace), dan blijft de gameserver draaien.
+- De Quest Helper-bridge gebruikt hooguit 512 MB geheugen (was een kwart van de codespace). Daardoor raakt het geheugen minder snel op en wordt de server niet meer afgeschoten ("Killed").
+- Openen of opnieuw verbinden met de codespace start geen tweede spel meer terwijl het eerste nog opstart; een tweede start stopte eerst het lopende spel.
 - De Quest Helper geeft avonturiers nu ook stappen in en rond het kasteel van Lumbridge (de bot stuurt, net als de client, de objectgegevens mee), en avonturiers vinden grote objecten zoals de kasteeltrap ook als die op een ander vakje staat dan de Quest Helper noemt.
 - Een avonturier die voor een quest iets moet kopen, praat niet meer steeds met de winkelier terwijl hij het elders koopt, en stopt meteen (met de reden in de questfeedback) als de Quest Helper op zijn plek geen stap kan geven.
 - Avonturiers die met de Quest Helper een object of item moeten bereiken, openen eerst een dichte deur die ertussen zit (zoals in het kasteel van Lumbridge).

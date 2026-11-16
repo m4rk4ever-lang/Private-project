@@ -9,7 +9,7 @@
       }
     },
     {
-      "id": "edge_low", "enabled": true, "x": 3073, "y": 3531, "radius": 5, "bots": 5,
+      "id": "edge_low", "enabled": true, "x": 3073, "y": 3531, "radius": 5, "bots": 3,
       "pvp": {
         "style": "pure",
         "smiteOnly": true,
@@ -20,7 +20,7 @@
       }
     },
     {
-      "id": "edge_mid", "enabled": true, "x": 3090, "y": 3531, "radius": 5, "bots": 5,
+      "id": "edge_mid", "enabled": true, "x": 3090, "y": 3531, "radius": 5, "bots": 3,
       "pvp": {
         "style": "mid",
         "smiteOnly": true,
@@ -31,7 +31,7 @@
       }
     },
     {
-      "id": "edge_mains", "enabled": true, "x": 3108, "y": 3531, "radius": 5, "bots": 5,
+      "id": "edge_mains", "enabled": true, "x": 3108, "y": 3531, "radius": 5, "bots": 3,
       "pvp": {
         "style": "main",
         "smiteOnly": true,
@@ -42,7 +42,7 @@
       }
     },
     {
-      "id": "varrock_ditch", "enabled": true, "x": 3243, "y": 3526, "bots": 10,
+      "id": "varrock_ditch", "enabled": true, "x": 3243, "y": 3526, "bots": 5,
       "area": { "minX": 3228, "maxX": 3262, "minY": 3525, "maxY": 3542 },
       "pvp": {
         "style": "f2p",
@@ -52,7 +52,7 @@
     }
   ],
   "pvp": {
-    "botPool": 30,
+    "botPool": 15,
     "activeRegionBotsPerRegion": 3,
     "activeRegionInset": 1,
     "smiteOnlyRegions": ["0:47:54", "0:48:54", "0:47:55", "0:48:55"]

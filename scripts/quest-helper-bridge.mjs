@@ -61,7 +61,10 @@ if (!javaHome) {
   process.exit(1);
 }
 
-const args = ["-Djava.awt.headless=true", "-cp", join(lib, "*"), "local.questbridge.BridgeServer"];
+// A small heap: the game server, the client's dev server and this bridge share one codespace
+// (8 GB). Java's default (a quarter of the memory) helped push the game into running out.
+const heap = (process.env.QUEST_HELPER_JAVA_OPTS ?? "-Xmx512m -XX:+UseSerialGC").split(/\s+/).filter(Boolean);
+const args = [...heap, "-Djava.awt.headless=true", "-cp", join(lib, "*"), "local.questbridge.BridgeServer"];
 console.log(`quest-helper-bridge: ${javaHome} ${args.slice(2).join(" ")}`);
 const child = spawn(join(javaHome, "bin", java), args, {
   stdio: "inherit",
