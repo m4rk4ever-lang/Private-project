@@ -1238,7 +1238,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         .map(([id, amount]) => `${amount - (before.get(id) ?? 0)} x ${itemName(id)}`);
       if (got.length > 0) note(entry.player, `Haalt zijn aankopen op bij de GE: ${got.join(", ")}.`, "activity");
     }
-    if (!(request.waiting > 0)) {
+    // Only its buys are worth waiting for; sell offers fill while it goes on, as for a player.
+    if (!((request.waitingBuys ?? request.waiting) > 0)) {
       entry.offersUntil = 0;
       return false;
     }

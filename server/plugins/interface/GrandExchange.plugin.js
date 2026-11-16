@@ -1212,7 +1212,7 @@ function placeOfferEvent(request) {
 
 /**
  * "ge:collect" { player, peek? }: everything finished goes to the inventory; sets `collected`
- * (offers), `waiting` (still trading) and `freeSlots`. With `peek` it only counts (`finished`).
+ * (offers), `waiting` (still trading), `waitingBuys` (buys still to fill) and `freeSlots`. With `peek` it only counts (`finished`).
  */
 function collectEvent(request) {
   const player = request?.player;
@@ -1222,6 +1222,8 @@ function collectEvent(request) {
   if (finished > 0 && request.peek !== true) collectAll(player, 1);
   request.collected = finished - Object.values(completedOffers(player)).filter((offer) => offer?.finished).length;
   request.waiting = Object.values(completedOffers(player)).filter((offer) => offer && !offer.finished).length;
+  // Buys that are still to fill and will (completesAt): what a buyer waits at the booth for.
+  request.waitingBuys = Object.values(completedOffers(player)).filter((offer) => offer && !offer.finished && !offer.sell && offer.completesAt != null).length;
   request.freeSlots = Array.from({ length: usableSlots() }, (_, i) => i).filter((i) => !Object.hasOwn(completedOffers(player), i)).length;
 }
 

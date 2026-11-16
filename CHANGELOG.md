@@ -155,6 +155,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers wachten bij de Grand Exchange alleen nog op hun koopbiedingen; hun verkoopbiedingen lopen door terwijl ze verder gaan, zoals bij een speler (ze stonden minutenlang te wachten tot hun loot verkocht was).
 - Een quest waarbij Quest Helper eerst het quest journal wil lezen (Pirate's Treasure) wordt meteen opzijgelegd in plaats van zes minuten te blijven proberen.
 - Een avonturier houdt geen doel meer voor een stuk uitrusting dat hij al heeft (zoals "30 Attack voor adamant scimitar" terwijl hij die al draagt).
 - Een avonturier die monsters achter een hek probeert te bereiken (Draynor Manor), geeft het na een halve minuut op en zoekt een andere plek, in plaats van eindeloos langs het hek te lopen.
