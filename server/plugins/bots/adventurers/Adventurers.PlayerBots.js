@@ -75,6 +75,9 @@ const JEWELLERY = ["GAMES_NECKLACE_8_", "RING_OF_DUELING_8_", "AMULET_OF_GLORY_4
 const TABLET_BUDGET = 5000;
 /** Arrows, or casts' worth of runes, it wants before it fights that way. */
 const SUPPLY_MIN = 50;
+/** Below this many hitpoints (its level) an adventurer takes food along on its jobs and walks. */
+const TRAVEL_FOOD_UNTIL_HP = 40;
+const TRAVEL_FOOD = 8;
 /** Coins it wants before it buys a first supply of runes to start Magic with. */
 const MAGIC_START_BUDGET = 2500;
 const MAGIC_RUNES = ["AIR_RUNE", "MIND_RUNE", "WATER_RUNE", "EARTH_RUNE", "FIRE_RUNE", "CHAOS_RUNE"];
@@ -512,6 +515,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const own = runtimeEntry(player);
     if (own?.state && plan.mode !== "slayer") own.state.onlyNames = null;
     if (plan.mode === "slayer") return startSlayer(entry, plan, nowMs);
+    if (getTravelFood(entry, plan, nowMs)) return true;
     if (plan.mode.startsWith("buy_")) {
       return startBuyTraining(entry, plan, nowMs);
     }
@@ -993,6 +997,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       }
       entry.lastTickAt = nowMs;
       leaveUnreachableFight(entry, nowMs);
+      eatWhenHurt(entry);
       // Out of breath it walks; rested (40%) it runs again, as a player clicks run back on.
       if (entry.player.isRunningReturn?.() === false && (entry.player.getRunEnergy?.() ?? 0) >= 40) entry.player.setRunning?.(true);
       if (entry.phase === "training" && entry.buying && entry.player.getInventory().getAmount(entry.buying) <= 0
@@ -1138,6 +1143,61 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         Shopping.wear(buyer, core, itemId);
       },
     });
+  }
+
+  /** Food in its bag: [{ slot, itemId }]. */
+  function foodSlots(player) {
+    return (player.getInventory().getItems() ?? []).map((item, slot) => ({ slot, itemId: item?.getId?.() ?? -1 }))
+      .filter(({ itemId }) => itemId > 0 && isFood(itemId));
+  }
+
+  /**
+   * Hurt on its way or at its job (a man in Lumbridge, a guard in Ardougne): it eats what it
+   * carries, by the item's own Eat option as a player clicks it. Below half its hitpoints.
+   */
+  function eatWhenHurt(entry) {
+    const player = entry.player;
+    const max = player.getSkillManager().getMaxLevel(core.Skill.HITPOINTS);
+    if (player.getHitpoints() * 2 >= max) return;
+    const food = foodSlots(player)[0];
+    if (!food || !api.emitItemAction) return;
+    const actions = core.CacheDefinitions?.getItem?.(food.itemId)?.inventoryActions ?? [];
+    const index = actions.findIndex((option) => option === "Eat" || option === "Drink");
+    if (index < 0) return;
+    const item = player.getInventory().getItems()[food.slot];
+    api.emitItemAction({ player, interfaceId: core.Inventory.INTERFACE_ID, item, itemId: food.itemId, slot: food.slot,
+      clickType: index + 1, option: actions[index], handled: false });
+  }
+
+  /**
+   * A low-level adventurer without food takes some along before its next job (the walk to
+   * Ardougne goes past things that hit back): from its bank, or bought. Once in a while, not
+   * before every job; true when it went for it.
+   */
+  function getTravelFood(entry, plan, nowMs) {
+    const player = entry.player;
+    const hitpoints = player.getSkillManager().getMaxLevel(core.Skill.HITPOINTS);
+    if (hitpoints >= TRAVEL_FOOD_UNTIL_HP || foodSlots(player).length > 0 || nowMs < (entry.foodTriedAt ?? 0)) return false;
+    entry.foodTriedAt = nowMs + 20 * 60_000;
+    const resume = () => { entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, remainingMs: 0, savedAt: now() }; };
+    const inBank = (Shopping.gear.food ?? []).map((entry) => Shopping.idOf(core, entry.item))
+      .find((id) => Number.isInteger(id) && banked(player, id) >= 3);
+    const bank = inBank !== undefined ? nearestBank(player, entry) : null;
+    if (bank) {
+      return walkTo(entry, { ...bank, name: bank.name ?? bank.id }, {
+        reason: "withdraw",
+        arrive: (banker) => {
+          const got = withdraw(banker, inBank, TRAVEL_FOOD);
+          if (got > 0) note(banker, `Neemt ${got} x ${itemName(inBank)} van de bank mee als eten onderweg.`, "activity");
+          resume();
+        },
+      });
+    }
+    const food = Shopping.foodToBuy(player, core, hitpoints);
+    if (!food || Shopping.coinsOf(player) < Shopping.estimatedPrice(core, food.itemId, TRAVEL_FOOD) + 50) return false;
+    if (!shopFor(entry, food.itemId, food.name, TRAVEL_FOOD)) return false;
+    resume();
+    return true;
   }
 
   function isFood(itemId) {

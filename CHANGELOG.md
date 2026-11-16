@@ -111,6 +111,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers eten nu ook onderweg en tijdens hun klus als hun hitpoints onder de helft zakken, en een avonturier met minder dan 40 hitpoints neemt eerst eten mee (van de bank of gekocht) voordat hij aan een klus begint.
 - Avonturiers gaan nu ook met magic en ranged trainen: met de runes uit hun startpakket kopen ze bij genoeg geld een eerste voorraad runes, en ze kiezen magic of ranged vaker als die ver achterlopen op melee.
 - Avonturiers die in Ardougne stelen klikken nu echt op de bakkerskraam (Baker's stall); eerder stonden ze op de markt zonder iets te doen.
 - Een avonturier legt een quest niet meer na een paar seconden weg als één wandeling ernaartoe mislukte; hij probeert het opnieuw.
