@@ -21,9 +21,15 @@ const PLATINUM_TOKEN = 13204;
 // fetch next to nothing on the exchange.
 const KEEP_TOOLS = ["TINDERBOX", "HAMMER", "CHISEL", "NEEDLE", "KNIFE", "FEATHER", "FISHING_BAIT", "POT", "BUCKET", "JUG"];
 
-function gearLists() {
+/** A gear list in this adventurer's own taste (a battleaxe for a scimitar: Shopping.variantOf). */
+function tasted(list, core, player) {
+  return player && core ? list.map((entry) => Shopping.variantOf(core, entry, player)) : list;
+}
+
+function gearLists(player = null, core = null) {
   const { slots = {}, tools = {}, styles = {} } = Shopping.gear;
-  return [...Object.values(slots), ...Object.values(tools), ...Object.values(styles).flatMap((style) => Object.values(style))];
+  return [...Object.values(slots).map((list) => tasted(list, core, player)), ...Object.values(tools),
+    ...Object.values(styles).flatMap((style) => Object.values(style))];
 }
 
 function inventoryIds(player) {
@@ -53,8 +59,8 @@ function wornRank(list, core, worn) {
  * Wears found gear that beats what it wears and that its levels and quests allow, through the
  * game's equip. Returns the names it put on.
  */
-function listsFor(style = "melee") {
-  const lists = { ...(Shopping.gear.slots ?? {}) };
+function listsFor(style = "melee", player = null, core = null) {
+  const lists = Object.fromEntries(Object.entries(Shopping.gear.slots ?? {}).map(([slot, list]) => [slot, tasted(list, core, player)]));
   const own = Shopping.gear.styles?.[style];
   // Its own weapon, ammunition and armour (leather and d'hide, robes) instead of the melee pieces.
   for (const [slot, list] of Object.entries(own ?? {})) lists[slot] = list;
@@ -65,7 +71,7 @@ function listsFor(style = "melee") {
 
 function wearBest(player, core, { levelOf, questDone }, style = "melee") {
   const put = [];
-  for (const list of Object.values(listsFor(style))) {
+  for (const list of Object.values(listsFor(style, player, core))) {
     const held = inventoryIds(player);
     const rank = wornRank(list, core, equippedIds(player));
     for (let index = 0; index < rank; index += 1) {
@@ -93,10 +99,11 @@ function keepIds(player, core, { isFood = () => false } = {}) {
     }
   }
   const worn = equippedIds(player);
-  for (const list of gearLists()) {
+  const tools = new Set(Object.values(Shopping.gear.tools ?? {}));
+  for (const list of gearLists(player, core)) {
     const rank = wornRank(list, core, worn);
     // Tools (axes, pickaxes) are kept whatever it wears: the best one it holds does the work.
-    const isTool = Object.values(Shopping.gear.tools ?? {}).includes(list);
+    const isTool = tools.has(list);
     list.forEach((entry, index) => {
       const id = Shopping.idOf(core, entry.item);
       if (Number.isInteger(id) && (isTool || index < rank)) keep.add(id);

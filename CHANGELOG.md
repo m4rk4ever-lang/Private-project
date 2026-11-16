@@ -157,6 +157,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Een avonturier verkoopt het wapen of pantser van zijn eigen smaak (zoals een battleaxe) niet meer als handelswaar om het daarna opnieuw te kopen; dat gaf een eindeloze koop-en-verkooplus bij de GE.
 - Avonturiers vechten ook tegen monsters net onder hun eigen niveau (combat 37 tegen barbarians van level 10–17), zodat ze niet in Barbarian Village staan met "niets te doen" terwijl er genoeg vijanden rondlopen.
 - Een avonturier die onder de helft van zijn HP zakt zonder eten (in een gevecht, bij Slayer, een boss of bij thieving met de wachten achter zich aan), stopt meteen en kiest de komende tien minuten geen gevaarlijke klus meer tot hij eten heeft, in plaats van door te gaan tot hij sterft en alles verliest.
 - Een avonturier die tot vlak bij zijn bestemming komt (Barbarian Village, waar het precieze vak in een hut ligt), is er en begint, in plaats van te melden dat de weg versperd was.

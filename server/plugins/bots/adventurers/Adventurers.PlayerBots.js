@@ -1303,10 +1303,52 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * down is on along the course, as for a player. It runs the course until it is on the ground,
    * then picks its next job; without this it stood on the roof and every quest failed there.
    */
+  /** Upstairs (a house in Varrock, a bank's first floor): the nearest ladder or stairs down. */
+  function climbDown(entry, nowMs) {
+    const player = entry.player;
+    const at = player.getLocation();
+    if (nowMs < (entry.climbDownAt ?? 0)) return true;
+    let best = null;
+    let bestAway = Infinity;
+    let bestIndex = -1;
+    for (let dx = -15; dx <= 15; dx += 1) {
+      for (let dy = -15; dy <= 15; dy += 1) {
+        const x = at.getX() + dx;
+        const y = at.getY() + dy;
+        for (const object of core.MapObjects?.mapObjects?.get?.(core.MapObjects.getHash(x, y, at.getZ())) ?? []) {
+          const loc = object.getLocation();
+          if (loc.getX() !== x || loc.getY() !== y || loc.getZ() !== at.getZ()) continue;
+          const options = (core.ObjectDefinition.forId(object.getId())?.getInteractions?.() ?? []).map((o) => String(o ?? "").toLowerCase());
+          const index = options.findIndex((option) => option === "climb-down" || option === "climb down");
+          if (index < 0) continue;
+          const away = Math.max(Math.abs(dx), Math.abs(dy));
+          if (away < bestAway) { best = object; bestAway = away; bestIndex = index; }
+        }
+      }
+    }
+    if (!best) return false;
+    entry.climbDownAt = nowMs + 8_000;
+    const loc = best.getLocation();
+    player.getMovementQueue().walkToObject(best, {
+      execute: () => world.emitObjectInteraction?.({
+        player, object: best, objectId: best.getId(), clickType: bestIndex + 1,
+        location: { x: loc.getX(), y: loc.getY(), z: loc.getZ() }, handled: false,
+      }),
+    });
+    if (!entry.climbingDown) note(player, "Staat op een verdieping; gaat de ladder of trap af.", "activity");
+    entry.climbingDown = true;
+    return true;
+  }
+
   function getOffRoof(entry, nowMs) {
     const player = entry.player;
     const at = player.getLocation();
-    if (at.getZ() === 0) return false;
+    if (at.getZ() === 0) {
+      entry.climbingDown = false;
+      return false;
+    }
+    // A ladder or stairs down nearby first: that is a house or a bank, not a rooftop course.
+    if (!entry.offRoof && climbDown(entry, nowMs)) return true;
     const course = (data.agilityCourses ?? []).find((option) => option.course !== "gnome"
       && Math.max(Math.abs(at.getX() - option.x), Math.abs(at.getY() - option.y)) <= 70);
     if (!course || !registry?.byId?.get(`agility_${course.course}`)) return false;
