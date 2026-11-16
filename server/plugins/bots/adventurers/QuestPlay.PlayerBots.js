@@ -72,7 +72,25 @@ function stepDone(quest, player, step) {
 
 let routeFinder = null;
 
-function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), quests = () => [], playthroughs = data.quests }) {
+function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), quests = () => [], playthroughs = data.quests, stateOf = () => null }) {
+  /**
+   * The brain's own door opener (DoorOpening.PlayerBots.js): it clicks a door only when opening
+   * it provably shortens the way to the target (it lifts the door's clipping and routes again).
+   * True while it is busy with one.
+   */
+  function brainDoor(player, target) {
+    const state = stateOf(player);
+    if (!state) return false;
+    const { maybeOpenDoor } = require("../brain/DoorOpening.PlayerBots");
+    const here = player.getLocation();
+    const request = { x: target.x, y: target.y, z: here.getZ(), lastSegmentX: target.x, lastSegmentY: target.y };
+    try {
+      return maybeOpenDoor({ player, state, world, request, select: !state.doorAttempt }) === true || Boolean(state.doorAttempt);
+    } catch {
+      return false;
+    }
+  }
+
   const questOf = (name) => quests().find((quest) => String(quest.name).toLowerCase() === String(name).toLowerCase()) ?? null;
 
   function has(name) {
@@ -163,6 +181,8 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
         }
       }
     }
+    world.log?.("adventurer_quest_door", { name: player.getUsername?.(), at: `${here.getX()},${here.getY()},${here.getZ()}`,
+      target, door: best ? `${core.ObjectDefinition.forId(best.object.getId())?.getName?.()}@${best.x},${best.y} click ${best.clickType}` : null });
     if (!best) return false;
     player.getMovementQueue().walkToObject(best.object, {
       execute: () => world.emitObjectInteraction?.({
@@ -304,7 +324,8 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     if (nowMs < run.talkAt) return "running";
     const npc = findNpc(player, step);
     // A closed door between it and the NPC (Duke Horacio's room): open the way first.
-    if (npc && !canReach(player, npc) && openWayTo(player, { x: npc.getLocation().getX(), y: npc.getLocation().getY() }, nowMs)) {
+    const npcAt = npc ? { x: npc.getLocation().getX(), y: npc.getLocation().getY() } : null;
+    if (npc && !canReach(player, npc) && (brainDoor(player, npcAt) || openWayTo(player, npcAt, nowMs))) {
       run.talkAt = nowMs + 3_000;
       return "running";
     }
