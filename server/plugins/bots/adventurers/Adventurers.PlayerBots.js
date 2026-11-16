@@ -467,6 +467,16 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return (entry?.blockedPlaces?.get(placeKey(to)) ?? 0) > now();
   }
 
+  /** A blocked place within `radius` tiles (the other skeletons behind the same locked door). */
+  function blockedNear(entry, to, radius) {
+    for (const [key, until] of entry?.blockedPlaces ?? []) {
+      if (until <= now()) continue;
+      const [x, y, z] = key.split(",").map(Number);
+      if (z === (to.z ?? 0) && Math.max(Math.abs(x - to.x), Math.abs(y - to.y)) <= radius) return true;
+    }
+    return false;
+  }
+
   function placeName(to) {
     return String(to.name ?? to.id ?? `${to.x}, ${to.y}`).replace(/_/g, " ");
   }
@@ -577,7 +587,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       entry.phase = "training";
       entry.plan = plan;
       entry.until = nowMs + randomBetween(data.trainMinutes, random) * 60_000;
-    entry.walkedMs = 0;
+      entry.walkedMs = 0;
       note(player, `Loopt rondjes op de ${course.name}.`);
       return true;
     }
@@ -600,6 +610,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       entry.phase = "training";
       entry.plan = plan;
       entry.until = nowMs + randomBetween(data.trainMinutes, random) * 60_000;
+      entry.walkedMs = 0;
       note(player, "Gaat vogels vangen met een bird snare in de Feldip Hills.");
       return true;
     }
@@ -644,6 +655,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     entry.phase = "training";
     entry.plan = plan;
     entry.until = nowMs + randomBetween(data.trainMinutes, random) * 60_000;
+    entry.walkedMs = 0;
     note(player, `Traint ${plan.skill === "COMBAT" ? "combat" : plan.skill.toLowerCase()} (${String(entry.activity).replace(/_/g, " ")}) voor ${plan.reason}.`);
     return true;
   }
@@ -673,6 +685,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       entry.phase = "training";
       entry.buying = buy.itemId;
       entry.until = nowMs + randomBetween(data.trainMinutes, random) * 60_000;
+      entry.walkedMs = 0;
       note(player, `Traint ${plan.skill.toLowerCase()} met ${buy.materials.map(itemName).join(" en ")}.`);
       return true;
     }
@@ -726,6 +739,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     entry.plan = plan;
     entry.activity = boss.id;
     entry.until = nowMs + randomBetween(data.trainMinutes, random) * 60_000;
+    entry.walkedMs = 0;
     note(player, `Gaat ${boss.name} bevechten${entry.group ? " (samen)" : ""}.`, "boss");
     return true;
   }
@@ -1577,7 +1591,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       emit("slayer:on-task", request);
       return request.onTask;
     });
-    const spot = Slayer.nearest(targets, (place) => walkTiles(here, place, player));
+    // A spot it could not get to (behind Draynor Manor's locked door) is left for a while: the
+    // next nearest one of its task's monsters instead.
+    const open = targets.filter((place) => !blockedNear(entry, place, 15));
+    const spot = Slayer.nearest(open, (place) => walkTiles(here, place, player));
     if (!spot) {
       note(player, `Kan zijn Slayer-taak (${String(task.name).toLowerCase()}) hier nog niet doen; laat Slayer even liggen.`, "activity");
       entry.slayerPausedUntil = now() + 60 * 60_000;
