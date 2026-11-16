@@ -17,7 +17,7 @@ const COMBAT_SKILLS = new Set(["ATTACK", "STRENGTH", "DEFENCE", "HITPOINTS"]);
 const SAVE_FOR = Object.freeze([{ item: "AMULET_OF_GLORY_4_", why: "een amulet of glory" }]);
 
 /** Candidate goals: { kind: "level", skill, level, why } | { kind: "coins", amount, why, item }. */
-function candidates(view, { gear, levelOf, owns, worn, priceOf, questDone, idOf, coins }) {
+function candidates(view, { gear, levelOf, owns, worn, priceOf, questDone, idOf, coins, styles = null }) {
   const out = [];
   const consider = (list, label) => {
     // The first piece better than what it has; lists run best first.
@@ -34,7 +34,12 @@ function candidates(view, { gear, levelOf, owns, worn, priceOf, questDone, idOf,
     }
   };
   for (const list of Object.values(gear.slots ?? {})) consider(list);
-  for (const style of Object.values(gear.styles ?? {})) for (const list of Object.values(style)) consider(list);
+  // Ranged or Magic gear only for a style it can train now (a bow and arrows, runes): a Ranged
+  // goal without them would leave it fighting with a sword "for" Ranged.
+  for (const [name, style] of Object.entries(gear.styles ?? {})) {
+    if (styles && !styles.includes(name)) continue;
+    for (const list of Object.values(style)) consider(list);
+  }
   for (const list of [gear.tools?.axe, gear.tools?.pickaxe].filter(Boolean)) consider(list);
   if (levelOf("FIREMAKING") < 50) out.push({ kind: "level", skill: "FIREMAKING", level: 50, why: "Wintertodt" });
   for (const save of SAVE_FOR) {

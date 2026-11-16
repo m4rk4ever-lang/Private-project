@@ -115,6 +115,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Een avonturier krijgt alleen nog een Ranged- of Magic-doel als hij die stijl kan trainen (boog en pijlen, of runes); eerder trainde hij melee 'voor' een Ranged-doel.
 - Avonturiers wachten bij de Grand Exchange tot hun bod binnen is en nemen de spullen mee; eerder liepen ze meteen weg en bleef het gekochte (zoals eten) in de GE liggen. In het logboek staat wat ze ophalen.
 - Na een herstart van de server staan avonturiers weer waar ze waren, in plaats van allemaal in Lumbridge.
 - In een Codespace wordt de gameserverpoort nu ook publiek als de server pas later opstart; je hoeft hem niet meer zelf op Public te zetten.

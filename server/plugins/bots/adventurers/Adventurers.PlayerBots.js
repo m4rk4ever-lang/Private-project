@@ -275,6 +275,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const worn = new Set((player.getEquipment().getItems() ?? []).map((item) => item?.getId?.()).filter((id) => id > 0));
     return {
       gear: Shopping.gear,
+      styles: fightingStyles(player),
       levelOf: (skill) => levelOf(player, skill),
       owns: (id) => Number.isInteger(id) && (player.getInventory().contains(id) || banked(player, id) > 0),
       worn: (id) => worn.has(id),
@@ -297,6 +298,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       note(player, `Doel gehaald: ${Goals.describe(goal)}.`, "skill");
       goal = null;
     }
+    // A Ranged or Magic goal it can no longer work at (no bow and arrows, no runes): a new one.
+    const styleOf = { RANGED: "ranged", MAGIC: "magic" };
+    if (goal?.kind === "level" && styleOf[goal.skill] && !helpers.styles.includes(styleOf[goal.skill])) goal = null;
     if (!goal) {
       goal = Goals.pickGoal(helpers, random);
       if (goal) note(player, `Nieuw doel: ${Goals.describe(goal)}.`, "activity");
