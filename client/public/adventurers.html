@@ -58,6 +58,10 @@
   .ranking th:first-child, .ranking td:first-child { text-align: left; width: 40px; }
   .ranking tr:last-child td { border-bottom: 0; }
   .medal { color: var(--gold); font-weight: 700; }
+  .ranking p.muted { color: var(--muted); padding: 4px 16px 12px; margin: 0; font-size: 13px; }
+  .ranking .achievements th, .ranking .achievements td { text-align: left; }
+  .ranking .achievements th:last-child, .ranking .achievements td:last-child { text-align: right; }
+  .ranking .achievements td:first-child { width: auto; white-space: nowrap; }
   .rank { font-size: 13px; color: var(--gold); font-weight: 700; }
   img.ic { width: 18px; height: 18px; object-fit: contain; vertical-align: -4px; margin-right: 3px; image-rendering: pixelated; }
   .skill img.ic { display: block; margin: 0 auto 1px; width: 20px; height: 20px; }
@@ -179,7 +183,17 @@
   function ranking(list) {
     const rows = list.map((a) => `<tr><td class="${a.rank <= 3 ? "medal" : ""}">#${a.rank}</td><td>${esc(a.name)}${a.leader ? " ★" : ""}</td><td>${esc(a.clan ?? "-")}</td><td>${a.score}</td>
       <td>${a.total ?? "-"}</td><td>${a.combat ?? "-"}</td><td>${a.questPoints}</td><td>${gp(a.wealth?.total)}</td></tr>`).join("");
-    return `${clanRace(list)}<h2>Ranglijst</h2><table><tr><th></th><th>Naam</th><th>Clan</th><th>Score</th><th>Totaal</th><th>Combat</th><th>QP</th><th>Bezit</th></tr>${rows}</table>`;
+    return `<h2>Ranglijst</h2><table><tr><th></th><th>Naam</th><th>Clan</th><th>Score</th><th>Totaal</th><th>Combat</th><th>QP</th><th>Bezit</th></tr>${rows}</table>`;
+  }
+  /** The race in firsts: per clan how many it won, then every first, newest first. */
+  function achievementsView(data) {
+    if (!data) return "<h2>Achievements</h2><p class=\"muted\">Deze server houdt nog geen achievements bij.</p>";
+    const clans = Object.entries(data.perClan ?? {}).sort((a, b) => b[1] - a[1]);
+    const table = clans.length === 0 ? "<p class=\"muted\">Nog niemand heeft iets als eerste gehaald.</p>"
+      : `<table><tr><th></th><th>Clan</th><th>Als eerste</th></tr>${clans.map(([clan, count], i) => `<tr><td class="${i === 0 ? "medal" : ""}">#${i + 1}</td><td>${emblem(emblemOf(clan))}<b>${esc(clan)}</b></td><td>${count}</td></tr>`).join("")}</table>`;
+    const rows = (data.won ?? []).map((win) => `<tr><td>${esc(win.label)}</td><td>${win.name ? esc(win.name) : "<i>de hele clan</i>"}</td><td>${win.clan ? `${emblem(emblemOf(win.clan), 14)}${esc(win.clan)}` : "-"}</td><td>${esc(new Date(win.at).toLocaleString("nl-NL"))}</td></tr>`).join("");
+    return `<h2>Clanrace in eerste keren</h2>${table}<h2>Wie was als eerste?</h2><table class="achievements"><tr><th>Achievement</th><th>Wie</th><th>Clan</th><th>Wanneer</th></tr>${rows}</table>`
+      + `<p class="muted">Nog ${data.open ?? 0} achievements te winnen.</p>`;
   }
   function logList(adventurer, tab) {
     if (tab === "bank") return bankList(adventurer);
@@ -269,7 +283,7 @@
   // The buttons: per clan, one ranking, or one clan alone ("clan:<name>").
   function viewButtons(list) {
     const clans = byClan(list).map((clan) => clan.name);
-    const buttons = [["clan", "Per clan"], ["rank", "Ranglijst"], ...clans.map((name) => [`clan:${name}`, name])];
+    const buttons = [["clan", "Per clan"], ["rank", "Ranglijst"], ["achievements", "Achievements"], ...clans.map((name) => [`clan:${name}`, name])];
     return buttons.map(([key, label]) => `<button data-view="${esc(key)}" class="${key === view ? "on" : ""}">${key.startsWith("clan:") ? emblem(emblemOf(label), 16) : ""}${esc(label)}</button>`).join("");
   }
 
@@ -278,7 +292,13 @@
     document.getElementById("view").innerHTML = viewButtons(last.adventurers);
     const only = view.startsWith("clan:") ? view.slice(5) : null;
     const list = only ? last.adventurers.filter((a) => (a.clan ?? "Zonder clan") === only) : last.adventurers;
-    document.getElementById("ranking").innerHTML = ranking(list);
+    if (view === "achievements") {
+      document.getElementById("ranking").innerHTML = achievementsView(last.achievements);
+      document.getElementById("cards").innerHTML = "";
+      return;
+    }
+    // Per clan: the clan race and each clan's cards; the ranking: every adventurer in one list.
+    document.getElementById("ranking").innerHTML = view === "rank" ? ranking(list) : clanRace(list);
     document.getElementById("cards").innerHTML = view === "rank"
       ? list.map(card).join("")
       : byClan(list).map((clan, index) => `<h2 class="clan-head">${emblem(emblemOf(clan.name), 30)}${only ? "" : `#${index + 1} `}${esc(clan.name)}<small>score ${clan.score} · totaal ${clan.total}</small></h2>${clan.members.map(card).join("")}`).join("");

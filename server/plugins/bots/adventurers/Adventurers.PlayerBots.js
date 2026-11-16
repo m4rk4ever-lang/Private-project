@@ -2179,9 +2179,12 @@ function startAdventurers({ api, runtime, world, registry }) {
   api.onGroundItemPickup((event) => manager.acquire(event.player, event.groundItemId));
   // Every open page asks every 5 s; one report serves them all for 2 s.
   let cached = null;
+  const achievements = require("./Achievements.PlayerBots").createAchievements({ generation: data.generation ?? 1 });
   api.registerContentEndpoint("adventurers", () => {
     if (!cached || Date.now() - cached.updated > REPORT_CACHE_MS) {
-      cached = { updated: Date.now(), adventurers: manager.report() };
+      const adventurers = manager.report();
+      achievements.update(adventurers);
+      cached = { updated: Date.now(), adventurers, achievements: achievements.view() };
     }
     return cached;
   });
@@ -2225,7 +2228,11 @@ function startAdventurers({ api, runtime, world, registry }) {
     const { Task } = api.core;
     api.getTaskManager().submit(new (class extends Task {
       constructor() { super(CHECK_TICKS, "adventurers", false); }
-      execute() { manager.tick(); }
+      execute() {
+        manager.tick();
+        // The firsts are looked at every half minute too, not only when the page is open.
+        if ((this.looks = (this.looks ?? 0) + 1) % 5 === 0) achievements.update(manager.report());
+      }
     })());
     // Dialogue is clicked through a tick or so at a time, as a player reads it.
     api.getTaskManager().submit(new (class extends Task {

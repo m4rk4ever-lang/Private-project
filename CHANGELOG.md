@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Avonturierspagina: nieuw tabblad Achievements met de clanrace in eerste keren: wie als eerste een level, totaal level, combat level, quest, questpunten, bezit of boss haalt, en welke clan als eerste samen een mijlpaal bereikt (met datum en tijd).
 - Avonturiers sparen ook voor een staff (Magic) en kopen bij een stijl passende uitrusting: leather en d'hide voor Ranged, wizard- en mystic robes voor Magic, en betere bogen en staves. Ze trekken die aan als ze zo vechten.
 - Met `::volg` zie je in de chat wat de gevolgde avonturier doet: klussen, lopen, kopen, verkopen en banken, met de items en de prijs.
 - Beheerders kunnen een avonturier met `::advtrain <naam>:<modus>` (bv. `slayer`) meteen een trainingsklus laten beginnen.
@@ -91,6 +92,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Avonturierspagina: 'Per clan' toont de clanrace met de kaarten per clan, 'Ranglijst' de ranglijst van alle avonturiers.
 - Een avonturier zonder boog en pijlen of runes spaart daar nu voor (met houthakken, mijnen, vissen, stelen of vechten) en koopt ze zodra het geld er is; daarna kan hij Ranged of Magic trainen.
 - Na het verkopen of banken van een volle tas gaat een avonturier verder met dezelfde klus voor de tijd die nog over was, in plaats van na één tas iets anders te kiezen.
 - Een avonturier maakt zijn klus af als hij een level haalt dat een betere plek opent (zoals Thieving 5), in plaats van meteen naar de andere kant van de kaart te lopen; de betere plek kiest hij bij zijn volgende klus.
