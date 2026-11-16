@@ -104,7 +104,36 @@ function shoppingList(player, core, { levelOf, questDone, modes = [], exchange =
       return;
     }
   };
-  for (const list of Object.values(gear.slots)) consider(list);
+  // Melee gear as one set of one metal, as a player buys it: the best tier (rune, adamant, ...)
+  // whose missing pieces it can pay for all together, not a rune helm beside a mithril body.
+  const priceOf = (itemId) => {
+    if (!exchange) return shopsSelling(itemId).length > 0 ? estimatedPrice(core, itemId) : 0;
+    const guide = Number(core.ItemDefinition?.forId?.(itemId)?.getGrandExchangeValue?.() ?? 0);
+    return guide > 0 ? Math.ceil(guide * 1.05) : 0;
+  };
+  const slots = Object.values(gear.slots).map((list) => {
+    const usable = list.filter((entry) => allowed(entry, { levelOf, questDone }))
+      .map((entry) => ({ ...entry, itemId: idOf(core, entry.item), tier: tierOf(entry.item) }))
+      .filter((entry) => Number.isInteger(entry.itemId));
+    const ownedAt = usable.findIndex((entry) => ownsAnywhere(player, entry.itemId));
+    return ownedAt < 0 ? usable : usable.slice(0, ownedAt);
+  });
+  const tiers = [...new Set(slots.flatMap((list) => list.map((entry) => entry.tier)))].sort((a, b) => tierRank(a) - tierRank(b));
+  let setChosen = false;
+  for (const tier of tiers) {
+    // Per slot the piece of this tier, or the best below it it does not have yet.
+    const pieces = slots.map((list) => list.find((entry) => tierRank(entry.tier) >= tierRank(tier))).filter(Boolean)
+      .map((entry) => ({ itemId: entry.itemId, name: entry.item, price: priceOf(entry.itemId) }))
+      .filter((piece) => piece.price > 0);
+    const cost = pieces.reduce((sum, piece) => sum + piece.price, 0);
+    if (pieces.length > 0 && cost <= budget) {
+      wants.push(...pieces);
+      setChosen = true;
+      break;
+    }
+  }
+  // No whole set within reach: a single cheaper piece now and then (a weapon first, see below).
+  if (!setChosen) for (const list of Object.values(gear.slots)) consider(list);
   if (modes.includes("woodcutting")) {
     consider(gear.tools.axe);
     consider(gear.tools.knife ?? []);
@@ -125,6 +154,16 @@ function shoppingList(player, core, { levelOf, questDone, modes = [], exchange =
     bought.push(want);
   }
   return bought;
+}
+
+/** The metal of a gear piece ("RUNE_PLATEBODY" -> "RUNE") and its rank, best first. */
+const TIER_ORDER = ["DRAGON", "RUNE", "ADAMANT", "MITHRIL", "BLACK", "STEEL", "IRON", "BRONZE"];
+function tierOf(name) {
+  return String(name).split("_")[0];
+}
+function tierRank(tier) {
+  const index = TIER_ORDER.indexOf(tier);
+  return index < 0 ? TIER_ORDER.length : index;
 }
 
 /** The tools an activity needs that the adventurer lacks (fishing nets, rods, harpoons). */
