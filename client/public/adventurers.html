@@ -192,9 +192,7 @@
     const table = clans.length === 0 ? "<p class=\"muted\">Nog niemand heeft iets als eerste gehaald.</p>"
       : `<table><tr><th></th><th>Clan</th><th>Als eerste</th></tr>${clans.map(([clan, count], i) => `<tr><td class="${i === 0 ? "medal" : ""}">#${i + 1}</td><td>${emblem(emblemOf(clan))}<b>${esc(clan)}</b></td><td>${count}</td></tr>`).join("")}</table>`;
     const rows = (data.won ?? []).map((win) => `<tr><td>${esc(win.label)}</td><td>${win.name ? esc(win.name) : "<i>de hele clan</i>"}</td><td>${win.clan ? `${emblem(emblemOf(win.clan), 14)}${esc(win.clan)}` : "-"}</td><td>${esc(new Date(win.at).toLocaleString("nl-NL"))}</td></tr>`).join("");
-    const feedback = (last?.questFeedback ?? []).slice(0, 15).map((f) => `<tr><td>${esc(f.bot)}</td><td>${esc(f.quest)}</td><td>${esc(f.text ?? f.npc ?? "-")}</td><td>${esc(f.reason ?? "")}</td></tr>`).join("");
-    const stuck = feedback ? `<h2>Waar quests vastlopen</h2><table class="achievements"><tr><th>Wie</th><th>Quest</th><th>Stap</th><th>Waarom</th></tr>${feedback}</table>` : "";
-    return `<h2>Clanrace in eerste keren</h2>${table}${stuck}<h2>Wie was als eerste?</h2><table class="achievements"><tr><th>Achievement</th><th>Wie</th><th>Clan</th><th>Wanneer</th></tr>${rows}</table>`
+    return `<h2>Clanrace in eerste keren</h2>${table}<h2>Wie was als eerste?</h2><table class="achievements"><tr><th>Achievement</th><th>Wie</th><th>Clan</th><th>Wanneer</th></tr>${rows}</table>`
       + `<p class="muted">Nog ${data.open ?? 0} achievements te winnen.</p>`;
   }
   function logList(adventurer, tab) {

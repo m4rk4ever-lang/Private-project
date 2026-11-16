@@ -120,7 +120,7 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     const own = playthroughs[name] && playthroughs[name].verified !== false ? playthroughs[name] : null;
     const helperKey = !own && helper?.available?.() ? helper.keyOf(name) : null;
     if (!playthroughs[name] && !helperKey) return false;
-    entry.questRun = { name, step: 0, tries: 0, stepSince: nowMs, talkAt: 0, helperKey };
+    entry.questRun = { name, step: 0, tries: 0, stepSince: nowMs, startedAt: nowMs, talkAt: 0, helperKey };
     return true;
   }
 
@@ -128,6 +128,9 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
   function helperStep(run, player, nowMs) {
     const step = helper.current(player, run.helperKey);
     if (step && step.id !== run.helperStepId) {
+      // The timeline for the feedback log: each step, when it came and what it said.
+      (run.history ??= []).push({ at: new Date(nowMs).toISOString(), step: step.id, kind: step.kind, text: step.text ?? null, target: step.at ?? null });
+      if (run.history.length > 20) run.history.shift();
       run.helperStepId = step.id;
       run.tries = 0;
       run.reason = null;
@@ -361,8 +364,14 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
       step = helperStep(run, player, nowMs);
       // A helper step that does not move on in 6 minutes is stuck (logged, put aside).
       if (nowMs - run.stepSince > HELPER_STEP_MS || run.tries >= MAX_TRIES) return "failed";
-      // The helper's first answer comes back a moment later.
-      if (!step) return "running";
+      // The helper's first answer comes back a moment later; one that never comes is a reason.
+      if (!step) {
+        const said = helper.status?.(player);
+        if (said?.error) run.reason = `quest helper error: ${said.error}`;
+        else if (nowMs - run.stepSince > 60_000) run.reason = "quest helper gave no step for a minute";
+        if (nowMs - run.stepSince > 2 * 60_000) return "failed";
+        return "running";
+      }
       if (step.kind === "complete") return "done";
       // The helper cannot answer here (missing cache data): stop now, with the reason logged.
       if (step.kind === "unavailable") {
@@ -513,8 +522,14 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     const quest = questOf(run.name);
     const step = run.helperKey ? run.lastHelperStep : playthroughs[run.name]?.steps?.[run.step];
     const at = player.getLocation();
+    const helperState = run.helperKey ? helper?.status?.(player) : null;
+    const startedAt = run.history?.[0]?.at ?? null;
     return {
       quest: run.name, guide: run.helperKey ? "quest-helper" : "playthrough", stage: Number(quest?.getStage?.(player) ?? -1),
+      // How long the run and its last step took, the helper's own state, and every step it saw.
+      runSeconds: run.startedAt ? Math.round((Date.now() - run.startedAt) / 1000) : null,
+      stepSeconds: Math.round((Date.now() - run.stepSince) / 1000),
+      helper: helperState, startedAt, history: run.history ?? [], lastReasonAt: run.reasonAt ?? null,
       step: run.step, kind: step?.kind ?? (step?.npc ? "npc" : null), text: step?.text ?? null, npc: step?.npc ?? null,
       ids: step?.ids ?? null, target: step?.at ?? null, here: [at.getX(), at.getY(), at.getZ()],
       reason: run.reason ?? (Date.now() - run.stepSince > STEP_MS ? "step took too long" : "too many tries"), tries: run.tries,

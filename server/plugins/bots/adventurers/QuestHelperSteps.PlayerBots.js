@@ -114,8 +114,12 @@ function toBotStep(core, step) {
 function createHelperSteps({ core, now = () => Date.now(), log = () => {} }) {
   const asked = new WeakMap();
 
+  // The bridge did not answer (not running, restarting): no new helper quests for a while.
+  let downUntil = 0;
+
   function available() {
-    return runtime() !== null && typeof process.env.QUEST_HELPER_TOKEN === "string" && process.env.QUEST_HELPER_TOKEN.length >= 24;
+    return runtime() !== null && typeof process.env.QUEST_HELPER_TOKEN === "string" && process.env.QUEST_HELPER_TOKEN.length >= 24
+      && now() >= downUntil;
   }
 
   /** The helper's key for a quest name, or null when it does not know the quest. */
@@ -159,6 +163,8 @@ function createHelperSteps({ core, now = () => Date.now(), log = () => {} }) {
         state.error = null;
       }, (error) => {
         state.error = String(error?.message ?? error);
+        // No bridge to talk to: the helper is off for ten minutes (quests are not started).
+        if (/fetch failed|ECONNREFUSED|engine hasn't been started|not configured/i.test(state.error)) downUntil = now() + 10 * 60_000;
         log("adventurer_quest_helper_error", { player: player.getUsername?.(), questKey, error: state.error });
       }).finally(() => {
         state.busy = false;
@@ -167,7 +173,14 @@ function createHelperSteps({ core, now = () => Date.now(), log = () => {} }) {
     return state.step;
   }
 
-  return { available, keyOf, current };
+  /** What the helper last said for this player: its error, how long ago it answered. */
+  function status(player) {
+    const state = asked.get(player);
+    if (!state) return null;
+    return { error: state.error, answeredMsAgo: state.at ? now() - state.at : null, busy: state.busy, step: state.step?.id ?? null };
+  }
+
+  return { available, keyOf, current, status };
 }
 
 module.exports = { createHelperSteps, toBotStep, sceneOf };
