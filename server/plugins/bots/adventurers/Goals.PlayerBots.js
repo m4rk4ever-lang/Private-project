@@ -27,7 +27,7 @@ function candidates(view, { gear, levelOf, owns, worn, priceOf, questDone, idOf,
     if (!next) return;
     const name = next.item.toLowerCase().replace(/_/g, " ");
     if (levelOf(next.skill) < (next.level ?? 1)) {
-      out.push({ kind: "level", skill: next.skill, level: next.level, why: `${label ?? ""}${name}` });
+      out.push({ kind: "level", skill: next.skill, level: next.level, item: next.item, why: `${label ?? ""}${name}` });
     } else {
       const price = priceOf(idOf(next.item));
       if (price > 0) out.push({ kind: "coins", amount: price, item: next.item, why: name });

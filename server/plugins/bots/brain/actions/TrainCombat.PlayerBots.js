@@ -72,6 +72,8 @@ const MOVEMENT_STALL_TICKS = 3;
 // A combat target that lands no hit this long is being blocked (fence/gate):
 // fall back to a walked brain route so doors get opened.
 const ATTACK_STUCK_MS = 6000;
+// Walking at monsters behind a fence this long without getting in: they are given up on.
+const APPROACH_GIVE_UP_MS = 30_000;
 const RANGED_AMMO_AMOUNT = 1000;
 const MAGIC_RUNE_AMOUNT = 3000;
 // Shared across action instances: two trainers must not claim the same idle NPC.
@@ -678,15 +680,28 @@ function createTrainCombatAction(spec, world) {
           if (CombatFactory.canAttackPermission(player, npc, false, CombatFactory.getMethod(player)) !==
               CanAttackResponse.CAN_ATTACK) continue;
           if (!reachable(player, npc)) {
-            // Behind a fence/gate: walk at it so the dispatch opens the way in.
+            // Behind a fence/gate: walk at it so the dispatch opens the way in; but not for ever
+            // (Draynor Manor's fence has no gate on that side): after 30 s the ones behind it are
+            // skipped, and with none it can reach the site is left.
+            bot.approachSince ??= nowMs;
+            if (nowMs - bot.approachSince > APPROACH_GIVE_UP_MS) {
+              bot.avoided.set(npc, nowMs + SITE_STALL_MS);
+              continue;
+            }
             bot.approachNpc ??= npc;
             continue;
           }
+          bot.approachSince = null;
           bot.target = npc;
           bot.targetHp = npc.getHitpoints();
           bot.claimedAt = nowMs;
           CLAIMS.set(npc, { player, until: nowMs + RESERVATION_MS });
           break;
+        }
+        if (!bot.target && !bot.approachNpc && bot.approachSince && nowMs - bot.approachSince > APPROACH_GIVE_UP_MS) {
+          bot.approachSince = null;
+          leaveSite(player, bot, nowMs, SITE_AVOID_MS);
+          return "running";
         }
         if (bot.target || bot.approachNpc || !bot.settled) {
           bot.emptySince = null;

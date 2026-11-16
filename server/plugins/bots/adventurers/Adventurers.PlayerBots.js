@@ -539,6 +539,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       if (goal.kind === "coins" && goal.item) entry.buyGoal = goal.item;
       goal = null;
     }
+    // A goal for a piece it already has (on it or in its bank), level or coins: done with.
+    if (goal?.item) {
+      const id = Shopping.idOf(core, goal.item);
+      if (Number.isInteger(id) && Shopping.ownsAnywhere(player, id)) {
+        goalMetric(entry, goal, "dropped: has it");
+        goal = null;
+      }
+    }
     // A goal for a piece it has by now (bought, found, or something better on): no longer a goal.
     if (goal?.item && !Goals.candidates(null, helpers).some((other) => other.item === goal.item || other.why === goal.why)) {
       if (goal.kind === "coins") {

@@ -154,6 +154,8 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Een avonturier houdt geen doel meer voor een stuk uitrusting dat hij al heeft (zoals "30 Attack voor adamant scimitar" terwijl hij die al draagt).
+- Een avonturier die monsters achter een hek probeert te bereiken (Draynor Manor), geeft het na een halve minuut op en zoekt een andere plek, in plaats van eindeloos langs het hek te lopen.
 - Avonturiers tellen genoteerde materialen (van de GE) mee: die gaan via de bank terug als gewone items, in plaats van dat ze er nog eentje bij kopen; en ze kopen geen partij van één of twee meer, maar minstens tien of niets.
 - Voor houthakken, mijnen of vissen maken avonturiers eerst hun tas leeg op de bank als die vol spullen voor andere klussen zit.
 - Een na een herstart hervatte klus duurt minstens tien minuten, in plaats van na twee vissen alweer iets anders te kiezen.
