@@ -84,6 +84,26 @@ function showQuests(player, state) {
   player.sendMessage(diaries.length > 0 ? `Diary-taken gedaan: ${diaries.join(", ")}.` : "Nog geen diary-taken gedaan.");
 }
 
+/**
+ * What the bot does, in the watcher's chat as it happens: its journal's new lines (jobs, walks,
+ * buying, selling and banking with the items and prices, level-ups, quests).
+ */
+function showJournal(player, state) {
+  const journal = state.target.getAttribute?.("adventurers:journal");
+  if (!Array.isArray(journal)) return;
+  const newest = journal.reduce((at, line) => Math.max(at, Number(line?.at) || 0), 0);
+  // Starting to follow: only the last line, not the whole history.
+  if (state.journalAt === undefined) {
+    state.journalAt = newest;
+    const last = journal.find((line) => Number(line?.at) === newest);
+    if (last?.text) player.sendMessage(`[${nameOf(state.target)}] ${last.text}`);
+    return;
+  }
+  const fresh = journal.filter((line) => Number(line?.at) > state.journalAt).sort((a, b) => a.at - b.at);
+  for (const line of fresh.slice(-5)) player.sendMessage(`[${nameOf(state.target)}] ${line.text}`);
+  if (newest > state.journalAt) state.journalAt = newest;
+}
+
 /** The bot's inventory and stats in the watcher's tabs, when they changed. */
 function mirror(player, state) {
   const target = state.target;
@@ -112,6 +132,7 @@ function mirror(player, state) {
   if (now - (state.questsAt ?? 0) > 3000) {
     state.questsAt = now;
     showQuests(player, state);
+    showJournal(player, state);
   }
 }
 

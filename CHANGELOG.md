@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Met `::volg` zie je in de chat wat de gevolgde avonturier doet: klussen, lopen, kopen, verkopen en banken, met de items en de prijs.
 - Beheerders kunnen een avonturier met `::advtrain <naam>:<modus>` (bv. `slayer`) meteen een trainingsklus laten beginnen.
 - Avonturiers vangen vogels (Hunter, vanaf level 1): ze kopen bird snares (in een winkel of op de GE), lopen naar de crimson swifts in de Feldip Hills, zetten snares, controleren een snare met een vogel erin en rapen een omgevallen snare weer op. Vangst, XP en buit (botten, vogelvlees, veren) komen van de Hunter-plugin zelf.
 - Gereedschap dat geen winkel in de buurt verkoopt (zoals een bird snare), kopen avonturiers op de GE.

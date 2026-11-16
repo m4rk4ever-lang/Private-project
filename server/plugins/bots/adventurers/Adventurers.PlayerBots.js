@@ -1116,7 +1116,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         if (!Trade.buyAtExchange(buyer, core, emit, itemId, amount)) return;
         emit("ge:collect", { player: buyer });
         acquire(buyer, itemId);
-        note(buyer, `Koopt ${amount > 1 ? `${amount} x ` : ""}${label} op de GE.`, "activity");
+        note(buyer, `Koopt ${amount > 1 ? `${amount} x ` : ""}${label} op de GE (~${Math.ceil(guide * 1.05 * amount).toLocaleString("nl-NL")} gp).`, "activity");
         if (plan?.mode) entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, remainingMs: 0, savedAt: now() };
       },
     });
