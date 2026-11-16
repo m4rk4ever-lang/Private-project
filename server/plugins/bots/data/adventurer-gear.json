@@ -1,5 +1,5 @@
 {
-  "_comment": "What adventurers buy from shops as they level (adventurers/Shopping.PlayerBots.js), best first per slot. level: the skill level to use it (attack for weapons, defence for armour, the tool's skill for tools); quests: quests needed to buy or wear it (OSRS Wiki). They only buy what a shop in the world really stocks, at its price, with their own coins, and only when it costs at most budgetShare of what they have. styles: the weapon (and ammunition) lists for fighting with a bow or a staff, worn instead of the melee weapon when it fights that way. food: what they buy to eat when they carry none, from a shop that stocks it. tools.hammer and tools.knife: to smith their bars and fletch their logs (Smith/Fletch.PlayerBots.js).",
+  "_comment": "What adventurers buy from shops as they level (adventurers/Shopping.PlayerBots.js), best first per slot. level: the skill level to use it (attack for weapons, defence for armour, the tool's skill for tools); quests: quests needed to buy or wear it (OSRS Wiki). They only buy what a shop in the world really stocks, at its price, with their own coins, and only when it costs at most budgetShare of what they have. styles: the weapon, ammunition and armour lists for fighting with a bow or a staff (leather and d'hide, wizard and mystic robes), worn instead of the melee pieces when it fights that way. food: what they buy to eat when they carry none, from a shop that stocks it. tools.hammer and tools.knife: to smith their bars and fletch their logs (Smith/Fletch.PlayerBots.js).",
   "budgetShare": 0.6,
   "slots": {
     "weapon": [
@@ -59,12 +59,41 @@
         { "item": "STEEL_ARROW", "skill": "RANGED", "level": 5 },
         { "item": "IRON_ARROW", "skill": "RANGED", "level": 1 },
         { "item": "BRONZE_ARROW", "skill": "RANGED", "level": 1 }
+      ],
+      "body": [
+        { "item": "GREEN_DHIDE_BODY", "skill": "RANGED", "level": 40 },
+        { "item": "STUDDED_BODY", "skill": "RANGED", "level": 20 },
+        { "item": "LEATHER_BODY", "skill": "DEFENCE", "level": 10 }
+      ],
+      "legs": [
+        { "item": "GREEN_DHIDE_CHAPS", "skill": "RANGED", "level": 40 },
+        { "item": "STUDDED_CHAPS", "skill": "RANGED", "level": 20 },
+        { "item": "LEATHER_CHAPS", "skill": "RANGED", "level": 1 }
+      ],
+      "hands": [
+        { "item": "GREEN_DHIDE_VAMBRACES", "skill": "RANGED", "level": 40 },
+        { "item": "LEATHER_VAMBRACES", "skill": "RANGED", "level": 1 }
+      ],
+      "head": [
+        { "item": "COIF", "skill": "RANGED", "level": 20 }
       ]
     },
     "magic": {
       "weapon": [
         { "item": "STAFF_OF_FIRE", "skill": "MAGIC", "level": 1 },
         { "item": "STAFF_OF_AIR", "skill": "MAGIC", "level": 1 }
+      ],
+      "body": [
+        { "item": "MYSTIC_ROBE_TOP", "skill": "MAGIC", "level": 40 },
+        { "item": "BLUE_WIZARD_ROBE", "skill": "MAGIC", "level": 1 }
+      ],
+      "legs": [
+        { "item": "MYSTIC_ROBE_BOTTOM", "skill": "MAGIC", "level": 40 },
+        { "item": "BLUE_SKIRT", "skill": "MAGIC", "level": 1 }
+      ],
+      "head": [
+        { "item": "MYSTIC_HAT", "skill": "MAGIC", "level": 40 },
+        { "item": "BLUE_WIZARD_HAT", "skill": "MAGIC", "level": 1 }
       ]
     }
   },

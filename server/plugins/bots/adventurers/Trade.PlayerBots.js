@@ -54,8 +54,8 @@ function wornRank(list, core, worn) {
 function listsFor(style = "melee") {
   const lists = { ...(Shopping.gear.slots ?? {}) };
   const own = Shopping.gear.styles?.[style];
-  if (own?.weapon) lists.weapon = own.weapon;
-  if (own?.ammo) lists.ammo = own.ammo;
+  // Its own weapon, ammunition and armour (leather and d'hide, robes) instead of the melee pieces.
+  for (const [slot, list] of Object.entries(own ?? {})) lists[slot] = list;
   // A bow takes both hands: no shield with it.
   if (style === "ranged") delete lists.shield;
   return lists;

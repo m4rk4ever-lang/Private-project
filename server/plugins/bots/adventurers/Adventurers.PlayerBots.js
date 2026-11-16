@@ -326,8 +326,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   /** The things a way of fighting uses: bows and arrows, or runes and staves. */
   function styleSupplyIds(style) {
     const gear = Shopping.gear.styles ?? {};
-    const names = style === "ranged" ? [...(gear.ranged?.weapon ?? []), ...(gear.ranged?.ammo ?? [])].map((entry) => entry.item)
-      : style === "magic" ? [...MAGIC_RUNES, ...(gear.magic?.weapon ?? []).map((entry) => entry.item)] : [];
+    const all = (name) => Object.values(gear[name] ?? {}).flat().map((entry) => entry.item);
+    const names = style === "ranged" ? all("ranged") : style === "magic" ? [...MAGIC_RUNES, ...all("magic")] : [];
     return names.map((name) => Shopping.idOf(core, name)).filter(Number.isInteger);
   }
 
@@ -1721,6 +1721,22 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const bids = [];
     for (const want of list) {
       if (bid(player, core, emit, want.itemId, 1)) bids.push(want.name.toLowerCase().replace(/_/g, " "));
+    }
+    // For each style it fights with: a better bow or staff and its own armour (d'hide, robes),
+    // one piece a visit, when it costs at most the gear share of what it has.
+    const rules = { levelOf: (skill) => levelOf(player, skill), questDone: questDone(player) };
+    for (const style of fightingStyles(player)) {
+      for (const [slot, entries] of Object.entries(Shopping.gear.styles?.[style] ?? {})) {
+        if (slot === "ammo") continue;
+        const ownedAt = entries.findIndex((entry) => Shopping.owns(player, Shopping.idOf(core, entry.item)));
+        const better = (ownedAt < 0 ? entries : entries.slice(0, ownedAt)).filter((entry) => Shopping.allowed(entry, rules));
+        const want = better[0];
+        const id = want ? Shopping.idOf(core, want.item) : null;
+        if (!Number.isInteger(id)) continue;
+        const price = Shopping.estimatedPrice(core, id, 1);
+        if (price <= 0 || price > Shopping.coinsOf(player) * (Shopping.gear.budgetShare ?? 0.5)) continue;
+        if (bid(player, core, emit, id, 1)) bids.push(want.item.toLowerCase().replace(/_/g, " "));
+      }
     }
     if (bids.length > 0) note(player, `Biedt op de GE op: ${bids.join(", ")}.`, "activity");
   }

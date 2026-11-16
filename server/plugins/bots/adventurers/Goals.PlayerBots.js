@@ -71,8 +71,10 @@ function styleKit(name, style, { levelOf, owns, priceOf, idOf }) {
     return amount > 0 ? { amount, item: bowCost > 0 ? bow.item : ammo.item, why: `een boog en pijlen (Ranged)` } : null;
   }
   if (name === "magic") {
-    const amount = 200 * priceOf(idOf("AIR_RUNE")) + 100 * priceOf(idOf("MIND_RUNE"));
-    return amount > 0 ? { amount, item: "MIND_RUNE", why: "runes om te toveren (Magic)" } : null;
+    // A staff of air saves the air runes; its price on top when it has no staff yet.
+    const staff = (style.weapon ?? []).some((entry) => owns(idOf(entry.item))) ? 0 : priceOf(idOf("STAFF_OF_AIR"));
+    const amount = staff + 200 * priceOf(idOf("AIR_RUNE")) + 100 * priceOf(idOf("MIND_RUNE"));
+    return amount > 0 ? { amount, item: staff > 0 ? "STAFF_OF_AIR" : "MIND_RUNE", why: staff > 0 ? "een staff en runes (Magic)" : "runes om te toveren (Magic)" } : null;
   }
   return null;
 }
