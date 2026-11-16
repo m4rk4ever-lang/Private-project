@@ -1553,6 +1553,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const before = entry.wearables;
     entry.wearables = now;
     if (!before) return;
+    // In a quest what it gets is the quest's (a reward, dyed goblin mail): not unexplained.
+    if (entry.phase === "quest") return;
     const known = acquired.get(entry.name) ?? new Set();
     // The same piece with a charge less (games necklace(7) -> (6)) is not a new one.
     const base = (id) => String(itemName(id)).toLowerCase().replace(/\s*\(\d+\)$/, "");
@@ -2738,7 +2740,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function trade(entry) {
     const { player } = entry;
     const rules = { levelOf: (skill) => levelOf(player, skill), questDone: questDone(player) };
-    for (const name of Trade.wearBest(player, core, rules)) {
+    // Woodcutting or mining wields the axe or pickaxe: the weapon is not put back on mid-job
+    // (that swapped battleaxe and rune axe back and forth all stretch).
+    const toolInHand = entry.phase === "training" && ["woodcutting", "mining"].includes(entry.plan?.mode);
+    for (const name of Trade.wearBest(player, core, rules, "melee", { skipWeapon: toolInHand })) {
       note(player, `Draagt nu ${name.toLowerCase().replace(/_/g, " ")}.`, "activity");
     }
     fillEmptySlots(player);

@@ -161,6 +161,8 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Een avonturier die houthakt of mijnt, wisselt niet meer telkens tussen zijn wapen en zijn bijl of pickaxe; zijn wapen gaat pas weer aan na de klus.
+- Wat een avonturier tijdens een quest krijgt of maakt (een beloning, geverfde goblin mail), staat niet meer als "onverklaard" in zijn logboek.
 - Een avonturier die geen gevecht aan het doen is (een quest, een boodschap, vissen), laat zich niet meer vastzetten door iets dat hem onderweg aanvalt, zoals de bomen bij Draynor Manor: hij slaat niet terug maar loopt door. Auto-retaliate staat alleen aan bij combat, Slayer en bosses.
 - Wat een avonturier uit zijn graf terughaalt, en een sieraad dat een lading verbruikt (games necklace (7) → (6)), staat niet meer als "onverklaard" in zijn logboek.
 - Avonturiers kunnen queststappen doen als "gebruik X op Y" (zoals de blauwe verf op goblin mail bij Goblin Diplomacy), kiezen in een gesprek niet eindeloos dezelfde vraag die terugleidt naar hetzelfde menu (Sanfew bij Druidic Ritual), vinden een quest-NPC ook als ze hem in een andere vorm zien (Veos bij X Marks the Spot), pakken een item dat op een tafel ligt (garlic bij Fishing Contest) en komen van een schip of verdieping af via een loopplank, ladder of uitgang als er geen bekende trap is (The Corsair Curse).

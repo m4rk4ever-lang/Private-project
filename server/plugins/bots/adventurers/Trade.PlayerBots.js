@@ -69,9 +69,11 @@ function listsFor(style = "melee", player = null, core = null) {
   return lists;
 }
 
-function wearBest(player, core, { levelOf, questDone }, style = "melee") {
+function wearBest(player, core, { levelOf, questDone }, style = "melee", { skipWeapon = false } = {}) {
   const put = [];
-  for (const list of Object.values(listsFor(style, player, core))) {
+  for (const [slot, list] of Object.entries(listsFor(style, player, core))) {
+    // A job with its tool in hand (an axe, a pickaxe): the weapon stays off until it is done.
+    if (skipWeapon && slot === "weapon") continue;
     const held = inventoryIds(player);
     const rank = wornRank(list, core, equippedIds(player));
     for (let index = 0; index < rank; index += 1) {
