@@ -24,15 +24,19 @@ function shopsSelling(itemId) {
     const spawns = Array.isArray(spawnsFile) ? spawnsFile : spawnsFile.spawns ?? [];
     const keeperAt = new Map();
     for (const spawn of spawns) {
-      if (Number.isInteger(spawn.id) && !keeperAt.has(spawn.id)) keeperAt.set(spawn.id, { x: spawn.x, y: spawn.y, z: spawn.level ?? 0 });
+      // Every place the keeper stands: one "Shop keeper" runs the general store of Lumbridge,
+      // Varrock and more, and the nearest of them is the one to walk to.
+      if (!Number.isInteger(spawn.id)) continue;
+      if (!keeperAt.has(spawn.id)) keeperAt.set(spawn.id, []);
+      keeperAt.get(spawn.id).push({ x: spawn.x, y: spawn.y, z: spawn.level ?? 0 });
     }
     for (const shop of Array.isArray(shopsFile) ? shopsFile : shopsFile.shops ?? []) {
       const npcIds = (shop.npcInteractions ?? []).flatMap((link) => link.npcIds ?? []);
-      const keeper = npcIds.map((id) => keeperAt.get(id)).find(Boolean);
-      if (!keeper) continue;
+      const keepers = npcIds.flatMap((id) => keeperAt.get(id) ?? []);
+      if (keepers.length === 0) continue;
       for (const stock of shop.originalStock ?? []) {
         if (!shopIndex.has(stock.id)) shopIndex.set(stock.id, []);
-        shopIndex.get(stock.id).push({ shopId: shop.id, name: shop.name, keeper });
+        for (const keeper of keepers) shopIndex.get(stock.id).push({ shopId: shop.id, name: shop.name, keeper });
       }
     }
   }
