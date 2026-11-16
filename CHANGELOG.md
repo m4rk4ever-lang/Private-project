@@ -88,6 +88,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Avonturiers kopen gereedschap pas als ze de skill gaan doen (een bijl als ze gaan hakken, een pickaxe als ze gaan mijnen), en niet meer bij elke ronde een hamer en een mes terwijl ze nog vechten zonder wapen.
 - Agressieve monsters vallen avonturiers aan zoals spelers, met dezelfde regels (combatlevel, bereik, tolerantie na 10 minuten in een gebied). Avonturiers hebben auto-retaliate aan en vechten dus terug. Gewone wereldbots worden met rust gelaten.
 - Na een (her)start beginnen de avonturiers gespreid (binnen anderhalve minuut), in plaats van alle vijftien tegelijk naar dezelfde bank te lopen.
 - Avonturiers trainen alleen nog samen bij een gedeeld doel (samen een boss, samen Wintertodt). Het doelloze "samen" op één plek trainen is weg: groepen van vijf die door Falador Park renden, of "samen met" iemand die allang een quest deed.

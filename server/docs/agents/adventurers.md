@@ -96,6 +96,15 @@ first; routes are followed to their end (no to-and-fro near a goal) and a stalle
 walk to the route planner; quests climb stairs themselves; clan emblems and a per-clan view on the
 page; a full save reset on starting over (`api.resetPersistentAttributes`).
 
+Next morning: honest bots tire (run energy) and rest; the stretch starts on arrival; groups only
+for a shared goal (boss, Wintertodt); a staggered start; monsters attack adventurers under player
+rules (`NpcAggression`: honest bots, NPCs from the world) and they retaliate; a death leaves a grave
+they walk back to (`gravestones:reclaim`: Loot and Pay at the grave); coin pouches opened; teleport
+tablets and charged jewellery bought on the GE, Ardougne/Trollheim Teleport after their quests;
+Hunter (bird snares at the Feldip crimson swifts, `HuntBirds` action); tools no nearby shop sells
+bought on the GE; quests open the door between bot and NPC with the brain's `DoorOpening` (and
+passages: caves, gaps) and click stairs and ladders like a player.
+
 Debugging: plugin logs are off by default (`LOG_DISABLED_TYPES=plugin`); start with
 `LOG_DISABLED_TYPES=npc.face,Combat` to see `bot_errand_failed` (why: stuck, no-closer, too-long)
 and `bot_errand_replan`. `::botinfo <name>` shows a bot's walk target and current segment (a

@@ -135,6 +135,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     walkTo: (entry, to, options) => walkTo(entry, to, options),
     note: (player, text, type) => note(player, text, type),
     quests: () => QuestRuntime.getRegisteredQuests(),
+    stateOf: (player) => runtimeEntry(player)?.state ?? null,
   });
 
   // Quests only get added (at boot); the map is rebuilt when their number changes.
@@ -593,6 +594,15 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       // Its axe, pickaxe, net or rod at the bank: fetched first, in person.
       const bankedTools = toolsInBank(player, plan.mode, id);
       if (bankedTools.length > 0) return fetchTools(entry, plan, bankedTools);
+      // No axe or pickaxe at all: the best one its level allows, bought now (a shop, or the GE).
+      if (plan.mode === "woodcutting" || plan.mode === "mining") {
+        const toolIds = toolsFor(plan.mode).any.map((name) => Shopping.idOf(core, name)).filter(Number.isInteger);
+        if (!toolIds.some((toolId) => Shopping.ownsAnywhere(player, toolId))) {
+          const want = Shopping.shoppingList(player, core, { levelOf: (skill) => levelOf(player, skill), questDone: questDone(player), modes: [plan.mode] })
+            .find((entry) => toolIds.includes(entry.itemId));
+          if (want) return shopFor(entry, want.itemId, want.name);
+        }
+      }
       // Fishing needs its net, rod or harpoon: bought first (a walk to the shop), or no fishing now.
       const tool = Shopping.missingTools(player, core, id)[0];
       if (tool) return shopFor(entry, tool.itemId, tool.name, tool.name === "FEATHER" || tool.name === "FISHING_BAIT" ? 200 : 1);
@@ -1699,7 +1709,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function upgrade(entry) {
     const { player } = entry;
     const list = Shopping.shoppingList(player, core, {
-      levelOf: (skill) => levelOf(player, skill), questDone: questDone(player), modes: ["woodcutting", "mining"],
+      // Gear only: the tools for a skill are bought when it takes that skill up (startTraining),
+      // not a hammer and a knife on every round while it fights bare-handed.
+      levelOf: (skill) => levelOf(player, skill), questDone: questDone(player), modes: [],
     });
     // One purchase per walk; the next is looked at when it is back.
     return list.some((want) => shopFor(entry, want.itemId, want.name));
