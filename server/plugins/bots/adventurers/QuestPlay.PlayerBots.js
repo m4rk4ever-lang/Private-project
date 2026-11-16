@@ -72,7 +72,8 @@ function stepDone(quest, player, step) {
 
 let routeFinder = null;
 
-function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), quests = () => [], playthroughs = data.quests, stateOf = () => null }) {
+function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), quests = () => [], playthroughs = data.quests, stateOf = () => null,
+  helper = null, acquire = () => false, buyNamed = () => false }) {
   /**
    * The brain's own door opener (DoorOpening.PlayerBots.js): it clicks a door only when opening
    * it provably shortens the way to the target (it lifts the door's clipping and routes again).
@@ -94,19 +95,77 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
   const questOf = (name) => quests().find((quest) => String(quest.name).toLowerCase() === String(name).toLowerCase()) ?? null;
 
   function has(name) {
-    return Boolean(playthroughs[name]) && Boolean(questOf(name));
+    if (!questOf(name)) return false;
+    return Boolean(playthroughs[name]) || Boolean(helper?.available?.() && helper.keyOf(name));
   }
 
-  /** A playthrough a bot has finished in game: only those are offered (verified: false is not). */
+  /**
+   * Offered to the planner: a hand-written playthrough a bot has finished in game (verified: false
+   * is not), or a quest on the Quest Helper list (quest-playthroughs.json helperQuests) while the
+   * helper runs.
+   */
   function ready(name) {
-    return has(name) && playthroughs[name].verified !== false;
+    if (!has(name)) return false;
+    if (playthroughs[name]) return playthroughs[name].verified !== false;
+    return (data.helperQuests ?? []).includes(name);
   }
 
   /** Starts `name` for this adventurer. */
   function start(entry, name, nowMs = now()) {
-    const playthrough = playthroughs[name];
-    if (!playthrough || !questOf(name)) return false;
-    entry.questRun = { name, step: 0, tries: 0, stepSince: nowMs, talkAt: 0 };
+    if (!questOf(name)) return false;
+    // A hand-written playthrough first; else the Quest Helper guides it step by step.
+    const helperKey = !playthroughs[name] && helper?.available?.() ? helper.keyOf(name) : null;
+    if (!playthroughs[name] && !helperKey) return false;
+    entry.questRun = { name, step: 0, tries: 0, stepSince: nowMs, talkAt: 0, helperKey };
+    return true;
+  }
+
+  /** The Quest Helper's current step for a guided run, its tries counted afresh on a new step. */
+  function helperStep(run, player, nowMs) {
+    const step = helper.current(player, run.helperKey);
+    if (step && step.id !== run.helperStepId) {
+      run.helperStepId = step.id;
+      run.tries = 0;
+      run.stepSince = nowMs;
+      run.step += step.id === "complete" ? 0 : 1;
+      run.lastHelperStep = step;
+    }
+    return step;
+  }
+
+  /** Take the step's item from the ground at its tile (Take, as a player clicks it). */
+  function takeItem(player, step, nowMs) {
+    const manager = core.ItemOnGroundManager;
+    if (!manager) return false;
+    const [x, y, z] = step.at;
+    const at = new core.Location(x, y, z);
+    for (const id of step.ids) {
+      const ground = manager.getOperableGroundItem?.(player, id, at, manager.takeOperation?.(id) ?? 3);
+      if (!ground) continue;
+      const Loot = require("../brain/Loot.PlayerBots");
+      Loot.takeStep(core, player, ground, { state: stateOf(player), nowMs });
+      return true;
+    }
+    return false;
+  }
+
+  /** Click an object of the step at its tile: the option the step's text names, else its first. */
+  function useObject(player, step, nowMs) {
+    const [x, y, z] = step.at;
+    const objects = core.MapObjects?.mapObjects?.get?.(core.MapObjects.getHash(x, y, z)) ?? [];
+    const object = objects.find((o) => step.ids.includes(o.getId())) ?? objects[0];
+    if (!object) return false;
+    const options = (core.ObjectDefinition.forId(object.getId())?.getInteractions?.() ?? []).map((o) => String(o ?? ""));
+    const text = String(step.text ?? "").toLowerCase();
+    let index = options.findIndex((o) => o && text.includes(o.toLowerCase().replace(/-/g, " ").split(" ")[0]));
+    if (index < 0) index = options.findIndex((o) => o && o.toLowerCase() !== "examine");
+    if (index < 0) return false;
+    player.getMovementQueue().walkToObject(object, {
+      execute: () => world.emitObjectInteraction?.({
+        player, object, objectId: object.getId(), clickType: index + 1,
+        location: { x, y, z }, handled: false,
+      }),
+    });
     return true;
   }
 
@@ -255,7 +314,7 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
   function talkTick(entry) {
     const run = entry.questRun;
     if (!run) return false;
-    const step = playthroughs[run.name]?.steps?.[run.step];
+    const step = run.helperKey ? run.lastHelperStep : playthroughs[run.name]?.steps?.[run.step];
     return answer(entry.player, step);
   }
 
@@ -272,14 +331,48 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     if (!quest) return "failed";
     if (quest.isComplete(player)) return "done";
     if (busy || player.getDialogueManager?.()?.isActive?.() || core.MultiChatboxPrompt?.getPending?.(player)) return "running";
-    while (run.step < steps.length && stepDone(quest, player, steps[run.step])) {
-      run.step += 1;
-      run.tries = 0;
-      run.stepSince = nowMs;
+    let step;
+    if (run.helperKey) {
+      step = helperStep(run, player, nowMs);
+      if (nowMs - run.stepSince > STEP_MS || run.tries >= MAX_TRIES) return "failed";
+      // The helper's first answer comes back a moment later.
+      if (!step) return "running";
+      if (step.kind === "complete") return "done";
+      // What the step needs that it does not have: fetched or bought first (an errand).
+      // (Not what this very step picks up: the egg in the chicken coop is taken, not bought.)
+      const needs = step.kind === "item" ? step.needs.filter((need) => !need.ids.some((id) => step.ids.includes(id))) : step.needs;
+      if (needs.length > 0 && nowMs >= (run.needsAt ?? 0)) {
+        run.needsAt = nowMs + 60_000;
+        const need = needs[0];
+        if (acquire(entry, need.ids, need.amount, need.name)) return "running";
+        run.tries += 1;
+        note?.(player, `Mist ${need.name} voor ${run.name} en kan het nu niet krijgen.`, "quest");
+      }
+      // "Purchase a bucket from the General Store": a purchase, not a chat (an errand to the shop).
+      const purchase = /^(?:purchase|buy)\s+(?:an?\s+|some\s+|\d+\s*x?\s*)?(.+?)\s+(?:from|at)\b/i.exec(step.text ?? "");
+      if (purchase && nowMs >= (run.buyAt ?? 0)) {
+        run.buyAt = nowMs + 30_000;
+        if (buyNamed(entry, purchase[1])) return "running";
+        run.tries += 1;
+      }
+      // A step with no place (read a book, use an item): nothing it can do yet, it asks again.
+      if (!step.at) {
+        if (nowMs >= (run.waitAt ?? 0)) {
+          run.waitAt = nowMs + 15_000;
+          run.tries += 1;
+        }
+        return "running";
+      }
+    } else {
+      while (run.step < steps.length && stepDone(quest, player, steps[run.step])) {
+        run.step += 1;
+        run.tries = 0;
+        run.stepSince = nowMs;
+      }
+      step = steps[run.step];
+      if (!step) return quest.isComplete(player) ? "done" : "failed";
+      if (nowMs - run.stepSince > STEP_MS || run.tries >= MAX_TRIES) return "failed";
     }
-    const step = steps[run.step];
-    if (!step) return quest.isComplete(player) ? "done" : "failed";
-    if (nowMs - run.stepSince > STEP_MS || run.tries >= MAX_TRIES) return "failed";
     const at = player.getLocation();
     const here = { x: at.getX(), y: at.getY(), z: at.getZ() };
     const target = spot(step);
@@ -341,6 +434,13 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     }
     run.walking = false;
     if (nowMs < run.talkAt) return "running";
+    if (run.helperKey && step.kind !== "npc") {
+      run.tries += 1;
+      run.talkAt = nowMs + 8_000;
+      if (step.kind === "object") useObject(player, step, nowMs);
+      if (step.kind === "item") takeItem(player, step, nowMs);
+      return "running";
+    }
     const npc = findNpc(player, step);
     // A closed door between it and the NPC (Duke Horacio's room): open the way first.
     const npcAt = npc ? { x: npc.getLocation().getX(), y: npc.getLocation().getY() } : null;

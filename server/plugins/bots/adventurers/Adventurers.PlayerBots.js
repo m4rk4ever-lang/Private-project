@@ -39,6 +39,7 @@ const TASK_SAVE_MS = 3 * 60_000;
 const Tasks = require("./Tasks.PlayerBots");
 const TravelHubs = require("../behaviours/navigation/TravelHubs.PlayerBots");
 const Sites = require("./Sites.PlayerBots");
+const { createHelperSteps } = require("./QuestHelperSteps.PlayerBots");
 const { createQuestPlay } = require("./QuestPlay.PlayerBots");
 /** A quest a bot could not finish is put aside this long. */
 const QUEST_ASIDE_MS = 60 * 60_000;
@@ -145,7 +146,42 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     note: (player, text, type) => note(player, text, type),
     quests: () => QuestRuntime.getRegisteredQuests(),
     stateOf: (player) => runtimeEntry(player)?.state ?? null,
+    // Quests without a hand-written playthrough: the real Quest Helper's steps (when it runs).
+    helper: createHelperSteps({ core, now, log: (event, details) => world.log?.(event, details) }),
+    // An item a quest step needs: from its bank, else a shop or the Grand Exchange.
+    acquire: (entry, ids, amount, name) => acquireForQuest(entry, ids, amount, name),
+    // "Purchase a bucket from ...": the item by its name, bought where it is sold.
+    buyNamed: (entry, name) => {
+      const id = Shopping.idOf(core, String(name).toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/S$/, ""))
+        ?? Shopping.idOf(core, String(name).toUpperCase().replace(/[^A-Z0-9]+/g, "_"));
+      if (!Number.isInteger(id)) return false;
+      if (entry.player.getInventory().getAmount(id) > 0) return false;
+      return acquireForQuest(entry, [id], 1, String(name));
+    },
   });
+
+  /** Fetches or buys an item a quest step needs; true when an errand for it started. */
+  function acquireForQuest(entry, ids, amount = 1, name = null) {
+    const player = entry.player;
+    const banked_ = ids.find((id) => banked(player, id) > 0);
+    if (banked_ !== undefined) {
+      const bank = nearestBank(player, entry);
+      if (!bank) return false;
+      return walkTo(entry, { ...bank, name: bank.name ?? bank.id }, {
+        reason: "quest", replan: false,
+        arrive: (banker) => {
+          const got = withdraw(banker, banked_, amount);
+          if (got > 0) note(banker, `Haalt ${got} x ${itemName(banked_)} van de bank voor zijn quest.`, "quest");
+        },
+      });
+    }
+    const label = name ?? itemName(ids[0]);
+    for (const id of ids) {
+      if (Shopping.shopsSelling(id).length > 0 && shopFor(entry, id, label, amount, { replan: false })) return true;
+      if (buyOnExchange(entry, id, label, amount, { replan: false })) return true;
+    }
+    return false;
+  }
 
   // Quests only get added (at boot); the map is rebuilt when their number changes.
   let questIndex = { size: -1, map: new Map() };
@@ -719,7 +755,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
     // To the exchange for the materials; it waits there for the bid to fill.
     return walkTo(entry, { ...data.grandExchange, name: "de Grand Exchange" }, {
-      reason: "buy_materials",
+      reason: replan ? "buy_materials" : "quest", replan,
       arrive: (buyer) => {
         emit("ge:collect", { player: buyer });
         const missing = buy.materials.filter((id) => buyer.getInventory().getAmount(id) <= 0);
@@ -1183,7 +1219,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * it set off. Only shops within data.shopRadius tiles: a longer walk is not worth one item.
    */
   /** To the Grand Exchange for one thing it needs (a tool no shop near sells), then the job again. */
-  function buyOnExchange(entry, itemId, name, amount = 1) {
+  function buyOnExchange(entry, itemId, name, amount = 1, { replan = true } = {}) {
     const { player } = entry;
     const guide = Number(core.ItemDefinition?.forId?.(itemId)?.getGrandExchangeValue?.() ?? 0);
     if (!(guide > 0) || Shopping.coinsOf(player) < Math.ceil(guide * 1.05) * amount + 50) return false;
@@ -1203,15 +1239,15 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     });
   }
 
-  function shopFor(entry, itemId, name, amount = 1) {
+  function shopFor(entry, itemId, name, amount = 1, { replan = true } = {}) {
     const { player } = entry;
     const at = player.getLocation();
     const shop = Shopping.nearestShop(itemId, { x: at.getX(), y: at.getY() });
     // No shop for it near: the Grand Exchange has it, as players buy a bird snare or a harpoon.
-    if (!shop || shop.distance > (data.shopRadius ?? 80)) return buyOnExchange(entry, itemId, name, amount);
+    if (!shop || shop.distance > (data.shopRadius ?? 80)) return buyOnExchange(entry, itemId, name, amount, { replan });
     const label = name.toLowerCase().replace(/_/g, " ");
     return walkTo(entry, { x: shop.keeper.x, y: shop.keeper.y, z: shop.keeper.z, name: shop.name }, {
-      reason: "shop",
+      reason: replan ? "shop" : "quest", replan,
       arrive: (buyer) => {
         const coinsBefore = Shopping.coinsOf(buyer);
         const got = Shopping.buy(buyer, core, shop.shopId, itemId, amount);
