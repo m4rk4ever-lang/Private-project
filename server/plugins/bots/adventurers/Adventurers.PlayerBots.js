@@ -2574,7 +2574,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // next nearest one of its task's monsters instead.
     // Underground spots (the Stronghold of Security's minotaurs, y 9000+) need a dungeon route it
     // does not know yet; a task with only those waits (task #18: dungeon routes).
-    const open = targets.filter((place) => !blockedNear(entry, place, 15) && place.y < UNDERGROUND_Y);
+    // On the mainland it can walk (x 2400+, y 2400-4300): not Kourend (by boat), nor the maps of
+    // places one only gets into another way (1893,5189: under the ground, like the Mole Hole).
+    const onMainland = (place) => place.x >= 2400 && place.y >= 2400 && place.y <= 4300;
+    const open = targets.filter((place) => !blockedNear(entry, place, 15) && place.y < UNDERGROUND_Y && onMainland(place));
     const spot = Slayer.nearest(open, (place) => walkTiles(here, place, player));
     if (!spot) {
       note(player, `Kan zijn Slayer-taak (${String(task.name).toLowerCase()}) hier nog niet doen; laat Slayer even liggen.`, "activity");
