@@ -729,30 +729,16 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       return true;
     }
     const firemakers = members.filter((member) => snapshot(member.player).levels.FIREMAKING >= 50);
-    if (firemakers.length >= 2) {
+    if (firemakers.length >= 2 && TravelHubs.onFoot(WINTERTODT)) {
       for (const member of firemakers) {
         member.group = true;
         startTraining(member, { kind: "train", mode: "wintertodt", skill: "FIREMAKING", reason: "Wintertodt samen" }, nowMs);
       }
       return true;
     }
-    const view = snapshot(entry.player);
-    const plan = chooseNext(view, questList(), { available: view.available, questChance: 0, random });
-    if (plan.kind !== "train") return false;
-    entry.group = true;
-    if (!startTraining(entry, { ...plan, reason: `${plan.reason}, samen` }, nowMs)) return false;
-    const home = stateOf(entry.player)?.home;
-    for (const member of companions) {
-      member.group = true;
-      if (!startTraining(member, { ...plan, reason: `samen met ${entry.name}` }, nowMs) || !home || member.phase !== "training") continue;
-      // The same spot as the one who asked: its job's home moves there, and it walks over.
-      startActivity(member.player, member.activity, { home, nowMs });
-      if (!walkTo(member, { ...home, name: `${entry.name}` }, { reason: "group", replan: false, say: false })) {
-        const run = runtimeEntry(member.player);
-        if (run?.state) run.state.home = home;
-      }
-    }
-    return true;
+    // Training side by side without a shared goal was aimless (five bots running about Falador
+    // park, "together" with one that had gone questing): groups are for a boss or Wintertodt.
+    return false;
   }
 
   function next(entry, nowMs) {
