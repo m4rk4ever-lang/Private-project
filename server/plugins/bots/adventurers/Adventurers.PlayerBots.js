@@ -1185,6 +1185,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     entry.questRun = null;
     if (result === "done") {
       note(entry.player, `Quest voltooid: ${run.name}!`, "quest");
+      const startedAt = run.history?.[0]?.at ? Date.parse(run.history[0].at) : null;
+      metric({ kind: "quest_done", bot: entry.name, quest: run.name, guide: run.helperKey ? "quest-helper" : "playthrough",
+        minutes: startedAt ? Math.round((Date.now() - startedAt) / 6000) / 10 : null, steps: run.history?.length ?? null,
+        dialogue: run.dialogue ?? [] });
       entry.jobEnd = "quest done";
     } else {
       // Stuck: put aside (longer each time it fails) and written down why, so the cause can be

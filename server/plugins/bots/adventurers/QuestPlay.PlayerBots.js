@@ -209,10 +209,19 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
   }
 
   /** One dialogue click: continue, or pick an option. True while a dialogue is open. */
-  function answer(player, step) {
+  /** Each choice it makes in a dialogue, kept on the run for the feedback log (the last 20). */
+  function remember(run, options, index) {
+    if (!run) return;
+    (run.dialogue ??= []).push({ at: new Date().toISOString(), step: run.step ?? null,
+      options: options.map((option) => String(option)), chose: String(options[index] ?? "") });
+    if (run.dialogue.length > 20) run.dialogue.shift();
+  }
+
+  function answer(player, step, run = null) {
     const prompt = core.MultiChatboxPrompt?.getPending?.(player);
     if (prompt) {
       const index = chooseOption(prompt.options, step?.prefer);
+      remember(run, prompt.options, index);
       core.MultiChatboxPrompt.handleInterfaceActionClick({ player, buttonId: core.MultiChatboxPrompt.OPTIONS_WIDGET_ID,
         groupId: core.MultiChatboxPrompt.OPTIONS_WIDGET_ID >>> 16, slot: index + 1, action: index + 1 });
       return true;
@@ -221,7 +230,10 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     if (!manager?.isActive?.()) return false;
     const current = manager.getCurrent?.();
     if (current instanceof core.OptionDialogue) {
-      manager.handleOption(chooseOption(current.getOptions(), step?.prefer) + 1);
+      const options = current.getOptions();
+      const index = chooseOption(options, step?.prefer);
+      remember(run, options, index);
+      manager.handleOption(index + 1);
       return true;
     }
     // An automatic action (a cutscene beat, Aubury pouring tea) moves on by itself.
@@ -368,7 +380,7 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     const run = entry.questRun;
     if (!run) return false;
     const step = run.helperKey ? run.lastHelperStep : playthroughs[run.name]?.steps?.[run.step];
-    return answer(entry.player, step);
+    return answer(entry.player, step, run);
   }
 
   /**
@@ -585,7 +597,7 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
       // How long the run and its last step took, the helper's own state, and every step it saw.
       runSeconds: run.startedAt ? Math.round((Date.now() - run.startedAt) / 1000) : null,
       stepSeconds: Math.round((Date.now() - run.stepSince) / 1000),
-      helper: helperState, startedAt, history: run.history ?? [], lastReasonAt: run.reasonAt ?? null,
+      helper: helperState, startedAt, history: run.history ?? [], dialogue: run.dialogue ?? [], lastReasonAt: run.reasonAt ?? null,
       step: run.step, kind: step?.kind ?? (step?.npc ? "npc" : null), text: step?.text ?? null, npc: step?.npc ?? null,
       ids: step?.ids ?? null, target: step?.at ?? null, here: [at.getX(), at.getY(), at.getZ()],
       reason: run.reason ?? (Date.now() - run.stepSince > STEP_MS ? "step took too long" : "too many tries"), tries: run.tries,

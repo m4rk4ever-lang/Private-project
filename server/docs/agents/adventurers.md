@@ -203,6 +203,8 @@ De metrics-regels, op `kind`:
 - `walk_blocked`: een route die niet lukte, van waar naar waar, met `tilesLeft`, coins en de momentopname hieronder.
 - `stuck`: een klus zonder voortgang: modus, reden, plek, `home`, en de momentopname: `activity`, `action`, `describe`
   (de eigen uitleg van de actie, zoals site/target/approach bij combat), `npcsNear` (naam (level): aantal), `hp`, `freeSlots`.
+- `quest_done`: een voltooide quest: duur, aantal stappen en de gesprekskeuzes (`dialogue`: opties en wat hij koos).
+  Mislukte quests staan in `adventurer-quest-feedback.jsonl`, nu ook met `dialogue`.
 - `death`: een avonturier stierf: fase, klus of quest, plek, door wie (`killer`) en of hij eten had (`hadFood`).
   In `bot`-regels telt `fledLowHp` hoe vaak hij stopte omdat zijn HP laag was zonder eten.
 - `skills` (elke 5 min): per skill hoeveel avonturiers XP kregen, hoeveel XP en via welke activiteit, en welke skills niemand trainde (`untouched`).

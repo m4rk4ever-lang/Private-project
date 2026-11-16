@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- De questlogboeken van de avonturiers bevatten nu ook de gesprekskeuzes (welke opties er waren en welke de avonturier koos), bij vastlopen én bij een voltooide quest.
 - Het ontwikkelaarslogboek zegt bij vastlopen, stilstaan en versperde routes ook waarom: wat de bot-actie op dat moment deed, welke monsters er in de buurt waren (met level), HP, vrije slots en hoe ver het doel nog was.
 - Het ontwikkelaarslogboek legt elke dood van een avonturier vast: bij welke klus of quest, waar, door wie en of hij eten bij zich had.
 - Bij het afsluiten van de server worden de logboeken van de avonturiers nog één keer gedeeld op de branch `bot-logs`, zodat de laatste minuten van quests en avonturiers niet verloren gaan.
