@@ -61,6 +61,9 @@ const BID_WAIT_MS = 3 * 60_000;
 const STUCK_MS = 2 * 60_000;
 /** The longest one Slayer task may take before it gives up on it for now. */
 const SLAYER_TASK_MAX_MS = 90 * 60_000;
+/** Teleport tablets an adventurer may buy for long walks, and the coins it keeps before it does. */
+const TABLETS = ["VARROCK_TELEPORT", "LUMBRIDGE_TELEPORT", "FALADOR_TELEPORT", "CAMELOT_TELEPORT"];
+const TABLET_BUDGET = 5000;
 /** Arrows, or casts' worth of runes, it wants before it fights that way. */
 const SUPPLY_MIN = 50;
 const MAGIC_RUNES = ["AIR_RUNE", "MIND_RUNE", "WATER_RUNE", "EARTH_RUNE", "FIRE_RUNE", "CHAOS_RUNE"];
@@ -1420,6 +1423,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (styles.includes("magic")) {
       top("AIR_RUNE", 600);
       top("MIND_RUNE", 300);
+    }
+    // With coins to spare, a few teleport tablets for long walks (the errands break one when it
+    // saves a long walk): the cheapest way round for an adventurer without the Magic for the spell.
+    if (Shopping.coinsOf(player) >= TABLET_BUDGET) {
+      const held = TABLETS.reduce((sum, name) => sum + (Number.isInteger(Shopping.idOf(core, name))
+        ? player.getInventory().getAmount(Shopping.idOf(core, name)) + banked(player, Shopping.idOf(core, name)) : 0), 0);
+      if (held < 2) top(TABLETS[Math.floor(random() * TABLETS.length)], 3);
     }
     if (bids.length > 0) note(player, `Koopt voorraad op de GE: ${bids.join(", ")}.`, "activity");
   }
