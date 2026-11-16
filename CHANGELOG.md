@@ -162,6 +162,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers met agility onder 10 lopen niet meer vanaf de andere kant van de wereld naar de Gnome Stronghold-baan (die tocht lukt nog niet); ze kiezen dan iets anders.
 - Avonturiers zoeken de monsters van hun Slayer-taak alleen nog op het vasteland waar ze lopend kunnen komen, niet op ondergrondse kaarten of in Kourend waar ze niet heen konden.
 - Een avonturier die ergens gestrand is (het eiland van Misthalin Mystery na een mislukte quest, binnen het hek van Draynor Manor, onder de grond) en drie keer vanaf dezelfde plek nergens heen kan, gebruikt de home teleport naar Lumbridge, zoals een speler die vastzit.
 - Avonturiers rapen quest-items op zoals een speler erop klikt (de echte route, om meubels heen), ook tijdens een quest; Freds shears achter zijn tafel bleven anders liggen.

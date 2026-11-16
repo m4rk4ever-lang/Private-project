@@ -987,6 +987,12 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         && (option.quests ?? []).every((name) => questsByName().get(normalize(name))?.isComplete(player) === true)
         && !blockedPlace(entry, option));
       if (!course || !registry?.byId?.get(`agility_${course.course}`)) return false;
+      // The Gnome Stronghold from the far side of the world: the long walk there does not work
+      // yet (its errand fails), so only from within reach; else another job for now.
+      if (course.course === "gnome") {
+        const at = player.getLocation();
+        if (Math.max(Math.abs(at.getX() - course.x), Math.abs(at.getY() - course.y)) > 250) return false;
+      }
       startActivity(player, `agility_${course.course}`, { home: course, nowMs });
       walkTo(entry, course, { reason: "agility", replan: false });
       entry.activity = `agility_${course.course}`;
