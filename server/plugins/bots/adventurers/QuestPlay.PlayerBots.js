@@ -194,14 +194,25 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
       }
     }
     if (!object) return false;
-    const options = (core.ObjectDefinition.forId(object.getId())?.getInteractions?.() ?? []).map((o) => String(o ?? ""));
+    // The object as this player sees it (a multi-loc: the Restless Ghost's coffin shut or open by
+    // the quest's state), as the client shows it; the cache's base definition has other options.
+    const definition = (() => {
+      try {
+        return core.ObjectDefinition.forPlayer?.(object.getId(), player) ?? core.ObjectDefinition.forId(object.getId());
+      } catch {
+        return core.ObjectDefinition.forId(object.getId());
+      }
+    })();
+    const options = (definition?.getInteractions?.() ?? []).map((o) => String(o ?? ""));
     const text = String(step.text ?? "").toLowerCase();
     let index = options.findIndex((o) => o && text.includes(o.toLowerCase().replace(/-/g, " ").split(" ")[0]));
+    // Shut (a coffin, a chest): opened first, then the step's own option on the next try.
+    if (index < 0) index = options.findIndex((o) => o && o.toLowerCase() === "open");
     if (index < 0) index = options.findIndex((o) => o && o.toLowerCase() !== "examine");
     if (index < 0) return false;
     player.getMovementQueue().walkToObject(object, {
       execute: () => world.emitObjectInteraction?.({
-        player, object, objectId: object.getId(), clickType: index + 1,
+        player, object, definition, objectId: object.getId(), clickType: index + 1,
         location: { x: object.getLocation().getX(), y: object.getLocation().getY(), z: object.getLocation().getZ() }, handled: false,
       }),
     });
@@ -294,7 +305,8 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
         for (const object of core.MapObjects?.mapObjects?.get?.(core.MapObjects.getHash(x, y, here.getZ())) ?? []) {
           const loc = object.getLocation();
           if (loc.getX() !== x || loc.getY() !== y) continue;
-          const options = (core.ObjectDefinition.forId(object.getId())?.getInteractions?.() ?? []).map((o) => String(o ?? "").toLowerCase());
+          const seen = (() => { try { return core.ObjectDefinition.forPlayer?.(object.getId(), player) ?? core.ObjectDefinition.forId(object.getId()); } catch { return core.ObjectDefinition.forId(object.getId()); } })();
+          const options = (seen?.getInteractions?.() ?? []).map((o) => String(o ?? "").toLowerCase());
           const index = options.findIndex((o) => PASSAGE_OPTIONS.includes(o));
           if (index < 0) continue;
           // "Open" is a door's or a gate's (a wall object, or so named), not a chest's or drawers'.

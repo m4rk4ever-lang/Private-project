@@ -3201,8 +3201,16 @@ function startAdventurers({ api, runtime, world, registry }) {
     return true;
   }, rights.OWNER, "Go to an adventurer bot: ::adventurer <name>");
   api.registerCommand("advquestall", ({ player }) => {
-    const out = manager.questSweep();
-    player.sendMessage(`${out.length} avonturiers proberen elk een andere quest: ${out.map(([name, quest]) => `${name} → ${quest}`).join("; ").slice(0, 400)}`);
+    // The quests are played with the Quest Helper bridge: without it every one fails in two
+    // minutes ("fetch failed"), so the sweep is refused with how to start it.
+    const url = process.env.QUEST_HELPER_URL || `http://127.0.0.1:${Number(process.env.QUEST_HELPER_PORT || 16471)}`;
+    fetch(`${url.replace(/\/$/, "")}/health`, { signal: AbortSignal.timeout(3000) }).then((response) => {
+      if (!response.ok) throw new Error(`status ${response.status}`);
+      const out = manager.questSweep();
+      player.sendMessage(`${out.length} avonturiers proberen elk een andere quest: ${out.map(([name, quest]) => `${name} → ${quest}`).join("; ").slice(0, 400)}`);
+    }).catch(() => {
+      player.sendMessage("De Quest Helper-bridge draait niet; start hem eerst (yarn bridge) en probeer het dan opnieuw.");
+    });
     return true;
   }, rights.OWNER, "Every adventurer at once on a different quest (blocks lifted), to see where each gets stuck: ::advquestall");
   api.registerCommand("advquest", ({ player, parts }) => {

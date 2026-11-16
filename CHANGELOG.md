@@ -160,6 +160,8 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers zien quest-objecten die van uiterlijk veranderen (zoals de doodskist van The Restless Ghost, dicht of open) zoals een speler ze ziet, en openen iets wat dicht is eerst voordat ze het doorzoeken.
+- `::advquestall` weigert met een duidelijke melding als de Quest Helper-bridge niet draait, in plaats van alle avonturiers twee minuten te laten wachten tot hun quest mislukt.
 - Een avonturier die materialen van de bank haalt om te fletchen of te firemaken, zet ze niet meer meteen terug omdat zijn tas "vol" is (een lus van honderden banktripjes zonder XP).
 - Een avonturier verkoopt het wapen of pantser van zijn eigen smaak (zoals een battleaxe) niet meer als handelswaar om het daarna opnieuw te kopen; dat gaf een eindeloze koop-en-verkooplus bij de GE.
 - Avonturiers vechten ook tegen monsters net onder hun eigen niveau (combat 37 tegen barbarians van level 10–17), zodat ze niet in Barbarian Village staan met "niets te doen" terwijl er genoeg vijanden rondlopen.
