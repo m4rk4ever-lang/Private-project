@@ -201,6 +201,8 @@ De metrics-regels, op `kind`:
 - `goal`: doel gezet, gehaald of geschrapt, met de minuten sinds het gezet werd.
 - `idle`: een avonturier staat een minuut zonder XP op zijn klus (plek, home, hp, in gevecht, vrije slots).
 - `walk_blocked`: een route die niet lukte, van waar naar waar.
+- `death`: een avonturier stierf: fase, klus of quest, plek, door wie (`killer`) en of hij eten had (`hadFood`).
+  In `bot`-regels telt `fledLowHp` hoe vaak hij stopte omdat zijn HP laag was zonder eten.
 - `skills` (elke 5 min): per skill hoeveel avonturiers XP kregen, hoeveel XP en via welke activiteit, en welke skills niemand trainde (`untouched`).
 - `server`: aantal avonturiers en bots, gemiddelde en maximale duur van de avonturiers-tick, geheugen,
   quests die voor iedereen geblokkeerd zijn.
