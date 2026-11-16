@@ -127,7 +127,12 @@ function createHelperSteps({ core, now = () => Date.now(), log = () => {} }) {
         return state.step;
       }
       instance.evaluateHeadless(player, { questKey, snapshot }).then((result) => {
-        state.step = result?.status === "complete" ? { id: "complete", kind: "complete" } : toBotStep(core, result?.activeStep);
+        state.step = result?.status === "complete" ? { id: "complete", kind: "complete" }
+          : result?.status === "unavailable" ? {
+            id: "unavailable", kind: "unavailable",
+            reason: `quest helper unavailable here: ${(result.diagnostics ?? []).map((d) => d.message ?? d.code).join("; ") || "no step"}`,
+          }
+            : toBotStep(core, result?.activeStep);
         state.error = null;
       }, (error) => {
         state.error = String(error?.message ?? error);

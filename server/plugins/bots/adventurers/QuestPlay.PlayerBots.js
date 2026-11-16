@@ -342,6 +342,11 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
       // The helper's first answer comes back a moment later.
       if (!step) return "running";
       if (step.kind === "complete") return "done";
+      // The helper cannot answer here (missing cache data): stop now, with the reason logged.
+      if (step.kind === "unavailable") {
+        run.reason = step.reason;
+        return "failed";
+      }
       // What the step needs that it does not have: fetched or bought first (an errand).
       // (Not what this very step picks up: the egg in the chicken coop is taken, not bought.)
       const needs = step.kind === "item" ? step.needs.filter((need) => !need.ids.some((id) => step.ids.includes(id))) : step.needs;
@@ -356,7 +361,11 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
       const purchase = /^(?:purchase|buy)\s+(?:an?\s+|some\s+|\d+\s*x?\s*)?(.+?)\s+(?:from|at)\b/i.exec(step.text ?? "");
       if (purchase && nowMs >= (run.buyAt ?? 0)) {
         run.buyAt = nowMs + 30_000;
-        if (buyNamed(entry, purchase[1])) return "running";
+        if (buyNamed(entry, purchase[1])) {
+          // Buying is the step (a shop or the exchange): it does not also talk to the keeper.
+          run.talkAt = nowMs + 30_000;
+          return "running";
+        }
         run.tries += 1; run.reason = `could not buy: ${purchase[1]}`;
       }
       // A step with no place (read a book, use an item): nothing it can do yet, it asks again.
