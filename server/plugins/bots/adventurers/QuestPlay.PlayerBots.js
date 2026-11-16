@@ -219,6 +219,62 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     return true;
   }
 
+  /** The nearest object within 15 tiles that leads down or off (Climb-down, Cross, Exit...): clicked. */
+  function wayDown(player) {
+    const here = player.getLocation();
+    const wanted = ["climb-down", "climb down", "cross", "walk-down", "exit", "leave", "disembark"];
+    let best = null;
+    let bestAway = Infinity;
+    let bestIndex = -1;
+    let bestDefinition = null;
+    for (let dx = -15; dx <= 15; dx += 1) {
+      for (let dy = -15; dy <= 15; dy += 1) {
+        const x = here.getX() + dx;
+        const y = here.getY() + dy;
+        for (const object of core.MapObjects?.mapObjects?.get?.(core.MapObjects.getHash(x, y, here.getZ())) ?? []) {
+          const loc = object.getLocation();
+          if (loc.getX() !== x || loc.getY() !== y || loc.getZ() !== here.getZ()) continue;
+          let definition;
+          try { definition = core.ObjectDefinition.forPlayer?.(object.getId(), player) ?? core.ObjectDefinition.forId(object.getId()); } catch { definition = core.ObjectDefinition.forId(object.getId()); }
+          const options = (definition?.getInteractions?.() ?? []).map((o) => String(o ?? "").toLowerCase());
+          const index = options.findIndex((option) => wanted.includes(option));
+          if (index < 0) continue;
+          const away = Math.max(Math.abs(dx), Math.abs(dy));
+          if (away < bestAway) { best = object; bestAway = away; bestIndex = index; bestDefinition = definition; }
+        }
+      }
+    }
+    if (!best) return false;
+    const loc = best.getLocation();
+    player.getMovementQueue().walkToObject(best, {
+      execute: () => world.emitObjectInteraction?.({
+        player, object: best, definition: bestDefinition, objectId: best.getId(), clickType: bestIndex + 1,
+        location: { x: loc.getX(), y: loc.getY(), z: loc.getZ() }, handled: false,
+      }),
+    });
+    return true;
+  }
+
+  /** "Use the X on (one of) the Y": the two in its bag, by name; true when it used one on the other. */
+  function useItemOnItem(player, text) {
+    const match = /\buse (?:the |a |an |some |your |one of the )?(.+?) (?:on|with) (?:the |a |an |some |your |one of the )?(.+?)(?:[.,!]|$)/i.exec(String(text ?? ""));
+    if (!match) return false;
+    const items = player.getInventory().getItems() ?? [];
+    const slotOf = (words) => {
+      const wanted = String(words).toLowerCase().replace(/s$/, "");
+      return items.findIndex((item) => item && item.getId() > 0
+        && String(core.ItemDefinition.forId(item.getId())?.getName?.() ?? "").toLowerCase().includes(wanted));
+    };
+    const used = slotOf(match[1]);
+    const on = slotOf(match[2]);
+    if (used < 0 || on < 0 || used === on) return false;
+    world.emitItemOnItem?.({
+      player, usedItem: items[used], usedItemId: items[used].getId(), usedItemSlot: used,
+      usedWithItem: items[on], usedWithItemId: items[on].getId(), usedWithItemSlot: on, handled: false,
+    });
+    return true;
+  }
+
   /** One dialogue click: continue, or pick an option. True while a dialogue is open. */
   /** Each choice it makes in a dialogue, kept on the run for the feedback log (the last 20). */
   function remember(run, options, index) {
@@ -228,10 +284,26 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     if (run.dialogue.length > 20) run.dialogue.shift();
   }
 
+  /**
+   * The option to pick, but not the same one a third time in the same menu (a question that leads
+   * back to the menu, "Where can I find this cauldron?"): then the next one that is not a refusal.
+   */
+  function pick(run, options, prefer) {
+    let index = chooseOption(options, prefer);
+    const key = options.map(String).join("|");
+    const same = (run?.dialogue ?? []).filter((entry) => entry.options.join("|") === key && entry.chose === String(options[index]));
+    if (same.length >= 2) {
+      const next = options.findIndex((option, i) => i !== index && !REFUSAL.test(String(option).trim())
+        && !(run?.dialogue ?? []).some((entry) => entry.options.join("|") === key && entry.chose === String(option)));
+      if (next >= 0) index = next;
+    }
+    return index;
+  }
+
   function answer(player, step, run = null) {
     const prompt = core.MultiChatboxPrompt?.getPending?.(player);
     if (prompt) {
-      const index = chooseOption(prompt.options, step?.prefer);
+      const index = pick(run, prompt.options, step?.prefer);
       remember(run, prompt.options, index);
       core.MultiChatboxPrompt.handleInterfaceActionClick({ player, buttonId: core.MultiChatboxPrompt.OPTIONS_WIDGET_ID,
         groupId: core.MultiChatboxPrompt.OPTIONS_WIDGET_ID >>> 16, slot: index + 1, action: index + 1 });
@@ -242,7 +314,7 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     const current = manager.getCurrent?.();
     if (current instanceof core.OptionDialogue) {
       const options = current.getOptions();
-      const index = chooseOption(options, step?.prefer);
+      const index = pick(run, options, step?.prefer);
       remember(run, options, index);
       manager.handleOption(index + 1);
       return true;
@@ -261,6 +333,8 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     const ids = new Set(step.ids ?? []);
     const matches = near.filter((npc) => npc.isRegistered?.() !== false
       && (String(npc.getCurrentDefinition?.(player)?.getName?.() ?? npc.getDefinition?.()?.getName?.() ?? "").toLowerCase() === wanted
+        // The NPC's own name too: what this player sees of it may be another of its forms.
+        || String(npc.getDefinition?.()?.getName?.() ?? "").toLowerCase() === wanted
         || ids.has(npc.getContentId?.(player) ?? npc.getId())));
     // A step done on many of them (shear twenty sheep): not the same one again and again.
     const recent = new Set(recentNpcs ?? []);
@@ -469,6 +543,13 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
       }
       // A step with no place (read a book, use an item): nothing it can do yet, it asks again.
       if (!step.at) {
+        // "Use the blue dye on one of the goblin mail": two things in its bag, used one on the
+        // other, as a player does; no place needed.
+        if (nowMs >= (run.useAt ?? 0) && useItemOnItem(player, step.text)) {
+          run.useAt = nowMs + 6_000;
+          run.reason = "used one item on another";
+          return "running";
+        }
         if (nowMs >= (run.waitAt ?? 0)) {
           run.waitAt = nowMs + 15_000;
           run.tries += 1; run.reason = "step without a place (helper gives no tile)";
@@ -496,7 +577,17 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     const floorGoal = hop.climb ? { x: hop.x, y: hop.y, z: hop.z } : target;
     if (here.z !== floorGoal.z) {
       const stairs = stairsTo(here, floorGoal, nowMs);
-      if (!stairs) { run.reason = `no stairs/ladder found to floor ${floorGoal.z}`; return run.tries++ >= MAX_TRIES ? "failed" : "running"; }
+      if (!stairs) {
+        // No known stairs: down by whatever leads down here (a ship's gangplank "Cross", a ladder
+        // not in the climb list, an exit), as a player looks for the way off.
+        if (floorGoal.z < here.z && nowMs >= (run.descendAt ?? 0) && wayDown(player)) {
+          run.descendAt = nowMs + 8_000;
+          run.reason = "taking the way down (gangplank, ladder, exit)";
+          return "running";
+        }
+        run.reason = `no stairs/ladder found to floor ${floorGoal.z}`;
+        return run.tries++ >= MAX_TRIES ? "failed" : "running";
+      }
       const at = stairs.getLocation();
       const away = Math.max(Math.abs(here.x - at.getX()), Math.abs(here.y - at.getY()));
       // Within an errand's arrival (3 tiles) it clicks the stairs and walks the last steps itself:
@@ -557,7 +648,13 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
       }
       run.tries += 1; run.reason = run.reason ?? `${step.kind} step did not advance`;
       run.talkAt = nowMs + 8_000;
-      if (step.kind === "object" && !useObject(player, step, nowMs)) run.reason = `object not found at ${step.at.join(",")} (ids ${step.ids.join("/")})`;
+      if (step.kind === "object" && !useObject(player, step, nowMs)) {
+        run.reason = `object not found at ${step.at.join(",")} (ids ${step.ids.join("/")})`;
+        // "Pick the garlic up on the table": the thing lies on the object, picked up by its name.
+        const named = /\bpick (?:up )?(?:the |a |an |some )?([a-z' ]+?) (?:up|from|off|on)\b/i.exec(step.text ?? "");
+        const id = named ? core.ItemIdentifiers?.[named[1].trim().toUpperCase().replace(/[ ']/g, "_")] : undefined;
+        if (Number.isInteger(id) && takeItem(player, { ...step, ids: [id] }, nowMs)) run.reason = `taking ${named[1].trim()} from the ground`;
+      }
       else if (step.kind === "object") run.reason = "object used, but the step did not advance";
       if (step.kind === "item" && !takeItem(player, step, nowMs)) {
         // Not lying there (another took it, it has not spawned again yet): it waits for the

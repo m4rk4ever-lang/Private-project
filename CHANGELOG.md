@@ -161,6 +161,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers kunnen queststappen doen als "gebruik X op Y" (zoals de blauwe verf op goblin mail bij Goblin Diplomacy), kiezen in een gesprek niet eindeloos dezelfde vraag die terugleidt naar hetzelfde menu (Sanfew bij Druidic Ritual), vinden een quest-NPC ook als ze hem in een andere vorm zien (Veos bij X Marks the Spot), pakken een item dat op een tafel ligt (garlic bij Fishing Contest) en komen van een schip of verdieping af via een loopplank, ladder of uitgang als er geen bekende trap is (The Corsair Curse).
 - Avonturiers zien quest-objecten die van uiterlijk veranderen (zoals de doodskist van The Restless Ghost, dicht of open) zoals een speler ze ziet, en openen iets wat dicht is eerst voordat ze het doorzoeken.
 - `::advquestall` weigert met een duidelijke melding als de Quest Helper-bridge niet draait, in plaats van alle avonturiers twee minuten te laten wachten tot hun quest mislukt.
 - Een avonturier die materialen van de bank haalt om te fletchen of te firemaken, zet ze niet meer meteen terug omdat zijn tas "vol" is (een lus van honderden banktripjes zonder XP).
