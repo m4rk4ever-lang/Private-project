@@ -42,3 +42,9 @@ test("a saved job keeps the level it was for, so a resumed stretch still stops t
   assert.deepEqual(record.target, { skill: "COMBAT", level: 10 });
   assert.deepEqual(Tasks.planOf(record).target, { skill: "COMBAT", level: 10 });
 });
+
+test("an older saved job without the field gets its level from the reason", () => {
+  assert.deepEqual(Tasks.planOf({ kind: "train", mode: "combat_training", skill: "COMBAT", reason: "The Restless Ghost (combat 10)" }).target, { skill: "COMBAT", level: 10 });
+  assert.deepEqual(Tasks.planOf({ kind: "train", mode: "mining", skill: "MINING", reason: "The Knight's Sword (mining 10)" }).target, { skill: "MINING", level: 10 });
+  assert.equal(Tasks.planOf({ kind: "train", mode: "mining", skill: "MINING", reason: "afwisseling" }).target, undefined);
+});

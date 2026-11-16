@@ -39,6 +39,16 @@ function freshTask(task, wallMs) {
   return task;
 }
 
+/**
+ * The level a saved job was for: its own field, or read from its reason ("The Restless Ghost
+ * (combat 10)") for a record saved before the field existed, so that job too stops there.
+ */
+function targetOf(task) {
+  if (task?.target?.skill) return { skill: task.target.skill, level: task.target.level };
+  const match = /\(([a-z]+) (\d+)\)\s*$/i.exec(String(task?.reason ?? ""));
+  return match ? { skill: match[1].toUpperCase(), level: Number(match[2]) } : null;
+}
+
 /** The planner's plan for a saved record (a boss looked up by id), or null when it is gone. */
 function planOf(task, bosses = []) {
   if (!task) return null;
@@ -49,7 +59,7 @@ function planOf(task, bosses = []) {
   return {
     kind: "train", mode: task.mode, skill: task.skill, reason: task.reason ?? "verder",
     ...(task.style ? { style: task.style } : {}),
-    ...(task.target?.skill ? { target: { skill: task.target.skill, level: task.target.level } } : {}),
+    ...(targetOf(task) ? { target: targetOf(task) } : {}),
   };
 }
 
