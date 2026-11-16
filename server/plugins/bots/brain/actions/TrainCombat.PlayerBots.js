@@ -49,6 +49,8 @@ const TARGET_RETRY_MS = 1800;
 /** An honest bot buries a bone this often between fights (a Bury click's delay is 1.2 s). */
 const BURY_EVERY_MS = 1800;
 const TARGET_SPREAD = 4;
+// ...of those, only ones at most this much further than the nearest.
+const TARGET_SPREAD_TILES = 3;
 const ATTACK_DISTANCE = 20;
 const RESERVATION_MS = 10000;
 const TARGET_STALL_MS = 45000;
@@ -672,7 +674,10 @@ function createTrainCombatAction(spec, world) {
         const candidates = world.core.World.getNpcsNear(location, SITE_RADIUS + ATTACK_DISTANCE, player.getPrivateArea?.() ?? null)
           .filter((npc) => available(player, npc, bot, nowMs, state))
           .sort((a, b) => location.getDistance(a.getLocation()) - location.getDistance(b.getLocation()))
-          .slice(0, TARGET_SPREAD);
+          .slice(0, TARGET_SPREAD)
+          // A little variety among the near ones, not a walk past three guards to a far fourth.
+          .filter((npc, index, near) => index === 0
+            || location.getDistance(npc.getLocation()) <= location.getDistance(near[0].getLocation()) + TARGET_SPREAD_TILES);
         const offset = randomInRange(0, Math.max(0, candidates.length - 1));
         bot.approachNpc = null;
         for (let index = 0; index < candidates.length; index += 1) {
