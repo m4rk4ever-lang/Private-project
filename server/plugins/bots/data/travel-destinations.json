@@ -415,6 +415,7 @@
     },
     {
       "id": "ardougne_market_stalls",
+      "activities": ["bakery_stalls", "silk_stalls", "fur_stalls", "silver_stalls", "spice_stalls", "gem_stalls"],
       "x": 2662,
       "y": 3305,
       "z": 0,
@@ -652,6 +653,7 @@
     },
     {
       "id": "lumbridge_men",
+      "activities": ["pickpocket_men"],
       "x": 3222,
       "y": 3218,
       "z": 0,
@@ -663,6 +665,7 @@
     },
     {
       "id": "edgeville_men",
+      "activities": ["pickpocket_men"],
       "x": 3094,
       "y": 3505,
       "z": 0,
@@ -674,6 +677,7 @@
     },
     {
       "id": "seers_village_men",
+      "activities": ["pickpocket_men"],
       "x": 2715,
       "y": 3490,
       "z": 0,
@@ -685,6 +689,7 @@
     },
     {
       "id": "ardougne_knights",
+      "activities": ["pickpocket_guards", "pickpocket_knights"],
       "x": 2655,
       "y": 3300,
       "z": 0,

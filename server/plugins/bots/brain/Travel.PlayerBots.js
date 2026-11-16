@@ -212,7 +212,11 @@ function createTravel({
     if (!place) {
       // An adventurer may stay where it is when that is a good place (men all round it): it does
       // not walk across the map for the sake of moving, as world bots spread out.
-      const options = destinationsFor(mode, level, state?.adventurer ? null : here).filter((option) => !meets || meets(player, option.requires, option));
+      // A place that names its jobs (`activities`: the stalls of Ardougne, the men of Lumbridge)
+      // is only for those jobs: a bot that steals cakes does not walk to the men.
+      const options = destinationsFor(mode, level, state?.adventurer ? null : here)
+        .filter((option) => !Array.isArray(option.activities) || option.activities.includes(activity?.id))
+        .filter((option) => !meets || meets(player, option.requires, option));
       if (options.length === 0) return null;
       place = pickWeighted(options, random,
         (option) => (option.weight ?? 1) * (nearHub(option, hub) ? nearHubBonus : 1) * crowding(option)
