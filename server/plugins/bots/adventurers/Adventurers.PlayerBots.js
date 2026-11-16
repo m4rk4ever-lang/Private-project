@@ -72,6 +72,11 @@ const COINS = 995;
 // Every two ticks (1.2 s): eating, the next job and the next step follow without standing around.
 const CHECK_TICKS = 2;
 const QUEST_TICK_MS = 6_000;
+/** A walk that ends this close to its place has arrived (the exact tile may be in a hut). */
+const NEAR_ENOUGH_TILES = 15;
+/** Below this share of its Hitpoints with nothing to eat, a dangerous job stops. */
+const DANGER_HP_SHARE = 0.5;
+const DANGER_MODES = new Set(["combat_training", "combat_ranged", "combat_magic", "slayer", "thieving"]);
 /** How long it waits at the exchange for a bid on training materials to fill. */
 const BID_WAIT_MS = 3 * 60_000;
 /** How much further than a bank it walks to the Grand Exchange to sell (saving up, offers in). */
@@ -778,6 +783,16 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       fail: (player) => {
         hold();
         entry.errand = null;
+        // Already there in all but the last tile (the spot itself in a hut or on rocks): there.
+        const here = player.getLocation();
+        if (here.getZ() === (to.z ?? 0) && Math.max(Math.abs(here.getX() - to.x), Math.abs(here.getY() - to.y)) <= NEAR_ENOUGH_TILES) {
+          try {
+            arrive(player);
+          } finally {
+            if (replan) entry.until = 0;
+          }
+          return;
+        }
         note(player, `Kwam niet bij ${placeName(to)}: de weg was versperd.`, "activity");
         countEvent(entry, "walkBlocked");
         const at = player.getLocation();
@@ -1343,6 +1358,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // When a pick cannot start (no tool to buy near, no place), the next pick goes at once:
     // an adventurer does not stand about waiting.
     const exclude = new Set();
+    // Fled hurt and hungry lately: no fights or thieving until it carries food again.
+    if (nowMs < (entry.dangerUntil ?? 0) && !carriesFood(entry.player)) for (const mode of DANGER_MODES) exclude.add(mode);
     for (let attempt = 0; attempt < 4; attempt += 1) {
       const plan = chooseNext(view, questList(), {
         available: view.available, questChance: data.questChance, bosses: data.bosses, bossChance: attempt === 0 ? data.bossChance : 0, random,
@@ -1558,7 +1575,19 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       }
       // Out of food in the middle of a fight stretch: it stops and restocks (bank, shop), as a
       // player does, rather than fighting on with nothing to eat.
-      if ((entry.phase === "training" && ["combat_training", "slayer", "combat_ranged", "combat_magic"].includes(entry.plan?.mode))
+      // Hurt with nothing to eat in a job that hurts (a fight, a stall's guards, a pocket's
+      // owner): it stops at once and keeps off such jobs for ten minutes, unless it gets food.
+      const hp = entry.player.getHitpoints?.() ?? 10;
+      const maxHp = Math.max(1, levelOf(entry.player, "HITPOINTS"));
+      if ((entry.phase === "training" || entry.phase === "boss") && (DANGER_MODES.has(entry.plan?.mode) || entry.phase === "boss")
+          && hp < maxHp * DANGER_HP_SHARE && !carriesFood(entry.player) && !errands.busy(entry.player)) {
+        note(entry.player, `Nog maar ${hp}/${maxHp} HP en geen eten: stopt met ${String(entry.activity ?? "deze klus").replace(/_/g, " ")} voor het te laat is.`, "activity");
+        countEvent(entry, "fledLowHp");
+        entry.jobEnd = "low hp, no food";
+        entry.dangerUntil = nowMs + 10 * 60_000;
+        entry.savedTask = null;
+        entry.until = 0;
+      } else if ((entry.phase === "training" && ["combat_training", "slayer", "combat_ranged", "combat_magic"].includes(entry.plan?.mode))
           && !carriesFood(entry.player) && nowMs >= (entry.stockFoodAt ?? 0) && !errands.busy(entry.player)) {
         note(entry.player, "Heeft geen eten meer; haalt eerst nieuw eten.", "activity");
         entry.jobEnd = "out of food";
@@ -2055,6 +2084,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (!entry) return;
     countEvent(entry, "died");
     const at = player.getLocation();
+    metric({ kind: "death", bot: entry.name, phase: entry.phase, mode: entry.plan?.mode ?? null, activity: entry.activity ?? null,
+      quest: entry.questRun?.name ?? null, where: [at.getX(), at.getY(), at.getZ()], hadFood: carriesFood(player),
+      combat: player.getSkillManager().getCombatLevel(), killer: player.getCombat?.()?.getAttacker?.()?.getDefinition?.()?.getName?.() ?? null });
     note(player, `Is gestorven bij (${at.getX()}, ${at.getY()}); gaat zijn spullen ophalen.`, "activity");
     entry.graveTries = 0;
     entry.questRun = null;

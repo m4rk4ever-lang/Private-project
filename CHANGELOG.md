@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Het ontwikkelaarslogboek legt elke dood van een avonturier vast: bij welke klus of quest, waar, door wie en of hij eten bij zich had.
 - Bij het afsluiten van de server worden de logboeken van de avonturiers nog één keer gedeeld op de branch `bot-logs`, zodat de laatste minuten van quests en avonturiers niet verloren gaan.
 - Bij het begin van een quest halen avonturiers wat Quest Helper aanraadt om mee te nemen (eten, een teleport, antipoison), als ze het kunnen krijgen.
 - Avonturiers kunnen verder kijken dan rune: een abyssal whip (70 attack) en granite (50 defence/strength), Helm of Neitiznot (55, na The Fremennik Isles), dragon (60/70), Bandos (65) en Dharok's (70) armour, als ze het geld hebben; anders wordt het een spaardoel.
@@ -155,6 +156,8 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Een avonturier die onder de helft van zijn HP zakt zonder eten (in een gevecht, bij Slayer, een boss of bij thieving met de wachten achter zich aan), stopt meteen en kiest de komende tien minuten geen gevaarlijke klus meer tot hij eten heeft, in plaats van door te gaan tot hij sterft en alles verliest.
+- Een avonturier die tot vlak bij zijn bestemming komt (Barbarian Village, waar het precieze vak in een hut ligt), is er en begint, in plaats van te melden dat de weg versperd was.
 - Bots kiezen in een gevecht eerst een monster dichtbij (wat variatie tussen de dichtstbijzijnde), niet meer af en toe eentje ver weg terwijl er drie naast hen staan; verder weg gaan ze pas als de dichtbije bezet of achter een hek zijn.
 - Avonturiers wachten bij de Grand Exchange alleen nog op hun koopbiedingen; hun verkoopbiedingen lopen door terwijl ze verder gaan, zoals bij een speler (ze stonden minutenlang te wachten tot hun loot verkocht was).
 - Een quest waarbij Quest Helper eerst het quest journal wil lezen (Pirate's Treasure) wordt meteen opzijgelegd in plaats van zes minuten te blijven proberen.
