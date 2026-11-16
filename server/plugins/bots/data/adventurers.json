@@ -221,6 +221,8 @@
   "bosses": [
     {
       "id": "boss_giant_mole",
+      "onFoot": false,
+      "access": "dig into a mole hill in Falador Park with a spade",
       "name": "Giant Mole",
       "combat": 65,
       "x": 1752,
@@ -229,6 +231,8 @@
     },
     {
       "id": "boss_sarachnis",
+      "onFoot": false,
+      "access": "the Forthos Dungeon in Kourend, by boat or teleport",
       "name": "Sarachnis",
       "combat": 75,
       "x": 1841,

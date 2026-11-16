@@ -62,7 +62,7 @@ function wearIfFree(core, player, itemId) {
  * One step toward taking `ground`: pick it up when in reach, else walk to it.
  * Returns "taken", "walking" or "gone".
  */
-function takeStep(core, player, ground, { state, nowMs } = {}) {
+function takeStep(core, player, ground, { state, nowMs, basicPather = true } = {}) {
   const manager = core.ItemOnGroundManager;
   if (!manager.exists(ground) || ground.isPendingRemoval?.()) return "gone";
   const at = ground.getPosition();
@@ -76,7 +76,8 @@ function takeStep(core, player, ground, { state, nowMs } = {}) {
     }
   }
   if (player.getMovementQueue().size() > 0 || navigation().peekMovementRequest(player)) return "walking";
-  navigation().requestMovement(player, at.getX(), at.getY(), { state, nowMs, z: at.getZ(), reason: "brain_loot", basicPather: true });
+  // basicPather: false walks round furniture and corners (a quest item behind a table).
+  navigation().requestMovement(player, at.getX(), at.getY(), { state, nowMs, z: at.getZ(), reason: "brain_loot", basicPather });
   return "walking";
 }
 

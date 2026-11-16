@@ -1499,7 +1499,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     view.earn = entry.earn ?? {};
     for (let attempt = 0; attempt < 4; attempt += 1) {
       const plan = chooseNext(view, questList(), {
-        available: view.available, questChance: data.questChance, moneyChance: data.moneyChance ?? 0.1, bosses: data.bosses, bossChance: attempt === 0 ? data.bossChance : 0, random,
+        available: view.available, questChance: data.questChance, moneyChance: data.moneyChance ?? 0.1, bosses: (data.bosses ?? []).filter((boss) => boss.onFoot !== false), bossChance: attempt === 0 ? data.bossChance : 0, random,
         focus: data.focus?.[entry.name] ?? {}, busyModes, exclude, goal: goalOf(entry),
       });
       const started = plan.kind === "quest" ? startQuest(entry, plan)
@@ -3005,7 +3005,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function resumeTask(entry, nowMs) {
     const task = entry.savedTask;
     entry.savedTask = null;
-    const plan = Tasks.planOf(task, data.bosses ?? []);
+    const plan = Tasks.planOf(task, (data.bosses ?? []).filter((boss) => boss.onFoot !== false));
     if (!plan) return false;
     // Already at the level the job was for (combat 10 at combat 25): something new instead.
     if (plan.target) {

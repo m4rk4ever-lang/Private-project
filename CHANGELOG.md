@@ -162,6 +162,9 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers rapen quest-items op zoals een speler erop klikt (de echte route, om meubels heen), ook tijdens een quest; Freds shears achter zijn tafel bleven anders liggen.
+- Een queststap die zelf oplevert wat er ontbreekt (schapen scheren voor de wol bij Sheep Shearer) wordt gewoon gedaan, in plaats van als mislukt te tellen omdat de wol er nog niet is.
+- Avonturiers kiezen geen bosses meer die ze lopend niet kunnen bereiken (Giant Mole onder Falador Park, Sarachnis in Kourend); daar liepen ze steeds vast.
 - Avonturiers kiezen in een questgesprek een antwoord dat verder gaat ("Certainly, I'll be right back!", "Ok, I'll go do that then.") in plaats van een uitlegvraag die terugleidt naar hetzelfde menu ("Where can I find those?", "Remind me how to spin wool."); daar liepen Doric's Quest, Druidic Ritual en Sheep Shearer op vast.
 - Avonturiers rekenen bij een aankoop op de Grand Exchange ook hun bankgeld mee en halen het daar op, zoals een speler; met weinig geld op zak (453 gp) konden ze anders geen clay voor Doric's Quest kopen terwijl er genoeg op de bank stond.
 - Een avonturier die halverwege een dakbaan staat (Al Kharid, Varrock, Falador), vindt het volgende obstakel op zijn eigen verdieping en loopt de baan af, in plaats van daar vast te blijven staan.

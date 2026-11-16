@@ -172,8 +172,18 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
           for (const id of step.ids) {
             const ground = manager.getOperableGroundItem?.(player, id, at, manager.takeOperation?.(id) ?? 3);
             if (!ground) continue;
-            const Loot = require("../brain/Loot.PlayerBots");
-            Loot.takeStep(core, player, ground, { state: stateOf(player), nowMs });
+            // A player's click on it: walk there by the real route (Fred's shears behind his
+            // table) and pick it up on arrival. The bot's own brain rests during a quest, so its
+            // walk requests would not be carried out.
+            const queue = player.getMovementQueue();
+            if (queue.walkToGroundItem) {
+              queue.walkToGroundItem(ground.getPosition(), () => {
+                if (manager.exists(ground)) manager.pickup(player, ground);
+              });
+            } else {
+              const Loot = require("../brain/Loot.PlayerBots");
+              Loot.takeStep(core, player, ground, { state: stateOf(player), nowMs, basicPather: false });
+            }
             return true;
           }
         }
@@ -532,8 +542,13 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
         run.needsAt = nowMs + 60_000;
         const need = needs[0];
         if (acquire(entry, need.ids, need.amount, need.name)) return "running";
-        run.tries += 1; run.reason = `item missing: ${need.name}`;
-        note?.(player, `Mist ${need.name} voor ${run.name} en kan het nu niet krijgen.`, "quest");
+        // A step with a place of its own (shear the sheep for the wool it lacks) is done
+        // regardless: what it misses may be what this very step makes. Only a step with
+        // nothing to go and do fails on it.
+        if (!step.at) {
+          run.tries += 1; run.reason = `item missing: ${need.name}`;
+          note?.(player, `Mist ${need.name} voor ${run.name} en kan het nu niet krijgen.`, "quest");
+        }
       }
       // "Purchase a bucket from the General Store": a purchase, not a chat (an errand to the shop).
       const purchase = /^(?:purchase|buy)\s+(?:an?\s+|some\s+|\d+\s*x?\s*)?(.+?)\s+(?:from|at)\b/i.exec(step.text ?? "");
