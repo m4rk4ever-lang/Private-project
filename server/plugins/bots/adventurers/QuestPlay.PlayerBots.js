@@ -156,8 +156,19 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
   /** Click an object of the step at its tile: the option the step's text names, else its first. */
   function useObject(player, step, nowMs) {
     const [x, y, z] = step.at;
-    const objects = core.MapObjects?.mapObjects?.get?.(core.MapObjects.getHash(x, y, z)) ?? [];
-    const object = objects.find((o) => step.ids.includes(o.getId())) ?? objects[0];
+    // The object on that tile, or the nearest of its ids around it (a big object, such as the
+    // castle staircase, has its anchor on another tile than the one the helper names).
+    let object = null;
+    let best = Infinity;
+    for (let dx = -3; dx <= 3; dx += 1) {
+      for (let dy = -3; dy <= 3; dy += 1) {
+        for (const candidate of core.MapObjects?.mapObjects?.get?.(core.MapObjects.getHash(x + dx, y + dy, z)) ?? []) {
+          if (!step.ids.includes(candidate.getId())) continue;
+          const away = Math.max(Math.abs(dx), Math.abs(dy));
+          if (away < best) { best = away; object = candidate; }
+        }
+      }
+    }
     if (!object) return false;
     const options = (core.ObjectDefinition.forId(object.getId())?.getInteractions?.() ?? []).map((o) => String(o ?? ""));
     const text = String(step.text ?? "").toLowerCase();
@@ -167,7 +178,7 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     player.getMovementQueue().walkToObject(object, {
       execute: () => world.emitObjectInteraction?.({
         player, object, objectId: object.getId(), clickType: index + 1,
-        location: { x, y, z }, handled: false,
+        location: { x: object.getLocation().getX(), y: object.getLocation().getY(), z: object.getLocation().getZ() }, handled: false,
       }),
     });
     return true;

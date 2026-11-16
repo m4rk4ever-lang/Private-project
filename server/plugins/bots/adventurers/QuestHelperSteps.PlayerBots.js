@@ -48,6 +48,26 @@ function sceneOf(core, player, radius = SCENE_RADIUS) {
   return { npcs, objects, groundItems: [] };
 }
 
+/** The cache definitions of the scene's objects, as the client builds them (QuestHelperDefinitions). */
+function objectDefinitions(core, objects) {
+  const out = {};
+  const describe = (type) => ({
+    id: type.id, name: type.name, sizeX: type.sizeX, sizeY: type.sizeY,
+    impostorIds: type.transforms ? [...type.transforms] : null, actions: type.actions ? [...type.actions] : undefined,
+    animationId: type.seqId, mapSceneId: type.mapSceneId, mapIconId: type.mapFunctionId,
+  });
+  for (const id of new Set((objects ?? []).map((object) => object.id))) {
+    if (Object.keys(out).length >= 2048) break;
+    try {
+      const type = core.CacheDefinitions.getObject(id);
+      if (type) out[id] = { ...describe(type), impostor: null };
+    } catch {
+      // An id the cache does not have stays out; the helper reports it.
+    }
+  }
+  return out;
+}
+
 function itemsOf(container) {
   return (container.getItems() ?? []).map((item, slot) => (item && item.getId() >= 0 && item.getAmount() > 0
     ? { slot, id: item.getId(), amount: item.getAmount() } : null)).filter(Boolean);
@@ -118,9 +138,12 @@ function createHelperSteps({ core, now = () => Date.now(), log = () => {} }) {
       let snapshot = null;
       try {
         const { collectQuestHelperSnapshot } = require("../../quests/questhelper/Snapshot.QuestHelper");
-        snapshot = collectQuestHelperSnapshot({
+        const built = collectQuestHelperSnapshot({
           nearby: (p) => sceneOf(core, p), items: itemsOf, skills: (p) => skillsOf(core, p), tick: () => core.World.getProcessCycle(),
         }, player, { radius: SCENE_RADIUS });
+        // What a client sends with its scene: the objects' cache definitions (the helper reads
+        // their names and options; without them it answers "unavailable").
+        snapshot = { ...built, objectDefinitions: objectDefinitions(core, built.objects) };
       } catch (error) {
         state.busy = false;
         state.error = String(error?.message ?? error);

@@ -131,6 +131,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- De Quest Helper geeft avonturiers nu ook stappen in en rond het kasteel van Lumbridge (de bot stuurt, net als de client, de objectgegevens mee), en avonturiers vinden grote objecten zoals de kasteeltrap ook als die op een ander vakje staat dan de Quest Helper noemt.
 - Een avonturier die voor een quest iets moet kopen, praat niet meer steeds met de winkelier terwijl hij het elders koopt, en stopt meteen (met de reden in de questfeedback) als de Quest Helper op zijn plek geen stap kan geven.
 - Avonturiers die met de Quest Helper een object of item moeten bereiken, openen eerst een dichte deur die ertussen zit (zoals in het kasteel van Lumbridge).
 - Heeft een winkel iets niet op voorraad, dan koopt een avonturier het op de GE in plaats van steeds dezelfde winkel te proberen. Ligt een quest-item niet op de grond, dan haalt hij het van de bank of koopt hij het.
