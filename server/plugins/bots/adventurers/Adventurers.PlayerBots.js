@@ -3149,6 +3149,34 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   return { adventurers, questFeedback, spawn, tick, onShutdown, onXpReward, shareLogsNow, questSweep, talkTick, forceQuest, forceTraining, onDeath, onLevelUp, onDrops, onNpcDeath, report, next, startGroup, acquire };
 }
 
+let bridgeStarting = 0;
+/** Starts the Quest Helper bridge when it is built and does not answer (see the startup hook). */
+function keepBridgeUp(world) {
+  if ((process.env.ADVENTURER_START_BRIDGE ?? "1") === "0" || Date.now() - bridgeStarting < 4 * 60_000) return;
+  const path = require("path");
+  const fs = require("fs");
+  const root = path.join(__dirname, "..", "..", "..", "..");
+  const bin = path.join(root, "tools", "quest-helper-bridge", "build", "install", "offline-quest-helper-bridge", "bin", "offline-quest-helper-bridge");
+  if (!fs.existsSync(bin)) return;
+  const url = process.env.QUEST_HELPER_URL || `http://127.0.0.1:${Number(process.env.QUEST_HELPER_PORT || 16471)}`;
+  fetch(`${url.replace(/\/$/, "")}/health`, { signal: AbortSignal.timeout(3000) }).then((response) => {
+    if (!response.ok) throw new Error(String(response.status));
+  }).catch(() => {
+    bridgeStarting = Date.now();
+    try {
+      fs.mkdirSync(path.join(process.cwd(), "logs"), { recursive: true });
+      const out = fs.openSync(path.join(process.cwd(), "logs", "quest-helper-bridge.log"), "a");
+      const child = require("child_process").spawn(process.execPath, [path.join(root, "scripts", "run-with-env.mjs"), "-", path.join(root, "scripts", "quest-helper-bridge.mjs")],
+        { cwd: root, detached: true, stdio: ["ignore", out, out] });
+      child.unref();
+      world?.log?.("adventurer_bridge_started", { pid: child.pid });
+      console.log("[adventurers] Quest Helper-bridge gestart (log: server/logs/quest-helper-bridge.log)");
+    } catch (error) {
+      world?.log?.("adventurer_bridge_start_failed", { error: String(error?.message ?? error) });
+    }
+  });
+}
+
 /** Starts the adventurers on server start; serves /api/adventurers and the commands. */
 const REPORT_CACHE_MS = 2000;
 
@@ -3230,6 +3258,14 @@ function startAdventurers({ api, runtime, world, registry }) {
   }, rights.OWNER, "Start a training mode for an adventurer: ::advtrain <name>:<mode>");
   // The last minutes of logs out before the server goes down (manager.onShutdown).
   api.onServerShutdown?.(() => manager.onShutdown());
+  // The Quest Helper bridge (the adventurers' quests need it): started by the game when it is built
+  // but not running, and again if it stops (it ran beside the game only when start.sh started
+  // it, and every quest failed after two minutes without it). Off with ADVENTURER_START_BRIDGE=0.
+  api.onServerStartup?.(() => {
+    const check = () => keepBridgeUp(world);
+    setTimeout(check, 15_000).unref?.();
+    setInterval(check, 5 * 60_000).unref?.();
+  });
   // The logs to the bot-logs branch every five minutes, from the game itself (manager.shareLogsNow).
   api.onServerStartup?.(() => {
     const timer = setInterval(() => manager.shareLogsNow(), 5 * 60_000);

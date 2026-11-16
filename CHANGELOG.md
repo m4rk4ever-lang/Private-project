@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Het spel start de Quest Helper-bridge zelf (en opnieuw als hij stopt) als die gebouwd is maar niet draait; zonder bridge liepen alle quests van de avonturiers na twee minuten vast. Uit te zetten met ADVENTURER_START_BRIDGE=0.
 - Eigenaarscommando `::advquestall`: alle avonturiers proberen tegelijk elk een andere quest (blokkades opgeheven), zodat in één run te zien is waar elke quest vastloopt.
 - Avonturiers gaan af en toe (ongeveer 1 op de 10 keuzes) 20–40 minuten puur geld verdienen: met de klus die hen tot nu toe het meeste geld per uur opleverde (dat meten ze zelf per klus), soms iets nieuws om te proberen, of een boss als ze sterk genoeg zijn. In te stellen met "moneyChance" in adventurers.json.
 - De questlogboeken van de avonturiers bevatten nu ook de gesprekskeuzes (welke opties er waren en welke de avonturier koos), bij vastlopen én bij een voltooide quest.
