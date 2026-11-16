@@ -288,6 +288,44 @@ function caughtStealing(player, stall, object) {
   return true;
 }
 
+/**
+ * "thieving:stall-safe-spot" { player, object, spot, watched }: a tile next to the stall where no
+ * owner or guard sees the thief (so a bot steps there before it steals, as a player does), or
+ * none (spot null, watched true) while it is watched from every side.
+ */
+function stallSafeSpot(request) {
+  const { player, object } = request ?? {};
+  if (!player || !object) return;
+  const stall = stallFor(object, core.CacheDefinitions.getObject(object.getId())?.name);
+  if (!stall) return;
+  const at = object.getLocation();
+  const definition = core.CacheDefinitions.getObject(object.getId());
+  const width = Math.max(1, definition?.sizeX ?? 1);
+  const length = Math.max(1, definition?.sizeY ?? 1);
+  const area = player.getPrivateArea();
+  const lookouts = core.World.getNpcsNear(at, LOOKOUT_RADIUS + Math.max(width, length), area).filter((npc) => {
+    const name = String(npc.getDefinition().getName() ?? "");
+    return npc.getHitpoints() > 0 && (GUARDS.has(name.toLowerCase()) || !!stall.guards?.includes(name.toLowerCase()) || stall.owners.includes(name));
+  });
+  const here = player.getLocation();
+  const tiles = [];
+  for (let x = at.getX() - 1; x <= at.getX() + width; x += 1) {
+    for (let y = at.getY() - 1; y <= at.getY() + length; y += 1) {
+      const inside = x >= at.getX() && x < at.getX() + width && y >= at.getY() && y < at.getY() + length;
+      const corner = (x === at.getX() - 1 || x === at.getX() + width) && (y === at.getY() - 1 || y === at.getY() + length);
+      if (inside || corner) continue;
+      if (core.RegionManager.blocked?.(new core.Location(x, y, at.getZ()), area)) continue;
+      tiles.push(new core.Location(x, y, at.getZ()));
+    }
+  }
+  const seen = (tile) => lookouts.some((npc) => Math.max(Math.abs(npc.getLocation().getX() - tile.getX()), Math.abs(npc.getLocation().getY() - tile.getY())) <= LOOKOUT_RADIUS
+    && core.RegionManager.canProjectileAttackBounds(npc.getLocation(), tile, npc.getSize(), npc.getSize(), 1, 1, area));
+  const unseen = tiles.filter((tile) => !seen(tile))
+    .sort((a, b) => Math.max(Math.abs(a.getX() - here.getX()), Math.abs(a.getY() - here.getY())) - Math.max(Math.abs(b.getX() - here.getX()), Math.abs(b.getY() - here.getY())));
+  request.watched = unseen.length < tiles.length;
+  request.spot = unseen[0] ? { x: unseen[0].getX(), y: unseen[0].getY() } : null;
+}
+
 // The client uses these cache varbits for the merchants' stolen-stock state.
 function syncTheft(player, key, value) {
   const id = core.CacheDefinitions.getVarbitId(`marketthief_${key}`);
@@ -479,6 +517,7 @@ function attach(api) {
   api.persistAttribute(THEFT_ATTRIBUTE, null);
   api.onPlayerLogin(login);
   api.onPlayerLogout(logout);
+  api.onCustomEvent?.("thieving:stall-safe-spot", stallSafeSpot);
   api.onNpcsInteraction([...new Set(ALL_STALLS.filter((stall) => stall.marksMerchant !== false).flatMap((stall) => stall.owners))], { "Talk-to": merchantInteraction, Trade: merchantInteraction });
   api.onObjectInteraction("Silver stall", { "Steal-from": handleStealFromStall });
   api.onObjectInteraction("Spice stall", { "Steal-from": handleStealFromStall });
@@ -512,4 +551,4 @@ function attach(api) {
 module.exports = attach;
 // The stalls by their object name, read by the bots' object catalog (plugins/bots/brain/ObjectCatalog.PlayerBots.js).
 module.exports.STALLS = STALLS;
-module.exports._test = { handleStealFromStall, stealFromClothesStall, stealLine, successChance, STALLS, PORT_ROBERTS_STALLS, MOR_UL_REK_STALLS, depleted, emptyStallId, merchantInteraction, login, logout, THEFT_ATTRIBUTE };
+module.exports._test = { stallSafeSpot, handleStealFromStall, stealFromClothesStall, stealLine, successChance, STALLS, PORT_ROBERTS_STALLS, MOR_UL_REK_STALLS, depleted, emptyStallId, merchantInteraction, login, logout, THEFT_ATTRIBUTE };

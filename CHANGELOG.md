@@ -122,6 +122,8 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Bots stelen nu echt van kramen: ze klikten de verkeerde menu-optie van de kraam aan en kregen daardoor nooit XP of buit. Dit geldt voor elk object waarvan de actie niet de eerste in het menu is.
+- Avonturiers stellen zich bij een kraam eerst op een plek op waar de eigenaar en de wachten hen niet zien; ziet iedereen hen, dan wachten ze even en wagen ze daarna toch een poging.
 - Een avonturier die kramen wil bestelen (bakery stalls) loopt naar de markt van Ardougne, niet meer naar de mannen in Lumbridge of Edgeville waar geen kramen staan.
 - Een avonturier die een Slayer-plek niet kan bereiken (zoals de skeletons achter de dichte deur in Draynor Manor) kiest de volgende plek met dezelfde monsters, in plaats van steeds terug te gaan.
 - De looptijd naar een klus telt nu voor alle klussen niet mee, niet alleen voor agility.

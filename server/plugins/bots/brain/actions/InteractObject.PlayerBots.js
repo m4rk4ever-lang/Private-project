@@ -2,6 +2,18 @@
 
 const { MapObjects } = require("../../../../src/main/typescript/elvarg/game/entity/impl/object/MapObjects");
 const { resolveCatalogObjectIds } = require("../ObjectCatalog.PlayerBots");
+const { CacheDefinitions } = require("../../../../src/main/typescript/elvarg/game/cache/CacheDefinitions");
+
+/**
+ * The click for `option` on this object: its place in the object's menu (1-5), as the client
+ * sends it. "Steal-from" is a stall's second option, "Chop down" a tree's first.
+ */
+function clickTypeFor(objectId, option) {
+  const wanted = String(option ?? "").toLowerCase();
+  const actions = CacheDefinitions.getObject?.(objectId)?.actions ?? [];
+  const index = actions.findIndex((action) => String(action ?? "").toLowerCase() === wanted);
+  return index >= 0 ? index + 1 : 1;
+}
 const { playerState, stationaryFor } = require("../ActionState.PlayerBots");
 const { canReachSpot } = require("../../behaviours/navigation/LongRoutes.PlayerBots");
 const { createObjectReachChecker } = require("../../behaviours/navigation/ObjectReach.PlayerBots");
@@ -19,6 +31,8 @@ const TARGET_SPREAD = 6;
 const MAX_DIRECT_ROUTE_TILES = 20;
 const SEARCH_WALK_RADIUS = 10;
 const INTERACT_COOLDOWN_MS = 1500;
+/** How long an honest thief waits for a watched stall's owner or guard to look away. */
+const STALL_WATCH_WAIT_MS = 10_000;
 // Clicks on the same object from the same tile that never produce (and never
 // start a session) mean this bot cannot use it right now: it moves on to another
 // for SKIP_CLICK_MS. Never shared, never about depletion: a depleted rock is a
@@ -391,6 +405,27 @@ function createInteractObjectAction(spec, world) {
         return "running";
       }
 
+      // A stall, for an adventurer (an honest bot): from a tile its owner and the guards cannot
+      // see (the thieving plugin knows who watches), as a player steps round the corner first.
+      // Watched from every side it waits a little, then takes its chance as players do.
+      if (spec.unseen === true && (ctx.state?.honest === true || ctx.state?.adventurer === true)) {
+        const watch = { player, object, spot: null, watched: false };
+        world.emit?.("thieving:stall-safe-spot", watch);
+        const here = player.getLocation();
+        if (watch.spot && (watch.spot.x !== here.getX() || watch.spot.y !== here.getY())) {
+          debug(ctx, `unseen-spot:${watch.spot.x},${watch.spot.y}`);
+          queueRouteAndFlagAppearance(player, watch.spot.x, watch.spot.y, { nowMs, reason: "brain_stall_spot", basicPather: true });
+          bot.lastClickAt = nowMs;
+          return "running";
+        }
+        if (watch.watched && !watch.spot && nowMs - (bot.watchedSince ||= nowMs) < STALL_WATCH_WAIT_MS) {
+          debug(ctx, "watched");
+          bot.walkProgress = true;
+          return "running";
+        }
+        // Unwatched, or done waiting: it steals now, and waits afresh next time.
+        bot.watchedSince = 0;
+      }
       const objectLoc = object.getLocation();
       const key = objectKey(object);
       const now = player.getLocation();
@@ -453,7 +488,7 @@ function createInteractObjectAction(spec, world) {
             player,
             object,
             objectId: object.getId(),
-            clickType: 1,
+            clickType: clickTypeFor(object.getId(), option),
             location: {
               x: objectLoc.getX(),
               y: objectLoc.getY(),

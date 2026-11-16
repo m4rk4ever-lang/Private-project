@@ -183,6 +183,7 @@
           "catalog": "stall",
           "tier": "$tier",
           "option": "Steal-from",
+          "unseen": true,
           "until": {"inventoryFull":true},
           "stallSeconds": 120
         },

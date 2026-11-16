@@ -115,6 +115,8 @@ function bootPlayerBotsRuntime(options = {}) {
       return botApi.emitItemOnObject(event);
     },
     emitItemOnItem: (event) => botApi.emitItemOnItem(event),
+    // A custom event to a content plugin (a stall's out-of-sight spot): the event comes back filled in.
+    emit: (name, payload) => botApi.emitCustomEvent?.(name, payload),
     // An inventory item's option (Bury, Drink, Eat), as a click on it sends it.
     useItem: (player, slot, option) => {
       const item = player.getInventory().getItems()[slot];
