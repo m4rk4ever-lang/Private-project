@@ -106,15 +106,17 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
    */
   function ready(name) {
     if (!has(name)) return false;
-    if (playthroughs[name]) return playthroughs[name].verified !== false;
-    return (data.helperQuests ?? []).includes(name);
+    if (playthroughs[name]?.verified !== false && playthroughs[name]) return true;
+    return (data.helperQuests ?? []).includes(name) && Boolean(helper?.available?.());
   }
 
   /** Starts `name` for this adventurer. */
   function start(entry, name, nowMs = now()) {
     if (!questOf(name)) return false;
     // A hand-written playthrough first; else the Quest Helper guides it step by step.
-    const helperKey = !playthroughs[name] && helper?.available?.() ? helper.keyOf(name) : null;
+    // An unverified hand-written playthrough gives way to the helper when it runs.
+    const own = playthroughs[name] && playthroughs[name].verified !== false ? playthroughs[name] : null;
+    const helperKey = !own && helper?.available?.() ? helper.keyOf(name) : null;
     if (!playthroughs[name] && !helperKey) return false;
     entry.questRun = { name, step: 0, tries: 0, stepSince: nowMs, talkAt: 0, helperKey };
     return true;

@@ -2241,11 +2241,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   }
 
   /** Owner test hook: starts a quest with a playthrough for this adventurer now. */
-  function forceQuest(name, questName) {
+  function forceQuest(name, questName, stage = null) {
     const entry = adventurers.get(name);
     if (!entry?.player?.isRegistered?.() || !questPlay.has(questName)) return false;
     errands.errands?.delete?.(entry.player);
     entry.questsAside?.delete(questName);
+    // A test of one step: the quest set to that stage first (an owner's ::advquest name:quest:stage).
+    if (Number.isInteger(stage) && stage >= 0) questPlay.questOf(questName)?.setStage?.(entry.player, stage);
     return startQuest(entry, { kind: "quest", quest: { name: questName } });
   }
 
@@ -2312,13 +2314,13 @@ function startAdventurers({ api, runtime, world, registry }) {
     return true;
   }, rights.OWNER, "Go to an adventurer bot: ::adventurer <name>");
   api.registerCommand("advquest", ({ player, parts }) => {
-    const [name, quest] = parts.slice(1).join(" ").split(":").map((part) => part.trim());
+    const [name, quest, stage] = parts.slice(1).join(" ").split(":").map((part) => part.trim());
     const entry = [...manager.adventurers.values()].find((a) => a.name.toLowerCase() === String(name).toLowerCase());
-    player.sendMessage(entry && manager.forceQuest(entry.name, quest)
+    player.sendMessage(entry && manager.forceQuest(entry.name, quest, stage === undefined || stage === "" ? null : Number(stage))
       ? `${entry.name} begint aan ${quest}.`
       : "Gebruik: ::advquest <naam>:<quest met een bot-playthrough>.");
     return true;
-  }, rights.OWNER, "Start a quest with a bot playthrough for an adventurer: ::advquest <name>:<quest>");
+  }, rights.OWNER, "Start a quest with a bot playthrough for an adventurer, optionally at a stage: ::advquest <name>:<quest>[:<stage>]");
   api.registerCommand("advtrain", ({ player, parts }) => {
     const [name, mode] = parts.slice(1).join(" ").split(":").map((part) => part.trim());
     const entry = [...manager.adventurers.values()].find((a) => a.name.toLowerCase() === String(name).toLowerCase());
