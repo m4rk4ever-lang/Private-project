@@ -93,6 +93,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Alle avonturiers en de achievementsrace beginnen opnieuw bij nul in Lumbridge, met alleen het startpakket, voor een eerlijk speelveld met alle verbeteringen.
 - De clanleider krijgt voorrang bij hulp van clangenoten: hij krijgt meer materialen en tot de helft van hun overschot aan geld (elk half uur), en de anderen nemen niets uit de voorraad van de leider.
 - Avonturierspagina: 'Per clan' toont de clanrace met de kaarten per clan, 'Ranglijst' de ranglijst van alle avonturiers.
 - Een avonturier zonder boog en pijlen of runes spaart daar nu voor (met houthakken, mijnen, vissen, stelen of vechten) en koopt ze zodra het geld er is; daarna kan hij Ranged of Magic trainen.
