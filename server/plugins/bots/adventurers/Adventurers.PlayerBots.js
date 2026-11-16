@@ -699,7 +699,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         emit("ge:collect", { player: buyer });
         const missing = buy.materials.filter((id) => buyer.getInventory().getAmount(id) <= 0);
         if (missing.length === 0) return;
-        if (!missing.every((id) => Trade.buyAtExchange(buyer, core, emit, id, buy.amount))) {
+        if (!missing.every((id) => bid(buyer, core, emit, id, buy.amount))) {
           note(buyer, `Kon niet op alles bieden (${missing.map(itemName).join(", ")}).`, "activity");
           return;
         }
@@ -807,8 +807,48 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return false;
   }
 
+  /**
+   * A buy at the Grand Exchange: the offer, and a wait there until it has come in (a player does
+   * not walk off and leave his trout in the exchange). True when placed.
+   */
+  function bid(player, core_, emit_, itemId, amount) {
+    if (!Trade.buyAtExchange(player, core_, emit_, itemId, amount)) return false;
+    const entry = adventurers.get(player.getUsername?.());
+    if (entry) entry.offersUntil = Math.max(entry.offersUntil ?? 0, now() + BID_WAIT_MS);
+    return true;
+  }
+
+  function inventoryCounts(player) {
+    const counts = new Map();
+    for (const item of player.getInventory().getItems() ?? []) {
+      if (item && item.getId() > 0) counts.set(item.getId(), (counts.get(item.getId()) ?? 0) + item.getAmount());
+    }
+    return counts;
+  }
+
+  /** Still waiting at the exchange for offers it just placed: collects what came in. */
+  function waitForOffers(entry, nowMs) {
+    if (!((entry.offersUntil ?? 0) > nowMs)) return false;
+    const request = { player: entry.player };
+    const before = inventoryCounts(entry.player);
+    emit("ge:collect", request);
+    if (request.collected > 0) {
+      const got = [...inventoryCounts(entry.player)].filter(([id, amount]) => id !== COINS && amount > (before.get(id) ?? 0))
+        .map(([id, amount]) => `${amount - (before.get(id) ?? 0)} x ${itemName(id)}`);
+      if (got.length > 0) note(entry.player, `Haalt zijn aankopen op bij de GE: ${got.join(", ")}.`, "activity");
+    }
+    if (!(request.waiting > 0)) {
+      entry.offersUntil = 0;
+      return false;
+    }
+    entry.phase = "waiting";
+    entry.until = nowMs + 6_000;
+    return true;
+  }
+
   function next(entry, nowMs) {
     if (errands.busy(entry.player)) return;
+    if (waitForOffers(entry, nowMs)) return;
     // Waiting at the exchange for its materials: collect once they are in, then to work.
     if (entry.resume) {
       const waiting = Trade.finishedOffers(entry.player, emit) > 0;
@@ -1120,7 +1160,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       reason: "buy_materials",
       arrive: (buyer) => {
         emit("ge:collect", { player: buyer });
-        if (!Trade.buyAtExchange(buyer, core, emit, itemId, amount)) return;
+        if (!bid(buyer, core, emit, itemId, amount)) return;
         emit("ge:collect", { player: buyer });
         acquire(buyer, itemId);
         note(buyer, `Koopt ${amount > 1 ? `${amount} x ` : ""}${label} op de GE (~${Math.ceil(guide * 1.05 * amount).toLocaleString("nl-NL")} gp).`, "activity");
@@ -1650,7 +1690,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     });
     const bids = [];
     for (const want of list) {
-      if (Trade.buyAtExchange(player, core, emit, want.itemId, 1)) bids.push(want.name.toLowerCase().replace(/_/g, " "));
+      if (bid(player, core, emit, want.itemId, 1)) bids.push(want.name.toLowerCase().replace(/_/g, " "));
     }
     if (bids.length > 0) note(player, `Biedt op de GE op: ${bids.join(", ")}.`, "activity");
   }
@@ -1667,7 +1707,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const top = (name, amount) => {
       const id = Shopping.idOf(core, name);
       if (!Number.isInteger(id) || player.getInventory().getAmount(id) + banked(player, id) >= amount / 3) return;
-      if (Trade.buyAtExchange(player, core, emit, id, amount)) bids.push(`${amount} x ${itemName(id)}`);
+      if (bid(player, core, emit, id, amount)) bids.push(`${amount} x ${itemName(id)}`);
     };
     if (styles.includes("ranged") || (Shopping.gear.styles?.ranged?.weapon ?? []).some((entry) => Shopping.owns(player, Shopping.idOf(core, entry.item)))) {
       const level = levelOf(player, "RANGED");
@@ -2003,7 +2043,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const minutes = Math.floor((now() - entry.errand.since) / 60_000);
       return `Loopt naar ${entry.errand.to} ${ERRAND_REASONS[entry.errand.reason] ?? ""}${minutes > 0 ? ` (${minutes} min onderweg)` : ""}`.replace(/ +/g, " ").trim();
     }
-    if (entry.phase === "waiting") return entry.resume ? "Wacht op zijn bod op de GE" : "Wacht even (geen bank bereikbaar)";
+    if (entry.phase === "waiting") return entry.resume || (entry.offersUntil ?? 0) > now() ? "Wacht op zijn bod op de GE" : "Wacht even (geen bank bereikbaar)";
     if (entry.phase === "boss") return `Boss: ${entry.plan?.boss?.name}`;
     if (entry.phase === "quest" && entry.questRun) return `Quest: ${entry.questRun.name} (stap ${entry.questRun.step + 1})`;
     if (entry.plan) return `Training: ${String(entry.activity).replace(/_/g, " ")} (${entry.plan.reason})`;

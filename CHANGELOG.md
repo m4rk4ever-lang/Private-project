@@ -113,6 +113,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers wachten bij de Grand Exchange tot hun bod binnen is en nemen de spullen mee; eerder liepen ze meteen weg en bleef het gekochte (zoals eten) in de GE liggen. In het logboek staat wat ze ophalen.
 - Na een herstart van de server staan avonturiers weer waar ze waren, in plaats van allemaal in Lumbridge.
 - In een Codespace wordt de gameserverpoort nu ook publiek als de server pas later opstart; je hoeft hem niet meer zelf op Public te zetten.
 - Avonturiers eten nu ook onderweg en tijdens hun klus als hun hitpoints onder de helft zakken, en een avonturier met minder dan 40 hitpoints neemt eerst eten mee (van de bank of gekocht) voordat hij aan een klus begint.
