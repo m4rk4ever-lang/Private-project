@@ -68,6 +68,65 @@ function questsOf(target) {
   return { open, done, total: quests.length };
 }
 
+let coreRef = null;
+
+/** Each quest's own variable (varbit or varp), as the quest tab reads it. */
+function questVars() {
+  try {
+    return require("../../quests/QuestRuntime").getRegisteredQuests()
+      .map((quest) => (quest.varbitId !== undefined ? { quest, kind: "varbit", id: quest.varbitId } : quest.varpId !== undefined ? { quest, kind: "varp", id: quest.varpId } : null))
+      .filter((entry) => entry && Number.isInteger(entry.id));
+  } catch {
+    return [];
+  }
+}
+
+const readVar = (sender, entry) => (entry.kind === "varbit" ? sender.getVarbit?.(entry.id) : sender.getVarp?.(entry.id));
+const sendVar = (sender, entry, value) => (entry.kind === "varbit" ? sender.sendVarbit?.(entry.id, value) : sender.sendConfig?.(entry.id, value));
+
+/**
+ * The bot's quest tab and combat tab in the watcher's client: its quests' variables (the tab is
+ * drawn from them) and its weapon's kind. Only what the watcher's client shows: the watcher's own
+ * values are kept (state.ownVars) and sent back when it stops.
+ */
+function mirrorTabs(player, state) {
+  const own = player.getPacketSender();
+  const theirs = state.target.getPacketSender?.();
+  if (!theirs) return;
+  state.vars ??= questVars();
+  state.ownVars ??= new Map(state.vars.map((entry) => [`${entry.kind}:${entry.id}`, readVar(own, entry) ?? 0]));
+  for (const entry of state.vars) {
+    // The value its quest tab would show: from the bot's saved stage (a bot's client is not real).
+    let value = null;
+    try {
+      const stage = entry.quest.getStage(state.target);
+      value = entry.kind === "varbit" ? entry.quest.varbitValue?.(stage, state.target) : entry.quest.varpValue?.(stage, state.target);
+    } catch {
+      value = readVar(theirs, entry);
+    }
+    if (Number.isInteger(value) && value !== readVar(own, entry)) sendVar(own, entry, value);
+  }
+  const category = state.target.getWeapon?.()?.getCategory?.();
+  const varbit = coreRef?.WeaponInterfaceManager?.WEAPON_CATEGORY_VARBIT;
+  if (Number.isInteger(category) && Number.isInteger(varbit) && state.shownCategory !== category) {
+    own.sendVarbit?.(varbit, category);
+    state.shownCategory = category;
+  }
+}
+
+function restoreTabs(player, state) {
+  const own = player.getPacketSender();
+  for (const entry of state.vars ?? []) {
+    const value = state.ownVars?.get(`${entry.kind}:${entry.id}`);
+    if (Number.isInteger(value)) sendVar(own, entry, value);
+  }
+  try {
+    coreRef?.WeaponInterfaceManager?.assign?.(player);
+  } catch {
+    // Its own combat tab comes back with its next weapon change otherwise.
+  }
+}
+
 /** The quests in the watcher's chat: when it starts following, and when they change. */
 function showQuests(player, state) {
   const quests = questsOf(state.target);
@@ -133,6 +192,7 @@ function mirror(player, state) {
     state.questsAt = now;
     showQuests(player, state);
     showJournal(player, state);
+    mirrorTabs(player, state);
   }
 }
 
@@ -175,6 +235,7 @@ function stop(player, restore = true) {
   const state = watching.get(player);
   if (!state) return false;
   watching.delete(player);
+  restoreTabs(player, state);
   player.setAppearanceHidden(state.hidden);
   player.setFixedViewDistance(state.fixedDistance);
   player.getMovementQueue().setBlockMovement(state.blocked);
@@ -232,6 +293,7 @@ function follow(core, { player, parts }) {
 
 function startWatching(api) {
   const { Task, PlayerRights } = api.core;
+  coreRef = api.core;
   api.registerCommand("volg", (event) => follow(api.core, event), PlayerRights.OWNER,
     "Follow a player or bot with the camera: ::volg <name>; ::volg alone stops");
   api.onPlayerLogout(({ player }) => stop(player, false));
