@@ -313,7 +313,7 @@
         "cooked": ["anglerfish","burnt_anglerfish","raw_anglerfish"]
       }
     },
-    {"id":"bakery_stalls","template":"steal_from_stalls","capacity":60,"fields":{"level":5,"tier":["Bakery stall","Tea stall"],"loot":["cake","bread","chocolate_slice","cup_of_tea_2"]}},
+    {"id":"bakery_stalls","template":"steal_from_stalls","capacity":60,"fields":{"level":5,"tier":["Bakery stall","Baker's stall","Tea stall"],"loot":["cake","bread","chocolate_slice","cup_of_tea_2"]}},
     {"id":"silk_stalls","template":"steal_from_stalls","capacity":40,"fields":{"level":20,"tier":"Silk stall","loot":["silk"]}},
     {"id":"fur_stalls","template":"steal_from_stalls","capacity":30,"fields":{"level":35,"tier":"Fur stall","loot":["grey_wolf_fur"]}},
     {"id":"silver_stalls","template":"steal_from_stalls","capacity":30,"fields":{"level":50,"tier":"Silver stall","loot":["silver_ore"]}},
