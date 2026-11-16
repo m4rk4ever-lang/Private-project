@@ -797,6 +797,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (own?.state && plan.mode !== "slayer") own.state.onlyNames = null;
     // A Slayer task is a fight too: food along first, from its bank or a shop.
     if (plan.mode === "slayer" && stockFood(entry, plan, nowMs)) return true;
+    if (plan.mode === "slayer" && !carriesFood(player) && entry.needFood) {
+      return startTraining(entry, { kind: "train", mode: "fishing", skill: "FISHING", reason: "eten vangen" }, nowMs);
+    }
     if (plan.mode === "slayer") return startSlayer(entry, plan, nowMs);
     if (getTravelFood(entry, plan, nowMs)) return true;
     if (plan.mode.startsWith("buy_")) {
@@ -893,6 +896,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const id = bestActivity(plan.mode, level, definitions);
       // Fighting on an empty stomach is how adventurers die: food first, if it can buy some.
       if (plan.mode === "combat_training" && stockFood(entry, plan, nowMs)) return true;
+      // Nothing to eat and none to be had: fish first (and cook it), not fight hungry.
+      if (plan.mode === "combat_training" && !carriesFood(player) && entry.needFood && view.combat >= 10) {
+        return startTraining(entry, { kind: "train", mode: "fishing", skill: "FISHING", reason: "eten vangen" }, nowMs);
+      }
       // Its axe, pickaxe, net or rod at the bank: fetched first, in person.
       const bankedTools = toolsInBank(player, plan.mode, id);
       if (bankedTools.length > 0) return fetchTools(entry, plan, bankedTools);
@@ -984,7 +991,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
     // To the exchange for the materials; it waits there for the bid to fill.
     return walkTo(entry, { ...data.grandExchange, name: "de Grand Exchange" }, {
-      reason: replan ? "buy_materials" : "quest", replan,
+      reason: "buy_materials",
       arrive: (buyer) => {
         emit("ge:collect", { player: buyer });
         const missing = buy.materials.filter((id) => buyer.getInventory().getAmount(id) <= 0);
@@ -1459,6 +1466,16 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
           entry.jobEnd = "target reached";
         }
       }
+      if (entry.needFood && carriesFood(entry.player)) entry.needFood = false;
+      // Out of food in the middle of a fight stretch: it stops and restocks (bank, shop), as a
+      // player does, rather than fighting on with nothing to eat.
+      if ((entry.phase === "training" && ["combat_training", "slayer", "combat_ranged", "combat_magic"].includes(entry.plan?.mode))
+          && !carriesFood(entry.player) && nowMs >= (entry.stockFoodAt ?? 0) && !errands.busy(entry.player)) {
+        note(entry.player, "Heeft geen eten meer; haalt eerst nieuw eten.", "activity");
+        entry.jobEnd = "out of food";
+        entry.savedTask = { kind: "train", mode: entry.plan.mode, skill: entry.plan.skill, reason: entry.plan.reason, target: entry.plan.target ?? null, remainingMs: 0, savedAt: now() };
+        entry.until = 0;
+      }
       // A finished Slayer task ends the stretch: back to a master, or something else.
       if (entry.phase === "training" && entry.activity === "slayer_task" && !Slayer.currentTask(emit, entry.player)) {
         note(entry.player, "Slayer-taak klaar.", "skill");
@@ -1727,10 +1744,16 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       });
     }
     const food = Shopping.foodToBuy(player, core, levelOf(player, "HITPOINTS"));
-    if (!food || Shopping.coinsOf(player) < Shopping.estimatedPrice(core, food.itemId, food.amount) + 50) return false;
-    if (!shopFor(entry, food.itemId, food.name, food.amount)) return false;
-    resume();
-    return true;
+    if (food && Shopping.coinsOf(player) >= Shopping.estimatedPrice(core, food.itemId, food.amount) + 50
+        && shopFor(entry, food.itemId, food.name, food.amount)) {
+      resume();
+      entry.needFood = false;
+      return true;
+    }
+    // No food to be had now (no coins, no shop near): it catches and cooks its own for a while.
+    entry.needFood = true;
+    note(player, "Kan nu geen eten krijgen; gaat eerst zelf vissen en koken.", "activity");
+    return false;
   }
 
   function getTravelFood(entry, plan, nowMs) {

@@ -154,6 +154,8 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers die materialen op de GE wilden kopen (logs om te fletchen, bars om te smithen) liepen op een fout vast; ze kopen ze nu en gaan aan de slag.
+- Avonturiers vechten niet meer door zonder eten: is het op, dan halen ze eerst nieuw eten (bank, winkel), en lukt kopen niet, dan gaan ze eerst zelf vissen en koken.
 - Avonturiers trainen weer fletching, firemaking, smithing en cooking: ze tellen hun bankgeld mee, kopen een kleinere partij materialen als het geld niet voor een volle reikt, en hun eigen logs of erts verwerken telt niet langer als geld uitgeven bij een spaardoel.
 - Het opzetten van een testaccount zet geen tientallen "Level N"-regels meer in zijn logboek.
 - Avonturiers betalen de tol van 10 gp bij de poort van Al Kharid als ze die bij zich hebben, zoals een speler; eerst moesten ze 1.000 gp op zak hebben en stonden ze vast in Al Kharid.
