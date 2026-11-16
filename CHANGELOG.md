@@ -134,6 +134,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Het spel loopt in een codespace niet meer vast op geheugen. Gradle-processen (van de Quest Helper-bouw en de Java-extensies van VS Code) namen samen ruim 3 GB in. `start.sh`, `yarn start` en `update` stoppen die nu eerst. De bridge wordt zonder blijvend Gradle-proces gebouwd. VS Code importeert de Java/Gradle-projecten in de repo niet meer vanzelf.
 - Het spel valt niet meer helemaal om als de client stopt: crasht de client steeds (bijvoorbeeld door te weinig geheugen in de codespace), dan blijft de gameserver draaien.
 - De Quest Helper-bridge gebruikt hooguit 512 MB geheugen (was een kwart van de codespace). Daardoor raakt het geheugen minder snel op en wordt de server niet meer afgeschoten ("Killed").
 - Openen of opnieuw verbinden met de codespace start geen tweede spel meer terwijl het eerste nog opstart; een tweede start stopte eerst het lopende spel.

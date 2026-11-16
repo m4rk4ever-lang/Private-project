@@ -31,5 +31,6 @@ if [ ! -d "$upstream/.git" ]; then
 fi
 git -C "$upstream" fetch -q origin "$commit" 2>/dev/null || true
 git -C "$upstream" checkout -q "$commit"
-(cd "$bridge" && bash ./gradlew -q installDist)
+# Without a daemon: one left idle after the build holds ~0.5-3 GB the game needs.
+(cd "$bridge" && bash ./gradlew -q --no-daemon installDist)
 echo "Quest Helper bridge built"

@@ -6,9 +6,14 @@
     "memory": "8gb"
   },
   "features": {
-    "ghcr.io/devcontainers/features/java:1": { "version": "21" }
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "21"
+    }
   },
-  "forwardPorts": [3000, 43594],
+  "forwardPorts": [
+    3000,
+    43594
+  ],
   "portsAttributes": {
     "3000": {
       "label": "Spel (client)",
@@ -24,7 +29,25 @@
   "postAttachCommand": "bash .devcontainer/start.sh",
   "customizations": {
     "codespaces": {
-      "openFiles": [".devcontainer/README.md"]
+      "openFiles": [
+        ".devcontainer/README.md"
+      ]
+    },
+    "vscode": {
+      "extensions": [
+        "-vscjava.vscode-java-pack",
+        "-vscjava.vscode-gradle",
+        "-redhat.java"
+      ],
+      "settings": {
+        "java.import.gradle.enabled": false,
+        "java.import.maven.enabled": false,
+        "java.autobuild.enabled": false,
+        "java.configuration.updateBuildConfiguration": "disabled",
+        "java.server.launchMode": "LightWeight",
+        "java.gradle.buildServer.enabled": "off",
+        "gradle.autoDetect": "off"
+      }
     }
   }
 }

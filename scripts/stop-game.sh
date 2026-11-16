@@ -10,6 +10,9 @@
 # this checkout. VS Code's own processes are never touched.
 set -uo pipefail
 cd "$(dirname "$0")/.."
+# Idle Gradle daemons hold GBs the game needs (an 8 GB codespace ran out beside them): stop them
+# before every (re)start; a build starts a new one when it needs it.
+pkill -f 'org.gradle.launcher.daemon.bootstrap.GradleDaemon' 2>/dev/null || true
 PORTS_RE=':(3000|43594|49600) '
 ports_busy() { ss -ltnH 2>/dev/null | grep -qE "$PORTS_RE"; }
 if ! ports_busy; then exit 0; fi

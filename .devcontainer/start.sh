@@ -7,6 +7,10 @@ if [ -x tools/quest-helper-bridge/build/install/offline-quest-helper-bridge/bin/
   nohup yarn bridge > /tmp/quest-helper-bridge.log 2>&1 &
   echo "Quest Helper bridge starting (log: /tmp/quest-helper-bridge.log)"
 fi
+# Idle Gradle daemons (left by the bridge build or by VS Code's Java/Gradle extensions) hold
+# several GB in an 8 GB codespace; the game ran out of memory beside them. They are only for
+# builds, so stop them; a build starts a new one when it needs it.
+pkill -f 'org.gradle.launcher.daemon.bootstrap.GradleDaemon' 2>/dev/null && echo "Gradle-daemons gestopt (geheugen vrij voor het spel)."
 # Only when no game runs yet: not by its ports alone (a game that is still starting has none
 # open yet), also by its processes. A second `yarn start` would stop the running game first.
 if ss -ltnH | grep -qE ':(3000|43594) ' || pgrep -f 'elvarg/Server.ts|local-panel.cjs|craco.js start' >/dev/null; then
