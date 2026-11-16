@@ -90,6 +90,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Avonturiers die veel verder zijn met houthakken of mijnen dan met fletching, firemaking, smelten of smithing kiezen die verwerkende skills nu veel vaker.
 - De tijd voor een trainingsklus van een avonturier loopt pas als hij op de plek is, niet al tijdens het lopen.
 - Avonturiers blijven langer bij één klus (20 tot 40 minuten), zodat ze meer levels en geld halen in plaats van vooral te reizen.
 - Avonturiers kopen gereedschap pas als ze de skill gaan doen (een bijl als ze gaan hakken, een pickaxe als ze gaan mijnen), en niet meer bij elke ronde een hamer en een mes terwijl ze nog vechten zonder wapen.

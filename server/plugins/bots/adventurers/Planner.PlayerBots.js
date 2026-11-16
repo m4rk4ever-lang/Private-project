@@ -24,6 +24,8 @@ const TRAINABLE = Object.freeze({
   HUNTER: "hunter",
 });
 const COMBAT = "combat_training";
+/** The gathering skill whose goods a processing skill uses. */
+const FEEDS = Object.freeze({ FLETCHING: "WOODCUTTING", FIREMAKING: "WOODCUTTING", SMELTING: "MINING", SMITHING: "MINING", COOKING: "FISHING" });
 const WINTERTODT_LEVEL = 50;
 
 /** The quest's unmet requirements: { skills: { NAME: level }, combat, quests, questPoints }. */
@@ -130,6 +132,10 @@ function trainingWeight(option, options, adventurer, { focus = {}, busyModes = n
   if (busyModes.has(option.mode)) weight *= 0.5;
   // One skill feeds the next: with logs in the bank fletching or burning comes up more often.
   if (option.mode.startsWith("buy_") && (adventurer.stocked ?? []).includes(option.skill)) weight *= 3;
+  // What it gathers feeds the next skill, as for a player: a woodcutter far ahead of its
+  // fletching and firemaking, a miner ahead of its smelting and smithing, comes to those soon.
+  const feeder = FEEDS[option.skill];
+  if (option.mode.startsWith("buy_") && feeder && (adventurer.levels[feeder] ?? 1) >= option.level + 10) weight *= 4;
   // A Slayer task it has is one it means to finish.
   if (option.mode === "slayer" && adventurer.slayer?.task) weight *= 3;
   return weight;
