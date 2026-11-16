@@ -439,6 +439,14 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     run.walking = false;
     if (nowMs < run.talkAt) return "running";
     if (run.helperKey && step.kind !== "npc") {
+      // A closed door between it and the object or item (Lumbridge castle's rooms): open it first.
+      const goal = { x: step.at[0], y: step.at[1] };
+      if (!canReachAt(player, new core.Location(goal.x, goal.y, step.at[2] ?? here.z), 1)
+          && (brainDoor(player, goal) || openWayTo(player, goal, nowMs))) {
+        run.talkAt = nowMs + 3_000;
+        run.reason = "opening a door on the way";
+        return "running";
+      }
       run.tries += 1; run.reason = run.reason ?? `${step.kind} step did not advance`;
       run.talkAt = nowMs + 8_000;
       if (step.kind === "object" && !useObject(player, step, nowMs)) run.reason = `object not found at ${step.at.join(",")} (ids ${step.ids.join("/")})`;
