@@ -49,4 +49,25 @@ function gift(mates, itemId, wanted, { spare, take }) {
   return given;
 }
 
-module.exports = { namesOf, clanOf, matesOf, equalSizes, gift };
+/**
+ * Adds `extra` members to every clan (adventurers.json "extraPerClan"): the clan's own bot name
+ * numbered on (Jorgbot 5, 6 ...), so every clan stays as big as the others. For a longer test run
+ * with more adventurers; set it back to 0 to play with the clans as they were.
+ */
+function expand(data, extra) {
+  const count = Math.max(0, Math.floor(Number(extra) || 0));
+  if (count === 0 || !Array.isArray(data.clans)) return data;
+  for (const clan of data.clans) {
+    const numbered = clan.members.map((name) => /^(.*bot) (\d+)$/i.exec(name)).filter(Boolean);
+    const prefix = numbered[0]?.[1] ?? `${String(clan.name).split(" ")[0]}bot`;
+    let last = Math.max(0, ...numbered.filter((match) => match[1] === prefix).map((match) => Number(match[2])));
+    for (let added = 0; added < count; added += 1) {
+      let name;
+      do name = `${prefix} ${(last += 1)}`; while (clan.members.includes(name));
+      clan.members.push(name);
+    }
+  }
+  return data;
+}
+
+module.exports = { namesOf, clanOf, matesOf, equalSizes, gift, expand };

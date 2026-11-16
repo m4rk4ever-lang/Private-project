@@ -29,6 +29,8 @@ const LOG_ATTRIBUTE = "adventurers:journal";
 const GOAL_ATTRIBUTE = "adventurers:goal";
 /** Which start an adventurer belongs to; a lower one than data.generation starts it over. */
 const GENERATION_ATTRIBUTE = "adventurers:generation";
+/** The test start an extra member got (applyTestProfile): shown, and kept out of the firsts. */
+const TEST_PROFILE_ATTRIBUTE = "adventurers:test-profile";
 /**
  * Its current job ({ kind, mode, skill, reason, style, bossId, activity, remainingMs, savedAt }),
  * one record that is overwritten, never appended: when a job starts and every TASK_SAVE_MS while
@@ -47,6 +49,11 @@ const Shopping = require("./Shopping.PlayerBots");
 const Trade = require("./Trade.PlayerBots");
 const Slayer = require("./Slayer.PlayerBots");
 const Clans = require("./Clans.PlayerBots");
+// More adventurers per clan for a longer test run (adventurers.json "extraPerClan"); once.
+if (!data.expandedClans) {
+  Clans.expand(data, data.extraPerClan);
+  data.expandedClans = true;
+}
 const { runPaced } = require("../runtime/SpawnPacing.PlayerBots");
 const npcSpawns = require("../../../data/definitions/npc-spawns.json");
 const { markHonest, markAdventurer } = require("../brain/Honest.PlayerBots");
@@ -154,6 +161,170 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       return { write: () => {} };
     }
   })();
+
+  /**
+   * logs/adventurers-metrics.jsonl, for whoever improves the bots: every five minutes per
+   * adventurer what it gained (XP per skill, levels, coins) and where its time went (working at
+   * its job, walking to it, errands, quests, standing idle at the job without XP), what it is doing
+   * and why; one line for the server (how long the adventurers' own tick takes, how many bots
+   * run). Plus an "idle" line the moment one stands at its job for a minute without XP.
+   */
+  const metricsLog = (() => {
+    try {
+      const fs = require("fs");
+      const path = require("path");
+      const file = path.join(process.cwd(), "logs", "adventurers-metrics.jsonl");
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      try { if (fs.statSync(file).size > 20 * 1024 * 1024) fs.renameSync(file, `${file}.old`); } catch {}
+      return fs.createWriteStream(file, { flags: "a" });
+    } catch {
+      return { write: () => {} };
+    }
+  })();
+  const METRICS_EVERY_MS = Math.max(10_000, Number(process.env.ADVENTURER_METRICS_MS) || 5 * 60_000);
+  const IDLE_NOTE_MS = 60_000;
+  const tickCost = { count: 0, totalMs: 0, maxMs: 0 };
+  let metricsAt = 0;
+
+  function xpBySkill(player) {
+    const out = {};
+    const manager = player.getSkillManager();
+    for (const skill of core.Skill.values()) out[skill.getName().toLowerCase()] = manager.getExperience(skill);
+    return out;
+  }
+
+  function metric(line) {
+    try {
+      metricsLog.write(`${JSON.stringify({ at: new Date().toISOString(), ...line })}\n`);
+    } catch {
+      // A help, not a must.
+    }
+  }
+
+  /** Where this tick's time went for this adventurer, and an idle note when it stands still. */
+  function account(entry, nowMs, dt) {
+    const m = (entry.metrics ??= { since: nowMs, time: {}, xp: xpBySkill(entry.player), coins: null, events: {} });
+    const total = Object.values(xpBySkill(entry.player)).reduce((sum, xp) => sum + xp, 0);
+    if (total !== entry.xpTotal) {
+      entry.xpTotal = total;
+      entry.xpAt = nowMs;
+    }
+    trackJob(entry, nowMs);
+    let kind;
+    if (entry.phase === "quest") kind = "quest";
+    else if (errands.busy(entry.player)) kind = "errand";
+    else if ((entry.phase === "training" || entry.phase === "boss") && awayFromJob(entry)) kind = "walking";
+    else if (entry.phase === "training" || entry.phase === "boss") kind = nowMs - (entry.xpAt ?? nowMs) > 20_000 ? "idle" : "working";
+    else kind = entry.phase ?? "other";
+    m.time[kind] = (m.time[kind] ?? 0) + dt;
+    if (kind === "working" && entry.activity) (m.activities ??= {})[entry.activity] = ((m.activities ?? {})[entry.activity] ?? 0) + dt;
+    if (kind === "idle") {
+      entry.idleMs = (entry.idleMs ?? 0) + dt;
+      if (entry.idleMs >= IDLE_NOTE_MS && !entry.idleNoted) {
+        entry.idleNoted = true;
+        m.events.idle = (m.events.idle ?? 0) + 1;
+        const at = entry.player.getLocation();
+        const state = stateOf(entry.player);
+        metric({ kind: "idle", bot: entry.name, activity: entry.activity ?? null, mode: entry.plan?.mode ?? null,
+          where: [at.getX(), at.getY(), at.getZ()], home: state?.home ?? null, hp: entry.player.getHitpoints?.(),
+          inCombat: Boolean(entry.player.getCombat?.()?.getTarget?.()), freeSlots: entry.player.getInventory().getFreeSlots(),
+          brainAction: state?.brain?.action?.id ?? state?.brain?.current ?? null });
+      }
+    } else {
+      entry.idleMs = 0;
+      entry.idleNoted = false;
+    }
+  }
+
+  /**
+   * One "job" line when a job ends: what it was for (mode, reason, the level it aimed at), how
+   * long it ran, the XP it brought, and how it ended (target reached, time up, full bag, stuck,
+   * quest done or failed, a trip in between). A "goal" line when a goal is set, reached or dropped.
+   */
+  function jobKey(entry) {
+    if (entry.phase === "quest") return `quest:${entry.questRun?.name ?? "?"}`;
+    if (entry.phase === "training" || entry.phase === "boss") return `${entry.phase}:${entry.plan?.mode ?? entry.plan?.boss?.id ?? "?"}:${entry.plan?.reason ?? ""}`;
+    return null;
+  }
+
+  function trackJob(entry, nowMs) {
+    const key = jobKey(entry);
+    const job = entry.job;
+    if (job && job.key === key) return;
+    if (job) {
+      const xp = Object.values(xpBySkill(entry.player)).reduce((sum, v) => sum + v, 0);
+      const level = job.target ? (job.target.skill === "COMBAT" ? entry.player.getSkillManager().getCombatLevel() : levelOf(entry.player, job.target.skill)) : null;
+      metric({ kind: "job", bot: entry.name, job: job.key.split(":")[0], mode: job.mode, activity: job.activity ?? entry.activity ?? null, reason: job.reason, target: job.target,
+        levelAtStart: job.levelAtStart, levelAtEnd: level, targetMet: job.target ? level >= job.target.level : null,
+        minutes: Math.round((nowMs - job.startedAt) / 6000) / 10, xp: Math.round(xp - job.xp),
+        ended: entry.jobEnd ?? (key === null ? `then ${entry.phase}` : "replaced") });
+    }
+    entry.jobEnd = null;
+    if (!key) {
+      entry.job = null;
+      return;
+    }
+    const target = entry.plan?.target ?? null;
+    entry.job = { key, mode: entry.plan?.mode ?? null, activity: entry.activity ?? null, reason: entry.phase === "quest" ? entry.questRun?.name : entry.plan?.reason ?? null, target,
+      startedAt: nowMs, xp: Object.values(xpBySkill(entry.player)).reduce((sum, v) => sum + v, 0),
+      levelAtStart: target ? (target.skill === "COMBAT" ? entry.player.getSkillManager().getCombatLevel() : levelOf(entry.player, target.skill)) : null };
+  }
+
+  function goalMetric(entry, goal, event) {
+    metric({ kind: "goal", bot: entry.name, event, goal: Goals.describe(goal), detail: goal,
+      minutes: goal.setAt ? Math.round((Date.now() - goal.setAt) / 6000) / 10 : null });
+  }
+
+  /** Counts something that happened to this adventurer for its next metrics line. */
+  function countEvent(entry, name) {
+    if (!entry) return;
+    const m = (entry.metrics ??= { since: now(), time: {}, xp: xpBySkill(entry.player), coins: null, events: {} });
+    m.events[name] = (m.events[name] ?? 0) + 1;
+  }
+
+  function writeMetrics(nowMs) {
+    // Which skills got trained this round, by how many, with how much XP and by what activity.
+    const bySkill = {};
+    for (const entry of adventurers.values()) {
+      const m = entry.metrics;
+      if (!m || !entry.player?.isRegistered?.()) continue;
+      const xp = xpBySkill(entry.player);
+      const gained = {};
+      for (const [skill, value] of Object.entries(xp)) if (value > (m.xp[skill] ?? 0)) gained[skill] = Math.round(value - m.xp[skill]);
+      for (const [skill, amount] of Object.entries(gained)) {
+        const own = (bySkill[skill] ??= { bots: 0, xp: 0, by: {} });
+        own.bots += 1;
+        own.xp += amount;
+        const how = (m.activities && Object.keys(m.activities).join("+")) || entry.activity || entry.phase || "?";
+        own.by[how] = (own.by[how] ?? 0) + amount;
+      }
+      const at = entry.player.getLocation();
+      const coins = wealthOf(entry.player);
+      const minutes = (ms) => Math.round(ms / 6000) / 10;
+      metric({
+        kind: "bot", bot: entry.name, clan: Clans.clanOf(data, entry.name)?.name ?? null,
+        minutes: minutes(nowMs - m.since), combat: entry.player.getSkillManager().getCombatLevel(),
+        phase: entry.phase, mode: entry.plan?.mode ?? null, reason: entry.plan?.reason ?? null, target: entry.plan?.target ?? null,
+        activity: entry.activity ?? null, quest: entry.questRun?.name ?? null, goal: Goals.describe(entry.player.getAttribute(GOAL_ATTRIBUTE) ?? null) ?? null,
+        where: [at.getX(), at.getY(), at.getZ()], place: describeLocation(entry.player, { x: at.getX(), y: at.getY() }),
+        xpGained: gained, xpPerHour: Math.round(Object.values(gained).reduce((sum, v) => sum + v, 0) / Math.max(1, (nowMs - m.since) / 3_600_000)),
+        coins, coinsGained: m.coins === null ? null : coins - m.coins,
+        time: Object.fromEntries(Object.entries(m.time).map(([kind, ms]) => [kind, minutes(ms)])), events: m.events,
+      });
+      entry.metrics = { since: nowMs, time: {}, xp, coins, events: {} };
+    }
+    metric({ kind: "skills", trained: bySkill,
+      untouched: core.Skill.values().map((skill) => skill.getName().toLowerCase()).filter((skill) => !bySkill[skill]) });
+    let bots = 0;
+    try {
+      core.World.getPlayers().forEach((player) => { if (player?.isPlayerBot?.()) bots += 1; });
+    } catch {}
+    const memory = process.memoryUsage();
+    metric({ kind: "server", adventurers: adventurers.size, bots, tickAvgMs: tickCost.count ? Math.round(tickCost.totalMs / tickCost.count * 10) / 10 : null,
+      tickMaxMs: Math.round(tickCost.maxMs), heapMb: Math.round(memory.heapUsed / 1048576), rssMb: Math.round(memory.rss / 1048576),
+      questsBlocked: [...questsBlocked].filter(([, until]) => until > nowMs).map(([name]) => name) });
+    Object.assign(tickCost, { count: 0, totalMs: 0, maxMs: 0 });
+  }
 
   /** Quests blocked for every adventurer (noteQuestFailure): name -> until; and recent failures. */
   const questsBlocked = new Map();
@@ -353,20 +524,31 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     let goal = player.getAttribute(GOAL_ATTRIBUTE) ?? null;
     if (goal && Goals.reached(goal, helpers)) {
       note(player, `Doel gehaald: ${Goals.describe(goal)}.`, "skill");
+      goalMetric(entry, goal, "reached");
       // Saved up for a piece: it goes and buys it now (the shop, else the exchange).
       if (goal.kind === "coins" && goal.item) entry.buyGoal = goal.item;
       goal = null;
     }
     // A goal for a piece it has by now (bought, found, or something better on): no longer a goal.
     if (goal?.item && !Goals.candidates(null, helpers).some((other) => other.item === goal.item || other.why === goal.why)) {
-      if (goal.kind === "coins") goal = null;
+      if (goal.kind === "coins") {
+        goalMetric(entry, goal, "dropped: has it or better");
+        goal = null;
+      }
     }
     // A Ranged or Magic goal it can no longer work at (no bow and arrows, no runes): a new one.
     const styleOf = { RANGED: "ranged", MAGIC: "magic" };
-    if (goal?.kind === "level" && styleOf[goal.skill] && !helpers.styles.includes(styleOf[goal.skill])) goal = null;
+    if (goal?.kind === "level" && styleOf[goal.skill] && !helpers.styles.includes(styleOf[goal.skill])) {
+      goalMetric(entry, goal, "dropped: cannot train that style");
+      goal = null;
+    }
     if (!goal) {
       goal = Goals.pickGoal(helpers, random);
-      if (goal) note(player, `Nieuw doel: ${Goals.describe(goal)}.`, "activity");
+      if (goal) {
+        goal = { ...goal, setAt: Date.now() };
+        note(player, `Nieuw doel: ${Goals.describe(goal)}.`, "activity");
+        goalMetric(entry, goal, "set");
+      }
       player.setAttribute(GOAL_ATTRIBUTE, goal);
     }
     return goal;
@@ -576,6 +758,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         hold();
         entry.errand = null;
         note(player, `Kwam niet bij ${placeName(to)}: de weg was versperd.`, "activity");
+        countEvent(entry, "walkBlocked");
+        const at = player.getLocation();
+        metric({ kind: "walk_blocked", bot: entry.name, reason, to: { name: placeName(to), x: to.x, y: to.y, z: to.z ?? 0 },
+          where: [at.getX(), at.getY(), at.getZ()] });
         // That place is out for a while; the next bank or shop is still fine.
         // A quest's walk tries again (doors, another way); its own tries decide when to give up.
         if (reason !== "quest") (entry.blockedPlaces ??= new Map()).set(placeKey(to), now() + BLOCKED_MS);
@@ -876,6 +1062,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     entry.questRun = null;
     if (result === "done") {
       note(entry.player, `Quest voltooid: ${run.name}!`, "quest");
+      entry.jobEnd = "quest done";
     } else {
       // Stuck: put aside (longer each time it fails) and written down why, so the cause can be
       // fixed (logs/adventurer-quest-feedback.jsonl; also on the page's feedback list).
@@ -884,6 +1071,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       (entry.questsAside ??= new Map()).set(run.name, nowMs + QUEST_ASIDE_MS * Math.min(8, 2 ** (failures.get(run.name) - 1)));
       recordQuestFeedback(entry, questPlay.describeFailure({ ...entry, questRun: run }));
       noteQuestFailure(run.name, entry.name);
+      countEvent(entry, "questFailed");
+      entry.jobEnd = `quest failed: ${run.reason ?? "?"}`;
       note(entry.player, `Legt ${run.name} even weg (stap ${run.step + 1} lukte niet).`, "quest");
     }
     entry.phase = "new";
@@ -1184,9 +1373,27 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   }
 
   function tick() {
+    const started = process.hrtime.bigint();
+    try {
+      tickAll();
+    } finally {
+      const ms = Number(process.hrtime.bigint() - started) / 1e6;
+      tickCost.count += 1;
+      tickCost.totalMs += ms;
+      tickCost.maxMs = Math.max(tickCost.maxMs, ms);
+    }
+    const nowMs = now();
+    if (nowMs - metricsAt >= METRICS_EVERY_MS) {
+      if (metricsAt > 0) writeMetrics(nowMs);
+      metricsAt = nowMs;
+    }
+  }
+
+  function tickAll() {
     const nowMs = now();
     for (const entry of adventurers.values()) {
       if (!entry.player?.isRegistered?.()) continue;
+      if (Number.isFinite(entry.lastTickAt)) account(entry, nowMs, Math.min(10_000, Math.max(0, nowMs - entry.lastTickAt)));
       watchGear(entry);
       joinClan(entry);
       // On its way to the job (a long walk to the Gnome Stronghold): the walk does not count
@@ -1220,6 +1427,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       }
       if (stuck(entry, nowMs)) {
         note(entry.player, `Kon bij ${String(entry.activity ?? "zijn klus").replace(/_/g, " ")} niets doen; kiest iets anders.`, "activity");
+        countEvent(entry, "stuck");
+        entry.jobEnd = "stuck";
         entry.until = 0;
       }
       // Trained to what the job was for (a quest's combat level, a goal's level) and a little
@@ -1233,6 +1442,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
           entry.plan = { ...entry.plan, target: null };
           entry.overshoot = null;
           entry.until = 0;
+          // The job it would go back to after a trip was for this same level: not again.
+          entry.savedTask = null;
+          countEvent(entry, "targetReached");
+          entry.jobEnd = "target reached";
         }
       }
       // A finished Slayer task ends the stretch: back to a master, or something else.
@@ -1241,7 +1454,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         entry.until = 0;
       }
       // A full bag ends the stretch: off to sell (trade()), as a player banks or sells.
-      if (nowMs >= entry.until || (entry.phase === "training" && entry.player.getInventory().getFreeSlots() === 0)) next(entry, nowMs);
+      if (nowMs >= entry.until || (entry.phase === "training" && entry.player.getInventory().getFreeSlots() === 0)) {
+        entry.jobEnd ??= nowMs >= entry.until ? "time up" : "full bag";
+        next(entry, nowMs);
+      }
       rememberTask(entry, nowMs);
     }
   }
@@ -1256,6 +1472,53 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         world.log?.("adventurer_quest_talk_failed", { name: entry.name, error: String(error?.message ?? error) });
       }
     }
+  }
+
+  /**
+   * A test start for the extra members (adventurers.json "testProfiles", one per extra member, the
+   * same in every clan): other levels, the first quests of the path done and coins to buy gear
+   * with, so a test run also shows how mid- and high-level accounts play, not only new ones.
+   */
+  function testProfileOf(name) {
+    const clan = Clans.clanOf(data, name);
+    const profiles = data.testProfiles ?? [];
+    if (!clan || profiles.length === 0) return null;
+    const extra = Math.max(0, Math.floor(Number(data.extraPerClan) || 0));
+    const index = clan.members.indexOf(name) - (clan.members.length - extra);
+    return index >= 0 ? profiles[index % profiles.length] : null;
+  }
+
+  function applyTestProfile(player, profile) {
+    const { SkillManager } = core;
+    const skills = player.getSkillManager();
+    // The same "random" levels in every clan: from the profile's name, not from the bot's.
+    let seed = [...String(profile.name)].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) >>> 0, 7);
+    const roll = () => ((seed = (seed * 1103515245 + 12345) >>> 0) / 4294967296);
+    for (const skill of core.Skill.values()) {
+      const name = skill.getName().toUpperCase();
+      let level = profile.levels?.[name] ?? profile.all ?? null;
+      if (level === null && Array.isArray(profile.random)) level = profile.random[0] + Math.floor(roll() * (profile.random[1] - profile.random[0] + 1));
+      if (skill === core.Skill.HITPOINTS) level = Math.max(10, level ?? 10);
+      if (!level || level <= 1) continue;
+      skills.setCurrentLevel(skill, level, false).setMaxLevels(skill, level, false).setExperience(skill, SkillManager.getExperienceForLevel(level));
+    }
+    const registered = questsByName();
+    let done = 0;
+    for (const quest of data.quests ?? []) {
+      if (done >= (profile.quests ?? 0)) break;
+      const own = registered.get(normalize(quest.name));
+      try {
+        if (own && own.complete(player) !== false) done += 1;
+      } catch {
+        // A quest that cannot be completed this way is left open.
+      }
+    }
+    if (profile.coins) {
+      acquire(player, Trade.COINS);
+      player.getInventory().add(new core.Item(Trade.COINS, profile.coins));
+    }
+    player.setAttribute(TEST_PROFILE_ATTRIBUTE, profile.name);
+    note(player, `Testaccount (${profile.name}): begint met andere levels, ${done} quests en ${profile.coins ?? 0} coins.`);
   }
 
   /** Back to a new account: level 1 (10 Hitpoints), no items, no quests, an empty journal. */
@@ -1295,6 +1558,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     player.getInventory().refreshItems?.();
     player.getEquipment().refreshItems?.();
     player.setAttribute(GENERATION_ATTRIBUTE, data.generation ?? 1);
+    const profile = testProfileOf(player.getUsername?.());
+    if (profile) applyTestProfile(player, profile);
     // A new account starts in Lumbridge, wherever the old one was.
     const start = data.spawn;
     player.moveTo?.(new core.Location(start.x, start.y, start.z ?? 0));
@@ -1621,6 +1886,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function onDeath({ player }) {
     const entry = adventurers.get(player?.getUsername?.());
     if (!entry) return;
+    countEvent(entry, "died");
     const at = player.getLocation();
     note(player, `Is gestorven bij (${at.getX()}, ${at.getY()}); gaat zijn spullen ophalen.`, "activity");
     entry.graveTries = 0;
@@ -2211,7 +2477,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         // Its own planner trades for it (trade()); the world bots' upkeep leaves it alone.
         state.adventurer = true;
       }
-      if (Number(bot.getAttribute(GENERATION_ATTRIBUTE) ?? 0) < (data.generation ?? 1)) startOver(bot);
+      // An extra member that has no test start yet (it was made before the profiles) gets one now.
+      if (Number(bot.getAttribute(GENERATION_ATTRIBUTE) ?? 0) < (data.generation ?? 1)
+          || (testProfileOf(name) && !bot.getAttribute(TEST_PROFILE_ATTRIBUTE))) startOver(bot);
       // It knows Death already: a death leaves a grave without the first-death tutorial.
       emit("gravestones:met-death", { player: bot });
       adventurers.get(name).savedTask = Tasks.freshTask(bot.getAttribute?.(TASK_ATTRIBUTE), Date.now());
@@ -2244,6 +2512,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     entry.savedTask = null;
     const plan = Tasks.planOf(task, data.bosses ?? []);
     if (!plan) return false;
+    // Already at the level the job was for (combat 10 at combat 25): something new instead.
+    if (plan.target) {
+      const level = plan.target.skill === "COMBAT" ? entry.player.getSkillManager().getCombatLevel() : levelOf(entry.player, plan.target.skill);
+      if (level >= plan.target.level) return false;
+    }
     const started = plan.kind === "boss" ? startBoss(entry, plan, nowMs) : startTraining(entry, plan, nowMs);
     if (!started) return false;
     // An errand first (food, a tool, its supplies from the bank): the job waits until it is back.
@@ -2357,6 +2630,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const view = online ? snapshot(player) : null;
       return {
         name: entry.name,
+        testProfile: online ? player.getAttribute(TEST_PROFILE_ATTRIBUTE) ?? null : null,
         clan: Clans.clanOf(data, entry.name)?.name ?? null,
         emblem: Clans.clanOf(data, entry.name)?.emblem ?? null,
         leader: Clans.clanOf(data, entry.name)?.leader === entry.name,
@@ -2432,7 +2706,8 @@ function startAdventurers({ api, runtime, world, registry }) {
   api.registerContentEndpoint("adventurers", () => {
     if (!cached || Date.now() - cached.updated > REPORT_CACHE_MS) {
       const adventurers = manager.report();
-      achievements.update(adventurers);
+      // Test accounts started high: they would take the firsts without having earned them.
+      achievements.update(adventurers.filter((adventurer) => !adventurer.testProfile));
       cached = { updated: Date.now(), adventurers, achievements: achievements.view(), questFeedback: manager.questFeedback.slice(0, 30) };
     }
     return cached;
@@ -2481,7 +2756,7 @@ function startAdventurers({ api, runtime, world, registry }) {
       execute() {
         manager.tick();
         // The firsts are looked at every half minute too, not only when the page is open.
-        if ((this.looks = (this.looks ?? 0) + 1) % 25 === 0) achievements.update(manager.report());
+        if ((this.looks = (this.looks ?? 0) + 1) % 25 === 0) achievements.update(manager.report().filter((adventurer) => !adventurer.testProfile));
       }
     })());
     // Dialogue is clicked through a tick or so at a time, as a player reads it.

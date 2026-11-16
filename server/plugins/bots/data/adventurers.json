@@ -19,6 +19,14 @@
     15
   ],
   "questChance": 0.2,
+  "extraPerClan": 5,
+  "testProfiles": [
+    { "name": "vroege vechter", "levels": { "ATTACK": 30, "STRENGTH": 30, "DEFENCE": 25, "HITPOINTS": 30, "PRAYER": 15, "WOODCUTTING": 15, "MINING": 15, "FISHING": 10, "COOKING": 10 }, "quests": 5, "coins": 5000 },
+    { "name": "skiller", "levels": { "WOODCUTTING": 45, "MINING": 40, "FISHING": 45, "COOKING": 40, "FIREMAKING": 35, "FLETCHING": 30, "SMITHING": 25, "CRAFTING": 20, "THIEVING": 25, "AGILITY": 20 }, "quests": 3, "coins": 15000 },
+    { "name": "middenmoot", "all": 35, "levels": { "ATTACK": 40, "STRENGTH": 40, "DEFENCE": 40, "HITPOINTS": 40 }, "quests": 12, "coins": 30000 },
+    { "name": "gevorderd", "all": 50, "levels": { "ATTACK": 60, "STRENGTH": 60, "DEFENCE": 60, "HITPOINTS": 60, "RANGED": 50, "MAGIC": 50 }, "quests": 20, "coins": 100000 },
+    { "name": "mix", "random": [1, 60], "quests": 8, "coins": 20000 }
+  ],
   "logSize": 40,
   "quests": [
     {

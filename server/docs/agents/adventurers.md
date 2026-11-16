@@ -183,3 +183,24 @@ Next, in order:
 - Tests: `node --test tests/bot-adventurers.test.cjs tests/bot-errands.test.cjs ...`.
   Cache-dependent bot tests fail without a cache; compare the fail count before and after.
 - Changelog line in Dutch for every change; push to `origin main` only.
+
+## Logs van een draaiende server lezen
+
+De server schrijft drie logs in `server/logs/`: `adventurers-activity.jsonl` (elke journaalregel),
+`adventurer-quest-feedback.jsonl` (vastgelopen quests met stappen en tijden) en
+`adventurers-metrics.jsonl` (voor ontwikkelaars). `start.sh` start `scripts/share-bot-logs.sh --loop`,
+dat elke 5 minuten de laatste 20.000 regels van elk log als één commit naar de branch `bot-logs` pusht
+(force, zodat de repo niet groeit). Ophalen: `git fetch origin bot-logs && git show origin/bot-logs:bot-logs/adventurers-metrics.jsonl`.
+
+De metrics-regels, op `kind`:
+- `bot` (elke 5 min, `ADVENTURER_METRICS_MS`): fase, taak en reden, doel, plek, XP per skill, XP/uur,
+  geld erbij, `time` in minuten per soort (working, walking, errand, quest, idle) en `events`
+  (stuck, walkBlocked, died, questFailed, targetReached, idle).
+- `job` (einde van een taak): mode, reden, doel-level, level bij start en eind, `targetMet`, minuten,
+  XP en `ended` (target reached, time up, full bag, stuck, quest done/failed, replaced).
+- `goal`: doel gezet, gehaald of geschrapt, met de minuten sinds het gezet werd.
+- `idle`: een avonturier staat een minuut zonder XP op zijn klus (plek, home, hp, in gevecht, vrije slots).
+- `walk_blocked`: een route die niet lukte, van waar naar waar.
+- `skills` (elke 5 min): per skill hoeveel avonturiers XP kregen, hoeveel XP en via welke activiteit, en welke skills niemand trainde (`untouched`).
+- `server`: aantal avonturiers en bots, gemiddelde en maximale duur van de avonturiers-tick, geheugen,
+  quests die voor iedereen geblokkeerd zijn.

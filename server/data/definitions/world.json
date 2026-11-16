@@ -2,7 +2,7 @@
   "name": "Realm of Eeshwar",
   "plugins": {},
   "pluginConfig": {
-    "PlayerBots:population": 0.48,
+    "PlayerBots:population": 0.24,
     "SoulWars:seedBots": true,
     "PlayerBots:sites": {
       "edge_low": {

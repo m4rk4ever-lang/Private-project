@@ -7,6 +7,12 @@ if [ -x tools/quest-helper-bridge/build/install/offline-quest-helper-bridge/bin/
   nohup yarn bridge > /tmp/quest-helper-bridge.log 2>&1 &
   echo "Quest Helper bridge starting (log: /tmp/quest-helper-bridge.log)"
 fi
+# The adventurers' logs go to the branch bot-logs every 5 minutes (scripts/share-bot-logs.sh),
+# so they can be read from elsewhere without anyone running a command.
+if ! pgrep -f 'share-bot-logs.sh --loop' >/dev/null; then
+  nohup bash scripts/share-bot-logs.sh --loop > /tmp/bot-logs.log 2>&1 &
+  echo "Bot-logs worden elke 5 minuten gedeeld op branch bot-logs (log: /tmp/bot-logs.log)"
+fi
 # Idle Gradle daemons (left by the bridge build or by VS Code's Java/Gradle extensions) hold
 # several GB in an 8 GB codespace; the game ran out of memory beside them. They are only for
 # builds, so stop them; a build starts a new one when it needs it.

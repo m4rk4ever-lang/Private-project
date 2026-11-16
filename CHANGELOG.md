@@ -14,6 +14,9 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Elke clan heeft tijdelijk 5 extra avonturiers (Jorgbot 5–9, Patrickbot 4–8, Markbot 4–8) voor een langere testrun, elk met een eigen testprofiel (vroege vechter, skiller, middenmoot, gevorderd, mix) met andere levels, al gedane quests en startgeld; ze tellen niet mee voor de achievements. In te stellen met "extraPerClan" en "testProfiles" in adventurers.json.
+- De server deelt elke 5 minuten zelf de logboeken van de avonturiers op de branch `bot-logs`, zonder dat iemand een commando hoeft te draaien.
+- Een nieuw ontwikkelaarslogboek (logs/adventurers-metrics.jsonl) houdt per avonturier bij waar de tijd heen gaat (werken, lopen, boodschappen, quests, stilstaan), hoeveel XP en geld er per 5 minuten bijkomt, hoe elke taak afliep (doel gehaald, tijd op, tas vol, vastgelopen) en of gekozen doelen worden gehaald, welke skills wel en niet getraind worden en via welke activiteit, plus waar een route versperd was en hoe zwaar de avonturiers voor de server zijn.
 - `yarn logs` deelt de logboeken van de avonturiers (wat ze deden en waar quests vastliepen) via de repo in docs/bot-logs/, zodat ze ook van een andere machine te lezen zijn.
 - Met `::volg` toont je questtab de quests van de gevolgde avonturier (wat hij heeft gedaan en waar hij mee bezig is) en je combattab zijn wapensoort; als je stopt met volgen, krijg je je eigen tabs terug.
 - Alles wat de avonturiers doen staat ook in logs/adventurers-activity.jsonl (met tijd en plek), om terug te zien waar het misging.
@@ -101,6 +104,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Er draaien nog maar half zoveel wereldbots als eerst (bevolking 0,24), zodat er ruimte is voor de extra avonturiers.
 - Avonturiers kiezen minder vaak combat of een quest: een quest wordt in ongeveer 1 op de 5 keuzes gestart en training voor een quest-eis in 1 op de 4, zodat de 15 avonturiers meer verschillende skills trainen.
 - Een quest waarin twee verschillende avonturiers vastlopen, wordt drie uur lang voor alle avonturiers overgeslagen.
 - Avonturiers staan minder stil: ze denken elke servertick en gaan na een kill of actie meteen door naar de volgende, en eten en kiezen hun volgende taak binnen ruim een seconde.
@@ -147,7 +151,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
-- Een avonturier die trainde voor een doel (zoals combat 10 voor The Restless Ghost) stopte niet meer bij dat doel nadat hij tussendoor had gebankt, verkocht of de server herstartte; ook taken die vóór deze update waren opgeslagen stoppen nu bij hun doel.
+- Een avonturier die trainde voor een doel (zoals combat 10 voor The Restless Ghost) stopte niet meer bij dat doel nadat hij tussendoor had gebankt, verkocht of de server herstartte; ook taken die vóór deze update waren opgeslagen stoppen nu bij hun doel, en een gehaald doel wordt na een tussentijdse trip niet opnieuw opgepakt.
 - Een avonturier begint geen Quest Helper-quest als de bridge niet antwoordt, en een quest waarin de helper geen stap geeft legt hij na twee minuten weg in plaats van niets te doen. De questfeedback staat niet meer op de avonturierspagina, maar uitgebreider (tijdlijn per stap, duur, fout van de helper) in logs/adventurer-quest-feedback.jsonl.
 - Avonturiers vinden questspullen die een paar vakjes verderop op de grond liggen (zoals de eieren bij de boerderij voor Cook's Assistant), en verkopen hun pot, emmer en kan niet meer: die zijn nodig voor quests en koken.
 - Een avonturier die op zijn klus niets kan doen (geen XP, niet bewegen), kiest al na ruim een minuut iets anders in plaats van na twee minuten of langer.
