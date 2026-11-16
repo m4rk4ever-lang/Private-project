@@ -49,6 +49,10 @@ const Clans = require("./Clans.PlayerBots");
 const npcSpawns = require("../../../data/definitions/npc-spawns.json");
 const { markHonest } = require("../brain/Honest.PlayerBots");
 const { errandsFor } = require("../brain/Errands.PlayerBots");
+/** Within this many tiles of its job's place it is there, and its stretch runs. */
+const ARRIVED_TILES = 25;
+/** A walk that never gets there (a blocked way) stops pausing the stretch after this. */
+const MAX_WALK_CREDIT_MS = 20 * 60_000;
 /** A companion joins a group if its own stretch ends within this. */
 const GROUP_JOIN_WINDOW_MS = 4 * 60_000;
 const GROUP_MAX = 5;
@@ -552,6 +556,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       entry.phase = "training";
       entry.plan = plan;
       entry.until = nowMs + randomBetween(data.trainMinutes, random) * 60_000;
+    entry.walkedMs = 0;
       note(player, `Loopt rondjes op de ${course.name}.`);
       return true;
     }
@@ -969,6 +974,15 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     note(entry.player, `Uitrusting: ${on.length ? `aan ${names(on)}` : ""}${on.length && off.length ? "; " : ""}${off.length ? `uit ${names(off)}` : ""}.`, "activity");
   }
 
+  /** Still on its way to its job's place (the brain walks there by itself too): not yet there. */
+  function awayFromJob(entry) {
+    const home = stateOf(entry.player)?.home;
+    if (!home || entry.activity === "slayer_task") return false;
+    const at = entry.player.getLocation();
+    if (at.getZ() !== (home.z ?? 0)) return true;
+    return Math.max(Math.abs(at.getX() - home.x), Math.abs(at.getY() - home.y)) > ARRIVED_TILES;
+  }
+
   function tick() {
     const nowMs = now();
     for (const entry of adventurers.values()) {
@@ -978,8 +992,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       // On its way to the job (a long walk to the Gnome Stronghold): the walk does not count
       // against the stretch, which starts when it gets there.
       if ((entry.phase === "training" || entry.phase === "boss") && Number.isFinite(entry.until)
-          && errands.busy(entry.player) && Number.isFinite(entry.lastTickAt)) {
-        entry.until += Math.max(0, nowMs - entry.lastTickAt);
+          && (errands.busy(entry.player) || awayFromJob(entry)) && Number.isFinite(entry.lastTickAt)
+          && (entry.walkedMs ?? 0) < MAX_WALK_CREDIT_MS) {
+        const walked = Math.max(0, nowMs - entry.lastTickAt);
+        entry.until += walked;
+        entry.walkedMs = (entry.walkedMs ?? 0) + walked;
       }
       entry.lastTickAt = nowMs;
       leaveUnreachableFight(entry, nowMs);

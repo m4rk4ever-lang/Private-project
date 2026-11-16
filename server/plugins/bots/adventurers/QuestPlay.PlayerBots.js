@@ -138,12 +138,15 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
 
   /** Whether it can walk up to the NPC as things stand (doors closed count as walls). */
   function canReach(player, npc) {
+    return canReachAt(player, npc.getLocation(), Math.max(1, Math.floor(npc.getSize?.() ?? 1)));
+  }
+
+  /** A route to that tile (a ladder, stairs) with no closed door in between. */
+  function canReachAt(player, to, size = 1) {
     if (!core.RsmodRouteFinding) return true;
     routeFinder ??= new core.RsmodRouteFinding();
     const from = player.getLocation();
-    const to = npc.getLocation();
     if (from.getZ() !== to.getZ()) return false;
-    const size = Math.max(1, Math.floor(npc.getSize?.() ?? 1));
     return routeFinder.findRoute({
       level: from.getZ(), srcX: from.getX(), srcY: from.getY(), srcSize: 1, destX: to.getX(), destY: to.getY(),
       destWidth: size, destLength: size, locAngle: 0, locShape: -2, moveNear: false, blockAccessFlags: 0, maxWaypoints: 25,
@@ -288,6 +291,10 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
       const away = Math.max(Math.abs(here.x - at.getX()), Math.abs(here.y - at.getY()));
       // Within an errand's arrival (3 tiles) it clicks the stairs and walks the last steps itself:
       // a walk to the stairs from there "arrived" at once and started again, round and round.
+      if (away <= 12 && !canReachAt(player, at, Math.max(1, Number(core.ObjectDefinition?.forId?.(stairs.getId())?.getSizeX?.() ?? 1)))
+          && (brainDoor(player, { x: at.getX(), y: at.getY() }) || openWayTo(player, { x: at.getX(), y: at.getY() }, nowMs))) {
+        return "running";
+      }
       if (away <= CLICK_TILES) {
         if (nowMs >= (run.climbAt ?? 0)) {
           run.climbAt = nowMs + 4000;
@@ -309,6 +316,11 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
       return "running";
     }
     if (hop.climb) {
+      if (here.z === hop.z && !canReachAt(player, new core.Location(hop.x, hop.y, hop.z))
+          && Math.max(Math.abs(here.x - hop.x), Math.abs(here.y - hop.y)) <= 12) {
+        // A closed door between it and the ladder (the Wizards' Tower): open it first.
+        if (brainDoor(player, { x: hop.x, y: hop.y }) || openWayTo(player, { x: hop.x, y: hop.y }, nowMs)) return "running";
+      }
       if (Math.max(Math.abs(here.x - hop.x), Math.abs(here.y - hop.y)) <= CLICK_TILES && here.z === hop.z) {
         climb(player, hop);
         return "running";

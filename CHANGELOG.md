@@ -89,6 +89,8 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- De tijd voor een trainingsklus van een avonturier loopt pas als hij op de plek is, niet al tijdens het lopen.
+- Avonturiers blijven langer bij één klus (20 tot 40 minuten), zodat ze meer levels en geld halen in plaats van vooral te reizen.
 - Avonturiers kopen gereedschap pas als ze de skill gaan doen (een bijl als ze gaan hakken, een pickaxe als ze gaan mijnen), en niet meer bij elke ronde een hamer en een mes terwijl ze nog vechten zonder wapen.
 - Agressieve monsters vallen avonturiers aan zoals spelers, met dezelfde regels (combatlevel, bereik, tolerantie na 10 minuten in een gebied). Avonturiers hebben auto-retaliate aan en vechten dus terug. Gewone wereldbots worden met rust gelaten.
 - Na een (her)start beginnen de avonturiers gespreid (binnen anderhalve minuut), in plaats van alle vijftien tegelijk naar dezelfde bank te lopen.
@@ -107,6 +109,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers in een quest openen nu ook deuren op weg naar een trap of ladder, zoals de deur van de Wizards' Tower naar de kelder.
 - Avonturiers in een quest nemen eerst de trap naar de juiste verdieping voordat ze naar een ladder op een andere verdieping lopen (zoals van Duke Horacio naar de kelder van de Wizards' Tower).
 - Avonturiers blijven niet meer eindeloos vechten met een monster dat ze niet kunnen bereiken, zoals de gevangenen achter de tralies in Edgeville; ze laten het gevecht los en gaan verder met hun klus.
 - Bij een quest kiest de avonturier de deur naar de NPC met de deur-opener van de bots zelf: die opent alleen een deur die de weg echt korter maakt, in plaats van de dichtstbijzijnde deur in een kamer met meerdere deuren.
