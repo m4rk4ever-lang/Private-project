@@ -1214,6 +1214,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     entry.phase = "new";
     entry.plan = null;
     entry.until = 0;
+    // In a sweep (::advquestall): on to the next quest no one has tried in it yet.
+    if (sweep.active && nowMs < sweep.until) sweepNext(entry);
   }
 
   /** One stuck quest, as a line in the feedback log (and the last few in memory for the page). */
@@ -3081,24 +3083,51 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * for (its levels, its quests), else the first it has not done; never one another already has.
    * Returns [[name, quest]].
    */
+  /**
+   * The sweep's state: quests tried in it (by anyone), while it runs (two hours). A quest done or
+   * put aside sends its adventurer on to the next untried one (sweepNext), so one command tests
+   * the whole path, not only thirty quests.
+   */
+  const sweep = { active: false, until: 0, tried: new Set() };
+
+  function sweepPick(entry) {
+    const path = (data.quests ?? []).filter((quest) => questPlay.has(quest.name));
+    const view = snapshot(entry.player);
+    const open = path.filter((quest) => !view.done.has(quest.name) && !sweep.tried.has(quest.name));
+    return open.find((candidate) => isReady(candidate, view)) ?? open[0] ?? null;
+  }
+
+  function sweepNext(entry) {
+    const quest = sweepPick(entry);
+    if (!quest) return false;
+    sweep.tried.add(quest.name);
+    entry.questsAside?.delete?.(quest.name);
+    const started = forceQuest(entry.name, quest.name);
+    if (started) world.log?.("adventurer_quest_sweep_next", { bot: entry.name, quest: quest.name, tried: sweep.tried.size });
+    return started;
+  }
+
   function questSweep() {
     questsBlocked.clear();
     questFailuresAll.clear();
-    const taken = new Set();
+    Object.assign(sweep, { active: true, until: now() + 2 * 60 * 60_000, tried: new Set() });
     const out = [];
-    const path = (data.quests ?? []).filter((quest) => questPlay.has(quest.name));
     for (const entry of adventurers.values()) {
       if (!entry.player?.isRegistered?.()) continue;
       entry.questsAside?.clear?.();
-      const view = snapshot(entry.player);
-      const open = path.filter((quest) => !view.done.has(quest.name) && !taken.has(quest.name));
-      const quest = open.find((candidate) => isReady(candidate, view)) ?? open[0];
+      const quest = sweepPick(entry);
       if (!quest) continue;
-      taken.add(quest.name);
+      sweep.tried.add(quest.name);
       if (forceQuest(entry.name, quest.name)) out.push([entry.name, quest.name]);
     }
     world.log?.("adventurer_quest_sweep", { assignments: out });
     return out;
+  }
+
+  /** Ends a running sweep (::advquestall stop): the adventurers go back to their own picks. */
+  function stopSweep() {
+    sweep.active = false;
+    return sweep.tried.size;
   }
 
   /** An owner's test: this training mode now (::advtrain <name>:slayer). */
@@ -3158,7 +3187,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
   }
 
-  return { adventurers, questFeedback, spawn, tick, onShutdown, onXpReward, shareLogsNow, questSweep, talkTick, forceQuest, forceTraining, onDeath, onLevelUp, onDrops, onNpcDeath, report, next, startGroup, acquire };
+  return { adventurers, questFeedback, spawn, tick, onShutdown, onXpReward, shareLogsNow, questSweep, stopSweep, talkTick, forceQuest, forceTraining, onDeath, onLevelUp, onDrops, onNpcDeath, report, next, startGroup, acquire };
 }
 
 let bridgeStarting = 0;
@@ -3240,7 +3269,11 @@ function startAdventurers({ api, runtime, world, registry }) {
     player.sendMessage(`Je staat bij ${entry.name}.`);
     return true;
   }, rights.OWNER, "Go to an adventurer bot: ::adventurer <name>");
-  api.registerCommand("advquestall", ({ player }) => {
+  api.registerCommand("advquestall", ({ player, parts }) => {
+    if (String(parts?.[1] ?? "").toLowerCase() === "stop") {
+      player.sendMessage(`Quest-sweep gestopt (${manager.stopSweep()} quests geprobeerd).`);
+      return true;
+    }
     // The quests are played with the Quest Helper bridge: without it every one fails in two
     // minutes ("fetch failed"), so the sweep is refused with how to start it.
     const url = process.env.QUEST_HELPER_URL || `http://127.0.0.1:${Number(process.env.QUEST_HELPER_PORT || 16471)}`;
@@ -3252,7 +3285,7 @@ function startAdventurers({ api, runtime, world, registry }) {
       player.sendMessage("De Quest Helper-bridge draait niet; start hem eerst (yarn bridge) en probeer het dan opnieuw.");
     });
     return true;
-  }, rights.OWNER, "Every adventurer at once on a different quest (blocks lifted), to see where each gets stuck: ::advquestall");
+  }, rights.OWNER, "Every adventurer at once on a different quest, each on to the next untried one when done or stuck (two hours; ::advquestall stop ends it): ::advquestall");
   api.registerCommand("advquest", ({ player, parts }) => {
     const [name, quest, stage] = parts.slice(1).join(" ").split(":").map((part) => part.trim());
     const entry = [...manager.adventurers.values()].find((a) => a.name.toLowerCase() === String(name).toLowerCase());

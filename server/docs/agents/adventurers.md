@@ -214,5 +214,5 @@ De metrics-regels, op `kind`:
 ## Quest-sweep
 
 `::advquestall` (eigenaar): elke avonturier tegelijk op een andere quest uit het pad (eerst een waarvoor hij klaar is), met de
-blokkades opgeheven. Na een paar minuten staan de vastlopers in `adventurer-quest-feedback.jsonl` (stap, plek, helperstap, gesprekskeuzes)
+blokkades opgeheven; wie klaar is of vastloopt pakt de volgende ongeteste quest (twee uur, `::advquestall stop`). Na een paar minuten staan de vastlopers in `adventurer-quest-feedback.jsonl` (stap, plek, helperstap, gesprekskeuzes)
 en de geslaagde in de metrics als `quest_done`.
