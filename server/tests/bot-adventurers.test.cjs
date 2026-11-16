@@ -245,3 +245,10 @@ test("a money-making stretch goes to what earned it the most so far", () => {
   assert.equal(plan.money, true);
   assert.match(plan.reason, /geld verdienen/);
 });
+
+test("in a dialogue it answers on rather than asking a question that leads back to the same menu", () => {
+  const { chooseOption } = require("../plugins/bots/adventurers/QuestPlay.PlayerBots");
+  assert.equal(chooseOption(["Where can I find those?", "Certainly, I'll be right back!"]), 1);
+  assert.equal(chooseOption(["Where can I find this cauldron?", "Ok, I'll go do that then."]), 1);
+  assert.equal(chooseOption(["How do I shear sheep, again?", "Remind me how to spin wool.", "Yeah, I think so."]), 2);
+});

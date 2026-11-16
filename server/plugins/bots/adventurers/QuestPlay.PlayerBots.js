@@ -43,6 +43,11 @@ function chooseOption(options, prefer = []) {
     const index = lower.findIndex((option) => option.includes(String(word).toLowerCase()));
     if (index >= 0) return index;
   }
+  // An answer that moves on ("Certainly, I'll be right back!", "Ok, I'll go do that then.") before a
+  // question that only explains and leads back to the same menu ("Where can I find those?").
+  const asks = (option) => /\?\s*$/.test(option) || /^(remind me|tell me|what|where|how|who|why|when|can you tell|could you tell)\b/i.test(option);
+  const answer = options.findIndex((option) => !REFUSAL.test(String(option).trim()) && !asks(String(option).trim()));
+  if (answer >= 0) return answer;
   const index = options.findIndex((option) => !REFUSAL.test(String(option).trim()));
   return index >= 0 ? index : 0;
 }
