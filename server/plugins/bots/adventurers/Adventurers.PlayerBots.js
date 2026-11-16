@@ -455,9 +455,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // adventurer has none until its first job, and its first move is often an errand (the bank):
     // without one it never took a step, gave up after a minute and tried the next bank forever.
     if (!run.brain && !startActivity(entry.player, "roam", { home: here(entry.player), nowMs: now() })) return false;
+    // A quest's walks hand back to the quest, not to the job's brain (its roaming walked the bot
+    // off the castle stairs the moment it got there).
+    const hold = () => { if (reason === "quest" && run.brain) run.brain.paused = true; };
     const started = errands.go(run, to, {
       reason,
       arrive: (player) => {
+        hold();
         entry.errand = null;
         try {
           arrive(player);
@@ -466,6 +470,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         }
       },
       fail: (player) => {
+        hold();
         entry.errand = null;
         note(player, `Kwam niet bij ${placeName(to)}: de weg was versperd.`, "activity");
         // That place is out for a while; the next bank or shop is still fine.
