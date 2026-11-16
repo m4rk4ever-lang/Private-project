@@ -904,6 +904,21 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const id = bestActivity(plan.mode, level, definitions);
       // Fighting on an empty stomach is how adventurers die: food first, if it can buy some.
       if (plan.mode === "combat_training" && stockFood(entry, plan, nowMs)) return true;
+      // A gathering job wants room for what it gathers: things for other jobs (a pickaxe, snares,
+      // a pot) go to the bank first, as a player empties the bag before a fishing trip.
+      if (["woodcutting", "mining", "fishing"].includes(plan.mode) && player.getInventory().getFreeSlots() < 18
+          && nowMs >= (entry.clearBagAt ?? 0)) {
+        entry.clearBagAt = nowMs + 20 * 60_000;
+        const bank = nearestBank(player, entry);
+        if (bank && walkTo(entry, { ...bank, name: bank.name ?? bank.id }, {
+          reason: "bank",
+          arrive: (banker) => {
+            const stored = [...bankUnusedTools(entry, banker, plan), ...bankUnusedSupplies(entry, banker, plan), ...deposit(banker, sortBag(banker).keep)];
+            if (stored.length > 0) note(banker, `Maakt zijn tas leeg voor ${plan.mode}: ${stored.map((good) => itemName(good.itemId)).join(", ")}.`, "activity");
+            entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, remainingMs: 0, savedAt: now() };
+          },
+        })) return true;
+      }
       // Nothing to eat and none to be had: fish first (and cook it), not fight hungry.
       if (plan.mode === "combat_training" && !carriesFood(player) && entry.needFood && view.combat >= 10) {
         return startTraining(entry, { kind: "train", mode: "fishing", skill: "FISHING", reason: "eten vangen" }, nowMs);
@@ -955,6 +970,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const { player } = entry;
     const buy = buyPlan(player, plan.skill);
     if (!buy) return false;
+    // Lately too poor for a lot at the exchange: only with its own stock, not a walk to buy.
+    if (nowMs < (entry.noBuyUntil ?? 0) && !hasStock(player, buy)) return false;
     const toolId = buy.recipe.tool ? Shopping.idOf(core, buy.recipe.tool) : null;
     if (Number.isInteger(toolId) && !Shopping.owns(player, toolId)) {
       // Its knife or hammer at the bank: fetched there, not bought again.
@@ -1002,12 +1019,33 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       reason: "buy_materials",
       arrive: (buyer) => {
         emit("ge:collect", { player: buyer });
+        // Noted materials (collected from the exchange as notes): into the bank, out as the item
+        // itself, as a player swaps them at the bank; they count before anything is bought.
+        const notes = (buyer.getInventory().getItems() ?? []).filter((item) => item && item.getId() > 0
+          && buy.materials.includes(baseId(item.getId())) && baseId(item.getId()) !== item.getId())
+          .map((item) => ({ itemId: item.getId(), amount: item.getAmount() }));
+        if (notes.length > 0) deposit(buyer, notes);
+        for (const id of buy.materials) {
+          if (buyer.getInventory().getAmount(id) <= 0 && banked(buyer, id) > 0) {
+            withdraw(buyer, id, Math.min(buy.amount, Math.floor(27 / buy.materials.length)));
+          }
+        }
         const missing = buy.materials.filter((id) => buyer.getInventory().getAmount(id) <= 0);
-        if (missing.length === 0) return;
+        if (missing.length === 0) {
+          entry.resume = plan;
+          entry.waitingSince = now();
+          return;
+        }
         // As many as its coins pay for (bag and bank; the exchange has a bank), keeping 200 over.
         const perLot = buy.cost / buy.amount;
         const wealth = Shopping.coinsOf(buyer) + banked(buyer, Trade.COINS);
-        const amount = Math.max(1, Math.min(buy.amount, Math.floor((wealth - 200) / Math.max(1, perLot))));
+        const amount = Math.max(0, Math.min(buy.amount, Math.floor((wealth - 200) / Math.max(1, perLot))));
+        // A lot of one or two is not worth the walk (and the next walk for the next one): ten at least.
+        if (amount < Math.min(10, buy.amount)) {
+          note(buyer, `Te weinig geld voor een partij ${missing.map(itemName).join(" en ")}; doet eerst iets anders.`, "activity");
+          entry.noBuyUntil = now() + 30 * 60_000;
+          return;
+        }
         const short = Math.ceil(perLot * amount) + 50 - Shopping.coinsOf(buyer);
         if (short > 0) withdraw(buyer, Trade.COINS, short);
         if (!missing.every((id) => bid(buyer, core, emit, id, amount))) {

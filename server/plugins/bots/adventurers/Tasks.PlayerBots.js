@@ -8,8 +8,8 @@
 
 /** A saved job older than this is stale (the world moved on): it plans afresh. */
 const TASK_STALE_MS = 6 * 60 * 60_000;
-/** A resumed job runs at least this long, so it is worth the walk back. */
-const MIN_RESUME_MS = 60_000;
+/** A resumed job runs at least this long, so it is worth the walk back (not two fish and off). */
+const MIN_RESUME_MS = 10 * 60_000;
 
 /** The job as a plain record (a boss by its id), or null for one that is not saved. */
 function taskRecord(entry, nowMs, wallMs) {

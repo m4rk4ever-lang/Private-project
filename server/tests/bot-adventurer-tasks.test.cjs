@@ -23,7 +23,7 @@ test("after a restart the saved job comes back as the same plan, a boss by its i
   const bosses = [{ id: "boss_giant_mole", name: "Giant Mole" }];
   const boss = Tasks.freshTask({ kind: "boss", bossId: "boss_giant_mole", remainingMs: 9 * 60_000, savedAt: wall }, wall);
   assert.equal(Tasks.planOf(boss, bosses).boss, bosses[0]);
-  assert.equal(Tasks.resumeMs(boss), 9 * 60_000);
+  assert.equal(Tasks.resumeMs(boss), Math.max(Tasks.MIN_RESUME_MS, 9 * 60_000));
   assert.equal(Tasks.planOf({ kind: "boss", bossId: "gone" }, bosses), null);
 });
 

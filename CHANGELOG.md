@@ -154,6 +154,9 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers tellen genoteerde materialen (van de GE) mee: die gaan via de bank terug als gewone items, in plaats van dat ze er nog eentje bij kopen; en ze kopen geen partij van één of twee meer, maar minstens tien of niets.
+- Voor houthakken, mijnen of vissen maken avonturiers eerst hun tas leeg op de bank als die vol spullen voor andere klussen zit.
+- Een na een herstart hervatte klus duurt minstens tien minuten, in plaats van na twee vissen alweer iets anders te kiezen.
 - Testaccounts beginnen niet meer bij elke herstart van de server opnieuw (hun testprofiel wordt bewaard).
 - Een nieuwe klus wordt niet meer meteen als "vastgelopen" afgebroken omdat de avonturier vóór de klus even stilstond (bij de GE of de bank).
 - Een avonturier die op een dakbaan (Al Kharid, Varrock, Falador) is blijven staan, probeert de baan af te lopen om beneden te komen in plaats van van daaruit quests te starten.
