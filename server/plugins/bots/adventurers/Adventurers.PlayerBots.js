@@ -1621,6 +1621,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         entry.walkedMs = (entry.walkedMs ?? 0) + walked;
       }
       entry.lastTickAt = nowMs;
+      // Auto-retaliate follows the job (a fight: on; anything else: off), checked every tick.
+      {
+        const fighting = entry.phase === "boss" || (entry.phase === "training" && DANGER_MODES.has(entry.plan?.mode) && entry.plan?.mode !== "thieving");
+        if (fighting !== (entry.retaliating ?? true)) {
+          entry.retaliating = fighting;
+          entry.player.setAutoRetaliate?.(fighting);
+        }
+      }
       leaveUnreachableFight(entry, nowMs);
       eatWhenHurt(entry);
       if (!entry.player.getCombat?.()?.getTarget?.()) buryLowBones(entry.player);
@@ -2166,6 +2174,22 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const foe = combat?.getTarget?.() ?? combat?.getAttacker?.();
     if (!foe || foe.isNpc?.() !== true) {
       entry.unreachableSince = 0;
+      return;
+    }
+    // Not out to fight (a quest, an errand, fishing): what attacks it on the way (Draynor Manor's
+    // trees, a rat) is walked away from, as a player clicks on, not fought where it stands.
+    const fightingJob = entry.phase === "boss" || (entry.phase === "training" && DANGER_MODES.has(entry.plan?.mode) && entry.plan?.mode !== "thieving");
+    // Auto-retaliate on only for a fight (as a player turns it off to walk past things).
+    if (fightingJob !== (entry.retaliating ?? true)) {
+      entry.retaliating = fightingJob;
+      player.setAutoRetaliate?.(fightingJob);
+    }
+    if (!fightingJob && combat.getTarget?.() === foe) {
+      combat.reset?.();
+      if (nowMs - (entry.walkOnNoteAt ?? 0) > 60_000) {
+        entry.walkOnNoteAt = nowMs;
+        note(player, `Wordt aangevallen door ${String(foe.getDefinition?.()?.getName?.() ?? "iets").toLowerCase()}; loopt door.`, "activity");
+      }
       return;
     }
     if (nowMs < (entry.fightCheckAt ?? 0)) return;
