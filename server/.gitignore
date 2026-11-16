@@ -11,6 +11,8 @@ data/saves/*.sqlite*
 data/backups/
 data/saves/gauntlet-scoreboard.json
 data/saves/clans.json
+data/saves/adventurer-achievements.json
+data/saves/adventurer-achievements.json.tmp
 data/saves/groups.json
 data/saves/groups.json.tmp
 data/saves/hardcore-world.json
