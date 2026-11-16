@@ -70,7 +70,7 @@ const CLAN_KEEP = 5_000;
 /** From this y the map is underground (dungeons, caves): no walking route there yet. */
 const UNDERGROUND_Y = 6400;
 /** No XP and no step for this long while training: it is stuck, it picks something else. */
-const STUCK_MS = 2 * 60_000;
+const STUCK_MS = 75_000;
 /** The longest one Slayer task may take before it gives up on it for now. */
 const SLAYER_TASK_MAX_MS = 90 * 60_000;
 /** Teleport tablets an adventurer may buy for long walks, and the coins it keeps before it does. */

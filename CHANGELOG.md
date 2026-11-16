@@ -139,6 +139,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Een avonturier die op zijn klus niets kan doen (geen XP, niet bewegen), kiest al na ruim een minuut iets anders in plaats van na twee minuten of langer.
 - Avonturiers kopen in de dichtstbijzijnde winkel: een winkelier die in meerdere dorpen staat (zoals de Shop keeper van de general stores) telde maar op één plek, waardoor een bot uit Lumbridge naar Varrock liep voor een pot.
 - Avonturiers kiezen een logische bank (een van de dichtstbijzijnde), niet meer een bank aan de andere kant van de kaart; een queststap die met de Quest Helper 6 minuten niet opschiet, leggen ze weg (met feedback) in plaats van er lang op te blijven staan.
 - Het spel loopt in een codespace niet meer vast op geheugen. Gradle-processen (van de Quest Helper-bouw en de Java-extensies van VS Code) namen samen ruim 3 GB in. `start.sh`, `yarn start` en `update` stoppen die nu eerst. De bridge wordt zonder blijvend Gradle-proces gebouwd. VS Code importeert de Java/Gradle-projecten in de repo niet meer vanzelf.
