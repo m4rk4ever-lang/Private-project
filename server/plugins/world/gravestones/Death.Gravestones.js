@@ -29,7 +29,8 @@ function isPhoenixNecklace(item) {
 
 function makesGrave(player, killer) {
   if (killer && killer !== player) return false;
-  if (player.isPlayerBot?.()) return false;
+  // World bots leave no grave; honest bots (adventurers, "bots:honest") do, and come back for it.
+  if (player.isPlayerBot?.() && player.getAttribute?.("bots:honest") !== true) return false;
   if (!Common.api().getPluginConfig(ENABLED_CONFIG, true)) return false;
   return Common.ironmanMode(player) !== "ultimate";
 }

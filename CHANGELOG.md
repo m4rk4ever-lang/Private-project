@@ -14,6 +14,8 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Avonturiers die sterven, krijgen een grafsteen zoals spelers (gewone wereldbots niet). Na het respawnen lopen ze terug naar hun graf, pakken de gratis spullen en betalen het fee voor de rest (uit de Coffer, hun tas of bank). Hebben ze daar het geld niet voor, dan blijft dat deel liggen en gaat het daarna naar Death's Office. Het dagboek meldt waar ze stierven.
+- Nieuw event `gravestones:reclaim` voor plugins: bij het graf Loot en Pay zoals een speler.
 - Bots gebruiken voor lange tochten ook Ardougne Teleport (na Plague City) en Trollheim Teleport (na Eadgar's Ruse), met hun eigen runes en Magic-level, naast Varrock, Lumbridge, Falador en Camelot Teleport.
 - Avonturiers met geld over (5.000 gp of meer) kopen op de GE een paar teleport tablets (Varrock, Lumbridge, Falador of Camelot). Bij een lange wandeling breken ze er een als dat veel lopen scheelt.
 - Slayer-taken met monsters die beschermende uitrusting vereisen (earmuffs voor banshees, een nose peg voor aberrant spectres, een facemask voor dust devils en meer, uit de Slayer-gegevens van het spel): de avonturier draagt het item als hij het heeft, haalt het van de bank of koopt het in een winkel die het verkoopt. Anders laat hij Slayer een uur liggen.

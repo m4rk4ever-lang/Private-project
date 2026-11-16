@@ -21,6 +21,7 @@
  *   1 angel); a standing grave changes at once.
  * - `gravestones:met-death` { player }: the player has met Death.
  * - `gravestones:tutorial-end` { player }: the first-death tutorial is over; the timer starts.
+ * - `gravestones:reclaim` { player } -> location, taken: at the grave, Loot and Pay as a player does.
  * Emitted: `gravestones:first-grave` { player, accepted } when a player who hasn't met Death gets
  * a grave; `gravestones:grave-location` { player, location, tile } for an instance to say where
  * its deaths' graves go.
@@ -107,6 +108,27 @@ function tutorialEnd({ player }) {
   Timer.startCountdown(player);
 }
 
+/**
+ * `gravestones:reclaim` { player } -> location ({ x, y, z } of the grave, or null), taken: at the
+ * grave (within its access range), the free items, then the fee paid as the pay button pays it
+ * (Coffer, inventory, bank) and the paid items: what a player does with Loot and Pay. Away from
+ * it, only where it is. For bots that recover their things after a death.
+ */
+function reclaim(request) {
+  const { player } = request;
+  const held = Storage.grave(player);
+  request.location = held ? { x: held.x, y: held.y, z: held.z } : null;
+  request.taken = false;
+  if (!held) return;
+  const at = player.getLocation();
+  if (at.getZ() !== held.z || Math.max(Math.abs(at.getX() - held.x), Math.abs(at.getY() - held.y)) > Grave.ACCESS_RANGE) return;
+  Grave.takeFree(player);
+  Grave.payOrTake(player);
+  Grave.payOrTake(player);
+  const left = Storage.grave(player);
+  request.taken = !left || (left.items ?? []).every((entry) => !entry);
+}
+
 function feeFor(request) {
   request.fee = Fees.graveFee(request.items ?? [], Common.ironmanMode(request.player) != null);
 }
@@ -123,6 +145,7 @@ function attach(api) {
   api.onCustomEvent("gravestones:set-style", setStyle);
   api.onCustomEvent("gravestones:met-death", metDeath);
   api.onCustomEvent("gravestones:tutorial-end", tutorialEnd);
+  api.onCustomEvent("gravestones:reclaim", reclaim);
 }
 
 module.exports = { attach };

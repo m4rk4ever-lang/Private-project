@@ -770,6 +770,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         note(entry.player, "Het bod liep niet vol; doet iets anders.", "activity");
       }
     }
+    // Died and left a grave: back for its things first, as a player runs back to the grave.
+    if (reclaimGrave(entry)) return;
     // Errands first, each a walk; the planner looks again when it is back.
     if (trade(entry) || upgrade(entry)) return;
     // Just got a Slayer task: off to it.
@@ -1164,6 +1166,49 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
 
   function banked(player, itemId) {
     return (player.getBanks?.() ?? []).reduce((sum, bank) => sum + (bank?.getAmount?.(itemId) ?? 0), 0);
+  }
+
+  /**
+   * Its grave after a death (Gravestones plugin): walk there and Loot and Pay as a player does
+   * ("gravestones:reclaim" pays the fee from its Coffer, bag or bank). Without the coins the paid
+   * items stay; after the grave's time they go to Death's Office, as for a player.
+   */
+  function reclaimGrave(entry) {
+    const query = { player: entry.player, location: null, taken: false };
+    emit("gravestones:reclaim", query);
+    if (query.taken) {
+      note(entry.player, "Haalt zijn spullen op bij zijn graf.", "activity");
+      return false;
+    }
+    if (!query.location || (entry.graveTries ?? 0) >= 3) return false;
+    entry.graveTries = (entry.graveTries ?? 0) + 1;
+    return walkTo(entry, { ...query.location, name: "zijn graf" }, {
+      reason: "grave",
+      urgent: true,
+      arrive: (player) => {
+        const back = { player, location: null, taken: false };
+        emit("gravestones:reclaim", back);
+        if (back.taken) {
+          entry.graveTries = 0;
+          note(player, "Haalt zijn spullen op bij zijn graf.", "activity");
+        } else if (back.location) {
+          note(player, "Kan het graf niet helemaal leeghalen (te weinig geld voor het fee).", "activity");
+        }
+      },
+    });
+  }
+
+  /** A death: the journal says where, and its next job starts after the respawn. */
+  function onDeath({ player }) {
+    const entry = adventurers.get(player?.getUsername?.());
+    if (!entry) return;
+    const at = player.getLocation();
+    note(player, `Is gestorven bij (${at.getX()}, ${at.getY()}); gaat zijn spullen ophalen.`, "activity");
+    entry.graveTries = 0;
+    entry.questRun = null;
+    entry.phase = "new";
+    entry.plan = null;
+    entry.until = now() + 5_000;
   }
 
   /** Its bag sorted: to bank (useful), to sell, and junk to drop. */
@@ -1628,6 +1673,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         state.adventurer = true;
       }
       if (Number(bot.getAttribute(GENERATION_ATTRIBUTE) ?? 0) < (data.generation ?? 1)) startOver(bot);
+      // It knows Death already: a death leaves a grave without the first-death tutorial.
+      emit("gravestones:met-death", { player: bot });
       adventurers.get(name).savedTask = Tasks.freshTask(bot.getAttribute?.(TASK_ATTRIBUTE), Date.now());
     }
   }
@@ -1737,7 +1784,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
 
   /** What the page and ::adventurers show. */
   const ERRAND_REASONS = {
-    bank: "om te banken", exchange: "om te verkopen en kopen", shop: "om te kopen", withdraw: "om spullen van de bank te halen",
+    grave: "om zijn spullen op te halen", bank: "om te banken", exchange: "om te verkopen en kopen", shop: "om te kopen", withdraw: "om spullen van de bank te halen",
     buy_materials: "om materialen te kopen", slayer: "voor een Slayer-taak", training: "om te trainen", station: "om te trainen", quest: "voor een quest",
   };
 
@@ -1807,7 +1854,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return startQuest(entry, { kind: "quest", quest: { name: questName } });
   }
 
-  return { adventurers, spawn, tick, talkTick, forceQuest, onLevelUp, onDrops, onNpcDeath, report, next, startGroup, acquire };
+  return { adventurers, spawn, tick, talkTick, forceQuest, onDeath, onLevelUp, onDrops, onNpcDeath, report, next, startGroup, acquire };
 }
 
 /** Starts the adventurers on server start; serves /api/adventurers and the commands. */
@@ -1822,6 +1869,7 @@ function startAdventurers({ api, runtime, world, registry }) {
   api.onPlayerLevelUp(manager.onLevelUp);
   api.onCustomEvent("npc-drops:roll", manager.onDrops);
   api.onNpcDeath(manager.onNpcDeath);
+  api.onPlayerDeath?.(manager.onDeath);
   // Where an adventurer's things may come from (its audit, above).
   api.onCustomEvent("ge:offer-collected", ({ player, itemId }) => manager.acquire(player, itemId));
   api.onCustomEvent("skills:produced", ({ player, itemId }) => manager.acquire(player, itemId));
