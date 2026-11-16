@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- `yarn logs` deelt de logboeken van de avonturiers (wat ze deden en waar quests vastliepen) via de repo in docs/bot-logs/, zodat ze ook van een andere machine te lezen zijn.
 - Met `::volg` toont je questtab de quests van de gevolgde avonturier (wat hij heeft gedaan en waar hij mee bezig is) en je combattab zijn wapensoort; als je stopt met volgen, krijg je je eigen tabs terug.
 - Alles wat de avonturiers doen staat ook in logs/adventurers-activity.jsonl (met tijd en plek), om terug te zien waar het misging.
 - In een Codespace wordt de Quest Helper-bridge vanzelf opgezet en gestart: Java 21, de geheime sleutel in .env, Quest Helper ophalen en bouwen bij het aanmaken (of op de achtergrond bij het starten), en de bridge start mee met het spel. Een bestaande Codespace heeft één keer 'Rebuild Container' nodig voor Java.
