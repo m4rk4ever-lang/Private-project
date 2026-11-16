@@ -1866,7 +1866,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function buyOnExchange(entry, itemId, name, amount = 1, { replan = true } = {}) {
     const { player } = entry;
     const guide = Number(core.ItemDefinition?.forId?.(itemId)?.getGrandExchangeValue?.() ?? 0);
-    if (!(guide > 0) || Shopping.coinsOf(player) < Math.ceil(guide * 1.05) * amount + 50) return false;
+    // Its coins in the bag and in its bank: the exchange has a bank, it takes out what it needs.
+    const cost = Math.ceil(guide * 1.05) * amount;
+    if (!(guide > 0) || Shopping.coinsOf(player) + banked(player, Trade.COINS) < cost + 50) return false;
     if (blockedPlace(entry, data.grandExchange)) return false;
     const plan = entry.plan;
     const label = String(name).toLowerCase().replace(/_/g, " ");
@@ -1874,6 +1876,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       reason: "buy_materials",
       arrive: (buyer) => {
         emit("ge:collect", { player: buyer });
+        const short = cost + 50 - Shopping.coinsOf(buyer);
+        if (short > 0) withdraw(buyer, Trade.COINS, short);
         if (!bid(buyer, core, emit, itemId, amount)) return;
         emit("ge:collect", { player: buyer });
         acquire(buyer, itemId);
@@ -2868,13 +2872,16 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const { player } = entry;
     const priced = wants.map((want) => ({ ...want, guide: Number(core.ItemDefinition?.forId?.(want.itemId)?.getGrandExchangeValue?.() ?? 0) }))
       .filter((want) => want.guide > 0);
-    if (priced.length === 0 || Shopping.coinsOf(player) < Math.ceil(priced[0].guide * 1.05) + 50) return false;
+    if (priced.length === 0 || Shopping.coinsOf(player) + banked(player, Trade.COINS) < Math.ceil(priced[0].guide * 1.05) + 50) return false;
     if (blockedPlace(entry, data.grandExchange)) return false;
     const plan = entry.plan;
     return walkTo(entry, { ...data.grandExchange, name: "de Grand Exchange" }, {
       reason: "buy_materials",
       arrive: (buyer) => {
         emit("ge:collect", { player: buyer });
+        // The coins for the lot out of its bank first (the exchange has one).
+        const total = priced.reduce((sum, want) => sum + Math.ceil(want.guide * 1.05), 0) + 50;
+        if (total > Shopping.coinsOf(buyer)) withdraw(buyer, Trade.COINS, Math.min(total - Shopping.coinsOf(buyer), banked(buyer, Trade.COINS)));
         const bought = [];
         let spent = 0;
         for (const want of priced) {
