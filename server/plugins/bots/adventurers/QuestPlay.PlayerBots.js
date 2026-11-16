@@ -12,6 +12,8 @@
  */
 const data = require("../data/quest-playthroughs.json");
 
+/** Close enough to click stairs or a ladder (the click walks the rest), past an errand's arrival. */
+const CLICK_TILES = 4;
 /** Close enough to the NPC's spot to look for it. */
 const NEAR_TILES = 8;
 /** Talk-to tries per step before the quest is put aside (the NPC moved, a door stuck). */
@@ -204,9 +206,12 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     const options = (core.ObjectDefinition.forId(ladder.getId())?.getInteractions?.() ?? []).map((option) => String(option ?? "").toLowerCase());
     const clickType = options.indexOf(hop.climb.option.toLowerCase()) + 1;
     if (!clickType) return false;
-    world.emitObjectInteraction?.({
-      player, object: ladder, objectId: ladder.getId(), clickType,
-      location: { x: hop.x, y: hop.y, z: hop.z }, handled: false,
+    // As a click: walk up to the ladder, then climb.
+    player.getMovementQueue().walkToObject(ladder, {
+      execute: () => world.emitObjectInteraction?.({
+        player, object: ladder, objectId: ladder.getId(), clickType,
+        location: { x: hop.x, y: hop.y, z: hop.z }, handled: false,
+      }),
     });
     return true;
   }
@@ -255,7 +260,9 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
       if (!stairs) return run.tries++ >= MAX_TRIES ? "failed" : "running";
       const at = stairs.getLocation();
       const away = Math.max(Math.abs(here.x - at.getX()), Math.abs(here.y - at.getY()));
-      if (away <= 2) {
+      // Within an errand's arrival (3 tiles) it clicks the stairs and walks the last steps itself:
+      // a walk to the stairs from there "arrived" at once and started again, round and round.
+      if (away <= CLICK_TILES) {
         if (nowMs >= (run.climbAt ?? 0)) {
           run.climbAt = nowMs + 4000;
           const { climbOption } = require("../brain/Climbing.PlayerBots");
@@ -276,7 +283,7 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
       return "running";
     }
     if (hop.climb) {
-      if (Math.max(Math.abs(here.x - hop.x), Math.abs(here.y - hop.y)) <= 1 && here.z === hop.z) {
+      if (Math.max(Math.abs(here.x - hop.x), Math.abs(here.y - hop.y)) <= CLICK_TILES && here.z === hop.z) {
         climb(player, hop);
         return "running";
       }
