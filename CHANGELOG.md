@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Bij het begin van een quest halen avonturiers wat Quest Helper aanraadt om mee te nemen (eten, een teleport, antipoison), als ze het kunnen krijgen.
 - Avonturiers kunnen verder kijken dan rune: een abyssal whip (70 attack) en granite (50 defence/strength), Helm of Neitiznot (55, na The Fremennik Isles), dragon (60/70), Bandos (65) en Dharok's (70) armour, als ze het geld hebben; anders wordt het een spaardoel.
 - Elke clan heeft tijdelijk 5 extra avonturiers (Jorgbot 5–9, Patrickbot 4–8, Markbot 4–8) voor een langere testrun, elk met een eigen testprofiel (vroege vechter, skiller, middenmoot, gevorderd, mix) met andere levels, al gedane quests en startgeld; ze tellen niet mee voor de achievements. In te stellen met "extraPerClan" en "testProfiles" in adventurers.json.
 - De server deelt elke 5 minuten zelf de logboeken van de avonturiers op de branch `bot-logs`, zonder dat iemand een commando hoeft te draaien.
@@ -152,6 +153,9 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers betalen de tol van 10 gp bij de poort van Al Kharid als ze die bij zich hebben, zoals een speler; eerst moesten ze 1.000 gp op zak hebben en stonden ze vast in Al Kharid.
+- Bij een quest-stap die geen praten is (schapen scheren voor Sheep Shearer) gebruiken avonturiers de juiste optie van het NPC en nemen ze steeds een ander schaap.
+- Avonturiers nemen ook eten mee voor een Slayer-taak, en pakken daarvoor eerst eten van hun bank voordat ze iets kopen.
 - Avonturiers kopen eerst het beste wapen dat ze kunnen betalen en daarna hun armour als één set van hetzelfde metaal (het beste setje dat er nog bij past), in plaats van een mix van rune, adamant en mithril.
 - Rune en adamant scimitars vragen geen quest meer voordat een avonturier ze koopt (alleen de dragon scimitar vraagt Monkey Madness I en de rune platebody Dragon Slayer I).
 - Een avonturier met genoeg geld koopt zijn uitrusting nu in één bezoek aan de Grand Exchange, in plaats van voor elk stuk opnieuw "naar de GE" te lopen terwijl hij er al stond; en een gekocht stuk heet in zijn logboek niet langer "gevonden".

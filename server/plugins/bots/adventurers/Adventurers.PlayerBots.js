@@ -791,6 +791,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // Only a Slayer task narrows what it fights; any other job fights what it finds.
     const own = runtimeEntry(player);
     if (own?.state && plan.mode !== "slayer") own.state.onlyNames = null;
+    // A Slayer task is a fight too: food along first, from its bank or a shop.
+    if (plan.mode === "slayer" && stockFood(entry, plan, nowMs)) return true;
     if (plan.mode === "slayer") return startSlayer(entry, plan, nowMs);
     if (getTravelFood(entry, plan, nowMs)) return true;
     if (plan.mode.startsWith("buy_")) {
@@ -886,11 +888,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const level = plan.mode === "combat_training" ? view.combat : view.levels[plan.skill] ?? 1;
       const id = bestActivity(plan.mode, level, definitions);
       // Fighting on an empty stomach is how adventurers die: food first, if it can buy some.
-      if (plan.mode === "combat_training" && !carriesFood(player)) {
-        const food = Shopping.foodToBuy(player, core, levelOf(player, "HITPOINTS"));
-        if (food && Shopping.coinsOf(player) >= Shopping.estimatedPrice(core, food.itemId, food.amount)
-            && shopFor(entry, food.itemId, food.name, food.amount)) return true;
-      }
+      if (plan.mode === "combat_training" && stockFood(entry, plan, nowMs)) return true;
       // Its axe, pickaxe, net or rod at the bank: fetched first, in person.
       const bankedTools = toolsInBank(player, plan.mode, id);
       if (bankedTools.length > 0) return fetchTools(entry, plan, bankedTools);
@@ -1681,6 +1679,38 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * Ardougne goes past things that hit back): from its bank, or bought. Once in a while, not
    * before every job; true when it went for it.
    */
+  /**
+   * Food along before a fight (combat, a Slayer task, a quest with fights): what it has in its
+   * bank first, else bought (a shop, or the GE). True when it set off for it.
+   */
+  function stockFood(entry, plan, nowMs) {
+    const player = entry.player;
+    if (carriesFood(player) || nowMs < (entry.stockFoodAt ?? 0)) return false;
+    entry.stockFoodAt = nowMs + 10 * 60_000;
+    const amount = Shopping.gear.foodAmount ?? 14;
+    const resume = () => {
+      if (plan?.kind === "train") entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, remainingMs: 0, savedAt: now() };
+    };
+    const inBank = (Shopping.gear.food ?? []).map((food) => Shopping.idOf(core, food.item))
+      .find((id) => Number.isInteger(id) && banked(player, id) >= 5);
+    const bank = inBank !== undefined ? nearestBank(player, entry) : null;
+    if (bank) {
+      return walkTo(entry, { ...bank, name: bank.name ?? bank.id }, {
+        reason: "withdraw",
+        arrive: (banker) => {
+          const got = withdraw(banker, inBank, amount);
+          if (got > 0) note(banker, `Neemt ${got} x ${itemName(inBank)} van de bank mee om te eten.`, "activity");
+          resume();
+        },
+      });
+    }
+    const food = Shopping.foodToBuy(player, core, levelOf(player, "HITPOINTS"));
+    if (!food || Shopping.coinsOf(player) < Shopping.estimatedPrice(core, food.itemId, food.amount) + 50) return false;
+    if (!shopFor(entry, food.itemId, food.name, food.amount)) return false;
+    resume();
+    return true;
+  }
+
   function getTravelFood(entry, plan, nowMs) {
     const player = entry.player;
     const hitpoints = player.getSkillManager().getMaxLevel(core.Skill.HITPOINTS);

@@ -59,8 +59,9 @@ function definitionFor(object, player) {
   }
 }
 
-// An honest bot pays a toll only with at least this many times the toll in its bag.
-const TOLL_SPARE = 100;
+// An honest bot pays a toll as a player does: when it carries the toll. (A spare of 100x, 1,000 gp
+// for Al Kharid's 10 gp, kept adventurers in Al Kharid behind the gate.)
+const TOLL_SPARE = 1;
 
 /** Whether an honest bot pays this toll option ("Pay-toll(10gp)") from what it carries. */
 function paysToll(player, option) {

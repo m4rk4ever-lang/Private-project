@@ -160,6 +160,12 @@ function createHelperSteps({ core, now = () => Date.now(), log = () => {} }) {
             reason: `quest helper unavailable here: ${(result.diagnostics ?? []).map((d) => d.message ?? d.code).join("; ") || "no step"}`,
           }
             : toBotStep(core, result?.activeStep);
+        // What the guide recommends bringing (food, teleports, an antipoison) and the bot lacks.
+        const recommended = result?.overview?.itemRecommended;
+        if (Array.isArray(recommended)) {
+          state.recommended = recommended.filter((req) => req && req.met === false && Array.isArray(req.ids) && req.ids.length > 0)
+            .map((req) => ({ ids: req.ids, amount: Math.max(1, Number(req.quantity) || 1), name: req.name }));
+        }
         state.error = null;
       }, (error) => {
         state.error = String(error?.message ?? error);
@@ -180,7 +186,12 @@ function createHelperSteps({ core, now = () => Date.now(), log = () => {} }) {
     return { error: state.error, answeredMsAgo: state.at ? now() - state.at : null, busy: state.busy, step: state.step?.id ?? null };
   }
 
-  return { available, keyOf, current, status };
+  /** The items the guide recommends for this quest that the bot does not carry yet. */
+  function recommended(player) {
+    return asked.get(player)?.recommended ?? [];
+  }
+
+  return { available, keyOf, current, status, recommended };
 }
 
 module.exports = { createHelperSteps, toBotStep, sceneOf };

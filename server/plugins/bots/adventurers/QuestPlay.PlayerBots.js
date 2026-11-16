@@ -229,12 +229,20 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
   }
 
   /** The NPC by name near the spot, or null. */
-  function findNpc(player, step) {
+  function findNpc(player, step, recentNpcs = null) {
     const target = spot(step);
     const near = core.World.getNpcsNear(new core.Location(target.x, target.y, target.z), NEAR_TILES + 6, player.getPrivateArea?.() ?? null);
     const wanted = String(step.npc).toLowerCase();
-    return near.find((npc) => npc.isRegistered?.() !== false
-      && String(npc.getCurrentDefinition?.(player)?.getName?.() ?? npc.getDefinition?.()?.getName?.() ?? "").toLowerCase() === wanted) ?? null;
+    const ids = new Set(step.ids ?? []);
+    const matches = near.filter((npc) => npc.isRegistered?.() !== false
+      && (String(npc.getCurrentDefinition?.(player)?.getName?.() ?? npc.getDefinition?.()?.getName?.() ?? "").toLowerCase() === wanted
+        || ids.has(npc.getContentId?.(player) ?? npc.getId())));
+    // A step done on many of them (shear twenty sheep): not the same one again and again.
+    const recent = new Set(recentNpcs ?? []);
+    const here = player.getLocation();
+    const away = (npc) => Math.max(Math.abs(npc.getLocation().getX() - here.getX()), Math.abs(npc.getLocation().getY() - here.getY()));
+    return matches.filter((npc) => !recent.has(npc.getIndex())).sort((a, b) => away(a) - away(b))[0]
+      ?? matches.sort((a, b) => away(a) - away(b))[0] ?? null;
   }
 
   /** Whether it can walk up to the NPC as things stand (doors closed count as walls). */
@@ -297,9 +305,15 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     return true;
   }
 
-  function talkTo(player, npc) {
-    const actions = npc.getCurrentDefinition?.(player)?.getActions?.() ?? npc.getDefinition?.()?.getActions?.() ?? [];
-    const clickType = actions.findIndex((action) => String(action ?? "").toLowerCase() === "talk-to") + 1;
+  function talkTo(player, npc, step = null) {
+    const actions = (npc.getCurrentDefinition?.(player)?.getActions?.() ?? npc.getDefinition?.()?.getActions?.() ?? [])
+      .map((action) => String(action ?? "").toLowerCase());
+    // The option the step names ("Shear sheep in the nearby field": Shear), else Talk-to, else
+    // the NPC's own first option (a sheep has no Talk-to).
+    const verb = String(step?.text ?? "").trim().split(/\s+/)[0]?.toLowerCase() ?? "";
+    let clickType = verb && verb !== "talk" ? actions.findIndex((action) => action === verb) + 1 : 0;
+    if (!clickType) clickType = actions.findIndex((action) => action === "talk-to") + 1;
+    if (!clickType) clickType = actions.findIndex((action) => action && action !== "examine" && action !== "null") + 1;
     if (!clickType) return false;
     // The same click a player's client sends: its walk, then the NPC's handler, the quest
     // dialogue among them (NpcInteractionManager), not only the plugins' hooks.
@@ -386,6 +400,19 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
       if (step.kind === "unavailable") {
         run.reason = step.reason;
         return "failed";
+      }
+      // What the guide recommends bringing (food for the fights, a teleport, an antipoison):
+      // each fetched or bought once at the start, as a player packs before setting off; one it
+      // cannot get (too dear, sold nowhere) is left out, not a reason to stop.
+      const recommended = (helper.recommended?.(player) ?? []).filter((rec) => !(run.recTried ??= new Set()).has(rec.name));
+      if (recommended.length > 0 && run.recTried.size < 4 && nowMs >= (run.recAt ?? 0)) {
+        const rec = recommended[0];
+        run.recTried.add(rec.name);
+        run.recAt = nowMs + 5_000;
+        if (acquire(entry, rec.ids, rec.amount, rec.name)) {
+          note?.(player, `Haalt ${rec.amount > 1 ? `${rec.amount} x ` : ""}${rec.name} voor ${run.name} (aangeraden).`, "quest");
+          return "running";
+        }
       }
       // What the step needs that it does not have: fetched or bought first (an errand).
       // (Not what this very step picks up: the egg in the chicken coop is taken, not bought.)
@@ -507,7 +534,7 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
       }
       return "running";
     }
-    const npc = findNpc(player, step);
+    const npc = findNpc(player, step, run.lastNpcs);
     // A closed door between it and the NPC (Duke Horacio's room): open the way first.
     const npcAt = npc ? { x: npc.getLocation().getX(), y: npc.getLocation().getY() } : null;
     if (npc && !canReach(player, npc) && (brainDoor(player, npcAt) || openWayTo(player, npcAt, nowMs))) {
@@ -516,7 +543,8 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     }
     run.tries += 1; run.reason = npc ? "talked, but the step did not advance" : `npc not found: ${step.npc}`;
     run.talkAt = nowMs + 8_000;
-    if (!npc || !talkTo(player, npc)) {
+    if (npc) run.lastNpcs = [...(run.lastNpcs ?? []), npc.getIndex()].slice(-6);
+    if (!npc || !talkTo(player, npc, step)) {
       note?.(player, `Kan ${step.npc} niet vinden voor ${run.name}.`, "quest");
       return "running";
     }
