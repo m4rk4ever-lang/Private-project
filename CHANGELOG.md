@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- In een Codespace wordt de Quest Helper-bridge vanzelf opgezet en gestart: Java 21, de geheime sleutel in .env, Quest Helper ophalen en bouwen bij het aanmaken (of op de achtergrond bij het starten), en de bridge start mee met het spel. Een bestaande Codespace heeft één keer 'Rebuild Container' nodig voor Java.
 - Avonturiers proberen (met de Quest Helper) elke quest waarvan ze de eisen halen. Lopen ze vast, dan stoppen ze, laten ze de quest een tijd liggen (steeds langer) en schrijven ze op waar en waarom: in logs/adventurer-quest-feedback.jsonl en als questFeedback in /api/adventurers.
 - Beheerders kunnen een avonturier een quest laten beginnen vanaf een bepaalde stap: `::advquest <naam>:<quest>:<stage>` (om één stap te testen).
 - Avonturiers kunnen quests spelen met de echte Quest Helper als gids (als de quest-helper-bridge draait): per stap praten ze met de juiste NPC, gebruiken ze objecten, rapen ze spullen op, kopen ze wat in een winkel moet en kiezen ze de juiste antwoorden. Beheerders starten zo'n quest met ::advquest; quests die een bot helemaal heeft uitgespeeld komen op de lijst die ze zelf kiezen.

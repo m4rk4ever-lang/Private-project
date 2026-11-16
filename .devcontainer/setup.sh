@@ -35,3 +35,7 @@ REACT_APP_FULL_CACHE=1
 EOF
   echo "Client points at wss://${host}"
 fi
+
+# The Quest Helper bridge (Quest Helper in the game, and the adventurer bots' quests): token in
+# .env, upstream checkout and build. A failure here does not stop the codespace.
+bash scripts/quest-helper-setup.sh || echo "Quest Helper bridge setup failed; run: bash scripts/quest-helper-setup.sh"

@@ -27,3 +27,6 @@ if [ -n "${CODESPACE_NAME:-}" ]; then
     echo "Could not make port 43594 public. In the Ports tab: right-click 43594 > Port Visibility > Public."
   ) > /tmp/ports-visibility.log 2>&1 &
 fi
+# The Quest Helper bridge for codespaces made before it was set up automatically: token, upstream
+# and build in the background (skipped when done; needs the Java 21 of a rebuilt container).
+(bash scripts/quest-helper-setup.sh > /tmp/quest-helper-setup.log 2>&1 &)
