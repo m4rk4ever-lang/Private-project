@@ -821,7 +821,9 @@ export class MovementQueue {
 
     private drainRunEnergy(stepsMoved: number) {
         const player = (this.character as Player);
-        if (player.isPlayerBot?.() === true) {
+        // World bots run without tiring; honest bots (adventurers, attribute "bots:honest") tire
+        // and rest like players.
+        if (player.isPlayerBot?.() === true && player.getAttribute?.("bots:honest") !== true) {
             if (player.getRunEnergyUnits() !== GameConstants.RUN_ENERGY_MAX_UNITS) {
                 player.setRunEnergyUnits(GameConstants.RUN_ENERGY_MAX_UNITS);
             }

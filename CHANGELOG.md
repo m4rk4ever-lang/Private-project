@@ -95,6 +95,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers hadden onbeperkte run energy. Nu raken ze buiten adem zoals spelers, lopen dan verder en gaan weer rennen als ze tot 40% zijn bijgekomen. Gewone wereldbots blijven onvermoeibaar.
 - Avonturiers kiezen geen bestemmingen meer in de woestijn achter de Shantay Pass zonder een Shantay pass bij zich. Afgesloten gebieden (achter een quest of een item) staan in `travel-hubs.json` onder `lockedAreas`.
 - Een bot die vlak bij zijn doel tegen een muur liep (bijvoorbeeld buiten het kasteel van Lumbridge, met de trap binnen), bleef daar staan: de rechte weg leek gelukt. Staat hij 6 seconden stil op weg, dan plant de routeplanner de weg eromheen.
 - Avonturiers vochten met lege handen: hun bronze dagger en wooden shield gingen bij de eerste bankbeurt de bank in. Nu trekken ze aan wat ze hebben voor een lege plek (uit de tas, of uit de bank als ze daar staan), en met lege handen kopen ze eerst een wapen voordat ze gereedschap kopen.

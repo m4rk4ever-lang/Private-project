@@ -933,6 +933,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       if (!entry.player?.isRegistered?.()) continue;
       watchGear(entry);
       joinClan(entry);
+      // Out of breath it walks; rested (40%) it runs again, as a player clicks run back on.
+      if (entry.player.isRunningReturn?.() === false && (entry.player.getRunEnergy?.() ?? 0) >= 40) entry.player.setRunning?.(true);
       if (entry.phase === "training" && entry.buying && entry.player.getInventory().getAmount(entry.buying) <= 0
           && !errands.busy(entry.player)) {
         entry.buying = null;
