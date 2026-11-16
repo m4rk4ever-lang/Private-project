@@ -101,6 +101,7 @@ Indeling per versie:
 - Bij het opstarten komen eerst de 15 avonturiers online, één per tick. De andere bots volgen pas na 45 seconden, ook één per tick, in plaats van ruim 90 tegelijk. Dat geeft minder lag en minder geheugenpieken bij de start. Met `BOT_WORLD_DELAY_MS` in `.env` stel je die wachttijd in (0 = meteen).
 - Stopt de client steeds, dan blijft hij het opnieuw proberen met een steeds langere pauze (tot 1 minuut), in plaats van na 4 keer op te geven.
 - Nog minder wereldbots voor minder lag: 3 per Edgeville-plek (was 5), 5 bij de Varrock-ditch (was 10) en een PvP-pool van 15 (was 30).
+- Avonturiers begraven gewone botten meteen (zoals spelers onderweg doen) en bewaren alleen big bones en beter voor Prayer of het altaar op een house party; runes, pijlen en teleports verkopen ze nooit meer.
 - Avonturiers kiezen hun klusplek nu zelf: de dichtstbijzijnde plek die bij hun klus, level en quests past, los van de regels waarmee de gewone bots zich over de wereld verspreiden.
 - Het logboek van een avonturier vermeldt waarom hij niet kan gaan jagen (geen geld voor een bird snare, plek niet bereikbaar).
 - Alle avonturiers en de achievementsrace beginnen opnieuw bij nul in Lumbridge, met alleen het startpakket, voor een eerlijk speelveld met alle verbeteringen.

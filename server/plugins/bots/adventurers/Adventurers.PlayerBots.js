@@ -1143,6 +1143,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       entry.lastTickAt = nowMs;
       leaveUnreachableFight(entry, nowMs);
       eatWhenHurt(entry);
+      if (!entry.player.getCombat?.()?.getTarget?.()) buryLowBones(entry.player);
       // Out of breath it walks; rested (40%) it runs again, as a player clicks run back on.
       if (entry.player.isRunningReturn?.() === false && (entry.player.getRunEnergy?.() ?? 0) >= 40) entry.player.setRunning?.(true);
       if (entry.phase === "training" && entry.buying && entry.player.getInventory().getAmount(entry.buying) <= 0
@@ -1291,6 +1292,21 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         Shopping.wear(buyer, core, itemId);
       },
     });
+  }
+
+  /**
+   * Small bones (bones, bat and wolf bones) are buried where it stands, as a player does on the
+   * way: a little Prayer and a free slot. Big bones and better stay for Prayer training or a
+   * house party's altar (bankKeep).
+   */
+  function buryLowBones(player) {
+    if (!api.emitItemAction) return;
+    const low = new Set(["BONES", "BAT_BONES", "WOLF_BONES", "BURNT_BONES"].map((name) => core.ItemIdentifiers[name]).filter(Number.isInteger));
+    const items = player.getInventory().getItems() ?? [];
+    const slot = items.findIndex((item) => item && low.has(item.getId()));
+    if (slot < 0) return;
+    const item = items[slot];
+    api.emitItemAction({ player, interfaceId: core.Inventory.INTERFACE_ID, item, itemId: item.getId(), slot, clickType: 1, option: "Bury", handled: false });
   }
 
   /** Food in its bag: [{ slot, itemId }]. */
@@ -1992,6 +2008,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       note(player, `Draagt nu ${name.toLowerCase().replace(/_/g, " ")} (gevonden).`, "activity");
     }
     fillEmptySlots(player);
+    buryLowBones(player);
     // Coin pouches are opened; junk goes at once, wherever it is.
     openPouches(player);
     dropJunk(player, sortBag(player).junk);

@@ -128,7 +128,8 @@ function goodsToSell(player, core, keep, { isFood = null, worthless = false } = 
       food.set(item.getId(), (food.get(item.getId()) ?? 0) + item.getAmount());
       continue;
     }
-    if (keep.has(item.getId())) continue;
+    // Runes, arrows and teleports are never sold, wherever the keep list came from.
+    if (keep.has(item.getId()) || isSupply(core, item.getId())) continue;
     totals.set(item.getId(), (totals.get(item.getId()) ?? 0) + item.getAmount());
   }
   // The best food stays (the most of one kind first), up to FOOD_CARRY pieces in all.
