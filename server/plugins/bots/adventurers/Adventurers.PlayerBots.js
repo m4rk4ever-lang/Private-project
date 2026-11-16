@@ -75,6 +75,8 @@ const JEWELLERY = ["GAMES_NECKLACE_8_", "RING_OF_DUELING_8_", "AMULET_OF_GLORY_4
 const TABLET_BUDGET = 5000;
 /** Arrows, or casts' worth of runes, it wants before it fights that way. */
 const SUPPLY_MIN = 50;
+/** Coins it wants before it buys a first supply of runes to start Magic with. */
+const MAGIC_START_BUDGET = 2500;
 const MAGIC_RUNES = ["AIR_RUNE", "MIND_RUNE", "WATER_RUNE", "EARTH_RUNE", "FIRE_RUNE", "CHAOS_RUNE"];
 const WINTERTODT = travelData.minigames.find((game) => game.id === "wintertodt");
 
@@ -1584,6 +1586,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (bids.length > 0) note(player, `Biedt op de GE op: ${bids.join(", ")}.`, "activity");
   }
 
+  function ownsSome(player, name) {
+    const id = Shopping.idOf(core, name);
+    return Number.isInteger(id) && player.getInventory().getAmount(id) + banked(player, id) > 0;
+  }
+
   /** Arrows for its bow, runes for its spells: bought when they run low (and it fights that way). */
   function bidForSupplies(player) {
     const styles = fightingStyles(player);
@@ -1601,6 +1608,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (styles.includes("magic")) {
       top("AIR_RUNE", 600);
       top("MIND_RUNE", 300);
+    } else if (ownsSome(player, "AIR_RUNE") && ownsSome(player, "MIND_RUNE") && Shopping.coinsOf(player) >= MAGIC_START_BUDGET) {
+      // The starter kit's few runes: a first supply to begin Magic with, as a player buys one.
+      top("AIR_RUNE", 200);
+      top("MIND_RUNE", 100);
     }
     // With coins to spare, a few teleport tablets for long walks (the errands break one when it
     // saves a long walk): the cheapest way round for an adventurer without the Magic for the spell.

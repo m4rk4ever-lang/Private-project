@@ -136,6 +136,9 @@ function trainingWeight(option, options, adventurer, { focus = {}, busyModes = n
   // fletching and firemaking, a miner ahead of its smelting and smithing, comes to those soon.
   const feeder = FEEDS[option.skill];
   if (option.mode.startsWith("buy_") && feeder && (adventurer.levels[feeder] ?? 1) >= option.level + 10) weight *= 4;
+  // A bow or runes it has and a style far behind its melee: it trains that way too.
+  if ((option.mode === "combat_ranged" || option.mode === "combat_magic")
+      && (adventurer.levels.ATTACK ?? 1) >= option.level + 10) weight *= 3;
   // A Slayer task it has is one it means to finish.
   if (option.mode === "slayer" && adventurer.slayer?.task) weight *= 3;
   return weight;
