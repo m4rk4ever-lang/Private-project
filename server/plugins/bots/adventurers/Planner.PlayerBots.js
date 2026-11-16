@@ -127,7 +127,10 @@ function chooseNext(adventurer, quests, {
 function trainingWeight(option, options, adventurer, { focus = {}, busyModes = new Set() } = {}) {
   const average = options.reduce((sum, entry) => sum + entry.level, 0) / options.length;
   let weight = 1;
-  if (option.mode === COMBAT && adventurer.combat < 40) weight *= 3;
+  // Early on combat a little more often (loot, levels for quests), not all the time.
+  if (option.mode === COMBAT && adventurer.combat < 40) weight *= 4;
+  // A skill it has hardly touched (level 1-9) comes up often: every account tries them all.
+  if (option.mode !== COMBAT && option.level < 10) weight *= 1.5;
   weight *= focus[option.mode] ?? 1;
   weight *= 1 + Math.max(0, average - option.level) * 0.2;
   if (busyModes.has(option.mode)) weight *= 0.5;
@@ -136,7 +139,7 @@ function trainingWeight(option, options, adventurer, { focus = {}, busyModes = n
   // What it gathers feeds the next skill, as for a player: a woodcutter far ahead of its
   // fletching and firemaking, a miner ahead of its smelting and smithing, comes to those soon.
   const feeder = FEEDS[option.skill];
-  if (option.mode.startsWith("buy_") && feeder && (adventurer.levels[feeder] ?? 1) >= option.level + 10) weight *= 4;
+  if (option.mode.startsWith("buy_") && feeder && (adventurer.levels[feeder] ?? 1) >= option.level + 10) weight *= 2;
   // A bow or runes it has and a style far behind its melee: it trains that way too.
   if ((option.mode === "combat_ranged" || option.mode === "combat_magic")
       && (adventurer.levels.ATTACK ?? 1) >= option.level + 10) weight *= 3;

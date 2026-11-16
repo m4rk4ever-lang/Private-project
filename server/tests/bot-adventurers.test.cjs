@@ -44,7 +44,8 @@ test("combat goals train combat, and Firemaking 50 opens Wintertodt", () => {
   const a = adventurer({ MINING: 99 }, { done: new Set(data.quests.slice(0, 16).map((quest) => quest.name)) });
   const plan = chooseNext(a, data.quests, { random: () => 0.99 });
   assert.equal(plan.mode, "combat_training");
-  const firemaker = adventurer({ WOODCUTTING: 99, MINING: 99, FISHING: 99, THIEVING: 99, FIREMAKING: 50 }, { combat: 126, questPoints: 200, done: new Set(data.quests.map((q) => q.name)) });
+  // Every other skill trained (an untouched skill would come first, as it should).
+  const firemaker = adventurer({ WOODCUTTING: 99, MINING: 99, FISHING: 99, THIEVING: 99, HUNTER: 99, AGILITY: 99, FIREMAKING: 50 }, { combat: 126, questPoints: 200, done: new Set(data.quests.map((q) => q.name)) });
   const choices = new Set();
   for (let i = 0; i < 10; i++) choices.add(chooseNext(firemaker, data.quests, { random: () => i / 10 }).mode);
   assert.ok(choices.has("wintertodt"), [...choices].join(","));

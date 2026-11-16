@@ -99,6 +99,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Avonturiers doen meer verschillende skills: vechten komt minder vaak voorbij, en skills die ze nog nauwelijks hebben getraind (woodcutting, fletching, firemaking, smithing, agility, hunter) juist vaker.
 - Een avonturier die voor een doel of quest-eis traint (zoals combat 10), stopt daarmee als hij dat level (plus 0 tot 3 levels) heeft gehaald, in plaats van door te trainen tot ver erboven. Een spaardoel dat gehaald is, koopt hij nu ook echt.
 - Avonturiers trainen attack, strength en defence niet meer precies gelijk op: elk heeft een eigen voorkeur en houdt een stijl een tijdje vast; loopt één skill ver achter, dan haalt hij die eerst in.
 - Bij het opstarten komen eerst de 15 avonturiers online, één per tick. De andere bots volgen pas na 45 seconden, ook één per tick, in plaats van ruim 90 tegelijk. Dat geeft minder lag en minder geheugenpieken bij de start. Met `BOT_WORLD_DELAY_MS` in `.env` stel je die wachttijd in (0 = meteen).

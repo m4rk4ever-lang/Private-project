@@ -110,8 +110,8 @@ function goalWeight(goal, option) {
   }
   // Saving up: what earns (loot, pickpockets, produce to sell) more, spending on materials less.
   if (option.mode.startsWith("buy_")) return 0.3;
-  if (option.mode === "thieving") return 2;
-  if (option.mode === "combat_training") return 1.5;
+  if (option.mode === "thieving") return 1.5;
+  if (option.mode === "combat_training") return 1.2;
   // Logs, ore and fish sell too (willows, iron, a bag of cowhides from combat above).
   if (["woodcutting", "mining", "fishing"].includes(option.mode)) return 1.5;
   return 1;
