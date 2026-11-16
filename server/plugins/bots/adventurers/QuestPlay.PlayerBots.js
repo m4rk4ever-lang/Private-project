@@ -107,7 +107,8 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
   function ready(name) {
     if (!has(name)) return false;
     if (playthroughs[name]?.verified !== false && playthroughs[name]) return true;
-    return (data.helperQuests ?? []).includes(name) && Boolean(helper?.available?.());
+    // helperAll: every quest the helper knows is tried (a stuck one is put aside and logged).
+    return (data.helperAll === true || (data.helperQuests ?? []).includes(name)) && Boolean(helper?.available?.());
   }
 
   /** Starts `name` for this adventurer. */
@@ -128,6 +129,7 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     if (step && step.id !== run.helperStepId) {
       run.helperStepId = step.id;
       run.tries = 0;
+      run.reason = null;
       run.stepSince = nowMs;
       run.step += step.id === "complete" ? 0 : 1;
       run.lastHelperStep = step;
@@ -347,7 +349,7 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
         run.needsAt = nowMs + 60_000;
         const need = needs[0];
         if (acquire(entry, need.ids, need.amount, need.name)) return "running";
-        run.tries += 1;
+        run.tries += 1; run.reason = `item missing: ${need.name}`;
         note?.(player, `Mist ${need.name} voor ${run.name} en kan het nu niet krijgen.`, "quest");
       }
       // "Purchase a bucket from the General Store": a purchase, not a chat (an errand to the shop).
@@ -355,13 +357,13 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
       if (purchase && nowMs >= (run.buyAt ?? 0)) {
         run.buyAt = nowMs + 30_000;
         if (buyNamed(entry, purchase[1])) return "running";
-        run.tries += 1;
+        run.tries += 1; run.reason = `could not buy: ${purchase[1]}`;
       }
       // A step with no place (read a book, use an item): nothing it can do yet, it asks again.
       if (!step.at) {
         if (nowMs >= (run.waitAt ?? 0)) {
           run.waitAt = nowMs + 15_000;
-          run.tries += 1;
+          run.tries += 1; run.reason = "step without a place (helper gives no tile)";
         }
         return "running";
       }
@@ -386,7 +388,7 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     const floorGoal = hop.climb ? { x: hop.x, y: hop.y, z: hop.z } : target;
     if (here.z !== floorGoal.z) {
       const stairs = stairsTo(here, floorGoal, nowMs);
-      if (!stairs) return run.tries++ >= MAX_TRIES ? "failed" : "running";
+      if (!stairs) { run.reason = `no stairs/ladder found to floor ${floorGoal.z}`; return run.tries++ >= MAX_TRIES ? "failed" : "running"; }
       const at = stairs.getLocation();
       const away = Math.max(Math.abs(here.x - at.getX()), Math.abs(here.y - at.getY()));
       // Within an errand's arrival (3 tiles) it clicks the stairs and walks the last steps itself:
@@ -412,7 +414,7 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
         return "running";
       }
       // A walk that could not start (that way was blocked a moment ago) counts as a try.
-      if (!walkTo(entry, { x: at.getX(), y: at.getY(), z: here.z, name: step.npc }, { reason: "quest", replan: false, say: false })) run.tries += 1;
+      if (!walkTo(entry, { x: at.getX(), y: at.getY(), z: here.z, name: step.npc }, { reason: "quest", replan: false, say: false })) { run.tries += 1; run.reason = "walk to the stairs refused"; }
       return "running";
     }
     if (hop.climb) {
@@ -425,22 +427,23 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
         climb(player, hop);
         return "running";
       }
-      if (!walkTo(entry, { x: hop.x, y: hop.y, z: hop.z, name: step.npc }, { reason: "quest", replan: false, say: false })) run.tries += 1;
+      if (!walkTo(entry, { x: hop.x, y: hop.y, z: hop.z, name: step.npc }, { reason: "quest", replan: false, say: false })) { run.tries += 1; run.reason = "walk to the ladder refused"; }
       return "running";
     }
     const away = here.z === target.z ? Math.max(Math.abs(here.x - target.x), Math.abs(here.y - target.y)) : Infinity;
     if (away > NEAR_TILES) {
-      if (!walkTo(entry, { ...target, name: step.npc }, { reason: "quest", replan: false, say: run.tries === 0 && !run.walking })) run.tries += 1;
+      if (!walkTo(entry, { ...target, name: step.npc }, { reason: "quest", replan: false, say: run.tries === 0 && !run.walking })) { run.tries += 1; run.reason = "walk to the step refused (blocked recently)"; }
       run.walking = true;
       return "running";
     }
     run.walking = false;
     if (nowMs < run.talkAt) return "running";
     if (run.helperKey && step.kind !== "npc") {
-      run.tries += 1;
+      run.tries += 1; run.reason = run.reason ?? `${step.kind} step did not advance`;
       run.talkAt = nowMs + 8_000;
-      if (step.kind === "object") useObject(player, step, nowMs);
-      if (step.kind === "item") takeItem(player, step, nowMs);
+      if (step.kind === "object" && !useObject(player, step, nowMs)) run.reason = `object not found at ${step.at.join(",")} (ids ${step.ids.join("/")})`;
+      else if (step.kind === "object") run.reason = "object used, but the step did not advance";
+      if (step.kind === "item" && !takeItem(player, step, nowMs)) run.reason = `item not on the ground at ${step.at.join(",")}`;
       return "running";
     }
     const npc = findNpc(player, step);
@@ -450,7 +453,7 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
       run.talkAt = nowMs + 3_000;
       return "running";
     }
-    run.tries += 1;
+    run.tries += 1; run.reason = npc ? "talked, but the step did not advance" : `npc not found: ${step.npc}`;
     run.talkAt = nowMs + 8_000;
     if (!npc || !talkTo(player, npc)) {
       note?.(player, `Kan ${step.npc} niet vinden voor ${run.name}.`, "quest");
@@ -459,7 +462,23 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     return "running";
   }
 
-  return { start, tick, talkTick, has, ready, questOf };
+  /** Why a run stopped, for the quest feedback log: its step, where and why. */
+  function describeFailure(entry) {
+    const run = entry.questRun;
+    if (!run) return null;
+    const player = entry.player;
+    const quest = questOf(run.name);
+    const step = run.helperKey ? run.lastHelperStep : playthroughs[run.name]?.steps?.[run.step];
+    const at = player.getLocation();
+    return {
+      quest: run.name, guide: run.helperKey ? "quest-helper" : "playthrough", stage: Number(quest?.getStage?.(player) ?? -1),
+      step: run.step, kind: step?.kind ?? (step?.npc ? "npc" : null), text: step?.text ?? null, npc: step?.npc ?? null,
+      ids: step?.ids ?? null, target: step?.at ?? null, here: [at.getX(), at.getY(), at.getZ()],
+      reason: run.reason ?? (Date.now() - run.stepSince > STEP_MS ? "step took too long" : "too many tries"), tries: run.tries,
+    };
+  }
+
+  return { start, tick, talkTick, has, ready, questOf, describeFailure };
 }
 
 module.exports = { createQuestPlay, chooseOption, nextHop, placeOf, stepDone, data };

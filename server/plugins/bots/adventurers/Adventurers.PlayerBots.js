@@ -137,6 +137,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       (requires.quests ?? []).every((name) => questsByName().get(normalize(name))?.isComplete(player) === true)
       && Object.entries(requires.skills ?? {}).every(([skill, level]) => (core.Skill[skill] ? player.getSkillManager().getMaxLevel(core.Skill[skill]) : 0) >= level)));
   }
+  /** The last stuck quests, newest first (recordQuestFeedback). */
+  const questFeedback = [];
   /** name -> { name, player, phase, until, plan, startedAt } */
   const adventurers = new Map();
   // Quests played for real (QuestPlay.PlayerBots.js): walk, Talk-to, answer.
@@ -824,12 +826,35 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (result === "done") {
       note(entry.player, `Quest voltooid: ${run.name}!`, "quest");
     } else {
-      (entry.questsAside ??= new Map()).set(run.name, nowMs + QUEST_ASIDE_MS);
+      // Stuck: put aside (longer each time it fails) and written down why, so the cause can be
+      // fixed (logs/adventurer-quest-feedback.jsonl; also on the page's feedback list).
+      const failures = (entry.questFailures ??= new Map());
+      failures.set(run.name, (failures.get(run.name) ?? 0) + 1);
+      (entry.questsAside ??= new Map()).set(run.name, nowMs + QUEST_ASIDE_MS * Math.min(8, 2 ** (failures.get(run.name) - 1)));
+      recordQuestFeedback(entry, questPlay.describeFailure({ ...entry, questRun: run }));
       note(entry.player, `Legt ${run.name} even weg (stap ${run.step + 1} lukte niet).`, "quest");
     }
     entry.phase = "new";
     entry.plan = null;
     entry.until = 0;
+  }
+
+  /** One stuck quest, as a line in the feedback log (and the last few in memory for the page). */
+  function recordQuestFeedback(entry, failure) {
+    if (!failure) return;
+    const line = { at: new Date().toISOString(), bot: entry.name, ...failure };
+    questFeedback.unshift(line);
+    questFeedback.length = Math.min(questFeedback.length, 100);
+    world.log?.("adventurer_quest_stuck", line);
+    try {
+      const fs = require("fs");
+      const path = require("path");
+      const file = path.join(process.cwd(), "logs", "adventurer-quest-feedback.jsonl");
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      fs.appendFileSync(file, `${JSON.stringify(line)}\n`);
+    } catch {
+      // The log is a help, not a must: the quest is put aside either way.
+    }
   }
 
   /** Adventurers whose stretch is over or nearly so, and that are online: free to join a group. */
@@ -2262,7 +2287,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return true;
   }
 
-  return { adventurers, spawn, tick, talkTick, forceQuest, forceTraining, onDeath, onLevelUp, onDrops, onNpcDeath, report, next, startGroup, acquire };
+  return { adventurers, questFeedback, spawn, tick, talkTick, forceQuest, forceTraining, onDeath, onLevelUp, onDrops, onNpcDeath, report, next, startGroup, acquire };
 }
 
 /** Starts the adventurers on server start; serves /api/adventurers and the commands. */
@@ -2289,7 +2314,7 @@ function startAdventurers({ api, runtime, world, registry }) {
     if (!cached || Date.now() - cached.updated > REPORT_CACHE_MS) {
       const adventurers = manager.report();
       achievements.update(adventurers);
-      cached = { updated: Date.now(), adventurers, achievements: achievements.view() };
+      cached = { updated: Date.now(), adventurers, achievements: achievements.view(), questFeedback: manager.questFeedback.slice(0, 30) };
     }
     return cached;
   });
