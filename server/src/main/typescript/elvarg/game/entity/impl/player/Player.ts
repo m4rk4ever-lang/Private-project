@@ -540,8 +540,9 @@ export class Player extends Mobile {
         movement.dropPendingClickRunOverride();
         movement.endClickRunOverrideWhenIdle();
 
-        // Process aggression
-        if (!isBot) {
+        // Process aggression: players, and honest bots (adventurers, "bots:honest"), which monsters
+        // attack under the same rules (tolerance included); the world's other bots are left alone.
+        if (!isBot || this.getAttribute("bots:honest") === true) {
             this.aggressionTolerance.update(this.getLocation());
             timed("npc_aggression", () => NpcAggression.process(this));
         }

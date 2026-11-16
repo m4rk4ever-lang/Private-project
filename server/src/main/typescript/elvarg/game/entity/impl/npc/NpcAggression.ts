@@ -9,6 +9,9 @@ import { NPC } from "./NPC";
 import { PluginManager } from "../../../../plugins/PluginManager";
 
 export class NpcAggression {
+    /** How far around a bot NPCs are looked at (a player's view distance). */
+    private static readonly BOT_RADIUS = 15;
+
 
     public static process(player: Player) {
         // Wiki (PJ timer): 8 ticks of single-way protection while a monster is attacking,
@@ -18,7 +21,12 @@ export class NpcAggression {
         }
 
         // Both passes share one tick, so a single-combat hunter taken in the first blocks the second's.
-        const engaged = NpcAggression.runAggression(player, player.getLocalNpcs());
+        // A bot has no client, so its local NPC list (filled by the client update) stays empty: the
+        // NPCs around it come from the world instead.
+        const npcs = player.isPlayerBot?.() === true
+            ? require("../../../World").World.getNpcsNear(player.getLocation(), NpcAggression.BOT_RADIUS, player.getPrivateArea?.() ?? null)
+            : player.getLocalNpcs();
+        const engaged = NpcAggression.runAggression(player, npcs);
 
         if (player.getArea() instanceof PrivateArea) {
             NpcAggression.runAggression(player, (player.getArea() as PrivateArea).getNpcs(), engaged);

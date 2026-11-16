@@ -1721,6 +1721,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       // Honest: no conjured gear, tools, food or bait; it buys, finds or makes what it uses.
       const state = runtime.botStatesByName?.get?.(name);
       markHonest(bot);
+      // Monsters attack it as they attack a player; like a new player's, its auto-retaliate is on.
+      bot.setAutoRetaliate?.(true);
       if (state) {
         state.honest = true;
         // Its own planner trades for it (trade()); the world bots' upkeep leaves it alone.
