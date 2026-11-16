@@ -1171,10 +1171,68 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     });
   }
 
+  /**
+   * A boss behind a way in (boss.via): its tools first, then the way itself, as a player goes.
+   * The Giant Mole: a spade and a light (the Mole Hole is dark), walk to a Falador Park mole hill
+   * and dig with the spade's Dig. True while it is on its way in (an errand set off); false when
+   * it is in (or the boss needs nothing) and the fight can start; null when it cannot get in.
+   */
+  function enterBoss(entry, plan, nowMs) {
+    const { player } = entry;
+    const via = plan.boss.via;
+    if (!via) return false;
+    const here = player.getLocation();
+    if (Math.max(Math.abs(here.getX() - plan.boss.x), Math.abs(here.getY() - plan.boss.y)) <= 150) return false;
+    const resume = () => { entry.savedTask = { kind: "boss", bossId: plan.boss.id, reason: plan.reason ?? "verder", remainingMs: 0, savedAt: now() }; };
+    for (const name of [via.tool, via.light].filter(Boolean)) {
+      const id = Shopping.idOf(core, name);
+      if (!Number.isInteger(id) || player.getInventory().getAmount(id) > 0) continue;
+      if (banked(player, id) > 0) {
+        const bank = nearestBank(player, entry);
+        if (bank && walkTo(entry, { ...bank, name: bank.name ?? bank.id }, { reason: "withdraw", arrive: (banker) => { withdraw(banker, id, 1); resume(); } })) return true;
+        return null;
+      }
+      const label = itemName(id).toLowerCase();
+      if ((Shopping.shopsSelling(id).length > 0 && shopFor(entry, id, label, 1)) || buyOnExchange(entry, id, label, 1)) {
+        resume();
+        return true;
+      }
+      note(player, `Kan ${plan.boss.name} niet bereiken: geen ${label} te krijgen.`, "boss");
+      return null;
+    }
+    if (via.kind === "dig") {
+      const spade = Shopping.idOf(core, via.tool);
+      const started = walkTo(entry, { ...via.at, name: via.name }, {
+        reason: "boss", replan: false,
+        arrive: (digger) => {
+          const items = digger.getInventory().getItems() ?? [];
+          const slot = items.findIndex((item) => item && item.getId() === spade);
+          if (slot >= 0) {
+            api.emitItemAction?.({ player: digger, interfaceId: core.Inventory.INTERFACE_ID, item: items[slot], itemId: spade, slot,
+              clickType: 1, option: "Dig", handled: false });
+          }
+          resume();
+          entry.until = 0;
+        },
+      });
+      if (started) {
+        entry.phase = "errand";
+        entry.until = Infinity;
+        note(player, `Gaat graven in ${via.name} om bij ${plan.boss.name} te komen.`, "boss");
+        return true;
+      }
+    }
+    return null;
+  }
+
   function startBoss(entry, plan, nowMs) {
     const { player } = entry;
     const { boss } = plan;
     if (!registry?.byId?.get(boss.id)) return false;
+    // Behind a way in (a spade and a mole hill): that first.
+    const entering = enterBoss(entry, plan, nowMs);
+    if (entering === true) return true;
+    if (entering === null) return false;
     startActivity(player, boss.id, { home: boss, nowMs });
     walkTo(entry, boss, { reason: "boss", replan: false });
     entry.phase = "boss";

@@ -221,8 +221,8 @@
   "bosses": [
     {
       "id": "boss_giant_mole",
-      "onFoot": false,
-      "access": "dig into a mole hill in Falador Park with a spade",
+      "access": "dig into a mole hill in Falador Park with a spade, with a light source for the dark Mole Hole",
+      "via": { "kind": "dig", "at": { "x": 2984, "y": 3387, "z": 0 }, "name": "een molshoop in Falador Park", "tool": "SPADE", "light": "LIT_CANDLE" },
       "name": "Giant Mole",
       "combat": 65,
       "x": 1752,
