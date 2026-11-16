@@ -27,6 +27,9 @@ const COMBAT = "combat_training";
 /** The gathering skill whose goods a processing skill uses. */
 const FEEDS = Object.freeze({ FLETCHING: "WOODCUTTING", FIREMAKING: "WOODCUTTING", SMELTING: "MINING", SMITHING: "MINING", COOKING: "FISHING" });
 const WINTERTODT_LEVEL = 50;
+/** Modes that earn coins (loot, stolen goods, produce to sell); a first guess before it has measured. */
+const MONEY_MODES = new Set(["thieving", "combat_training", "combat_ranged", "combat_magic", "slayer", "woodcutting", "mining", "fishing", "hunter"]);
+const MONEY_GUESS = Object.freeze({ thieving: 30_000, combat_training: 20_000, slayer: 25_000, woodcutting: 15_000, mining: 15_000, fishing: 12_000, hunter: 10_000, combat_ranged: 15_000, combat_magic: 10_000 });
 
 /** The quest's unmet requirements: { skills: { NAME: level }, combat, quests, questPoints }. */
 function missing(quest, adventurer) {
@@ -81,7 +84,7 @@ function bossesFor(adventurer, bosses = []) {
 }
 
 function chooseNext(adventurer, quests, {
-  available = null, questChance = 0.45, questGapChance = 0.25, bosses = [], bossChance = 0, random = Math.random,
+  available = null, questChance = 0.45, questGapChance = 0.25, moneyChance = 0, bosses = [], bossChance = 0, random = Math.random,
   focus = {}, busyModes = new Set(), exclude = new Set(), goal = null,
 } = {}) {
   const open = quests.filter((quest) => !adventurer.done.has(quest.name) && (!available || available.has(quest.name)));
@@ -96,6 +99,24 @@ function chooseNext(adventurer, quests, {
   // Modes that could not start just now (no tool, no place) are left out of this pick.
   const options = trainingOptions(adventurer).filter((option) => !exclude.has(option.mode));
   if (options.length === 0) return { kind: "train", mode: COMBAT, skill: "COMBAT", reason: "loot en levels" };
+  // Now and then a stretch only to make money: what earned it the most per hour so far (its own
+  // measure, adventurer.earn), a mode it has not tried yet now and then, a boss when it can.
+  if (random() < moneyChance) {
+    const earners = options.filter((option) => MONEY_MODES.has(option.mode));
+    const rate = (mode) => adventurer.earn?.[mode] ?? null;
+    const untried = earners.filter((option) => rate(option.mode) === null);
+    if (fightable.length > 0 && random() < 0.25) {
+      return { kind: "boss", boss: fightable[Math.floor(random() * fightable.length)], reason: "geld verdienen" };
+    }
+    const pick = untried.length > 0 && random() < 0.3
+      ? untried[Math.floor(random() * untried.length)]
+      : [...earners].sort((a, b) => (rate(b.mode) ?? MONEY_GUESS[b.mode] ?? 0) - (rate(a.mode) ?? MONEY_GUESS[a.mode] ?? 0))[0];
+    if (pick) {
+      const known = rate(pick.mode);
+      return { kind: "train", mode: pick.mode, skill: pick.skill, money: true,
+        reason: known ? `geld verdienen (~${Math.round(known).toLocaleString("nl-NL")} gp/uur)` : "geld verdienen (eens proberen)" };
+    }
+  }
   // What the nearest quest that is not ready still needs, and that the bots can train: now and
   // then (a quarter of the picks), not every time, or every new account would only fight.
   for (const quest of random() < questGapChance ? open : []) {

@@ -19,6 +19,7 @@
     15
   ],
   "questChance": 0.2,
+  "moneyChance": 0.1,
   "extraPerClan": 5,
   "testProfiles": [
     { "name": "vroege vechter", "levels": { "ATTACK": 30, "STRENGTH": 30, "DEFENCE": 25, "HITPOINTS": 30, "PRAYER": 15, "WOODCUTTING": 15, "MINING": 15, "FISHING": 10, "COOKING": 10 }, "quests": 5, "coins": 5000 },

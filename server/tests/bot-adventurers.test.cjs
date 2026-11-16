@@ -236,3 +236,12 @@ test("to start a quest it picks the option that offers help, not the first yes",
   assert.equal(chooseOption(["What are you doing on my land?", "I'm looking for a quest.", "I'm lost."]), 1);
   assert.equal(chooseOption(["Sure.", "No thanks."], ["sure"]), 0);
 });
+
+test("a money-making stretch goes to what earned it the most so far", () => {
+  const a = adventurer({ WOODCUTTING: 30, MINING: 30, FISHING: 30, THIEVING: 30 }, { combat: 30 });
+  a.earn = { woodcutting: 40_000, thieving: 10_000, mining: 5_000, fishing: 5_000, hunter: 1_000, combat_training: 2_000 };
+  const plan = chooseNext(a, [], { available: new Set(), questChance: 0, moneyChance: 1, random: () => 0.9 });
+  assert.equal(plan.mode, "woodcutting");
+  assert.equal(plan.money, true);
+  assert.match(plan.reason, /geld verdienen/);
+});

@@ -196,7 +196,7 @@ De metrics-regels, op `kind`:
 - `bot` (elke 5 min, `ADVENTURER_METRICS_MS`): fase, taak en reden, doel, plek, XP per skill, XP/uur,
   geld erbij, `time` in minuten per soort (working, walking, errand, quest, idle) en `events`
   (stuck, walkBlocked, died, questFailed, targetReached, idle).
-- `job` (einde van een taak): mode, reden, doel-level, level bij start en eind, `targetMet`, minuten,
+- `job` (einde van een taak): ook `coinsPerHour` (bezit erbij per uur; bijgehouden als `entry.earn` per modus voor de geldklus `moneyChance`); mode, reden, doel-level, level bij start en eind, `targetMet`, minuten,
   XP en `ended` (target reached, time up, full bag, stuck, quest done/failed, replaced).
 - `goal`: doel gezet, gehaald of geschrapt, met de minuten sinds het gezet werd.
 - `idle`: een avonturier staat een minuut zonder XP op zijn klus (plek, home, hp, in gevecht, vrije slots).

@@ -261,7 +261,16 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (job) {
       const xp = Object.values(xpBySkill(entry.player)).reduce((sum, v) => sum + v, 0);
       const level = job.target ? (job.target.skill === "COMBAT" ? entry.player.getSkillManager().getCombatLevel() : levelOf(entry.player, job.target.skill)) : null;
-      metric({ kind: "job", bot: entry.name, job: job.key.split(":")[0], mode: job.mode, activity: job.activity ?? entry.activity ?? null, reason: job.reason, target: job.target,
+      // Coins per hour this job brought (bag and bank; what it spent on its supplies counts against
+      // it), kept per mode as a running mean: its own measure for "make money" stretches.
+      const coinsNow = wealthOf(entry.player)?.total ?? 0;
+      const hours = (nowMs - job.startedAt) / 3_600_000;
+      const coinsPerHour = hours >= 3 / 60 && Number.isFinite(job.coins) ? Math.round((coinsNow - job.coins) / hours) : null;
+      if (coinsPerHour !== null && job.mode && job.key.startsWith("training")) {
+        const earn = (entry.earn ??= {});
+        earn[job.mode] = earn[job.mode] === undefined ? coinsPerHour : Math.round(earn[job.mode] * 0.6 + coinsPerHour * 0.4);
+      }
+      metric({ kind: "job", bot: entry.name, job: job.key.split(":")[0], mode: job.mode, coinsPerHour, activity: job.activity ?? entry.activity ?? null, reason: job.reason, target: job.target,
         levelAtStart: job.levelAtStart, levelAtEnd: level, targetMet: job.target ? level >= job.target.level : null,
         minutes: Math.round((nowMs - job.startedAt) / 6000) / 10, xp: Math.round(xp - job.xp),
         ended: entry.jobEnd ?? (key === null ? `then ${entry.phase}` : "replaced") });
@@ -276,7 +285,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       return;
     }
     const target = entry.plan?.target ?? null;
-    entry.job = { key, mode: entry.plan?.mode ?? null, activity: entry.activity ?? null, reason: entry.phase === "quest" ? entry.questRun?.name : entry.plan?.reason ?? null, target,
+    entry.job = { key, mode: entry.plan?.mode ?? null, activity: entry.activity ?? null, coins: wealthOf(entry.player)?.total ?? null, reason: entry.phase === "quest" ? entry.questRun?.name : entry.plan?.reason ?? null, target,
       startedAt: nowMs, xp: Object.values(xpBySkill(entry.player)).reduce((sum, v) => sum + v, 0),
       levelAtStart: target ? (target.skill === "COMBAT" ? entry.player.getSkillManager().getCombatLevel() : levelOf(entry.player, target.skill)) : null };
   }
@@ -1441,9 +1450,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const exclude = new Set();
     // Fled hurt and hungry lately: no fights or thieving until it carries food again.
     if (nowMs < (entry.dangerUntil ?? 0) && !carriesFood(entry.player)) for (const mode of DANGER_MODES) exclude.add(mode);
+    view.earn = entry.earn ?? {};
     for (let attempt = 0; attempt < 4; attempt += 1) {
       const plan = chooseNext(view, questList(), {
-        available: view.available, questChance: data.questChance, bosses: data.bosses, bossChance: attempt === 0 ? data.bossChance : 0, random,
+        available: view.available, questChance: data.questChance, moneyChance: data.moneyChance ?? 0.1, bosses: data.bosses, bossChance: attempt === 0 ? data.bossChance : 0, random,
         focus: data.focus?.[entry.name] ?? {}, busyModes, exclude, goal: goalOf(entry),
       });
       const started = plan.kind === "quest" ? startQuest(entry, plan)

@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Avonturiers gaan af en toe (ongeveer 1 op de 10 keuzes) 20–40 minuten puur geld verdienen: met de klus die hen tot nu toe het meeste geld per uur opleverde (dat meten ze zelf per klus), soms iets nieuws om te proberen, of een boss als ze sterk genoeg zijn. In te stellen met "moneyChance" in adventurers.json.
 - De questlogboeken van de avonturiers bevatten nu ook de gesprekskeuzes (welke opties er waren en welke de avonturier koos), bij vastlopen én bij een voltooide quest.
 - Het ontwikkelaarslogboek zegt bij vastlopen, stilstaan en versperde routes ook waarom: wat de bot-actie op dat moment deed, welke monsters er in de buurt waren (met level), HP, vrije slots en hoe ver het doel nog was.
 - Het ontwikkelaarslogboek legt elke dood van een avonturier vast: bij welke klus of quest, waar, door wie en of hij eten bij zich had.
