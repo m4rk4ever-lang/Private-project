@@ -436,6 +436,43 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       if (Shopping.shopsSelling(id).length > 0 && shopFor(entry, id, label, amount, { replan: false })) return true;
       if (buyOnExchange(entry, id, label, amount, { replan: false })) return true;
     }
+    // Not to be bought now: gathered itself when it is something one gathers (clay mined, logs
+    // chopped, fish caught), as a player does, then back to the quest.
+    for (const id of ids) if (gatherFor(entry, id, amount)) return true;
+    return false;
+  }
+
+  /**
+   * A gathering activity that yields this item (bot-activities.json: a rock's "resources", a
+   * tree's "log", a spot's "fish") and that its level allows: done until it has `amount`, then
+   * back to the quest it was on (entry.gatherFor).
+   */
+  function gatherFor(entry, itemId, amount) {
+    const run = entry.questRun;
+    if (!run) return false;
+    const name = String(core.ItemDefinition?.forId?.(itemId)?.getName?.() ?? "").toLowerCase().replace(/ /g, "_");
+    if (!name) return false;
+    const MODE_SKILL = { mining: "MINING", woodcutting: "WOODCUTTING", fishing: "FISHING" };
+    for (const activity of definitions.activities ?? []) {
+      const template = activity.template ? definitions.templates?.[activity.template] : null;
+      const mode = activity.mode ?? template?.mode;
+      if (!MODE_SKILL[mode]) continue;
+      const fields = activity.fields ?? {};
+      const yields = [...(fields.resources ?? []), fields.log, fields.fish].filter(Boolean).map((v) => String(v).toLowerCase());
+      if (!yields.includes(name)) continue;
+      if (levelOf(entry.player, MODE_SKILL[mode]) < Number(fields.level ?? 1)) continue;
+      entry.gather = { itemId, amount, quest: run.name };
+      entry.questRun = null;
+      const started = startTraining(entry, { kind: "train", mode, skill: MODE_SKILL[mode], activity: activity.id,
+        reason: `${itemName(itemId).toLowerCase()} voor ${run.name}` }, now());
+      if (!started) {
+        entry.gather = null;
+        entry.questRun = run;
+        continue;
+      }
+      note(entry.player, `Kan ${itemName(itemId).toLowerCase()} niet kopen; gaat het zelf verzamelen voor ${run.name}.`, "quest");
+      return true;
+    }
     return false;
   }
 
@@ -975,7 +1012,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       entry.activity = "wintertodt";
     } else {
       const level = plan.mode === "combat_training" ? view.combat : view.levels[plan.skill] ?? 1;
-      const id = bestActivity(plan.mode, level, definitions);
+      // A quest's own errand names its activity (clay_rocks for Doric's clay); else the best one.
+      const id = plan.activity ?? bestActivity(plan.mode, level, definitions);
       // Fighting on an empty stomach is how adventurers die: food first, if it can buy some.
       if (plan.mode === "combat_training" && stockFood(entry, plan, nowMs)) return true;
       // A gathering job wants room for what it gathers: things for other jobs (a pickaxe, snares,
@@ -1684,6 +1722,16 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         }
       }
       if (entry.needFood && carriesFood(entry.player)) entry.needFood = false;
+      // Gathered what its quest needed (entry.gatherFor): back to that quest.
+      if (entry.gather && entry.phase === "training") {
+        const have = entry.player.getInventory().getAmount(entry.gather.itemId) + banked(entry.player, entry.gather.itemId);
+        if (have >= entry.gather.amount || nowMs >= entry.until) {
+          const quest = entry.gather.quest;
+          entry.gather = null;
+          note(entry.player, `Heeft genoeg verzameld; terug naar ${quest}.`, "quest");
+          forceQuest(entry.name, quest);
+        }
+      }
       // Down from the roof: the course was only the way down; its next job now.
       if (entry.offRoof && entry.player.getLocation().getZ() === 0) {
         entry.offRoof = false;

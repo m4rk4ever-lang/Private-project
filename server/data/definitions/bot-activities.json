@@ -220,6 +220,7 @@
         "smelted": ["bronze_bar","copper_ore","tin_ore"]
       }
     },
+    {"id":"clay_rocks","mode":"mining","capacity":40,"repeat":true,"requires":[{"skill":{"id":"mining","min":1}}],"fields":{"level":1,"tier":"clay","resources":["clay"]},"actions":[{"type":"equipTool","tool":"pickaxe"},{"type":"interactObject","catalog":"rock","tier":"clay","option":"Mine","until":{"inventoryFull":true},"stallSeconds":120},{"type":"bank","itemIds":["clay"],"orElse":{"type":"sellItems","itemIds":["clay"],"orElse":{"type":"dropItems","itemIds":["clay"]}}}]},
     {"id":"oak_trees","template":"chop_trees","capacity":160,"fields":{"level":15,"tier":"oak","log":"oak_logs"}},
     {"id":"willow_trees","template":"chop_trees","capacity":160,"fields":{"level":30,"tier":"willow","log":"willow_logs"}},
     {"id":"yew_trees","template":"chop_trees","capacity":160,"fields":{"level":60,"tier":"yew","log":"yew_logs"}},

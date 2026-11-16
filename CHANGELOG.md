@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Kan een avonturier een quest-item niet kopen, dan verzamelt hij het zelf als het een grondstof is (clay mijnen voor Doric's Quest, logs hakken, vis vangen) en gaat hij daarna terug naar zijn quest. Daarvoor is er een nieuwe bot-activiteit: clay minen.
 - Het spel start de Quest Helper-bridge zelf (en opnieuw als hij stopt) als die gebouwd is maar niet draait; zonder bridge liepen alle quests van de avonturiers na twee minuten vast. Uit te zetten met ADVENTURER_START_BRIDGE=0.
 - Eigenaarscommando `::advquestall`: alle avonturiers proberen tegelijk elk een andere quest (blokkades opgeheven), en wie klaar is of vastloopt pakt de volgende quest die in de sweep nog niemand probeerde, twee uur lang; zo wordt in één run het hele questpad getest. `::advquestall stop` beëindigt de sweep.
 - Avonturiers gaan af en toe (ongeveer 1 op de 10 keuzes) 20–40 minuten puur geld verdienen: met de klus die hen tot nu toe het meeste geld per uur opleverde (dat meten ze zelf per klus), soms iets nieuws om te proberen, of een boss als ze sterk genoeg zijn. In te stellen met "moneyChance" in adventurers.json.
