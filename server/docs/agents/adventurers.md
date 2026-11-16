@@ -217,3 +217,27 @@ De metrics-regels, op `kind`:
 `::advquestall` (eigenaar): elke avonturier tegelijk op een andere quest uit het pad (eerst een waarvoor hij klaar is), met de
 blokkades opgeheven; wie klaar is of vastloopt pakt de volgende ongeteste quest (twee uur, `::advquestall stop`). Na een paar minuten staan de vastlopers in `adventurer-quest-feedback.jsonl` (stap, plek, helperstap, gesprekskeuzes)
 en de geslaagde in de metrics als `quest_done`.
+
+## Stand 16-11-2026 (avond) en volgende stappen
+
+Gedaan vandaag (zie CHANGELOG): logs live naar `bot-logs` (server zelf, elke 5 min + bij afsluiten), metrics met
+momentopnames (stuck/idle/walk_blocked/death/stranded/quest_done, gp/uur per klus), 15 testaccounts op profielen,
+`::advquestall` sweep, bridge auto-start, verwerkende skills (bankgeld, partijen, noted), veiligheid (stoppen bij lage HP
+zonder eten, auto-retaliate alleen bij gevechten), gestrande bots → home teleport, Giant Mole via spade + kaars,
+quest-dialogen (geen uitlegvragen, lusbreker), quest-items oprapen via speler-klik, zelf verzamelen (clay).
+
+Eerst doen bij een nieuwe sessie: `git fetch origin +refs/heads/bot-logs:refs/remotes/origin/bot-logs` en de drie logs
+uitlezen (per activiteit: job.ended, stuck/idle-momentopnames, walk_blocked per vertrekplek; per quest: feedback +
+dialogue; quest_done; death; stranded).
+
+Open, van makkelijk naar moeilijk:
+1. Coal in Barbarian Village: bots staan stil zonder XP bij een gevonden rots (idle, `gather target=11366`): drukte op
+   weinig rotsen of een lege rots; andere coal-plek of wachten/wisselen.
+2. Imp Catcher: stap "Collect one of each bead" heeft geen tegel en geen requirements; beads kopen (GE) of imps doden.
+3. Gnome Stronghold-route: vanaf Seers/Ardougne start de wandeling niet (bot staat stil); vanaf de poort werkt het.
+   Hubs `fishing_guild_road` → `gnome_stronghold_gate` bestaan; de errand naar de baan faalt vermoedelijk op lengte.
+4. Ardougne-markt (stalls): route; check `walk_blocked` met de nieuwe momentopname.
+5. Sarachnis: per boot naar Kourend (Veos, Port Sarim) en de Forthos Dungeon; staat op `onFoot: false`.
+6. Quest-vervolgstappen uit de sweeps: deur Hetty (Witch's Potion), Veos (fix gepusht, nog niet bevestigd),
+   Corsair Curse (schip), Druidic Ritual na Sanfew, Doric na het gesprek (clay: kopen met bankgeld of minen).
+7. Verdieping-af (ladder in huis Varrock) werkte nog niet in test; dakbanen via kaartscan wel gepusht.
