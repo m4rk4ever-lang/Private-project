@@ -597,13 +597,23 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const id = bestActivity("hunter", levelOf(player, "HUNTER"), definitions);
       const activity = id ? registry?.byId?.get(id) ?? null : null;
       const site = definitions.activities.find((entry) => entry.id === id)?.actions?.[0]?.site;
-      if (!activity || !site) return false;
+      if (!activity || !site) {
+        note(player, `Kan niet gaan jagen: geen jachtplek voor zijn level (${id ?? "geen"}).`, "activity");
+        return false;
+      }
       const place = { x: site[0], y: site[1], z: 0 };
-      if (!TravelHubs.onFoot(place)) return false;
+      if (!TravelHubs.onFoot(place)) {
+        note(player, "Kan niet gaan jagen: de jachtplek is te voet niet bereikbaar.", "activity");
+        return false;
+      }
       const bankedTools = toolsInBank(player, "hunter", id);
       if (bankedTools.length > 0) return fetchTools(entry, plan, bankedTools);
       const snare = Shopping.missingTools(player, core, id)[0];
-      if (snare) return shopFor(entry, snare.itemId, snare.name, 2);
+      if (snare) {
+        if (shopFor(entry, snare.itemId, snare.name, 2)) return true;
+        note(player, `Kan niet gaan jagen: kon geen ${String(snare.name).toLowerCase().replace(/_/g, " ")} kopen.`, "activity");
+        return false;
+      }
       startActivity(player, id, { home: place, nowMs });
       walkTo(entry, { ...place, name: "de Feldip Hills" }, { reason: "training", replan: false });
       entry.activity = id;
