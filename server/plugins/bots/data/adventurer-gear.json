@@ -1,8 +1,9 @@
 {
-  "_comment": "What adventurers buy from shops as they level (adventurers/Shopping.PlayerBots.js), best first per slot. level: the skill level to use it (attack for weapons, defence for armour, the tool's skill for tools); quests: quests needed to buy or wear it (OSRS Wiki). They only buy what a shop in the world really stocks, at its price, with their own coins, and only when it costs at most budgetShare of what they have. styles: the weapon, ammunition and armour lists for fighting with a bow or a staff (leather and d'hide, wizard and mystic robes), worn instead of the melee pieces when it fights that way. food: what they buy to eat when they carry none, from a shop that stocks it. tools.hammer and tools.knife: to smith their bars and fletch their logs (Smith/Fletch.PlayerBots.js).",
+  "_comment": "What adventurers buy from shops as they level (adventurers/Shopping.PlayerBots.js), best first per slot. level: the skill level to use it (attack for weapons, defence for armour, the tool's skill for tools); quests: quests needed to buy or wear it (OSRS Wiki). They only buy what a shop in the world really stocks, at its price, with their own coins, and only when it costs at most budgetShare of what they have. styles: the weapon, ammunition and armour lists for fighting with a bow or a staff (leather and d'hide, wizard and mystic robes), worn instead of the melee pieces when it fights that way. food: what they buy to eat when they carry none, from a shop that stocks it. tools.hammer and tools.knife: to smith their bars and fletch their logs (Smith/Fletch.PlayerBots.js). also: further skill levels a piece needs (granite: Strength 50). tier: the set a piece belongs to when its name does not start with it (Helm of Neitiznot). Above rune the sets follow what a player wears as they get further: granite (50), dragon (60/70), Bandos (65) and Dharok's (70).",
   "budgetShare": 0.6,
   "slots": {
     "weapon": [
+      { "item": "ABYSSAL_WHIP", "skill": "ATTACK", "level": 70 },
       { "item": "DRAGON_SCIMITAR", "skill": "ATTACK", "level": 60, "quests": ["Monkey Madness I"] },
       { "item": "RUNE_SCIMITAR", "skill": "ATTACK", "level": 40 },
       { "item": "ADAMANT_SCIMITAR", "skill": "ATTACK", "level": 30 },
@@ -12,6 +13,11 @@
       { "item": "BRONZE_SCIMITAR", "skill": "ATTACK", "level": 1 }
     ],
     "body": [
+      { "item": "BANDOS_CHESTPLATE", "skill": "DEFENCE", "level": 65 },
+      { "item": "DHAROKS_PLATEBODY", "skill": "DEFENCE", "level": 70 },
+      { "item": "DRAGON_PLATEBODY", "skill": "DEFENCE", "level": 70 },
+      { "item": "DRAGON_CHAINBODY", "skill": "DEFENCE", "level": 60 },
+      { "item": "GRANITE_BODY", "skill": "DEFENCE", "level": 50, "also": { "STRENGTH": 50 } },
       { "item": "RUNE_PLATEBODY", "skill": "DEFENCE", "level": 40, "quests": ["Dragon Slayer I"] },
       { "item": "ADAMANT_PLATEBODY", "skill": "DEFENCE", "level": 30 },
       { "item": "MITHRIL_PLATEBODY", "skill": "DEFENCE", "level": 20 },
@@ -20,6 +26,10 @@
       { "item": "BRONZE_PLATEBODY", "skill": "DEFENCE", "level": 1 }
     ],
     "legs": [
+      { "item": "BANDOS_TASSETS", "skill": "DEFENCE", "level": 65 },
+      { "item": "DHAROKS_PLATELEGS", "skill": "DEFENCE", "level": 70 },
+      { "item": "DRAGON_PLATELEGS", "skill": "DEFENCE", "level": 60 },
+      { "item": "GRANITE_LEGS", "skill": "DEFENCE", "level": 50 },
       { "item": "RUNE_PLATELEGS", "skill": "DEFENCE", "level": 40 },
       { "item": "ADAMANT_PLATELEGS", "skill": "DEFENCE", "level": 30 },
       { "item": "MITHRIL_PLATELEGS", "skill": "DEFENCE", "level": 20 },
@@ -28,6 +38,11 @@
       { "item": "BRONZE_PLATELEGS", "skill": "DEFENCE", "level": 1 }
     ],
     "head": [
+      { "item": "DHAROKS_HELM", "skill": "DEFENCE", "level": 70 },
+      { "item": "DRAGON_FULL_HELM", "skill": "DEFENCE", "level": 70 },
+      { "item": "HELM_OF_NEITIZNOT", "skill": "DEFENCE", "level": 55, "quests": ["The Fremennik Isles"], "tier": "NEITIZNOT" },
+      { "item": "DRAGON_MED_HELM", "skill": "DEFENCE", "level": 60 },
+      { "item": "GRANITE_HELM", "skill": "DEFENCE", "level": 50 },
       { "item": "RUNE_FULL_HELM", "skill": "DEFENCE", "level": 40 },
       { "item": "ADAMANT_FULL_HELM", "skill": "DEFENCE", "level": 30 },
       { "item": "MITHRIL_FULL_HELM", "skill": "DEFENCE", "level": 20 },
@@ -35,6 +50,9 @@
       { "item": "IRON_FULL_HELM", "skill": "DEFENCE", "level": 1 }
     ],
     "shield": [
+      { "item": "DRAGON_KITESHIELD", "skill": "DEFENCE", "level": 70 },
+      { "item": "DRAGON_SQ_SHIELD", "skill": "DEFENCE", "level": 60 },
+      { "item": "GRANITE_SHIELD", "skill": "DEFENCE", "level": 50, "also": { "STRENGTH": 50 } },
       { "item": "RUNE_KITESHIELD", "skill": "DEFENCE", "level": 40 },
       { "item": "ADAMANT_KITESHIELD", "skill": "DEFENCE", "level": 30 },
       { "item": "MITHRIL_KITESHIELD", "skill": "DEFENCE", "level": 20 },
@@ -98,8 +116,12 @@
     }
   },
   "tools": {
-    "hammer": [{ "item": "HAMMER", "skill": "SMITHING", "level": 1 }],
-    "knife": [{ "item": "KNIFE", "skill": "FLETCHING", "level": 1 }],
+    "hammer": [
+      { "item": "HAMMER", "skill": "SMITHING", "level": 1 }
+    ],
+    "knife": [
+      { "item": "KNIFE", "skill": "FLETCHING", "level": 1 }
+    ],
     "axe": [
       { "item": "RUNE_AXE", "skill": "WOODCUTTING", "level": 41 },
       { "item": "ADAMANT_AXE", "skill": "WOODCUTTING", "level": 31 },
@@ -118,7 +140,8 @@
     ]
   },
   "fishingTools": {
-    "net_fishing": ["SMALL_FISHING_NET"], "hunter_crimson_swift": ["BIRD_SNARE"],
+    "net_fishing": ["SMALL_FISHING_NET"],
+    "hunter_crimson_swift": ["BIRD_SNARE"],
     "fly_fishing": ["FLY_FISHING_ROD", "FEATHER"],
     "lobster_fishing": ["LOBSTER_POT"],
     "harpoon_fishing": ["HARPOON"],
@@ -133,8 +156,21 @@
   ],
   "foodAmount": 14,
   "starterKit": [
-    ["BRONZE_AXE", 1], ["BRONZE_PICKAXE", 1], ["TINDERBOX", 1], ["SMALL_FISHING_NET", 1], ["SHRIMPS", 1],
-    ["BRONZE_DAGGER", 1], ["BRONZE_SWORD", 1], ["WOODEN_SHIELD", 1], ["SHORTBOW", 1], ["BRONZE_ARROW", 25],
-    ["AIR_RUNE", 25], ["MIND_RUNE", 15], ["BUCKET", 1], ["POT", 1], ["BREAD", 1], ["COINS", 25]
+    ["BRONZE_AXE", 1],
+    ["BRONZE_PICKAXE", 1],
+    ["TINDERBOX", 1],
+    ["SMALL_FISHING_NET", 1],
+    ["SHRIMPS", 1],
+    ["BRONZE_DAGGER", 1],
+    ["BRONZE_SWORD", 1],
+    ["WOODEN_SHIELD", 1],
+    ["SHORTBOW", 1],
+    ["BRONZE_ARROW", 25],
+    ["AIR_RUNE", 25],
+    ["MIND_RUNE", 15],
+    ["BUCKET", 1],
+    ["POT", 1],
+    ["BREAD", 1],
+    ["COINS", 25]
   ]
 }

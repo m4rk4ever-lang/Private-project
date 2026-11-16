@@ -81,6 +81,8 @@ function ownsAnywhere(player, itemId) {
 /** Whether the adventurer meets an entry's skill level and quests. */
 function allowed(entry, { levelOf, questDone }) {
   if (levelOf(entry.skill) < (entry.level ?? 1)) return false;
+  // A second level some pieces need too (granite: Strength 50 beside Defence 50).
+  if (Object.entries(entry.also ?? {}).some(([skill, level]) => levelOf(skill) < level)) return false;
   return (entry.quests ?? []).every((quest) => questDone(quest));
 }
 
@@ -113,7 +115,7 @@ function shoppingList(player, core, { levelOf, questDone, modes = [], exchange =
   };
   const usableOf = (list) => {
     const usable = list.filter((entry) => allowed(entry, { levelOf, questDone }))
-      .map((entry) => ({ ...entry, itemId: idOf(core, entry.item), tier: tierOf(entry.item) }))
+      .map((entry) => ({ ...entry, itemId: idOf(core, entry.item), tier: entry.tier ?? tierOf(entry.item) }))
       .filter((entry) => Number.isInteger(entry.itemId));
     const ownedAt = usable.findIndex((entry) => ownsAnywhere(player, entry.itemId));
     return ownedAt < 0 ? usable : usable.slice(0, ownedAt);
@@ -170,7 +172,8 @@ function shoppingList(player, core, { levelOf, questDone, modes = [], exchange =
 }
 
 /** The metal of a gear piece ("RUNE_PLATEBODY" -> "RUNE") and its rank, best first. */
-const TIER_ORDER = ["DRAGON", "RUNE", "ADAMANT", "MITHRIL", "BLACK", "STEEL", "IRON", "BRONZE"];
+// From the best a player gets to (Bandos, Barrows) down to bronze.
+const TIER_ORDER = ["BANDOS", "DHAROKS", "DRAGON", "NEITIZNOT", "GRANITE", "RUNE", "ADAMANT", "MITHRIL", "BLACK", "STEEL", "IRON", "BRONZE"];
 function tierOf(name) {
   return String(name).split("_")[0];
 }
