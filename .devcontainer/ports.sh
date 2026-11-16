@@ -13,9 +13,17 @@ fi
 # only you, signed in to GitHub, can open it. The browser's WebSocket to the game
 # server (port 43594) cannot send that GitHub sign-in, so that port must be public.
 if [ -n "${CODESPACE_NAME:-}" ]; then
-  if gh codespace ports visibility 43594:public -c "$CODESPACE_NAME" >/dev/null 2>&1; then
-    echo "Port 43594 is public."
-  else
+  # The server is not listening yet when the codespace starts (it starts on attach), and a port
+  # that is not forwarded yet cannot be made public: keep trying in the background for 15 minutes.
+  (
+    for _ in $(seq 1 90); do
+      if gh codespace ports visibility 43594:public -c "$CODESPACE_NAME" >/dev/null 2>&1 \
+          && [ "$(gh codespace ports -c "$CODESPACE_NAME" --json sourcePort,visibility --jq '.[] | select(.sourcePort == 43594) | .visibility' 2>/dev/null)" = "public" ]; then
+        echo "Port 43594 is public."
+        exit 0
+      fi
+      sleep 10
+    done
     echo "Could not make port 43594 public. In the Ports tab: right-click 43594 > Port Visibility > Public."
-  fi
+  ) > /tmp/ports-visibility.log 2>&1 &
 fi
