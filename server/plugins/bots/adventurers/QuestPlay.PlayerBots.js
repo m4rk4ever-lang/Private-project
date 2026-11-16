@@ -18,6 +18,10 @@ const NEAR_TILES = 8;
 const MAX_TRIES = 4;
 /** The longest a step may take, the walk included. */
 const STEP_MS = 20 * 60_000;
+/** What a closed door, gate or passage on the way offers (caves, gaps, stiles too). */
+const PASSAGE_OPTIONS = ["open", "enter", "climb-through", "squeeze-through", "climb-over", "pass", "go-through", "walk-through"];
+/** How far around it looks for such a passage. */
+const PASSAGE_RADIUS = 8;
 const REFUSAL = /^(no\b|no,|no thank|actually|nevermind|never mind|nothing|bye|goodbye|i'?m not|i don'?t)|not interested|no thanks/i;
 
 /** The option to pick: the first preferred word that matches, else the first that is not a refusal. */
@@ -64,6 +68,8 @@ function stepDone(quest, player, step) {
   return quest.isComplete(player) === true || Number(quest.getStage(player)) >= Number(step.until);
 }
 
+let routeFinder = null;
+
 function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), quests = () => [], playthroughs = data.quests }) {
   const questOf = (name) => quests().find((quest) => String(quest.name).toLowerCase() === String(name).toLowerCase()) ?? null;
 
@@ -108,6 +114,57 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     const wanted = String(step.npc).toLowerCase();
     return near.find((npc) => npc.isRegistered?.() !== false
       && String(npc.getCurrentDefinition?.(player)?.getName?.() ?? npc.getDefinition?.()?.getName?.() ?? "").toLowerCase() === wanted) ?? null;
+  }
+
+  /** Whether it can walk up to the NPC as things stand (doors closed count as walls). */
+  function canReach(player, npc) {
+    if (!core.RsmodRouteFinding) return true;
+    routeFinder ??= new core.RsmodRouteFinding();
+    const from = player.getLocation();
+    const to = npc.getLocation();
+    if (from.getZ() !== to.getZ()) return false;
+    const size = Math.max(1, Math.floor(npc.getSize?.() ?? 1));
+    return routeFinder.findRoute({
+      level: from.getZ(), srcX: from.getX(), srcY: from.getY(), srcSize: 1, destX: to.getX(), destY: to.getY(),
+      destWidth: size, destLength: size, locAngle: 0, locShape: -2, moveNear: false, blockAccessFlags: 0, maxWaypoints: 25,
+      privateArea: player.getPrivateArea?.() ?? null,
+    }).success === true;
+  }
+
+  /**
+   * The closed door, gate or passage (a cave entrance, a gap) between it and where it wants to be:
+   * of those around it that offer a way through, the one that lies best between the two. Clicked
+   * as a player does; true when it clicked one.
+   */
+  function openWayTo(player, target, nowMs) {
+    if (nowMs < (openWayTo.until?.get(player) ?? 0)) return false;
+    (openWayTo.until ??= new WeakMap()).set(player, nowMs + 3000);
+    const here = player.getLocation();
+    let best = null;
+    for (let dx = -PASSAGE_RADIUS; dx <= PASSAGE_RADIUS; dx += 1) {
+      for (let dy = -PASSAGE_RADIUS; dy <= PASSAGE_RADIUS; dy += 1) {
+        const x = here.getX() + dx;
+        const y = here.getY() + dy;
+        for (const object of core.MapObjects?.mapObjects?.get?.(core.MapObjects.getHash(x, y, here.getZ())) ?? []) {
+          const loc = object.getLocation();
+          if (loc.getX() !== x || loc.getY() !== y) continue;
+          const options = (core.ObjectDefinition.forId(object.getId())?.getInteractions?.() ?? []).map((o) => String(o ?? "").toLowerCase());
+          const index = options.findIndex((o) => PASSAGE_OPTIONS.includes(o));
+          if (index < 0) continue;
+          const score = Math.max(Math.abs(x - here.getX()), Math.abs(y - here.getY()))
+            + Math.max(Math.abs(x - target.x), Math.abs(y - target.y));
+          if (!best || score < best.score) best = { object, clickType: index + 1, score, x, y };
+        }
+      }
+    }
+    if (!best) return false;
+    player.getMovementQueue().walkToObject(best.object, {
+      execute: () => world.emitObjectInteraction?.({
+        player, object: best.object, objectId: best.object.getId(), clickType: best.clickType,
+        location: { x: best.x, y: best.y, z: here.getZ() }, handled: false,
+      }),
+    });
+    return true;
   }
 
   function talkTo(player, npc) {
@@ -235,6 +292,11 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     run.walking = false;
     if (nowMs < run.talkAt) return "running";
     const npc = findNpc(player, step);
+    // A closed door between it and the NPC (Duke Horacio's room): open the way first.
+    if (npc && !canReach(player, npc) && openWayTo(player, target, nowMs)) {
+      run.talkAt = nowMs + 3_000;
+      return "running";
+    }
     run.tries += 1;
     run.talkAt = nowMs + 8_000;
     if (!npc || !talkTo(player, npc)) {
