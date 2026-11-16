@@ -546,6 +546,7 @@ function createBotRegistry(options) {
       // The Wilderness roamers, hotspots and regional bots are the world's own population.
       activity: plan.activity ?? "world",
       loadPersistence: persistent,
+      keepSavedLocation: plan.keepSavedLocation === true,
       saveRandomizedAppearance: false,
     });
     if (!bot) {
@@ -1259,6 +1260,7 @@ function createBotRegistry(options) {
         mode: options.mode ?? null,
         activity: options.activity,
         persistent: options.persistent === true,
+        keepSavedLocation: options.keepSavedLocation === true,
         pvpMetadata: options.pvpMetadata,
       });
     },

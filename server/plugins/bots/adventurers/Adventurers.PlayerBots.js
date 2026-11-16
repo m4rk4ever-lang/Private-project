@@ -26,8 +26,6 @@ const { startActivity } = require("../brain/BrainActivities.PlayerBots");
 const travelData = require("../data/travel-destinations.json");
 
 const LOG_ATTRIBUTE = "adventurers:journal";
-/** Where it last was (saved with its job): it logs in there after a restart. */
-const LOCATION_ATTRIBUTE = "adventurers:location";
 /** Its current goal (Goals.PlayerBots.js), kept across restarts. */
 const GOAL_ATTRIBUTE = "adventurers:goal";
 /** Which start an adventurer belongs to; a lower one than data.generation starts it over. */
@@ -1948,7 +1946,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     for (const name of Clans.namesOf(data)) {
       if (adventurers.has(name)) continue;
       const bot = runtime.spawnPvpBot(new core.Location(at.x, at.y, at.z ?? 0), {
-        mode: "roaming", activity: "world", username: name, persistent: true,
+        mode: "roaming", activity: "world", username: name, persistent: true, keepSavedLocation: true,
       });
       if (!bot) continue;
       // Bots get a generated name shown above them; an adventurer goes by its own.
@@ -1967,11 +1965,6 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         state.adventurer = true;
       }
       if (Number(bot.getAttribute(GENERATION_ATTRIBUTE) ?? 0) < (data.generation ?? 1)) startOver(bot);
-      // Where it was when the server went down: it logs in there again, as a player does.
-      const last = bot.getAttribute?.(LOCATION_ATTRIBUTE);
-      if (last && Number.isInteger(last.x) && Number.isInteger(last.y) && last.x > 0 && last.y > 0) {
-        bot.moveTo?.(new core.Location(last.x, last.y, Number.isInteger(last.z) ? last.z : 0));
-      }
       // It knows Death already: a death leaves a grave without the first-death tutorial.
       emit("gravestones:met-death", { player: bot });
       adventurers.get(name).savedTask = Tasks.freshTask(bot.getAttribute?.(TASK_ATTRIBUTE), Date.now());
@@ -1990,8 +1983,6 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     entry.savedPlan = entry.plan;
     entry.taskSavedAt = nowMs;
     entry.player.setAttribute(TASK_ATTRIBUTE, record);
-    const at = entry.player.getLocation();
-    entry.player.setAttribute(LOCATION_ATTRIBUTE, { x: at.getX(), y: at.getY(), z: at.getZ() });
     try {
       const persistence = core.GameConstants?.PLAYER_PERSISTENCE;
       (persistence?.requestSave ?? persistence?.save)?.call(persistence, entry.player, "adventurer-task");

@@ -149,9 +149,13 @@ function createBotPlayer(username, spawn, options = {}) {
   }
 
   // Full-time PvP bots are assigned explicit hotspot spawns. Persisted player
-  // positions should not drag them back to stale saved coordinates.
-  bot.setLocation(spawn.clone());
-  bot.setLastKnownRegion(spawn.clone());
+  // positions should not drag them back to stale saved coordinates. A bot that lives on as a
+  // player (an adventurer, `keepSavedLocation`) logs in where its save left it.
+  const saved = bot.getLocation?.();
+  const keep = options.keepSavedLocation === true && appliedPersistence && saved && saved.getX() > 0 && saved.getY() > 0;
+  const start = keep ? saved.clone() : spawn.clone();
+  bot.setLocation(start);
+  bot.setLastKnownRegion(start.clone());
   bot.getUpdateFlag().flag(Flag.APPEARANCE);
   World.getAddPlayerQueue().push(bot);
   return bot;
