@@ -674,14 +674,16 @@ function createTrainCombatAction(spec, world) {
         const candidates = world.core.World.getNpcsNear(location, SITE_RADIUS + ATTACK_DISTANCE, player.getPrivateArea?.() ?? null)
           .filter((npc) => available(player, npc, bot, nowMs, state))
           .sort((a, b) => location.getDistance(a.getLocation()) - location.getDistance(b.getLocation()))
-          .slice(0, TARGET_SPREAD)
-          // A little variety among the near ones, not a walk past three guards to a far fourth.
-          .filter((npc, index, near) => index === 0
-            || location.getDistance(npc.getLocation()) <= location.getDistance(near[0].getLocation()) + TARGET_SPREAD_TILES);
-        const offset = randomInRange(0, Math.max(0, candidates.length - 1));
+          .slice(0, TARGET_SPREAD * 2);
+        // The near ones first (a little variety among those within a few tiles of the nearest),
+        // then the further ones by distance: not a walk past three guards to a far fourth, but
+        // the far one still when the near ones are taken or behind a fence.
+        const nearest = candidates.length ? location.getDistance(candidates[0].getLocation()) : 0;
+        const nearCount = candidates.filter((npc) => location.getDistance(npc.getLocation()) <= nearest + TARGET_SPREAD_TILES).length;
+        const offset = randomInRange(0, Math.max(0, nearCount - 1));
         bot.approachNpc = null;
         for (let index = 0; index < candidates.length; index += 1) {
-          const npc = candidates[(index + offset) % candidates.length];
+          const npc = index < nearCount ? candidates[(index + offset) % nearCount] : candidates[index];
           if (CombatFactory.canAttackPermission(player, npc, false, CombatFactory.getMethod(player)) !==
               CanAttackResponse.CAN_ATTACK) continue;
           if (!reachable(player, npc)) {
