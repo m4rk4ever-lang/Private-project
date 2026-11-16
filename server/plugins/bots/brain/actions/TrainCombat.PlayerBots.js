@@ -222,7 +222,20 @@ function createTrainCombatAction(spec, world) {
     if (style === "magic") return player.getSkillManager().getMaxLevel(Skill.MAGIC);
     return Math.min(...skills.map((skill) => player.getSkillManager().getMaxLevel(skill)));
   };
-  const stageFor = (player, state) => stages.filter((stage) => levelFor(player, state) >= stage.minLevel).pop();
+  // An honest bot (an adventurer) also fights the stage below its own (combat 37: barbarians of
+  // 10-17 beside the 20-45 band), as a player does: its own planner may send it to a place
+  // whose monsters are a little under its band, and it must not stand there with nothing to hit.
+  const widened = new Map();
+  const stageFor = (player, state) => {
+    const own = stages.filter((stage) => levelFor(player, state) >= stage.minLevel);
+    const stage = own[own.length - 1];
+    if (!stage || !(state?.honest || isHonest(player)) || own.length < 2) return stage;
+    if (!widened.has(stage)) {
+      const below = own[own.length - 2];
+      widened.set(stage, { ...stage, npcLevels: { min: Math.min(stage.npcLevels.min, below.npcLevels.min), max: stage.npcLevels.max } });
+    }
+    return widened.get(stage);
+  };
   const routeFinder = new RsmodRouteFinding();
   // Wall-aware reach (entity strategy, no moveNear): a tile touching the NPC across
   // a fence or closed gate does not count. Unreachable NPCs are walked towards

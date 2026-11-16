@@ -200,7 +200,9 @@ De metrics-regels, op `kind`:
   XP en `ended` (target reached, time up, full bag, stuck, quest done/failed, replaced).
 - `goal`: doel gezet, gehaald of geschrapt, met de minuten sinds het gezet werd.
 - `idle`: een avonturier staat een minuut zonder XP op zijn klus (plek, home, hp, in gevecht, vrije slots).
-- `walk_blocked`: een route die niet lukte, van waar naar waar.
+- `walk_blocked`: een route die niet lukte, van waar naar waar, met `tilesLeft`, coins en de momentopname hieronder.
+- `stuck`: een klus zonder voortgang: modus, reden, plek, `home`, en de momentopname: `activity`, `action`, `describe`
+  (de eigen uitleg van de actie, zoals site/target/approach bij combat), `npcsNear` (naam (level): aantal), `hp`, `freeSlots`.
 - `death`: een avonturier stierf: fase, klus of quest, plek, door wie (`killer`) en of hij eten had (`hadFood`).
   In `bot`-regels telt `fledLowHp` hoe vaak hij stopte omdat zijn HP laag was zonder eten.
 - `skills` (elke 5 min): per skill hoeveel avonturiers XP kregen, hoeveel XP en via welke activiteit, en welke skills niemand trainde (`untouched`).

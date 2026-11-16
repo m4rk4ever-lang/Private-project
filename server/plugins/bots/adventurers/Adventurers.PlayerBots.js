@@ -232,7 +232,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         m.events.idle = (m.events.idle ?? 0) + 1;
         const at = entry.player.getLocation();
         const state = stateOf(entry.player);
-        metric({ kind: "idle", bot: entry.name, activity: entry.activity ?? null, mode: entry.plan?.mode ?? null,
+        metric({ kind: "idle", bot: entry.name, activity: entry.activity ?? null, mode: entry.plan?.mode ?? null, brain: brainSnapshot(entry),
           where: [at.getX(), at.getY(), at.getZ()], home: state?.home ?? null, hp: entry.player.getHitpoints?.(),
           inCombat: Boolean(entry.player.getCombat?.()?.getTarget?.()), freeSlots: entry.player.getInventory().getFreeSlots(),
           brainAction: state?.brain?.action?.id ?? state?.brain?.current ?? null });
@@ -284,6 +284,39 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function goalMetric(entry, goal, event) {
     metric({ kind: "goal", bot: entry.name, event, goal: Goals.describe(goal), detail: goal,
       minutes: goal.setAt ? Math.round((Date.now() - goal.setAt) / 6000) / 10 : null });
+  }
+
+  /**
+   * What its brain was doing at that moment, for a stuck or idle line: the running action and its
+   * own account of itself (TrainCombat: site, target, approach, failures), the NPCs around it by
+   * name and level, its HP and free slots. Enough to see why, not only that.
+   */
+  function brainSnapshot(entry) {
+    const player = entry.player;
+    const out = { hp: player.getHitpoints?.() ?? null, freeSlots: player.getInventory().getFreeSlots() };
+    try {
+      const brain = runtimeEntry(player)?.brain;
+      const frame = brain?.frames?.[brain.frames.length - 1];
+      const action = frame?.action?.();
+      out.activity = frame?.behaviour?.id ?? null;
+      out.action = action?.id ?? null;
+      out.describe = action?.describe?.(brain.context(frame, now())) ?? null;
+    } catch (error) {
+      out.describeError = String(error?.message ?? error);
+    }
+    try {
+      const counts = new Map();
+      for (const npc of core.World.getNpcsNear(player.getLocation(), 12, player.getPrivateArea?.() ?? null)) {
+        const definition = npc.getCurrentDefinition?.(player) ?? npc.getDefinition?.();
+        if (!(definition?.getCombatLevel?.() > 0)) continue;
+        const key = `${definition.getName?.()} (${definition.getCombatLevel()})`;
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+      }
+      out.npcsNear = Object.fromEntries([...counts].slice(0, 12));
+    } catch {
+      // A help, not a must.
+    }
+    return out;
   }
 
   /** Counts something that happened to this adventurer for its next metrics line. */
@@ -797,7 +830,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         countEvent(entry, "walkBlocked");
         const at = player.getLocation();
         metric({ kind: "walk_blocked", bot: entry.name, reason, to: { name: placeName(to), x: to.x, y: to.y, z: to.z ?? 0 },
-          where: [at.getX(), at.getY(), at.getZ()] });
+          where: [at.getX(), at.getY(), at.getZ()], tilesLeft: Math.max(Math.abs(at.getX() - to.x), Math.abs(at.getY() - to.y)),
+          doorAttempt: stateOf(player)?.doorAttempt ? { id: stateOf(player).doorAttempt.objectId ?? stateOf(player).doorAttempt.object?.getId?.() ?? null } : null,
+          coins: Shopping.coinsOf(player), ...brainSnapshot(entry) });
         // That place is out for a while; the next bank or shop is still fine.
         // A quest's walk tries again (doors, another way); its own tries decide when to give up.
         if (reason !== "quest") (entry.blockedPlaces ??= new Map()).set(placeKey(to), now() + BLOCKED_MS);
@@ -1548,6 +1583,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         note(entry.player, `Kon bij ${String(entry.activity ?? "zijn klus").replace(/_/g, " ")} niets doen; kiest iets anders.`, "activity");
         countEvent(entry, "stuck");
         entry.jobEnd = "stuck";
+        const stuckAt = entry.player.getLocation();
+        metric({ kind: "stuck", bot: entry.name, mode: entry.plan?.mode ?? null, reason: entry.plan?.reason ?? null,
+          combat: entry.player.getSkillManager().getCombatLevel(), where: [stuckAt.getX(), stuckAt.getY(), stuckAt.getZ()],
+          home: stateOf(entry.player)?.home ?? null, ...brainSnapshot(entry) });
         entry.until = 0;
       }
       // Trained to what the job was for (a quest's combat level, a goal's level) and a little
