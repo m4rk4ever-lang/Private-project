@@ -38,7 +38,10 @@ const MAX_MS = 15 * 60_000;
 /** A teleport is worth its runes when it saves at least this many tiles of walking. */
 const TELEPORT_SAVES = 150;
 /** The spells a bot may cast for an errand: none behind a quest, none into the Wilderness or a house. */
-const ERRAND_SPELLS = new Set(["varrock teleport", "lumbridge teleport", "falador teleport", "camelot teleport"]);
+const ERRAND_SPELLS = new Set(["varrock teleport", "lumbridge teleport", "falador teleport", "camelot teleport",
+  "ardougne teleport", "trollheim teleport"]);
+/** Spells a quest unlocks (SpellTeleports.plugin.js QUEST_LOCKED_SPELLS): cast for an errand only with it done. */
+const QUEST_SPELLS = Object.freeze({ "ardougne teleport": "plague_city", "trollheim teleport": "eadgars_ruse" });
 const TELEPORT_MS = 3600;
 /** The home teleport's long cast: it lands on tick 24 (HomeTeleportSequence), a little more to be sure. */
 const HOME_TELEPORT_MS = 16_000;
@@ -96,7 +99,7 @@ function carriesRunes(player, runes) {
  * The teleport it can use that lands nearest `to`, if it saves a long walk; else null.
  * { kind: "spell", name } | { kind: "tablet", slot } | { kind: "jewellery", slot, index, label }.
  */
-function bestTeleport(core, player, to, { jewelleryData = null } = {}) {
+function bestTeleport(core, player, to, { jewelleryData = null, questDone = () => false } = {}) {
   const spells = core?.SpellTeleports?.getTeleportDestinations?.() ?? [];
   const here = player.getLocation();
   const walk = distance(here, to);
@@ -109,6 +112,7 @@ function bestTeleport(core, player, to, { jewelleryData = null } = {}) {
   const landing = new Map(spells.map((spell) => [spell.name, spell.destination]));
   for (const spell of spells) {
     if (!ERRAND_SPELLS.has(spell.name) || spell.spellbook !== player.getSpellbook?.()) continue;
+    if (QUEST_SPELLS[spell.name] && !questDone(QUEST_SPELLS[spell.name])) continue;
     if (magic < spell.level || !carriesRunes(player, spell.runes)) continue;
     consider({ kind: "spell", name: spell.name }, spell.destination.getX(), spell.destination.getY());
   }
@@ -160,7 +164,13 @@ function createErrands({ now = () => Date.now(), log = () => {}, core = null, mo
     errands.set(player, errand);
     if (entry.brain) entry.brain.paused = true;
     clear(player);
-    const spell = core ? bestTeleport(core, player, to) : null;
+    const questDone = (key) => {
+      if (!emit) return false;
+      const query = { player, key, complete: false };
+      emit("quest:is-complete", query);
+      return query.complete === true;
+    };
+    const spell = core ? bestTeleport(core, player, to, { questDone }) : null;
     if (spell) {
       // As a player does it: the spell (level, runes, XP), a tablet broken (used up), jewellery
       // rubbed to one of its own destinations (a charge). Then it walks from where it lands.

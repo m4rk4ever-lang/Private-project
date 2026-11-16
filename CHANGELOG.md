@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Bots gebruiken voor lange tochten ook Ardougne Teleport (na Plague City) en Trollheim Teleport (na Eadgar's Ruse), met hun eigen runes en Magic-level, naast Varrock, Lumbridge, Falador en Camelot Teleport.
 - Avonturiers met geld over (5.000 gp of meer) kopen op de GE een paar teleport tablets (Varrock, Lumbridge, Falador of Camelot). Bij een lange wandeling breken ze er een als dat veel lopen scheelt.
 - Slayer-taken met monsters die beschermende uitrusting vereisen (earmuffs voor banshees, een nose peg voor aberrant spectres, een facemask voor dust devils en meer, uit de Slayer-gegevens van het spel): de avonturier draagt het item als hij het heeft, haalt het van de bank of koopt het in een winkel die het verkoopt. Anders laat hij Slayer een uur liggen.
 - Elke clan heeft een eigen wapenschild op de avonturierspagina: de Jorg Clan een rode bijl, de Patrick Clan een groene schedel en de Mark Clan een blauwe ster. Het staat bij de clanrace, de clankopjes, de knoppen en op elke kaart. Kleur en symbool zijn in te stellen in `adventurers.json`.
