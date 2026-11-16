@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Avonturiers met geld over kopen ook een geladen teleport-sieraad op de GE (games necklace, ring of dueling of amulet of glory). Elke lading is een teleport voor een lange tocht, naar bestemmingen zonder quest-eis.
 - Avonturiers die sterven, krijgen een grafsteen zoals spelers (gewone wereldbots niet). Na het respawnen lopen ze terug naar hun graf, pakken de gratis spullen en betalen het fee voor de rest (uit de Coffer, hun tas of bank). Hebben ze daar het geld niet voor, dan blijft dat deel liggen en gaat het daarna naar Death's Office. Het dagboek meldt waar ze stierven.
 - Nieuw event `gravestones:reclaim` voor plugins: bij het graf Loot en Pay zoals een speler.
 - Bots gebruiken voor lange tochten ook Ardougne Teleport (na Plague City) en Trollheim Teleport (na Eadgar's Ruse), met hun eigen runes en Magic-level, naast Varrock, Lumbridge, Falador en Camelot Teleport.
