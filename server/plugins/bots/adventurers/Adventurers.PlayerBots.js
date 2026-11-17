@@ -866,7 +866,19 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (!check.ready) return false;
     const cast = { player, started: false };
     emit("home-teleport:cast", cast);
-    return cast.started === true;
+    if (cast.started !== true) return false;
+    // The cast takes some 16 seconds and any step or click breaks it off: its brain rests and the
+    // manager leaves it alone until it has landed (it was broken off at once, every few minutes
+    // again, on the same roof).
+    const entry = adventurers.get(player.getUsername?.());
+    if (entry) {
+      entry.homeUntil = now() + 20_000;
+      errands.errands?.delete?.(player);
+      entry.errand = null;
+      const brain = runtimeEntry(player)?.brain;
+      if (brain) brain.paused = true;
+    }
+    return true;
   }
 
   function unstrand(entry, player) {
@@ -1814,6 +1826,17 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     for (const entry of adventurers.values()) {
       if (!entry.player?.isRegistered?.()) continue;
       if (Number.isFinite(entry.lastTickAt)) account(entry, nowMs, Math.min(10_000, Math.max(0, nowMs - entry.lastTickAt)));
+      // Casting the home teleport: nothing else until it has landed.
+      if (entry.homeUntil) {
+        if (nowMs < entry.homeUntil) {
+          entry.lastTickAt = nowMs;
+          continue;
+        }
+        entry.homeUntil = null;
+        const brain = runtimeEntry(entry.player)?.brain;
+        if (brain) brain.paused = false;
+        entry.until = 0;
+      }
       watchGear(entry);
       joinClan(entry);
       // On its way to the job (a long walk to the Gnome Stronghold): the walk does not count
