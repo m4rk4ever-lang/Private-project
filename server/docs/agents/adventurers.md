@@ -268,3 +268,45 @@ Nog open, gemeld door de eigenaar:
 - Desert Treasure II-bosses staan als plugin in het spel (Duke Sucellus, Leviathan, Vardorvis, Whisperer) maar zijn niet bereikbaar via ::teleports en niet in adventurers.json bosses.
 - Meerdere werelden (wisselen bij een volle mijn of combatplek), OSRS Wiki money-making en skill-guides als bron voor taken.
 - Bij testen: bot met teletome naar de plek, `advtrain` (dat wist de lopende loopklus), binnen seconden testen.
+
+## Stand 17-11-2026 (middag, einde sessie): wat loopt en wat openstaat
+
+### Net gebouwd, nog niet volledig getest
+- **Barrows-run** (`adventurers/BarrowsRun.PlayerBots.js`, boss `boss_barrows` in adventurers.json,
+  events `barrows:bot-view`, `barrows:bot-answer-puzzle`, `barrows:bot-process` in
+  `minigames/Barrows.plugin.js`). Getest tot: prayer potions, spade, Barrows- en Varrock-tablets
+  kopen, met de tablet teleporteren, de heuvel ingraven (landt in de crypte). Nog niet gezien:
+  sarcofaag doorzoeken → broer verschijnt → gevecht, tunnel-dialoog ("Yeah I'm fearless!"),
+  deuren/puzzel in de tunnels, kist openen en plunderen, wegteleporteren. Laatste waarneming: na
+  de eerste zoekklik klom hij weer naar boven zonder broer; nu tot 3 zoekpogingen met logregels.
+  Test: `::advtrain Markbot 18:boss_barrows` (bot bij de Barrows zetten met `::teletome`).
+- **Engine-let op:** `PluginManager.emitPlayerProcess` draait niet voor bots (`World.ts`,
+  `isPlayerBot`). Elke minigame die op `onPlayerProcess` leunt, werkt voor bots pas als de
+  bot-module de verwerking zelf aanroept (zoals `barrows:bot-process`).
+- **Ondergronds via trap/ladder** (`levelHop`/`clickHop` in Adventurers, uit
+  `agent/data/transports.json`): Mining Guild (Mining 60). Nog niet in het spel gezien dat een bot
+  echt afdaalt; de Dwarven Mine staat nog niet als plek in travel-destinations.
+- **Tijdelijk vrijgegeven quests** (adventurers.json `grantedQuests`, attribuut
+  `adventurers:granted-quests`): alleen de stage, geen beloningen. Weghalen uit de lijst zet de
+  quest terug op 0.
+
+### Gevonden in logs / gemeld door de gebruiker, nog open
+- **"Eens proberen"-taken**: bots kiezen te vaak willekeurige klussen; doelmatiger kiezen.
+- **Geld vs XP strenger toetsen**: Patrickbot 16 traint Herblore "voor geld" maar verdient niets.
+  Een geldklus moet aantoonbaar winst maken (verkoopprijs product − inkoop), anders XP-klus.
+- **Voorraad per run bijhouden** (bosses, Barrows): hoeveel eten/potions/tablets een run kost, en
+  genoeg meenemen voor meerdere runs zodat hij niet na elke run hoeft te banken.
+- **GE en bank zijn twee dingen**: atExchange zet spullen op de bank bij de GE; controleren dat
+  bank-acties bij een bank horen en GE-acties bij de GE (en niet onnodig heen en weer).
+- **Markbot 18 "Begint" + lopen naar Edgeville**: deels verklaard (Deadman Bounty Hunter-winkel
+  voor prayer potions, nu uitgesloten; potions/spade werden gebankt, nu bossKit). In nieuwe logs
+  controleren of het weg is.
+- **Seers-rooftop vast op 2710,3475,3** (na GAP_28 landt de bot 8 tegels van GAP_29's routetegel;
+  RunCourse klikt alleen binnen 5 tegels / herkent de voortgang niet). Ook: agility-klus bij 99.
+- **High-level bots** doen nog lage klussen (endgame-bot gem stalls voor een torva-doel van 180M).
+- **Construction** (gebruikerswens): huis met portal room, house tabs, pool om stats te herstellen.
+- **Fletching** wordt weinig/niet echt getraind (gebruikersmelding) — nakijken.
+- Ouder open: Gnome Stronghold-route en agility Gnome/Falador, combatstijl per monsterzwakte,
+  Draynor dode bomen, banken van buiten de bank, koken bij Lumbridge-fornuis, meerdere werelden,
+  charges opladen (scythe/trident), prayer flicking, clue scrolls, skilltiers uit
+  `osrs-guides.md` (teaks, barbarian fishing, ...), Lumbridge-kasteelbank (trappen).
