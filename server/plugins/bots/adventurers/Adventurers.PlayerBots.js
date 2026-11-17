@@ -1659,6 +1659,57 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return null;
   }
 
+  /**
+   * Its magic for the Barrows: a magic weapon on it (from the bank with the rest of its magic
+   * set, else the best one it may wield and afford, bought), then runes for about 150 casts of
+   * the best fire spell its level allows. True while it is fetching; false when it has all;
+   * null when it cannot get them (it fights in melee then).
+   */
+  const BARROWS_CASTS = 150;
+  function magicKit(entry, resume) {
+    const { player } = entry;
+    const level = levelOf(player, "MAGIC");
+    if (level < 35) return null;
+    const pieces = Object.entries(Shopping.gear.styles?.magic ?? {});
+    const weapons = (Shopping.gear.styles?.magic?.weapon ?? []).map((piece) => ({ ...piece, id: Shopping.idOf(core, piece.item) })).filter((piece) => Number.isInteger(piece.id));
+    const onIt = (id) => player.getInventory().getAmount(id) > 0 || Shopping.owns(player, id);
+    if (!weapons.some((piece) => onIt(piece.id))) {
+      const inBank = weapons.find((piece) => banked(player, piece.id) > 0);
+      const bank = inBank ? nearestBank(player, entry) : null;
+      if (inBank && bank) {
+        return walkTo(entry, { ...bank, name: bank.name ?? bank.id }, { reason: "withdraw", arrive: (banker) => {
+          const taken = [];
+          for (const [, list] of pieces) {
+            const piece = list.map((entry2) => Shopping.idOf(core, entry2.item)).find((id) => Number.isInteger(id) && banked(banker, id) > 0);
+            if (piece !== undefined && withdraw(banker, piece, 1) > 0) taken.push(itemName(piece).toLowerCase());
+          }
+          if (taken.length) note(banker, `Haalt zijn magic-set van de bank voor de Barrows: ${taken.join(", ")}.`, "boss");
+          resume();
+        } }) ? true : null;
+      }
+      const helpers = { levelOf: (skill) => levelOf(player, skill), questDone: questDone(player) };
+      const coins = Shopping.coinsOf(player) + banked(player, Trade.COINS);
+      const buy = weapons.filter((piece) => !piece.earned && Shopping.allowed(piece, helpers) && Shopping.estimatedPrice(core, piece.id, 1) * 2 < coins)[0];
+      if (!buy) return null;
+      if (buyOnExchange(entry, buy.id, itemName(buy.id).toLowerCase(), 1)) { resume(); return true; }
+      return null;
+    }
+    // Runes for the best fire spell its level allows.
+    const { HONEST_SPELLS } = require("../brain/actions/TrainCombat.PlayerBots");
+    const spell = HONEST_SPELLS.map((key) => core.CombatSpells?.[key]).find((candidate) => candidate && level >= (candidate.levelRequired?.() ?? 99));
+    if (!spell) return null;
+    const runes = (spell.itemsRequired?.(player) ?? []).map((rune) => ({ id: rune.getId(), amount: rune.getAmount() * BARROWS_CASTS }));
+    const short = runes.find((rune) => player.getInventory().getAmount(rune.id) < rune.amount / 3);
+    if (!short) return false;
+    const want = short.amount - player.getInventory().getAmount(short.id);
+    if (banked(player, short.id) >= want) {
+      const bank = nearestBank(player, entry);
+      return bank && walkTo(entry, { ...bank, name: bank.name ?? bank.id }, { reason: "withdraw", arrive: (banker) => { withdraw(banker, short.id, want); resume(); } }) ? true : null;
+    }
+    if (buyOnExchange(entry, short.id, itemName(short.id).toLowerCase(), want)) { resume(); return true; }
+    return null;
+  }
+
   /** A Barrows run (adventurers.json boss "kind": "barrows"): a spade, food and prayer potions first. */
   function startBarrows(entry, plan, nowMs) {
     const { player } = entry;
@@ -1668,6 +1719,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (spade === null) {
       note(player, "Kan niet naar de Barrows: geen spade te krijgen.", "boss");
       return false;
+    }
+    // Magic, the style against five of the six brothers: a magic weapon and runes for the best
+    // fire spell it can cast, from its bank first, else bought. Without them it fights in melee.
+    const magic = magicKit(entry, resume);
+    if (magic === true) return true;
+    if (magic === null && !entry.magicKitNoted) {
+      entry.magicKitNoted = true;
+      note(player, "Geen magic-wapen of runes te krijgen; vecht bij de Barrows met melee.", "boss");
     }
     // Tablets there and back, as players go: a Barrows teleport there (the walk through
     // Morytania is long), a Varrock teleport home from the chest. Not having them is no stop.

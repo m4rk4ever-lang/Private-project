@@ -10,7 +10,8 @@ const HouseParty = require("../HouseParty.PlayerBots");
 const isFood = (itemId) => require("../../../items/Food.plugin").isFoodItem(itemId);
 
 /** The strike or bolt spell it can cast now with the runes it carries, best first. */
-const HONEST_SPELLS = ["FIRE_BOLT", "WIND_BOLT", "FIRE_STRIKE", "EARTH_STRIKE", "WATER_STRIKE", "WIND_STRIKE"];
+// Best first: the fire spells as far as its level and runes go (Barrows asks for the higher ones).
+const HONEST_SPELLS = ["FIRE_SURGE", "FIRE_WAVE", "FIRE_BLAST", "FIRE_BOLT", "WIND_BOLT", "FIRE_STRIKE", "EARTH_STRIKE", "WATER_STRIKE", "WIND_STRIKE"];
 function castableSpell(player, core) {
   const magic = player.getSkillManager().getCurrentLevel(core.Skill.MAGIC);
   for (const key of HONEST_SPELLS) {
@@ -792,4 +793,4 @@ function createTrainCombatAction(spec, world) {
   return action;
 }
 
-module.exports = { createTrainCombatAction, wearOwnGear };
+module.exports = { createTrainCombatAction, wearOwnGear, HONEST_SPELLS };
