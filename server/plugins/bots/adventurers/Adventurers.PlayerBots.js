@@ -1704,10 +1704,20 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return walk + (Number.isFinite(toBank) ? toBank * 1.5 : 0);
   }
 
+  /** East of the Salve: Morytania (behind Priest in Peril). */
+  function inMorytania(place) {
+    return place.x >= 3400 && place.x <= 3900 && place.y >= 3150 && place.y <= 3600 && (place.z ?? 0) === 0;
+  }
+
   function destinationsFor(id, player = null) {
     const all = require("../brain/Travel.PlayerBots").data.destinations ?? [];
     const only = data.activitySites?.[id];
     let places = Array.isArray(only) ? all.filter((place) => only.includes(place.id)) : all;
+    // Morytania (the Slayer Tower, Canifis, Mort'ton) only after Priest in Peril, as for a player:
+    // without it the walk there went north through the Wilderness and never arrived.
+    if (player && questsByName().get(normalize("Priest in Peril"))?.isComplete(player) !== true) {
+      places = places.filter((place) => !inMorytania(place));
+    }
     // Fighting: not where the monsters are far below it (a combat 87 at Lumbridge's goblins or
     // Port Sarim's jail guards); adventurers.json "combatSiteMaxLevel".
     if (id === "combat_training" && player) {
@@ -3037,7 +3047,12 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // On the mainland it can walk (x 2400+, y 2400-4300): not Kourend (by boat), nor the maps of
     // places one only gets into another way (1893,5189: under the ground, like the Mole Hole).
     const onMainland = (place) => place.x >= 2400 && place.y >= 2400 && place.y <= 4300;
-    const open = targets.filter((place) => !blockedNear(entry, place, 15) && place.y < UNDERGROUND_Y && onMainland(place));
+    // Morytania's monsters only after Priest in Peril; none in the Wilderness (y 3520 and up between
+    // x 2944 and 3392), where an adventurer does not go for a task.
+    const morytania = questsByName().get(normalize("Priest in Peril"))?.isComplete(entry.player) === true;
+    const wilderness = (place) => place.x >= 2944 && place.x <= 3392 && place.y >= 3520 && place.y < 4000;
+    const open = targets.filter((place) => !blockedNear(entry, place, 15) && place.y < UNDERGROUND_Y && onMainland(place)
+      && (morytania || !inMorytania(place)) && !wilderness(place));
     const spot = Slayer.nearest(open, (place) => walkTiles(here, place, player));
     if (!spot) {
       note(player, `Kan zijn Slayer-taak (${String(task.name).toLowerCase()}) hier nog niet doen; laat Slayer even liggen.`, "activity");
