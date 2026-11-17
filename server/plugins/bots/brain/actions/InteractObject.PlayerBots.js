@@ -152,7 +152,10 @@ function createInteractObjectAction(spec, world) {
       live.push({ object, distSq });
     }
     live.sort((left, right) => left.distSq - right.distSq);
-    const pool = live.slice(0, TARGET_SPREAD);
+    // Among the nearest few, but only those about as near as the nearest (3 tiles more at most):
+    // a felled tree sent it to one far off while another stood right beside it.
+    const nearest = live.length > 0 ? Math.sqrt(live[0].distSq) : 0;
+    const pool = live.slice(0, TARGET_SPREAD).filter((entry) => Math.sqrt(entry.distSq) <= nearest + 3);
     const best = pool[Math.floor(Math.random() * pool.length)]?.object ?? null;
     if (best) {
       bot.searchTarget = null;
