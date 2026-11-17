@@ -164,6 +164,8 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers op weg naar de Feldip Hills of de Gnome Stronghold gaven halverwege op met "de weg was versperd", omdat ze een paar minuten niet dichterbij kwamen terwijl de weg eerst om White Wolf Mountain loopt. Lange tochten krijgen nu meer tijd, naar verhouding van de afstand.
+- Avonturiers op het dak van een agility-baan (zoals Falador) bleven staan, omdat ze wachtten op een looproute naar de grond die vanaf het dak nooit lukt. Ze springen nu verder.
 - Avonturiers in een quest liepen eindeloos een trap op en af (bijvoorbeeld bij de Duke in Lumbridge castle), omdat ze na de trap nog een oude Quest Helper-stap volgden. Ze wachten nu op een stap die ná de trap gevraagd is, kiezen bij een trap met twee kanten de richting die de stap aangeeft, en de trap telt niet als mislukte poging. Rune Mysteries komt zo tot in de kelder van de Wizards' Tower.
 - Een avonturier die zakken rolt, kiest de dichtstbijzijnde man waar hij ook echt heen kan lopen, niet een man achter een dichte deur.
 - Een avonturier op een verdieping met een quest-doel, zoals de Wizards' Tower-ladder of een trap, loopt naar de vrije tegel ernaast. Eerder liep hij naar de ladder zelf en meldde hij "de weg was versperd".
@@ -175,7 +177,6 @@ Indeling per versie:
 - Een avonturier die klei gaat hakken voor Doric's Quest gaat na het legen van zijn tas ook echt naar de kleirotsen, niet naar coal.
 - Avonturiers die fletchen of iets anders met materialen van de bank maken, zetten die materialen niet meteen weer terug op de bank (dat werd een lus van honderden bankbezoeken).
 - Avonturiers maken hun tas vaker leeg voor woodcutting, mining of fishing, zodat ze niet met een tas vol gereedschap en spullen gaan hakken.
-- Avonturiers met agility onder 10 lopen niet meer vanaf de andere kant van de wereld naar de Gnome Stronghold-baan (die tocht lukt nog niet); ze kiezen dan iets anders.
 - Avonturiers zoeken de monsters van hun Slayer-taak alleen nog op het vasteland waar ze lopend kunnen komen, niet op ondergrondse kaarten of in Kourend waar ze niet heen konden.
 - Een avonturier die ergens gestrand is (het eiland van Misthalin Mystery na een mislukte quest, binnen het hek van Draynor Manor, onder de grond) en drie keer vanaf dezelfde plek nergens heen kan, gebruikt de home teleport naar Lumbridge, zoals een speler die vastzit.
 - Avonturiers rapen quest-items op zoals een speler erop klikt (de echte route, om meubels heen), ook tijdens een quest; Freds shears achter zijn tafel bleven anders liggen.

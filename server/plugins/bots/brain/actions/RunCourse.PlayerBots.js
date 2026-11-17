@@ -82,7 +82,14 @@ function createRunCourseAction(spec, world) {
       const { player, nowMs } = ctx;
       const bot = stateFor(player);
       if (player.getForceMovement?.() != null || player.busy?.() || player.getMovementQueue?.()?.size?.() > 0) return "running";
-      if (navigation().peekMovementRequest(player)) return "running";
+      const pending = navigation().peekMovementRequest(player);
+      if (pending) {
+        // Up on a roof, a walk asked for the course's start on the ground can never get there
+        // (no way down but the course): dropped, else it waited on it for ever ("obstacle=1").
+        const z = player.getLocation().getZ();
+        if (z > 0 && (pending.z ?? 0) !== z) navigation().clearMovementRequest?.(player);
+        else return "running";
+      }
       const mark = markNearby(player);
       if (mark) {
         require("../Loot.PlayerBots").takeStep(world.core, player, mark, { state: ctx.state, nowMs });
@@ -107,7 +114,7 @@ function createRunCourseAction(spec, world) {
         player.setAttribute?.(PROGRESS_ATTRIBUTE, null);
         bot.index = null;
         bot.since = nowMs;
-        if (start) navigation().requestMovement(player, start.x, start.y, { nowMs, z: start.z ?? 0, reason: "brain_agility", state: ctx.state });
+        if (start && player.getLocation().getZ() === (start.z ?? 0)) navigation().requestMovement(player, start.x, start.y, { nowMs, z: start.z ?? 0, reason: "brain_agility", state: ctx.state });
         return "running";
       }
       const obstacle = obstacles.find((entry) => entry.index === index) ?? obstacles[0];
@@ -130,7 +137,7 @@ function createRunCourseAction(spec, world) {
       if (!object) {
         // Not in sight: the first obstacle is near the start; a later one means it fell.
         if (index !== 1) player.setAttribute?.(PROGRESS_ATTRIBUTE, null);
-        if (start) navigation().requestMovement(player, start.x, start.y, { nowMs, z: start.z ?? 0, reason: "brain_agility", state: ctx.state });
+        if (start && player.getLocation().getZ() === (start.z ?? 0)) navigation().requestMovement(player, start.x, start.y, { nowMs, z: start.z ?? 0, reason: "brain_agility", state: ctx.state });
         bot.clickAt = nowMs + CLICK_COOLDOWN_MS;
         return "running";
       }

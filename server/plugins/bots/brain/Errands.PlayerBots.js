@@ -257,9 +257,14 @@ function createErrands({ now = () => Date.now(), log = () => {}, core = null, mo
         }
       }
       const still = idle > STALL_MS;
-      if (still || nowMs - errand.bestAt > NO_CLOSER_MS || nowMs - errand.since > MAX_MS) {
+      // A long trip (Lumbridge to the Feldip Hills, 650 tiles) gets longer: its road runs north
+      // round White Wolf Mountain first, minutes without getting closer as the crow flies.
+      errand.span ??= distance(player.getLocation(), errand.to);
+      const noCloser = Math.max(NO_CLOSER_MS, errand.span * 1_000);
+      const maxMs = Math.max(MAX_MS, errand.span * 2_400);
+      if (still || nowMs - errand.bestAt > noCloser || nowMs - errand.since > maxMs) {
         log("bot_errand_failed", { username: player.getUsername?.() ?? null, reason: errand.reason, at: tile,
-          to: `${errand.to.x},${errand.to.y},${errand.to.z ?? 0}`, why: still ? "stuck" : nowMs - errand.bestAt > NO_CLOSER_MS ? "no-closer" : "too-long" });
+          to: `${errand.to.x},${errand.to.y},${errand.to.z ?? 0}`, why: still ? "stuck" : nowMs - errand.bestAt > noCloser ? "no-closer" : "too-long" });
         end(player, errand, false);
         continue;
       }
