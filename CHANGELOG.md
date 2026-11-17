@@ -122,9 +122,7 @@ Indeling per versie:
 ### Gewijzigd
 - Testopzet: geen wereldbots meer (site-bots en wilderness-bots staan op 0, met de nieuwe instelling `PlayerBots:wildernessBots`), en 15 extra avonturiers per clan (60 in totaal). Alle avonturiers beginnen opnieuw in Lumbridge. De originele accounts starten als nieuw account op level 3; de extra's krijgen een testprofiel van vroege vechter tot endgame (combat 126, alles 99, 2 miljard coins), met gear die past bij hun levels en geld.
 - De gear-lijsten van avonturiers lopen nu door tot endgame: Scythe of Vitur, Osmumten's fang, Torva, avernic defender, ferocious gloves, primordial boots en amulet of torture. Er zijn ook slots voor handschoenen, laarzen en amulet bijgekomen.
-
 - Elke avonturier heeft een eigen smaak in uitrusting: een scimitar, longsword, battleaxe, mace of warhammer, een kite- of square shield, een full of medium helm, een platebody of chainbody, platelegs of een plateskirt, en een cape in zijn eigen kleur zodra hij wat geld over heeft. Zo lopen ze niet meer allemaal in hetzelfde rond.
-- Er draaien nog maar half zoveel wereldbots als eerst (bevolking 0,24), zodat er ruimte is voor de extra avonturiers.
 - Avonturiers kiezen minder vaak combat of een quest: een quest wordt in ongeveer 1 op de 5 keuzes gestart en training voor een quest-eis in 1 op de 4, zodat de 15 avonturiers meer verschillende skills trainen.
 - Een quest waarin twee verschillende avonturiers vastlopen, wordt drie uur lang voor alle avonturiers overgeslagen.
 - Avonturiers staan minder stil: ze denken elke servertick en gaan na een kill of actie meteen door naar de volgende, en eten en kiezen hun volgende taak binnen ruim een seconde.
