@@ -258,3 +258,13 @@ Nog open, gemeld door de eigenaar:
 - Agility Varrock obstakel 4 (muur 3194,3416) en Al Kharid tropical tree: directe klik ingebouwd (7ed416d), in-game nog 7 nieuwe stuck-meldingen gezien; verder uitzoeken.
 - Kopen van law runes (rijk + Magic 25) nog niet in-game gezien; teleports met sieraden/tablets/home wel.
 - Charges: trident, blowpipe, Tumeken's shadow; prayer flicking; Barrows-run (taak 43); clue scrolls.
+
+### Aanvullingen 17-11 (middag), nog open
+- Combatstijl per monster: de zwakte uit monsters-complete.json (defence_stab/slash/crush/magic/ranged) gebruiken om melee/ranged/magic te kiezen, en de keuze loggen. Bij Barrows magic tegen alle broers behalve Ahrim.
+- High-level bots trainen op plekken die niets opleveren (Ardougne soldiers): liever bossing (Barrows, DT2) of Slayer; ook gp per uur meewegen.
+- Gathering: doel kiezen op looproute in plaats van hemelsbreed (willow aan de overkant van het water bij de GE); Draynor dead trees houden bots op.
+- Gnome Stronghold-route faalt steeds op dezelfde lijn (ten zuiden van Coal Trucks, bij de River Dougne/Baxtorian).
+- Cooking: bot draait vlak voor het fornuis in Lumbridge om en loopt weg.
+- Desert Treasure II-bosses staan als plugin in het spel (Duke Sucellus, Leviathan, Vardorvis, Whisperer) maar zijn niet bereikbaar via ::teleports en niet in adventurers.json bosses.
+- Meerdere werelden (wisselen bij een volle mijn of combatplek), OSRS Wiki money-making en skill-guides als bron voor taken.
+- Bij testen: bot met teletome naar de plek, `advtrain` (dat wist de lopende loopklus), binnen seconden testen.
