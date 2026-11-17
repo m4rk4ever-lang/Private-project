@@ -89,6 +89,15 @@ function createRunCourseAction(spec, world) {
         return "running";
       }
       if (nowMs < bot.clickAt) return "running";
+      // Up on a roof with no lap in progress (a restart, a lap broken off), standing where an
+      // obstacle starts (Al Kharid's tropical tree): the lap goes on from there, as the game takes
+      // it, not back to an obstacle on the ground it cannot see from up here.
+      if (player.getLocation().getZ() > 0 && !player.getAttribute?.(PROGRESS_ATTRIBUTE)) {
+        const here = player.getLocation();
+        const from = obstacles.find((entry) => entry.index > 1 && Array.isArray(entry.route) && (entry.route[2] ?? 0) === here.getZ()
+          && Math.max(Math.abs(entry.route[0] - here.getX()), Math.abs(entry.route[1] - here.getY())) <= 2);
+        if (from) player.setAttribute?.(PROGRESS_ATTRIBUTE, { course: course.key, index: from.index - 1 });
+      }
       const index = nextIndex(player);
       if (index !== bot.index) {
         bot.index = index;

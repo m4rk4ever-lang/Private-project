@@ -162,6 +162,8 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Een avonturier die op een dak van een agility-baan staat zonder lopende ronde (zoals bij de tropical tree in Al Kharid) gaat verder met het obstakel waar hij staat, in plaats van vast te blijven staan.
+- Avonturiers halen voor een quest geen aangeraden teleport-items meer (zoals The Chronicle), en de log zegt nu "gaat halen" in plaats van "haalt", omdat het halen nog kan mislukken.
 - Een avonturier die klei gaat hakken voor Doric's Quest gaat na het legen van zijn tas ook echt naar de kleirotsen, niet naar coal.
 - Avonturiers die fletchen of iets anders met materialen van de bank maken, zetten die materialen niet meteen weer terug op de bank (dat werd een lus van honderden bankbezoeken).
 - Avonturiers maken hun tas vaker leeg voor woodcutting, mining of fishing, zodat ze niet met een tas vol gereedschap en spullen gaan hakken.

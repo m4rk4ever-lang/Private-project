@@ -525,13 +525,16 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
       // What the guide recommends bringing (food for the fights, a teleport, an antipoison):
       // each fetched or bought once at the start, as a player packs before setting off; one it
       // cannot get (too dear, sold nowhere) is left out, not a reason to stop.
-      const recommended = (helper.recommended?.(player) ?? []).filter((rec) => !(run.recTried ??= new Set()).has(rec.name));
+      // Teleports it leaves out (The Chronicle "for teleports to the Champions' Guild"): it walks,
+      // and such an item often comes from a far-off shop, a long errand for a shortcut.
+      const recommended = (helper.recommended?.(player) ?? []).filter((rec) => !(run.recTried ??= new Set()).has(rec.name)
+        && !/teleport/i.test(rec.name));
       if (recommended.length > 0 && run.recTried.size < 4 && nowMs >= (run.recAt ?? 0)) {
         const rec = recommended[0];
         run.recTried.add(rec.name);
         run.recAt = nowMs + 5_000;
         if (acquire(entry, rec.ids, rec.amount, rec.name)) {
-          note?.(player, `Haalt ${rec.amount > 1 ? `${rec.amount} x ` : ""}${rec.name} voor ${run.name} (aangeraden).`, "quest");
+          note?.(player, `Gaat ${rec.amount > 1 ? `${rec.amount} x ` : ""}${rec.name} halen voor ${run.name} (aangeraden).`, "quest");
           return "running";
         }
       }
