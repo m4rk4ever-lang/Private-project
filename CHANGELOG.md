@@ -178,6 +178,8 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Lage avonturiers (combat onder 35) gaan niet meer naar plekken voorbij White Wolf Mountain (Catherby, Seers' Village, Gnome Stronghold); de white wolves onderweg doodden ze. Bij thieving nemen ze eten mee, want de knights en wachters slaan terug.
+- Een avonturier zonder pickaxe of axe die er geen kan kopen, gaat niet meer met lege handen naar de mijn of het bos; hij doet eerst iets anders. Mithril en hogere ertsen worden niet meer "in Falador" gezocht, waar ze aan de oppervlakte niet liggen.
 - Avonturiers wisselden na elke taslading van klus bij verwerkskills (firemaking, fletching, smithing: één lading duurde een minuut). Met nog voorraad op de bank halen ze nu de volgende lading en gaan ze door met dezelfde klus.
 - Een avonturier met een tas vol spullen die hij bewaart (bijvoorbeeld de grondstoffen van zijn vorige klus) bleef wachten met "geen bank bereikbaar", ook naast een bank. Hij brengt ze nu naar de dichtstbijzijnde bank.
 - Avonturiers kozen bij de Al Kharid-tolpoort soms "Open" zonder Prince Ali Rescue, waarna ze vastzaten in het gesprek met de wachter. Ze openen de poort nu alleen na die quest en betalen anders de tol. Bij een bankbezoek nemen ze een paar honderd coins mee als hun tas bijna leeg is.

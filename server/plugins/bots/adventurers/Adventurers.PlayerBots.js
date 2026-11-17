@@ -1238,7 +1238,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       // A quest's own errand names its activity (clay_rocks for Doric's clay); else the best one.
       const id = plan.activity ?? reachableActivity(player, plan.mode, level);
       // Fighting on an empty stomach is how adventurers die: food first, if it can buy some.
-      if (plan.mode === "combat_training" && stockFood(entry, plan, nowMs)) return true;
+      // Thieving too: the knights and guards hit back ("low hp, no food" ended most stretches).
+      if ((plan.mode === "combat_training" || plan.mode === "thieving") && stockFood(entry, plan, nowMs)) return true;
       // A gathering job wants room for what it gathers: things for other jobs (a pickaxe, snares,
       // a pot) go to the bank first, as a player empties the bag before a fishing trip.
       // A quest's few pieces of clay need no empty bag: only room for them.
@@ -1251,7 +1252,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         if (bank && walkTo(entry, { ...bank, name: bank.name ?? bank.id }, {
           reason: "bank",
           arrive: (banker) => {
-            const stored = [...bankUnusedTools(entry, banker, plan), ...bankUnusedSupplies(entry, banker, plan), ...deposit(banker, sortBag(banker).keep)];
+            const stored = [...bankUnusedTools(entry, banker, { ...plan, activity: plan.activity ?? id }), ...bankUnusedSupplies(entry, banker, plan), ...deposit(banker, sortBag(banker).keep)];
             if (stored.length > 0) note(banker, `Maakt zijn tas leeg voor ${plan.mode}: ${stored.map((good) => itemName(good.itemId)).join(", ")}.`, "activity");
             else entry.clearBagAt = now() + 20 * 60_000;
             entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, planActivity: plan.activity ?? null, remainingMs: 0, savedAt: now() };
@@ -1272,6 +1273,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
           const want = Shopping.shoppingList(player, core, { levelOf: (skill) => levelOf(player, skill), questDone: questDone(player), modes: [plan.mode] })
             .find((entry) => toolIds.includes(entry.itemId));
           if (want) return shopFor(entry, want.itemId, want.name);
+          // None to be had now (too few coins, no shop near): not off to the rocks or trees with
+          // bare hands; another job, and the coins first.
+          note(player, `Heeft geen ${plan.mode === "mining" ? "pickaxe" : "axe"} en kan er nu geen kopen; doet eerst iets anders.`, "activity");
+          return false;
         }
       }
       // Fishing needs its net, rod or harpoon: bought first (a walk to the shop), or no fishing now.
@@ -1746,6 +1751,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const all = require("../brain/Travel.PlayerBots").data.destinations ?? [];
     const only = data.activitySites?.[id];
     let places = Array.isArray(only) ? all.filter((place) => only.includes(place.id)) : all;
+    // West of White Wolf Mountain (Catherby, Seers' Village, the Gnome Stronghold) only from combat
+    // 35: the white wolves on the way killed every low-level account that went (logs, 17-11).
+    if (player && player.getSkillManager().getCombatLevel() < 35) {
+      places = places.filter((place) => !(place.x < 2880 && place.y >= 3380 && place.y <= 3600 && (place.z ?? 0) === 0));
+    }
     // Morytania (the Slayer Tower, Canifis, Mort'ton) only after Priest in Peril, as for a player:
     // without it the walk there went north through the Wilderness and never arrived.
     if (player && questsByName().get(normalize("Priest in Peril"))?.isComplete(player) !== true) {
