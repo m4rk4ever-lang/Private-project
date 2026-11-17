@@ -165,6 +165,8 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Een avonturier die al minuten op het dak van een agility-baan staat en de baan niet af kan lopen, gebruikt de home teleport naar Lumbridge.
+- Een avonturier die een quest-doel op een geblokkeerde tegel heeft (zoals de ladder in de Wizards' Tower) loopt naar een tegel er direct naast, niet naar een tegel twee verder in een andere kamer.
 - Avonturiers die vogels vangen leggen hun snares bij de vogels die rondvliegen, niet op een leeg stuk strand ernaast.
 - Avonturiers op weg naar de Feldip Hills of de Gnome Stronghold gaven halverwege op met "de weg was versperd", omdat ze een paar minuten niet dichterbij kwamen terwijl de weg eerst om White Wolf Mountain loopt. Lange tochten krijgen nu meer tijd, naar verhouding van de afstand.
 - Avonturiers op het dak van een agility-baan (zoals Falador) bleven staan, omdat ze wachtten op een looproute naar de grond die vanaf het dak nooit lukt. Ze springen nu verder.

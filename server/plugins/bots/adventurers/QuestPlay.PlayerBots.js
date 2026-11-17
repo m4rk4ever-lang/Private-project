@@ -534,11 +534,14 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
       }
     };
     if (!blocked(place.x, place.y)) return place;
-    const sides = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1], [2, 0], [-2, 0], [0, 2], [0, -2]]
-      .map(([dx, dy]) => ({ x: place.x + dx, y: place.y + dy }))
-      .filter((tile) => !blocked(tile.x, tile.y))
-      .sort((a, b) => Math.max(Math.abs(a.x - from.x), Math.abs(a.y - from.y)) - Math.max(Math.abs(b.x - from.x), Math.abs(b.y - from.y)));
-    return sides[0] ? { ...place, x: sides[0].x, y: sides[0].y } : place;
+    // Right beside it first (the ladder's own room), then two tiles off: a tile two away nearest
+    // the walker lay in the next room of the Wizards' Tower, with a wall between it and the ladder.
+    const byWalker = (a, b) => Math.max(Math.abs(a.x - from.x), Math.abs(a.y - from.y)) - Math.max(Math.abs(b.x - from.x), Math.abs(b.y - from.y));
+    for (const ring of [[[1, 0], [-1, 0], [0, 1], [0, -1]], [[1, 1], [-1, -1], [1, -1], [-1, 1]], [[2, 0], [-2, 0], [0, 2], [0, -2]]]) {
+      const sides = ring.map(([dx, dy]) => ({ x: place.x + dx, y: place.y + dy })).filter((tile) => !blocked(tile.x, tile.y)).sort(byWalker);
+      if (sides[0]) return { ...place, x: sides[0].x, y: sides[0].y };
+    }
+    return place;
   }
 
   function tick(entry, nowMs = now(), { busy = false } = {}) {

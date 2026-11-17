@@ -859,6 +859,16 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * that failed from about the same spot in fifteen minutes and it casts the home teleport, as a
    * player who is stuck does (its plugin keeps the 30-minute cooldown and the combat check).
    */
+  /** The home teleport through its plugin (cooldown, combat check, animation); true when cast. */
+  function castHome(player) {
+    const check = { player, check: true, ready: false, destination: null };
+    emit("home-teleport:cast", check);
+    if (!check.ready) return false;
+    const cast = { player, started: false };
+    emit("home-teleport:cast", cast);
+    return cast.started === true;
+  }
+
   function unstrand(entry, player) {
     const at = player.getLocation();
     const recent = (entry.blockedFrom ?? []).filter((spot) => now() - spot.at < 15 * 60_000
@@ -866,12 +876,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     recent.push({ x: at.getX(), y: at.getY(), z: at.getZ(), at: now() });
     entry.blockedFrom = recent;
     if (recent.length < 3) return;
-    const check = { player, check: true, ready: false, destination: null };
-    emit("home-teleport:cast", check);
-    if (!check.ready) return;
-    const cast = { player, started: false };
-    emit("home-teleport:cast", cast);
-    if (cast.started) {
+    if (castHome(player)) {
       entry.blockedFrom = [];
       countEvent(entry, "teleportedOut");
       metric({ kind: "stranded", bot: entry.name, where: [at.getX(), at.getY(), at.getZ()] });
@@ -1538,7 +1543,22 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const at = player.getLocation();
     if (at.getZ() === 0) {
       entry.climbingDown = false;
+      entry.roofSince = null;
       return false;
+    }
+    // Up there for minutes and the course does not bring it down (an obstacle it cannot do from
+    // where it stands): the home teleport, as a player stuck on a roof does.
+    if (roofCourse(at)) entry.roofSince ??= nowMs;
+    else entry.roofSince = null;
+    if (entry.roofSince && nowMs - entry.roofSince > 3 * 60_000 && castHome(player)) {
+      entry.roofSince = null;
+      entry.offRoof = false;
+      countEvent(entry, "teleportedOut");
+      metric({ kind: "stranded", bot: entry.name, where: [at.getX(), at.getY(), at.getZ()], why: "roof" });
+      note(player, "Komt niet van het dak af; teleporteert naar huis (Lumbridge).", "activity");
+      entry.phase = "waiting";
+      entry.until = nowMs + 20_000;
+      return true;
     }
     // A ladder or stairs down nearby first: that is a house or a bank, not a rooftop course.
     if (!entry.offRoof && climbDown(entry, nowMs)) return true;
