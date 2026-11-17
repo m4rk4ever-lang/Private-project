@@ -423,6 +423,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     walkTo: (entry, to, options) => walkTo(entry, to, options),
     errandBusy: (player) => errands.busy(player),
     castHome: (player) => castHome(player),
+    isFood: (id) => isFood(id),
   });
   // Quests played for real (QuestPlay.PlayerBots.js): walk, Talk-to, answer.
   const questPlay = createQuestPlay({
@@ -1667,7 +1668,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
     // Tablets there and back, as players go: a Barrows teleport there (the walk through
     // Morytania is long), a Varrock teleport home from the chest. Not having them is no stop.
-    for (const [name, amount] of [["BARROWS_TELEPORT", 5], ["VARROCK_TELEPORT", 5]]) {
+    for (const [name, amount] of [["BARROWS_TELEPORT", 6], ["VARROCK_TELEPORT", 3]]) {
       if (fetchTool(entry, name, resume, amount) === true) return true;
     }
     if (stockFood(entry, plan, nowMs)) {
@@ -1726,7 +1727,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       if (Number.isInteger(potion) && carried < 2) {
         entry.prayerPotAt = nowMs + 30 * 60_000;
         entry.savedTask = { kind: "boss", bossId: boss.id, reason: plan.reason ?? "verder", remainingMs: 0, savedAt: now() };
-        if (acquireForQuest(entry, doses.length > 0 ? doses : [potion], 4, "prayer potions")) {
+        // The Barrows: enough for a few runs in a row (BarrowsRun counts what each run costs).
+        if (acquireForQuest(entry, doses.length > 0 ? doses : [potion], boss.kind === "barrows" ? 8 : 4, "prayer potions")) {
           note(player, `Gaat prayer potions halen voor ${boss.name}.`, "boss");
           return true;
         }
@@ -2377,7 +2379,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       // A Barrows run: its own steps; the fight's prayer and eating below go on as usual.
       if (entry.phase === "barrows") {
         const result = barrowsRun.tick(entry, nowMs);
-        if (result !== "running") {
+        // Another run at once (it had enough left and broke a Barrows tablet).
+        if (result === "again") barrowsRun.start(entry, nowMs, (entry.barrows?.number ?? 1) + 1);
+        else if (result !== "running") {
           entry.phase = "idle";
           entry.until = 0;
           entry.barrows = null;

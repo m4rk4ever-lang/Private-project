@@ -23,7 +23,10 @@ const STUCK_MS = 4 * 60_000;
 const MAX_RUN_MS = 45 * 60_000;
 const FEARLESS = /fearless/i;
 
-function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, castHome }) {
+// Runs in one go at most, then something else (a player stops for the bank or a change too).
+const MAX_RUNS = 5;
+
+function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, castHome, isFood = () => false }) {
   const chebyshev = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
   const here = (player) => {
     const at = player.getLocation();
@@ -141,9 +144,48 @@ function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, 
     return steps;
   }
 
-  function start(entry, nowMs) {
-    entry.barrows = { since: nowMs, progressAt: nowMs, actAt: 0, step: "travel", why: null, kills: 0, tries: 0 };
-    note(entry.player, "Begint aan een Barrows-run.", "boss");
+  /** What it carries for runs: food, prayer doses, Barrows and Varrock tablets, and its worth. */
+  function supplies(player) {
+    const out = { food: 0, doses: 0, barrowsTabs: 0, varrockTabs: 0, value: 0 };
+    for (const item of player.getInventory().getItems() ?? []) {
+      if (!item || !(item.getId() > 0)) continue;
+      const definition = core.ItemDefinition.forId(item.getId());
+      const name = String(definition?.getName?.() ?? "");
+      const amount = item.getAmount();
+      out.value += (definition?.getGrandExchangeValue?.() ?? 0) * amount;
+      if (definition?.isNoted?.()) continue;
+      const dose = /^(prayer potion|super restore)\((\d)\)$/i.exec(name);
+      if (dose) out.doses += Number(dose[2]) * amount;
+      else if (/^barrows teleport$/i.test(name)) out.barrowsTabs += amount;
+      else if (/^varrock teleport$/i.test(name)) out.varrockTabs += amount;
+      else if (isFood(item.getId())) out.food += amount;
+    }
+    return out;
+  }
+
+  function start(entry, nowMs, number = 1) {
+    entry.barrows = { since: nowMs, progressAt: nowMs, actAt: 0, step: "travel", why: null, kills: 0, tries: 0,
+      number, before: supplies(entry.player) };
+    note(entry.player, number > 1 ? `Begint aan Barrows-run ${number}.` : "Begint aan een Barrows-run.", "boss");
+  }
+
+  /**
+   * After the chest: what the run cost (food, prayer doses, a tablet) and brought (the worth it
+   * carries more), and whether what is left is enough for another, with a little to spare.
+   */
+  function settle(entry) {
+    const run = entry.barrows;
+    const after = supplies(entry.player);
+    const cost = {
+      food: Math.max(0, run.before.food - after.food),
+      doses: Math.max(0, run.before.doses - after.doses),
+      barrowsTabs: Math.max(0, run.before.barrowsTabs - after.barrowsTabs),
+    };
+    const loot = Math.max(0, after.value - run.before.value);
+    entry.barrowsCost = cost;
+    const again = run.number < MAX_RUNS && after.barrowsTabs >= 1
+      && after.food >= cost.food + 2 && after.doses >= cost.doses + 4;
+    return { cost, loot, after, again };
   }
 
   function fail(entry, why) {
@@ -181,8 +223,16 @@ function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, 
       run.progressAt = nowMs;
     }
     if (v.run.looted) {
-      metric({ kind: "barrows_run", bot: entry.name, result: "looted", killed: v.run.killed.length, minutes: Math.round((nowMs - run.since) / 6000) / 10 });
-      note(player, `Heeft de Barrows-kist geplunderd (${v.run.killed.length} broers verslagen); teleporteert weg.`, "boss");
+      const { cost, loot, after, again } = settle(entry);
+      metric({ kind: "barrows_run", bot: entry.name, result: "looted", run: run.number, killed: v.run.killed.length,
+        minutes: Math.round((nowMs - run.since) / 6000) / 10, loot, cost, left: { food: after.food, doses: after.doses, barrowsTabs: after.barrowsTabs } });
+      // Enough left for another: straight back to the mounds with a Barrows tablet, as players do;
+      // else away with a Varrock tablet (or home) to bank and restock.
+      if (again && breakTablet(player, /^barrows teleport$/i)) {
+        note(player, `Heeft de Barrows-kist geplunderd (~${loot.toLocaleString("nl-NL")} gp); genoeg over (${after.food} eten, ${after.doses} prayer-doses), nog een run.`, "boss");
+        return "again";
+      }
+      note(player, `Heeft de Barrows-kist geplunderd (~${loot.toLocaleString("nl-NL")} gp, ${v.run.killed.length} broers); ${run.number >= MAX_RUNS ? `${MAX_RUNS} runs gedaan` : "voorraad op"}, teleporteert weg.`, "boss");
       if (!breakTablet(player, /^varrock teleport$/i)) castHome(player);
       return "done";
     }
@@ -292,7 +342,7 @@ function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, 
     return click(player, object, 1) ? "running" : fail(entry, "deur niet aan te klikken");
   }
 
-  return { start, tick, view };
+  return { start, tick, view, supplies };
 }
 
 module.exports = { createBarrowsRun, BARROWS };

@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Avonturiers doen meerdere Barrows-runs achter elkaar (tot 5): na elke kist kijken ze hoeveel eten, prayer-doses en tablets de run kostte, en gaan ze met een Barrows-tablet meteen terug als de rest genoeg is voor nog een run. Anders teleporteren ze weg om aan te vullen. Per run staan de kosten en de waarde van de loot in de metrics (barrows_run).
 - Avonturiers flicken hun protection prayer als hun prayer onder de helft zakt: aan rond de aanval van de tegenstander, ertussen uit. Met genoeg punten blijft de prayer gewoon aan.
 - De metrics van elke avonturier tonen nu zijn inventaris (item, aantal, noted), vrije plekken, lopende boodschap en opgeslagen klus.
 - Avonturiers nemen agility-shortcuts die hun level toelaat als die een flink stuk lopen schelen, zoals de underwall tunnel tussen de Grand Exchange en Edgeville (Agility 21). Lukt een shortcut niet, dan laten ze hem een half uur links liggen.
