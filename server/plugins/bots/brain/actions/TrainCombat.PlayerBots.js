@@ -17,7 +17,10 @@ function castableSpell(player, core) {
   for (const key of HONEST_SPELLS) {
     const spell = core.CombatSpells?.[key];
     if (!spell || magic < (spell.levelRequired?.() ?? 99)) continue;
-    const runes = spell.itemsRequired?.(player) ?? [];
+    // What the cast really spends: the runes its staff supplies are not (a fire staff's fire runes),
+    // as the game counts them; by the raw list a bot with a fire staff and no fire runes cast nothing.
+    const required = spell.itemsRequired?.(player) ?? [];
+    const runes = spell.itemsToConsume?.(player, required) ?? required;
     if (runes.every((rune) => player.getInventory().getAmount(rune.getId()) >= rune.getAmount() * 5)) return spell;
   }
   return null;

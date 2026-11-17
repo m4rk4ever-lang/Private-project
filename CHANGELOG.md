@@ -14,7 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
-- Voor de Barrows controleert een avonturier zijn magic: een magic-wapen (met zijn magic-set van de bank, anders het beste dat hij mag en kan betalen, gekocht) en runes voor zo'n 150 casts van de beste fire-spreuk die hij kan, eerst van de bank en anders op de GE. Bots casten nu ook Fire Blast, Fire Wave en Fire Surge.
+- Voor de Barrows controleert een avonturier zijn magic: een magic-wapen (met zijn magic-set van de bank, anders het beste dat hij mag en kan betalen, gekocht) en runes voor zo'n 1000 casts van de beste fire-spreuk die hij kan, eerst van de bank en anders op de GE. Bots casten nu ook Fire Blast, Fire Wave en Fire Surge.
 - Barrows: tot 15 runs achter elkaar; is de voorraad op, dan vult de avonturier aan en gaat hij door tot hij minstens 10 runs of een uur bezig is. Hij vecht met magic tegen de broers, behalve tegen Ahrim (melee), en houdt zijn magic-set bij zich.
 - Avonturiers doen meerdere Barrows-runs achter elkaar (tot 5): na elke kist kijken ze hoeveel eten, prayer-doses en tablets de run kostte, en gaan ze met een Barrows-tablet meteen terug als de rest genoeg is voor nog een run. Anders teleporteren ze weg om aan te vullen. Per run staan de kosten en de waarde van de loot in de metrics (barrows_run).
 - Avonturiers flicken hun protection prayer als hun prayer onder de helft zakt: aan rond de aanval van de tegenstander, ertussen uit. Met genoeg punten blijft de prayer gewoon aan.
@@ -189,6 +189,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Een avonturier met een fire staff en zonder fire runes kiest weer een spreuk: de runes die zijn staff levert telden mee als ontbrekend. Hij koopt die runes ook niet meer onnodig in.
 - Avonturiers vechten tijdens een Barrows-run weer terug tegen de broers; hun aanval werd afgebroken alsof ze onderweg waren.
 - Een avonturier op weg naar een boss verkoopt zijn net gekochte spade, tablets en prayer potions niet meer meteen op de GE.
 - Een avonturier met een volle tas die zijn prayer potions noted ontving, bleef op de GE nieuwe kopen. Hij ruilt ze nu op de bank om voor drinkbare potions en zet zijn reserve-uitrusting daar neer.

@@ -1665,7 +1665,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * the best fire spell its level allows. True while it is fetching; false when it has all;
    * null when it cannot get them (it fights in melee then).
    */
-  const BARROWS_CASTS = 150;
+  // Casts for a stretch of runs (runes stack: a slot a kind); a player brings a few thousand.
+  const BARROWS_CASTS = 1000;
   function magicKit(entry, resume) {
     const { player } = entry;
     const level = levelOf(player, "MAGIC");
@@ -1698,7 +1699,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const { HONEST_SPELLS } = require("../brain/actions/TrainCombat.PlayerBots");
     const spell = HONEST_SPELLS.map((key) => core.CombatSpells?.[key]).find((candidate) => candidate && level >= (candidate.levelRequired?.() ?? 99));
     if (!spell) return null;
-    const runes = (spell.itemsRequired?.(player) ?? []).map((rune) => ({ id: rune.getId(), amount: rune.getAmount() * BARROWS_CASTS }));
+    // With its magic weapon in hand first, so the runes a staff supplies are not bought (the
+    // game does not spend them: itemsToConsume).
+    try { require("../brain/actions/TrainCombat.PlayerBots").wearOwnGear(player, core, "magic"); } catch {}
+    const required = spell.itemsRequired?.(player) ?? [];
+    const consumed = spell.itemsToConsume?.(player, required) ?? required;
+    try { require("../brain/actions/TrainCombat.PlayerBots").wearOwnGear(player, core, "melee"); } catch {}
+    const runes = consumed.map((rune) => ({ id: rune.getId(), amount: rune.getAmount() * BARROWS_CASTS }));
     const short = runes.find((rune) => player.getInventory().getAmount(rune.id) < rune.amount / 3);
     if (!short) return false;
     const want = short.amount - player.getInventory().getAmount(short.id);
