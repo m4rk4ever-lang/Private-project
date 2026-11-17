@@ -977,6 +977,9 @@ module.exports = {
     });
     api.onCustomEvent("barrows:minimap-reveal", ({ player }) => syncMinimap(player, phaseOf(player)));
     api.onCustomEvent("barrows:bot-view", botView);
+    // The engine does not run onPlayerProcess for bots: an adventurer on a run asks for its tick
+    // here (the dig's move into the crypt, the prayer drain, the tunnel doors' crossing).
+    api.onCustomEvent("barrows:bot-process", ({ player }) => player && processPlayer({ player }));
     api.onCustomEvent("barrows:bot-answer-puzzle", botAnswerPuzzle);
     api.onNpcDeath(handleNpcDeath);
     api.onCustomEvent("collection-log:category-count", chestCount);

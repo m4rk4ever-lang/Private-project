@@ -169,6 +169,8 @@ function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, 
     if (!run) return "failed";
     if (nowMs - run.since > MAX_RUN_MS) return fail(entry, "duurt te lang");
     if (nowMs - run.progressAt > STUCK_MS) return fail(entry, `komt niet verder (${run.step})`);
+    // The minigame's own per-tick work for it (bots get no onPlayerProcess): every manager tick.
+    api.emitCustomEvent("barrows:bot-process", { player });
     if (errandBusy(player)) return "running";
     const v = view(player);
     if (!v) return fail(entry, "de Barrows draaien niet op deze server");
@@ -234,11 +236,21 @@ function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, 
         run.tunnelSeen = true;
         return click(player, stairs) ? "running" : fail(entry, "trap niet gevonden");
       }
-      if (!v.run.killed.includes(index) && !run.searched?.includes(index)) {
-        (run.searched ??= []).push(index);
-        return click(player, coffin) ? "running" : fail(entry, "sarcofaag niet gevonden");
+      // Not dead yet: the sarcophagus searched (again, a few seconds apart, up to three times:
+      // the walk to it can eat a click), then it waits for the brother to rise.
+      if (!v.run.killed.includes(index)) {
+        run.searches ??= {};
+        const tries = run.searches[index] ?? { count: 0, at: 0 };
+        if (tries.count < 3 && nowMs - tries.at > 6_000) {
+          tries.count += 1;
+          tries.at = nowMs;
+          run.searches[index] = tries;
+          note(player, `Doorzoekt de sarcofaag van ${NAMES[index]} (poging ${tries.count}).`, "boss");
+          return click(player, coffin) ? "running" : fail(entry, "sarcofaag niet gevonden");
+        }
+        if (tries.count < 3 || nowMs - tries.at < 6_000) return "running";
+        note(player, `${NAMES[index]} kwam niet tevoorschijn; gaat naar boven.`, "boss");
       }
-      if (!v.run.killed.includes(index) && nowMs - run.progressAt < 8_000) return "running";
       return click(player, stairs) ? "running" : fail(entry, "trap niet gevonden");
     }
 
