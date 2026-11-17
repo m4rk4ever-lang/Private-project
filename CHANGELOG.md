@@ -182,6 +182,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Een avonturier die na de muursprong op de Seers' Village Rooftop een eind van het volgende obstakel landt, loopt de ronde weer verder in plaats van daar te blijven staan.
 - Avonturiers die naar een boss gaan zetten hun prayer potions, spade en teleporttablets niet meer bij de GE op de bank (waarna ze nieuwe kochten).
 - Avonturiers graven weer echt met hun spade (Barrows-heuvels, molshoop van de Giant Mole); de klik koos de verkeerde menuoptie.
 - Een Barrows-teleporttablet wordt nu gebruikt om naar de Barrows te reizen.

@@ -101,8 +101,13 @@ function createRunCourseAction(spec, world) {
       // it, not back to an obstacle on the ground it cannot see from up here.
       if (player.getLocation().getZ() > 0 && !player.getAttribute?.(PROGRESS_ATTRIBUTE)) {
         const here = player.getLocation();
-        const from = obstacles.find((entry) => entry.index > 1 && Array.isArray(entry.route) && (entry.route[2] ?? 0) === here.getZ()
-          && Math.max(Math.abs(entry.route[0] - here.getX()), Math.abs(entry.route[1] - here.getY())) <= 2);
+        const away = (entry) => Math.max(Math.abs(entry.route[0] - here.getX()), Math.abs(entry.route[1] - here.getY()));
+        const onRoof = obstacles.filter((entry) => entry.index > 1 && Array.isArray(entry.route) && (entry.route[2] ?? 0) === here.getZ());
+        // Where it stands, else the nearest start on this roof within 10 tiles: Seers' wall
+        // scramble lands 8 tiles from the next gap's start (2710,3475 to 2702,3470), and the bot
+        // stood there for an hour, neither going on nor down.
+        const from = onRoof.find((entry) => away(entry) <= 2)
+          ?? onRoof.filter((entry) => away(entry) <= 10).sort((a, b) => away(a) - away(b))[0];
         if (from) player.setAttribute?.(PROGRESS_ATTRIBUTE, { course: course.key, index: from.index - 1 });
       }
       const index = nextIndex(player);
