@@ -974,7 +974,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   const failedShortcuts = new WeakMap();
   const shortcutKey = (hop) => `${hop.from.x},${hop.from.y}`;
 
-  /** A shortcut near it that saves at least 15 tiles and a third of the walk to `to`, or null. */
+  /** A shortcut near it through a wall between it and `to` (see below), or null. */
   function shortcutHop(player, to) {
     const here = player.getLocation();
     if (here.getZ() !== 0 || (to.z ?? 0) !== 0 || here.getY() >= UNDERGROUND_Y || to.y >= UNDERGROUND_Y) return null;
@@ -986,8 +986,12 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     for (const hop of SHORTCUT_HOPS) {
       if (away(at, hop.from) > 30 || hop.needs.some(({ level, skill }) => levelOf(player, skill) < level)) continue;
       if ((failedShortcuts.get(player)?.get(shortcutKey(hop)) ?? 0) > now()) continue;
+      // A shortcut goes through a wall the walk would go round: taken when it stands on the near
+      // side and the place lies on the far side, and the way through is not much longer in a
+      // straight line (the GE to Edgeville is 70 straight, 74 through the tunnel, far more round).
+      const sides = away(at, hop.from) < away(at, hop.to) && away(to, hop.to) < away(to, hop.from);
       const cost = away(at, hop.from) + 5 + away(hop.to, to);
-      if (cost + 15 <= direct && cost <= direct * 0.67 && cost < bestCost) { bestCost = cost; best = hop; }
+      if (sides && direct >= 20 && cost <= direct * 1.3 + 10 && cost < bestCost) { bestCost = cost; best = hop; }
     }
     return best;
   }
