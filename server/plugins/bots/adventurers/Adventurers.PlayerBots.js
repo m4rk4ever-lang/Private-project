@@ -2057,6 +2057,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         }
       }
       leaveUnreachableFight(entry, nowMs);
+      // Who hits it, kept for the death log (at the death itself the attacker is already gone).
+      {
+        const foe = entry.player.getCombat?.()?.getAttacker?.() ?? null;
+        if (foe && foe.isNpc?.()) {
+          entry.lastFoe = { name: String(foe.getDefinition?.()?.getName?.() ?? "?"), level: foe.getDefinition?.()?.getCombatLevel?.() ?? null, at: nowMs };
+        } else if (foe && foe.isPlayer?.()) entry.lastFoe = { name: `speler ${foe.getUsername?.()}`, level: null, at: nowMs };
+      }
       protectionPrayer(entry, nowMs);
       // Standing at the Al Kharid toll gate with a walk to its other side: through it now, not
       // after the walk has given up (a long trip waits minutes before it calls itself stuck).
@@ -2784,8 +2791,17 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const at = player.getLocation();
     metric({ kind: "death", bot: entry.name, phase: entry.phase, mode: entry.plan?.mode ?? null, activity: entry.activity ?? null,
       quest: entry.questRun?.name ?? null, where: [at.getX(), at.getY(), at.getZ()], hadFood: carriesFood(player),
-      combat: player.getSkillManager().getCombatLevel(), killer: player.getCombat?.()?.getAttacker?.()?.getDefinition?.()?.getName?.() ?? null });
-    note(player, `Is gestorven bij (${at.getX()}, ${at.getY()}); gaat zijn spullen ophalen.`, "activity");
+      combat: player.getSkillManager().getCombatLevel(),
+      // Who hit it last (within a minute), and why it went wrong, roughly.
+      killer: entry.lastFoe && now() - entry.lastFoe.at < 60_000 ? entry.lastFoe.name : null,
+      killerLevel: entry.lastFoe && now() - entry.lastFoe.at < 60_000 ? entry.lastFoe.level : null,
+      reason: !(entry.lastFoe && now() - entry.lastFoe.at < 60_000) ? "onbekend (geen aanvaller gezien)"
+        : !carriesFood(player) ? "geen eten bij zich"
+        : (entry.lastFoe.level ?? 0) > player.getSkillManager().getCombatLevel() ? "sterkere tegenstander"
+        : "verloor het gevecht met eten bij zich",
+      prayer: player.getSkillManager().getCurrentLevel(core.Skill.PRAYER) });
+    note(player, `Is gestorven bij (${at.getX()}, ${at.getY()})${entry.lastFoe && now() - entry.lastFoe.at < 60_000 ? ` door ${entry.lastFoe.name.toLowerCase()}` : ""}; gaat zijn spullen ophalen.`, "activity");
+    entry.lastFoe = null;
     entry.graveTries = 0;
     entry.questRun = null;
     entry.phase = "new";

@@ -209,7 +209,7 @@ De metrics-regels, op `kind`:
 Elke regel in de drie logbestanden heeft `v`: de korte git-commit van de draaiende server. Zo zie je welke regels van vóór en na een update zijn.
   Mislukte quests staan in `adventurer-quest-feedback.jsonl`, nu ook met `dialogue`.
 - `stranded`: de bot teleporteerde naar huis omdat hij drie keer vanaf dezelfde plek vastliep (`teleportedOut` in `events`).
-- `death`: een avonturier stierf: fase, klus of quest, plek, door wie (`killer`) en of hij eten had (`hadFood`).
+- `death`: een avonturier stierf: fase, klus of quest, plek, wie hem het laatst raakte (`killer`, `killerLevel`, binnen een minuut), of hij eten had (`hadFood`), zijn prayer-punten en een grove reden (`reason`: geen eten, sterkere tegenstander, verloor met eten bij zich, onbekend).
   In `bot`-regels telt `fledLowHp` hoe vaak hij stopte omdat zijn HP laag was zonder eten.
 - `skills` (elke 5 min): per skill hoeveel avonturiers XP kregen, hoeveel XP en via welke activiteit, en welke skills niemand trainde (`untouched`).
 - `server`: aantal avonturiers en bots, gemiddelde en maximale duur van de avonturiers-tick, geheugen,
