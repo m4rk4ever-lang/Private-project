@@ -934,6 +934,9 @@
       "description": "The Ancient Guthixian Temple.",
       "terms": "td guthix"
     },
+    {"key": "duke_sucellus", "name": "Duke Sucellus", "tab": "bosses", "group": "Bosses", "tile": [3039, 6432, 0], "icon": "magus_vestige", "description": "Outside Duke Sucellus's gate in Ghorrock's depths. Needs Desert Treasure II.", "kc": "Duke Sucellus", "terms": "dt2 duke"},
+    {"key": "the_leviathan", "name": "The Leviathan", "tab": "bosses", "group": "Bosses", "tile": [2063, 6435, 0], "icon": "venator_vestige", "description": "The camp by the boat to the Leviathan's island. Needs Desert Treasure II.", "kc": "The Leviathan", "terms": "dt2 leviathan"},
+    {"key": "the_whisperer", "name": "The Whisperer", "tab": "bosses", "group": "Bosses", "tile": [2656, 6386, 0], "icon": "bellator_vestige", "description": "Outside the Whisperer's chamber in the Lassar Undercity. Needs Desert Treasure II.", "kc": "The Whisperer", "terms": "dt2 whisperer"},
     {
       "key": "vardorvis",
       "name": "Vardorvis",

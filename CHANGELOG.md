@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- In `::teleports` staan nu ook de andere drie Desert Treasure II-bosses: Duke Sucellus (bij zijn poort), de Leviathan (bij de roeiboot) en de Whisperer (bij zijn kamer). Vardorvis stond er al.
 - Bij een dood van een avonturier staat in de logs wie hem het laatst raakte (met level), waar hij stierf, of hij eten en prayer had, en een grove reden (geen eten, sterkere tegenstander, verloor met eten bij zich).
 - Prayer potions zijn voorraad, net als eten: bij klussen zonder gevecht gaan ze naar de bank, en voor een boss haalt een avonturier ze eerst daar op (ook aangebroken potions) voordat hij nieuwe koopt.
 - Avonturiers met Protect from Melee nemen prayer potions mee naar bosses waar ze tegen bidden (van hun bank, anders gekocht) en drinken er een als hun prayer-punten laag staan. Ze houden een voorraad aan (8 in de tas, 20 op de bank); wat ze daarboven hebben, zoals potions van Herblore-training, verkopen ze gewoon.
