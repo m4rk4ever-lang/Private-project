@@ -230,11 +230,14 @@ function createTrainCombatAction(spec, world) {
     const own = stages.filter((stage) => levelFor(player, state) >= stage.minLevel);
     const stage = own[own.length - 1];
     if (!stage || !(state?.honest || isHonest(player)) || own.length < 2) return stage;
-    if (!widened.has(stage)) {
-      const below = own[own.length - 2];
-      widened.set(stage, { ...stage, npcLevels: { min: Math.min(stage.npcLevels.min, below.npcLevels.min), max: stage.npcLevels.max } });
-    }
-    return widened.get(stage);
+    // Not too far below its own level, though: at least 45% of it (a combat 70 does not fight
+    // level-26 jail guards; a combat 37 still fights barbarians of 17).
+    const below = own[own.length - 2];
+    const floor = Math.max(below.npcLevels.min, Math.floor(levelFor(player, state) * 0.45));
+    const min = Math.min(stage.npcLevels.min, floor);
+    const key = `${stage.id}:${min}`;
+    if (!widened.has(key)) widened.set(key, { ...stage, npcLevels: { min, max: stage.npcLevels.max } });
+    return widened.get(key);
   };
   const routeFinder = new RsmodRouteFinding();
   // Wall-aware reach (entity strategy, no moveNear): a tile touching the NPC across

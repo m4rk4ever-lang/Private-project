@@ -172,6 +172,8 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- High-level avonturiers trainen combat niet meer op monsters ver onder hun level (een combat 70 op jail guards van level 26): de laagste tegenstander is minstens zo'n 45% van hun combatlevel, en lage plekken zoals Lumbridge en Port Sarim hebben een maximumlevel.
+- De Al Kharid-tolpoort werd door de bots niet herkend (de poort heeft pas een naam als je hem als speler bekijkt); ze gaan er nu echt doorheen.
 - High-level avonturiers liepen voor magic trees en redwoods rondjes in Lumbridge, omdat elke plek met bomen meetelde. Yews, magic trees en redwoods hakken ze nu alleen waar die echt staan. Kunnen ze daar niet komen (redwoods in Kourend), dan kiezen ze de beste boom die wel bereikbaar is, of een andere klus.
 - Een avonturier die aan de Al Kharid-kant van de tolpoort bleef staan (met genoeg coins) betaalt nu na een paar seconden stilstand de tol, of opent de poort na Prince Ali Rescue, en loopt daarna verder. Een bank achter de tolpoort telt bij het kiezen van een bank als een omweg.
 - Een schild duwde een two-handed wapen (zoals de Scythe) uit de hand: de wooden shield van Tutorial Island werd in het lege schildslot gezet. Naast een two-hander blijft het schildslot nu leeg.

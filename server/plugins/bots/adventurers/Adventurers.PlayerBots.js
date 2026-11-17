@@ -884,10 +884,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (now() < (entry.tollAt ?? 0)) return false;
     entry.tollAt = now() + 15_000;
     const y = TOLL_GATE.ys.includes(at.getY()) ? at.getY() : TOLL_GATE.ys[0];
+    // A multi-loc: its base definition is nameless; as this player sees it, a Gate with Pay-toll.
+    const seenOf = (object) => { try { return core.ObjectDefinition.forPlayer?.(object.getId(), player) ?? core.ObjectDefinition.forId(object.getId()); } catch { return core.ObjectDefinition.forId(object.getId()); } };
     const gate = (core.MapObjects?.mapObjects?.get?.(core.MapObjects.getHash(TOLL_GATE.x, y, 0)) ?? [])
-      .find((object) => /gate/i.test(String(core.ObjectDefinition.forId(object.getId())?.getName?.() ?? "")));
+      .find((object) => /gate/i.test(String(seenOf(object)?.getName?.() ?? ""))
+        || (seenOf(object)?.getInteractions?.() ?? []).some((option) => /^pay-toll/i.test(String(option ?? ""))));
     if (!gate) return false;
-    const seen = (() => { try { return core.ObjectDefinition.forPlayer?.(gate.getId(), player) ?? core.ObjectDefinition.forId(gate.getId()); } catch { return core.ObjectDefinition.forId(gate.getId()); } })();
+    const seen = seenOf(gate);
     const options = (seen?.getInteractions?.() ?? []).map((option) => String(option ?? ""));
     let index = options.findIndex((option) => /^pay-toll/i.test(option));
     if (index < 0 || player.getInventory().getAmount(Trade.COINS) < 10) index = options.findIndex((option) => /^open$/i.test(option));
@@ -1237,7 +1240,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       // bots' travel with its hubs and spreading.
       const place = Sites.pickSite(player, activity, {
         core, random, distance: (from, to, who) => (from.z !== (to.z ?? 0) ? walkTiles(from, to, who) + 50 : walkTiles(from, to, who)),
-        meets: (who, requires, site) => travelMeets(who, requires, site), destinations: destinationsFor(id),
+        meets: (who, requires, site) => travelMeets(who, requires, site), destinations: destinationsFor(id, player),
       });
       Sites.settleAt(stateOf(player), place);
       if (place) world.log?.("adventurer_site", { name: entry.name, activity: id, site: place.id });
@@ -1676,10 +1679,18 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * The places an activity can be done (adventurers.json "activitySites": magic trees only where
    * magic trees grow), else every place of its kind. Lumbridge counted as a place for magic trees.
    */
-  function destinationsFor(id) {
+  function destinationsFor(id, player = null) {
     const all = require("../brain/Travel.PlayerBots").data.destinations ?? [];
     const only = data.activitySites?.[id];
-    return Array.isArray(only) ? all.filter((place) => only.includes(place.id)) : all;
+    let places = Array.isArray(only) ? all.filter((place) => only.includes(place.id)) : all;
+    // Fighting: not where the monsters are far below it (a combat 87 at Lumbridge's goblins or
+    // Port Sarim's jail guards); adventurers.json "combatSiteMaxLevel".
+    if (id === "combat_training" && player) {
+      const combat = player.getSkillManager().getCombatLevel();
+      const capped = places.filter((place) => combat <= (data.combatSiteMaxLevel?.[place.id] ?? Infinity));
+      if (capped.length > 0) places = capped;
+    }
+    return places;
   }
 
   function reachableActivity(player, mode, level) {
@@ -1693,7 +1704,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       if (!activity) return id;
       const site = Sites.pickSite(player, activity, {
         core, random: () => 0, distance: (from, to, who) => (from.z !== (to.z ?? 0) ? walkTiles(from, to, who) + 50 : walkTiles(from, to, who)),
-        meets: (who, requires, place) => travelMeets(who, requires, place), destinations: destinationsFor(id),
+        meets: (who, requires, place) => travelMeets(who, requires, place), destinations: destinationsFor(id, player),
       });
       if (site) return id;
       // A job done anywhere (no spots of its own) is fine; a tree, rock or fishing spot is not.

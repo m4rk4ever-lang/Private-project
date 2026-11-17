@@ -243,6 +243,14 @@
     }
   ],
   "bossChance": 0.25,
+  "combatSiteMaxLevel": {
+    "lumbridge": 30, "port_sarim": 40, "al_kharid": 45, "falador": 45, "barbarian_village": 50,
+    "edgeville": 60, "taverley": 70, "burthorpe": 60, "ardougne": 70, "yanille": 70, "feldip_hills": 60,
+    "corsair_cove": 60, "shantay_pass": 50, "bedabin_camp": 60, "nardah": 60, "karamja_musa_point": 70,
+    "tree_gnome_stronghold": 80, "seers_village": 85, "canifis": 85, "rellekka": 85, "mort_ton": 85,
+    "pollnivneach": 80, "sophanem": 90, "hosidius_sand_crabs": 60, "sunset_coast": 70, "kourend_castle": 40,
+    "civitas_illa_fortis": 60
+  },
   "activitySites": {
     "yew_trees": ["edgeville", "grand_exchange", "falador", "catherby", "seers_village", "tree_gnome_stronghold", "woodcutting_guild"],
     "magic_trees": ["sorcerers_tower_magics", "tree_gnome_stronghold", "woodcutting_guild"],
