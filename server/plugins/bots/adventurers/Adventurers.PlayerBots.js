@@ -2181,6 +2181,25 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     player.getEquipment().refreshItems?.();
     };
     giveGear();
+    // What an account at its level has earned and keeps (a fire or infernal cape, a max cape,
+    // Ava's device): `wear` is put on, `bank` goes in its bank.
+    for (const name of profile.wear ?? []) {
+      const id = Shopping.idOf(core, name);
+      if (!Number.isInteger(id)) continue;
+      acquire(player, id);
+      player.getInventory().add(new core.Item(id, 1));
+      if (Shopping.wear(player, core, id)) given.push(name);
+    }
+    const kept = [];
+    for (const name of profile.bank ?? []) {
+      const id = Shopping.idOf(core, name);
+      if (!Number.isInteger(id)) continue;
+      acquire(player, id);
+      player.getInventory().add(new core.Item(id, 1));
+      kept.push({ itemId: id, amount: 1 });
+    }
+    deposit(player, kept);
+    if (kept.length > 0) given.push(`${kept.map((good) => itemName(good.itemId).toLowerCase()).join(", ")} op de bank`);
     // Its Ranged and Magic sets too, in the bank (it wears the melee set): the best its levels and
     // coins allow, with arrows or runes, so it can switch styles as an account at its levels can.
     for (const [style, skill] of [["ranged", "RANGED"], ["magic", "MAGIC"]]) {

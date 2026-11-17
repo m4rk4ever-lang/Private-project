@@ -26,9 +26,9 @@
     { "name": "skiller", "count": 3, "levels": { "WOODCUTTING": 45, "MINING": 40, "FISHING": 45, "COOKING": 40, "FIREMAKING": 35, "FLETCHING": 30, "SMITHING": 25, "CRAFTING": 20, "THIEVING": 25, "AGILITY": 20 }, "quests": 3, "coins": 50000 },
     { "name": "middenmoot", "count": 2, "all": 40, "levels": { "ATTACK": 50, "STRENGTH": 50, "DEFENCE": 45, "HITPOINTS": 50, "PRAYER": 43 }, "quests": 15, "coins": 500000 },
     { "name": "mix", "count": 2, "random": [1, 70], "quests": 10, "coins": 250000 },
-    { "name": "midgame", "count": 2, "all": 60, "levels": { "ATTACK": 70, "STRENGTH": 70, "DEFENCE": 70, "HITPOINTS": 70, "PRAYER": 52, "RANGED": 70, "MAGIC": 70 }, "quests": 30, "coins": 5000000 },
-    { "name": "late game", "count": 2, "all": 80, "levels": { "ATTACK": 90, "STRENGTH": 90, "DEFENCE": 85, "HITPOINTS": 90, "PRAYER": 77, "RANGED": 90, "MAGIC": 90, "SLAYER": 85 }, "quests": 80, "coins": 100000000 },
-    { "name": "endgame", "count": 1, "all": 99, "quests": 200, "coins": 2000000000 }
+    { "name": "midgame", "count": 2, "all": 60, "levels": { "ATTACK": 70, "STRENGTH": 70, "DEFENCE": 70, "HITPOINTS": 70, "PRAYER": 52, "RANGED": 70, "MAGIC": 70 }, "quests": 30, "coins": 5000000, "wear": ["FIRE_CAPE"], "bank": ["AVAS_ACCUMULATOR"] },
+    { "name": "late game", "count": 2, "all": 80, "levels": { "ATTACK": 90, "STRENGTH": 90, "DEFENCE": 85, "HITPOINTS": 90, "PRAYER": 77, "RANGED": 90, "MAGIC": 90, "SLAYER": 85 }, "quests": 80, "coins": 100000000, "wear": ["INFERNAL_CAPE"], "bank": ["AVAS_ASSEMBLER", "IMBUED_SARADOMIN_CAPE"] },
+    { "name": "endgame", "count": 1, "all": 99, "quests": 200, "coins": 2000000000, "wear": ["INFERNAL_MAX_CAPE"], "bank": ["MAX_CAPE", "AVAS_ASSEMBLER", "IMBUED_SARADOMIN_CAPE"] }
   ],
   "logSize": 40,
   "quests": [
@@ -243,7 +243,7 @@
     }
   ],
   "bossChance": 0.25,
-  "generation": 17,
+  "generation": 18,
   "grandExchange": {
     "x": 3164,
     "y": 3487,
