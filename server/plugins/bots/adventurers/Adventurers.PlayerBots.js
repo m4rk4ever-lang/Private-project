@@ -574,6 +574,42 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return { task: Slayer.currentTask(emit, player) !== null };
   }
 
+  /**
+   * At the exchange (it has a bank): noted materials, as the exchange hands out a big lot, go
+   * into the bank and one bag's worth comes out as the item itself, as a player swaps them.
+   * Without this a bot stood with 14 noted herbs it could not use and its bid "never filled".
+   */
+  function swapNotes(buyer, buy) {
+    clearForProcessing(buyer, buy);
+    const notes = (buyer.getInventory().getItems() ?? []).filter((item) => item && item.getId() > 0
+      && buy.materials.includes(baseId(item.getId())) && baseId(item.getId()) !== item.getId())
+      .map((item) => ({ itemId: item.getId(), amount: item.getAmount() }));
+    if (notes.length > 0) deposit(buyer, notes);
+    for (const id of buy.materials) {
+      if (buyer.getInventory().getAmount(id) <= 0 && banked(buyer, id) > 0) {
+        withdraw(buyer, id, Math.min(buy.amount, Math.floor(27 / buy.materials.length)));
+      }
+    }
+  }
+
+  /**
+   * At a bank before a processing job: everything but its materials, the tool of the recipe and
+   * its coins goes in, as a player empties the bag before fletching or making potions (the
+   * owner's rule: only what is processed, and how, in the bag).
+   */
+  function clearForProcessing(banker, buy) {
+    const tool = buy.recipe.tool ? Shopping.idOf(core, buy.recipe.tool) : null;
+    const keep = new Set([...buy.materials, Trade.COINS, ...(Number.isInteger(tool) ? [tool] : [])]);
+    const goods = [];
+    for (const item of banker.getInventory().getItems() ?? []) {
+      const id = item?.getId?.() ?? -1;
+      if (!(id > 0) || keep.has(baseId(id)) || goods.some((good) => good.itemId === id)) continue;
+      goods.push({ itemId: id, amount: banker.getInventory().getAmount(id) });
+    }
+    const stored = deposit(banker, goods);
+    if (stored.length > 0) note(banker, `Zet op de bank voor ${buy.skill.toLowerCase()}: ${stored.slice(0, 5).map((good) => itemName(good.itemId).toLowerCase()).join(", ")}${stored.length > 5 ? ` en ${stored.length - 5} meer` : ""}.`, "activity");
+  }
+
   /** The materials it would buy for a skill now: { skill, recipe, itemId, name, amount, cost }, or null. */
   function buyPlan(player, skill) {
     const recipe = data.buyToTrain?.[skill];
@@ -1313,6 +1349,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       return walkTo(entry, to, {
         reason: "withdraw",
         arrive: (banker) => {
+          clearForProcessing(banker, buy);
           const share = Math.floor(28 / buy.materials.length) - 1;
           const got = buy.materials.reduce((sum, id) => sum + withdraw(banker, id, Math.min(buy.amount, share)), 0);
           if (got > 0) {
@@ -1328,17 +1365,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       reason: "buy_materials",
       arrive: (buyer) => {
         emit("ge:collect", { player: buyer });
-        // Noted materials (collected from the exchange as notes): into the bank, out as the item
-        // itself, as a player swaps them at the bank; they count before anything is bought.
-        const notes = (buyer.getInventory().getItems() ?? []).filter((item) => item && item.getId() > 0
-          && buy.materials.includes(baseId(item.getId())) && baseId(item.getId()) !== item.getId())
-          .map((item) => ({ itemId: item.getId(), amount: item.getAmount() }));
-        if (notes.length > 0) deposit(buyer, notes);
-        for (const id of buy.materials) {
-          if (buyer.getInventory().getAmount(id) <= 0 && banked(buyer, id) > 0) {
-            withdraw(buyer, id, Math.min(buy.amount, Math.floor(27 / buy.materials.length)));
-          }
-        }
+        swapNotes(buyer, buy);
         const missing = buy.materials.filter((id) => buyer.getInventory().getAmount(id) <= 0);
         if (missing.length === 0) {
           entry.resume = plan;
@@ -1348,7 +1375,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         // As many as its coins pay for (bag and bank; the exchange has a bank), keeping 200 over.
         const perLot = buy.cost / buy.amount;
         const wealth = Shopping.coinsOf(buyer) + banked(buyer, Trade.COINS);
-        const amount = Math.max(0, Math.min(buy.amount, Math.floor((wealth - 200) / Math.max(1, perLot))));
+        // A stock for several loads (up to ten bags), as a player buys a lot and banks it, when its
+        // coins allow it with half of them to spare; else one load.
+        const loads = Math.max(1, Math.min(10, Math.floor((wealth / 2) / Math.max(1, perLot * buy.amount))));
+        const amount = Math.max(0, Math.min(buy.amount * loads, Math.floor((wealth - 200) / Math.max(1, perLot))));
         // A lot of one or two is not worth the walk (and the next walk for the next one): ten at least.
         if (amount < Math.min(10, buy.amount)) {
           note(buyer, `Te weinig geld voor een partij ${missing.map(itemName).join(" en ")}; doet eerst iets anders.`, "activity");
@@ -1833,6 +1863,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       if (waiting) emit("ge:collect", { player: entry.player });
       const resume = entry.resume;
       const buy = buyPlan(entry.player, resume.skill);
+      // Collected as notes (a lot of ten bags): swapped at the exchange's bank first.
+      if (buy && distanceTo(entry.player, data.grandExchange) <= 15) swapNotes(entry.player, buy);
       if (buy && buy.materials.every((id) => entry.player.getInventory().getAmount(id) > 0)) {
         entry.resume = null;
         if (startBuyTraining(entry, resume, nowMs)) return;
