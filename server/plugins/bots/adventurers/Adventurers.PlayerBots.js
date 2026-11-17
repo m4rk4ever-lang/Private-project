@@ -44,6 +44,8 @@ const GOAL_ATTRIBUTE = "adventurers:goal";
 const GENERATION_ATTRIBUTE = "adventurers:generation";
 /** The test start an extra member got (applyTestProfile): shown, and kept out of the firsts. */
 const TEST_PROFILE_ATTRIBUTE = "adventurers:test-profile";
+// Its test start's weapons with charges were charged (scythe, trident, blowpipe ...).
+const CHARGED_ATTRIBUTE = "adventurers:charged";
 /** Quest and clue rewards (useRewards): never dropped as junk. */
 const REWARD_NAME = /antique lamp|casket|scroll box|clue scroll|clue bottle|clue nest|reward/i;
 /**
@@ -914,6 +916,79 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * own options (Pay-toll with 10 coins, else Open after the quest), and the walk sent again.
    * Bots on the Al Kharid side stood at the gate with millions and never paid it.
    */
+  // Ways between the surface and the map's underground (6400 tiles north: the Dwarven Mine, the
+  // Mining Guild, dungeons), from the live-game transport table the agents' travel_to uses
+  // (plugins/agent/data/transports.json, Shortest Path). Only plain ones: a skill level at most,
+  // no items, quests or varbits asked.
+  const UNDERGROUND_Y = 6400;
+  const LEVEL_HOPS = (() => {
+    try {
+      const data = require("../../agent/data/transports.json");
+      const rows = data?.transports?.transports ?? [];
+      const hops = [];
+      for (const [from, to, menu, id, skills, items, quests, varbits, varps] of rows) {
+        if (!Array.isArray(from) || !Array.isArray(to) || items || quests || varbits || varps) continue;
+        if ((from[1] >= UNDERGROUND_Y) === (to[1] >= UNDERGROUND_Y)) continue;
+        if (!/^(climb-(down|up)|enter|leave|exit|go-down|go-up|walk-down|walk-up)\b/i.test(String(menu ?? ""))) continue;
+        const needs = [...String(skills ?? "").matchAll(/(\d+)\s+([A-Za-z]+)/g)].map(([, level, skill]) => ({ level: Number(level), skill: skill.toUpperCase() }));
+        hops.push({ from: { x: from[0], y: from[1], z: from[2] }, to: { x: to[0], y: to[1], z: to[2] }, menu: String(menu), id, needs });
+      }
+      return hops;
+    } catch {
+      return [];
+    }
+  })();
+
+  /** The way down or up to reach `to` when it is on the other side of the ground, or null. */
+  function levelHop(player, to) {
+    const here = player.getLocation();
+    const goingDown = to.y >= UNDERGROUND_Y;
+    if ((here.getY() >= UNDERGROUND_Y) === goingDown) return null;
+    let best = null;
+    let bestCost = Infinity;
+    for (const hop of LEVEL_HOPS) {
+      if ((hop.to.y >= UNDERGROUND_Y) !== goingDown || hop.from.z !== here.getZ() || hop.to.z !== (to.z ?? 0)) continue;
+      if (hop.needs.some(({ level, skill }) => levelOf(player, skill) < level)) continue;
+      // The landing near the goal (the same mine or dungeon), the way in not too far off.
+      const landing = Math.max(Math.abs(hop.to.x - to.x), Math.abs(hop.to.y - to.y));
+      if (landing > 120) continue;
+      const cost = Math.max(Math.abs(hop.from.x - here.getX()), Math.abs(hop.from.y - here.getY())) + 3 * landing;
+      if (cost < bestCost) { bestCost = cost; best = hop; }
+    }
+    return best;
+  }
+
+  /** Clicks the hop's stairs or ladder (by its id near the tile, else by its name). */
+  function clickHop(player, hop) {
+    const [verb, ...rest] = hop.menu.split(" ");
+    const name = rest.join(" ").toLowerCase();
+    const seenOf = (object) => { try { return core.ObjectDefinition.forPlayer?.(object.getId(), player) ?? core.ObjectDefinition.forId(object.getId()); } catch { return core.ObjectDefinition.forId(object.getId()); } };
+    let found = null;
+    let best = Infinity;
+    for (let dx = -3; dx <= 3; dx += 1) {
+      for (let dy = -3; dy <= 3; dy += 1) {
+        for (const object of core.MapObjects?.mapObjects?.get?.(core.MapObjects.getHash(hop.from.x + dx, hop.from.y + dy, hop.from.z)) ?? []) {
+          const definition = seenOf(object);
+          const byId = object.getId() === hop.id;
+          if (!byId && String(definition?.getName?.() ?? "").toLowerCase() !== name) continue;
+          const index = (definition?.getInteractions?.() ?? []).findIndex((option) => String(option ?? "").toLowerCase() === verb.toLowerCase());
+          if (index < 0) continue;
+          const away = Math.max(Math.abs(dx), Math.abs(dy)) - (byId ? 0.5 : 0);
+          if (away < best) { best = away; found = { object, definition, index }; }
+        }
+      }
+    }
+    if (!found) return false;
+    const { object, definition, index } = found;
+    player.getMovementQueue().walkToObject(object, {
+      execute: () => world.emitObjectInteraction?.({
+        player, object, definition, objectId: object.getId(), clickType: index + 1,
+        location: { x: object.getLocation().getX(), y: object.getLocation().getY(), z: object.getLocation().getZ() }, handled: false,
+      }),
+    });
+    return true;
+  }
+
   const TOLL_GATE = { x: 3268, ys: [3227, 3228] };
   function crossTollGate(entry, player, to) {
     const at = player.getLocation();
@@ -1047,8 +1122,26 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
   }
 
-  function walkTo(entry, to, { reason, arrive = () => {}, replan = true, say = true, urgent = false } = {}) {
+  function walkTo(entry, to, { reason, arrive = () => {}, replan = true, say = true, urgent = false, hopped = false } = {}) {
     const run = runtimeEntry(entry.player);
+    // On the other side of the ground (the Dwarven Mine below Falador, the Mining Guild): first to
+    // the stairs or ladder, down or up as a player goes, then on from where it lands (tickAll).
+    const hop = hopped ? null : levelHop(entry.player, to);
+    if (hop) {
+      const options = { reason, arrive, replan, say, urgent };
+      return walkTo(entry, { ...hop.from, name: placeName(to) }, {
+        reason, replan, say: false, urgent, hopped: true,
+        arrive: (player) => {
+          if (!clickHop(player, hop)) {
+            note(player, `Vond de ${hop.menu.toLowerCase()} naar ${placeName(to)} niet.`, "activity");
+            return;
+          }
+          note(player, `${hop.menu.split(" ")[0].replace(/-/g, " ")} (${hop.menu.split(" ").slice(1).join(" ").toLowerCase()}) op weg naar ${placeName(to)}.`, "activity");
+          metric({ kind: "level_hop", bot: entry.name, menu: hop.menu, from: [hop.from.x, hop.from.y, hop.from.z], to: placeName(to) });
+          entry.afterHop = { to, options, down: hop.to.y >= UNDERGROUND_Y, until: now() + 20_000 };
+        },
+      });
+    }
     // On a rooftop course it first runs the course down (getOffRoof); no errand from up there.
     if (entry.offRoof && entry.player.getLocation().getZ() > 0 && reason !== "agility") return false;
     // `urgent`: a full bag to bank goes even while other errands rest after a failed one.
@@ -2122,6 +2215,25 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         if (brain) brain.paused = false;
         entry.until = 0;
       }
+      // Gone down or up the stairs on its way: on to the place itself once it has landed.
+      if (entry.afterHop) {
+        const hop = entry.afterHop;
+        const landed = (entry.player.getLocation().getY() >= UNDERGROUND_Y) === hop.down;
+        if (landed) {
+          entry.afterHop = null;
+          if (walkTo(entry, hop.to, { ...hop.options, hopped: true })) {
+            entry.lastTickAt = nowMs;
+            continue;
+          }
+        } else if (nowMs < hop.until) {
+          entry.lastTickAt = nowMs;
+          continue;
+        } else {
+          entry.afterHop = null;
+          note(entry.player, `Kwam niet ${hop.down ? "naar beneden" : "naar boven"} op weg naar ${placeName(hop.to)}.`, "activity");
+          entry.until = 0;
+        }
+      }
       watchGear(entry);
       joinClan(entry);
       // On its way to the job (a long walk to the Gnome Stronghold): the walk does not count
@@ -2351,7 +2463,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const id = best ? Shopping.idOf(core, best.item) : null;
       if (!Number.isInteger(id) || player.getInventory().getFreeSlots() < 1 || Shopping.owns(player, id)) continue;
       acquire(player, id);
-      player.getInventory().add(new core.Item(id, 1));
+      addCharged(player, id, 1);
       // Worn at once: the quests' rewards after this fill the bag (a late-game account got none).
       Shopping.wear(player, core, id);
       given.push(best.item);
@@ -2367,7 +2479,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const id = Shopping.idOf(core, name);
       if (!Number.isInteger(id)) continue;
       acquire(player, id);
-      player.getInventory().add(new core.Item(id, 1));
+      addCharged(player, id, 1);
       if (Shopping.wear(player, core, id)) given.push(name);
     }
     const kept = [];
@@ -2375,7 +2487,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const id = Shopping.idOf(core, name);
       if (!Number.isInteger(id)) continue;
       acquire(player, id);
-      player.getInventory().add(new core.Item(id, 1));
+      addCharged(player, id, 1);
       kept.push({ itemId: id, amount: 1 });
     }
     deposit(player, kept);
@@ -2403,7 +2515,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         const id = best ? Shopping.idOf(core, best.item) : null;
         if (!Number.isInteger(id) || player.getInventory().getFreeSlots() < 1) continue;
         acquire(player, id);
-        player.getInventory().add(new core.Item(id, slot === "ammo" ? 1000 : 1));
+        addCharged(player, id, slot === "ammo" ? 1000 : 1);
         banked.push({ itemId: id, amount: slot === "ammo" ? 1000 : 1 });
       }
       if (style === "magic") {
@@ -2493,6 +2605,20 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function carriesFood(player) {
     const Food = require("../../items/Food.plugin");
     return (player.getInventory().getItems() ?? []).some((item) => item && Food.isFoodItem(item.getId()));
+  }
+
+  /**
+   * Into the bag ready to use: a weapon with charges (a scythe of vitur, a trident, a blowpipe)
+   * comes charged, as a player who owns one keeps it. Given with none, the scythe turned into the
+   * uncharged one at its first hit, and the bot wore a rune scimitar and a square shield instead.
+   */
+  function addCharged(player, id, amount) {
+    const inventory = player.getInventory();
+    inventory.add(new core.Item(id, amount));
+    for (const item of inventory.getItems?.() ?? []) {
+      if (item?.getId?.() !== id) continue;
+      emit("item:fill-charges", { player, item, handled: false });
+    }
   }
 
   function levelOf(player, skillName) {
@@ -3238,8 +3364,24 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * At the Grand Exchange's bank: what it banked to sell comes out as notes, as a player
    * withdraws as notes to sell. Returns how many stacks came out.
    */
-  function withdrawToSell(player) {
+  /** What it keeps at the exchange: its supplies, and the materials of the job it is on or buying for. */
+  function keepAtExchange(player) {
     const keep = Trade.keepIds(player, core, { isFood });
+    const entry = adventurers.get(player.getUsername?.());
+    // Herblore with 127 kwuarm potions and limpwurt roots in the bank: sold them all at the
+    // exchange, then bought 140 of each back for the same job.
+    if (entry) {
+      for (const id of workingMaterials(entry)) {
+        keep.add(id);
+        const noted = core.ItemDefinition.forId(id)?.getNoteId?.();
+        if (Number.isInteger(noted) && noted > 0) keep.add(noted);
+      }
+    }
+    return keep;
+  }
+
+  function withdrawToSell(player) {
+    const keep = keepAtExchange(player);
     const inventory = player.getInventory();
     let taken = 0;
     // Saving up: it also sells materials it would keep (logs, gems, bars) until the sale covers
@@ -3381,7 +3523,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const stored = [...deposit(player, bag.keep), ...(entry ? [...bankUnusedSupplies(entry, player), ...bankUnusedTools(entry, player)] : [])];
     if (stored.length > 0) note(player, `Bewaart op de bank: ${stored.map((good) => itemName(good.itemId)).join(", ")}.`, "activity");
     const pulled = withdrawToSell(player);
-    const goods = Trade.goodsToSell(player, core, Trade.keepIds(player, core, { isFood }), { isFood });
+    const goods = Trade.goodsToSell(player, core, keepAtExchange(player), { isFood });
     const { collectedCoins, offered } = Trade.sellAtExchange(player, core, emit, goods);
     if (collectedCoins > 0) {
       note(player, `Haalt ${collectedCoins.toLocaleString("nl-NL")} gp op bij de Grand Exchange.`, "activity");
@@ -3460,7 +3602,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const rules = { levelOf: (skill) => levelOf(player, skill), questDone: questDone(player) };
     // Woodcutting or mining wields the axe or pickaxe: the weapon is not put back on mid-job
     // (that swapped battleaxe and rune axe back and forth all stretch).
-    const toolInHand = entry.phase === "training" && ["woodcutting", "mining"].includes(entry.plan?.mode);
+    // Also on the way to the bank and back in the middle of that job (phase "errand"): the
+    // battleaxe went on at every bank trip and the axe back on at the trees.
+    const gathering = (plan) => ["woodcutting", "mining"].includes(plan?.mode);
+    const toolInHand = (entry.phase === "training" || entry.phase === "errand") && (gathering(entry.plan) || gathering(entry.savedTask));
     for (const name of Trade.wearBest(player, core, rules, "melee", { skipWeapon: toolInHand })) {
       note(player, `Draagt nu ${name.toLowerCase().replace(/_/g, " ")}.`, "activity");
     }
@@ -3651,6 +3796,18 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       // An extra member that has no test start yet (it was made before the profiles) gets one now.
       if (Number(bot.getAttribute(GENERATION_ATTRIBUTE) ?? 0) < (data.generation ?? 1)
           || (testProfileOf(name) && !bot.getAttribute(TEST_PROFILE_ATTRIBUTE))) startOver(bot);
+      // A test start from before its weapons came charged (a scythe that turned uncharged at its
+      // first hit): charged once, everything it has, so it is not left with the rune scimitar.
+      if (testProfileOf(name) && !bot.getAttribute(CHARGED_ATTRIBUTE)) {
+        for (const container of [bot.getEquipment(), bot.getInventory(), ...(bot.getBanks?.() ?? [])]) {
+          for (const item of container?.getItems?.() ?? []) {
+            if (item?.getId?.() > 0) emit("item:fill-charges", { player: bot, item, handled: false });
+          }
+          container?.refreshItems?.();
+        }
+        bot.setAttribute(CHARGED_ATTRIBUTE, true);
+        Trade.wearBest(bot, core, { levelOf: (skill) => levelOf(bot, skill), questDone: questDone(bot) }, "melee");
+      }
       // It knows Death already: a death leaves a grave without the first-death tutorial.
       emit("gravestones:met-death", { player: bot });
       adventurers.get(name).savedTask = Tasks.freshTask(bot.getAttribute?.(TASK_ATTRIBUTE), Date.now());
@@ -4025,6 +4182,7 @@ function startAdventurers({ api, runtime, world, registry }) {
   api.persistAttribute(TASK_ATTRIBUTE, null);
   // Saved too: without it every restart started the test accounts over (applyTestProfile).
   api.persistAttribute(TEST_PROFILE_ATTRIBUTE, null);
+  api.persistAttribute(CHARGED_ATTRIBUTE, false);
   const manager = createAdventurers({ api, runtime, world, registry });
   api.onPlayerLevelUp(manager.onLevelUp);
   api.onCustomEvent("npc-drops:roll", manager.onDrops);

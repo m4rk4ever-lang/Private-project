@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Avonturiers kunnen trappen en ladders naar ondergronds nemen (en weer omhoog), zoals de Mining Guild onder Falador (vanaf Mining 60).
 - In `::teleports` staan nu ook de andere drie Desert Treasure II-bosses: Duke Sucellus (bij zijn poort), de Leviathan (bij de roeiboot) en de Whisperer (bij zijn kamer). Vardorvis stond er al.
 - Bij een dood van een avonturier staat in de logs wie hem het laatst raakte (met level), waar hij stierf, of hij eten en prayer had, en een grove reden (geen eten, sterkere tegenstander, verloor met eten bij zich).
 - Prayer potions zijn voorraad, net als eten: bij klussen zonder gevecht gaan ze naar de bank, en voor een boss haalt een avonturier ze eerst daar op (ook aangebroken potions) voordat hij nieuwe koopt.
@@ -178,6 +179,9 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers met een testprofiel krijgen wapens met charges (zoals de scythe of vitur) geladen. Eerder viel de scythe na de eerste klap terug naar uncharged en droegen ze een rune scimitar met rune sq shield. Bestaande testbots worden één keer bijgeladen.
+- Een avonturier die potions maakt verkoopt zijn eigen materialen (zoals kwuarm potion (unf) en limpwurt root) niet meer op de GE om ze daarna opnieuw te kopen.
+- Avonturiers die hakken of minen wisselen niet meer bij elk bankbezoek hun axe of pickaxe voor hun wapen (en terug).
 - Een `update` laat de Quest Helper-bridge nu draaien en start hem als hij er niet is; quests in het spel werken daardoor direct na een update.
 - Avonturiers starten geen tweede Quest Helper-bridge meer als de eerste druk bezig is.
 - `::advquestall` meldt niet meer dat de Quest Helper-bridge niet draait terwijl hij druk bezig is met de quests van de avonturiers. De bridge beantwoordt zijn controle nu ook als hij bezig is, en `update` bouwt en herstart hem als zijn code veranderd is.
