@@ -45,6 +45,8 @@ function isSupply(core, itemId) {
   const definition = core.ItemDefinition?.forId?.(itemId);
   const name = String(definition?.getName?.() ?? "").toLowerCase();
   if (/ rune$/.test(name) || / teleport$/.test(name) || /\(\d+\)$/.test(name) && /(glory|necklace|ring of|bracelet|pendant)/.test(name)) return true;
+  // Prayer restoring potions for its fights (Barrows, bosses): kept, never sold.
+  if (/^(prayer potion|super restore|sanfew serum)\(\d\)$/.test(name)) return true;
   const slot = definition?.getEquipmentType?.()?.getSlot?.();
   return Number.isInteger(slot) && slot === core.Equipment?.AMMUNITION_SLOT;
 }

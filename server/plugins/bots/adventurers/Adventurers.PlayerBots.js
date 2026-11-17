@@ -892,6 +892,25 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     { names: /^karil/i, prayer: "PROTECT_FROM_MISSILES", level: 40 },
     { names: /^ahrim/i, prayer: "PROTECT_FROM_MAGIC", level: 37 },
   ];
+  /** Restores prayer points: the first prayer potion or super restore in the bag, drunk. */
+  const PRAYER_RESTORE = /^(prayer potion|super restore|sanfew serum)\(\d\)$/i;
+  function drinkPrayer(entry, nowMs) {
+    const player = entry.player;
+    if (nowMs < (entry.drinkPrayerAt ?? 0) || !api.emitItemAction) return false;
+    const items = player.getInventory().getItems() ?? [];
+    const slot = items.findIndex((item) => item && item.getId() > 0
+      && PRAYER_RESTORE.test(String(core.ItemDefinition.forId(item.getId())?.getName?.() ?? "")));
+    if (slot < 0) return false;
+    const item = items[slot];
+    const actions = core.CacheDefinitions?.getItem?.(item.getId())?.inventoryActions ?? [];
+    const index = actions.findIndex((option) => option === "Drink");
+    if (index < 0) return false;
+    entry.drinkPrayerAt = nowMs + 3_000;
+    api.emitItemAction({ player, interfaceId: core.Inventory.INTERFACE_ID, item, itemId: item.getId(), slot,
+      clickType: index + 1, option: "Drink", handled: false });
+    return true;
+  }
+
   function protectionPrayer(entry, nowMs) {
     const player = entry.player;
     let PrayerHandler;
@@ -906,6 +925,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const points = player.getSkillManager().getCurrentLevel(core.Skill.PRAYER);
     if (want && levelOf(player, "PRAYER") >= want.level && points > 0) {
       entry.prayingUntil = nowMs + 8_000;
+      // Points running low: a prayer potion (or a super restore) drunk, as a player keeps the
+      // prayer up; without one the prayer goes off and the brother hits through.
+      if (points * 10 < levelOf(player, "PRAYER") * 3) drinkPrayer(entry, nowMs);
       const id = PrayerHandler[want.prayer];
       if (!PrayerHandler.isActivated(player, id)) PrayerHandler.activatePrayerPrayerId(player, id);
       return;
@@ -1342,6 +1364,22 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const entering = enterBoss(entry, plan, nowMs);
     if (entering === true) return true;
     if (entering === null) return false;
+    // Prayer potions along for a boss it prays against (Protect from Melee and up): its own from
+    // the bank, else bought, then back to this boss. Once in half an hour at most, so a bot too
+    // poor for them does not walk to the exchange before every fight.
+    if (levelOf(player, "PRAYER") >= 43 && PROTECT_AGAINST.some((entry) => entry.names.test(boss.name ?? "")) && nowMs >= (entry.prayerPotAt ?? 0)) {
+      const potion = Shopping.idOf(core, "PRAYER_POTION_4_");
+      const carried = (player.getInventory().getItems() ?? []).filter((item) => item && PRAYER_RESTORE.test(String(core.ItemDefinition.forId(item.getId())?.getName?.() ?? ""))).length;
+      if (Number.isInteger(potion) && carried < 2) {
+        entry.prayerPotAt = nowMs + 30 * 60_000;
+        entry.savedTask = { kind: "boss", bossId: boss.id, reason: plan.reason ?? "verder", remainingMs: 0, savedAt: now() };
+        if (acquireForQuest(entry, [potion], 4, "prayer potions")) {
+          note(player, `Gaat prayer potions halen voor ${boss.name}.`, "boss");
+          return true;
+        }
+        entry.savedTask = null;
+      }
+    }
     startActivity(player, boss.id, { home: boss, nowMs });
     walkTo(entry, boss, { reason: "boss", replan: false });
     entry.phase = "boss";
