@@ -935,6 +935,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
           return;
         }
         note(player, `Kwam niet bij ${placeName(to)}: de weg was versperd.`, "activity");
+        // From under the ground to a place above it: up the ladder at the next look.
+        if (here.getY() >= 6400 && to.y < 6400) entry.climbOut = true;
         countEvent(entry, "walkBlocked");
         unstrand(entry, player);
         const at = player.getLocation();
@@ -1501,7 +1503,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * then picks its next job; without this it stood on the roof and every quest failed there.
    */
   /** Upstairs (a house in Varrock, a bank's first floor): the nearest ladder or stairs down. */
-  function climbDown(entry, nowMs) {
+  function climbDown(entry, nowMs, way = "down") {
     const player = entry.player;
     const at = player.getLocation();
     if (nowMs < (entry.climbDownAt ?? 0)) return true;
@@ -1516,7 +1518,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
           const loc = object.getLocation();
           if (loc.getX() !== x || loc.getY() !== y || loc.getZ() !== at.getZ()) continue;
           const options = (core.ObjectDefinition.forId(object.getId())?.getInteractions?.() ?? []).map((o) => String(o ?? "").toLowerCase());
-          const index = options.findIndex((option) => option === "climb-down" || option === "climb down");
+          const index = options.findIndex((option) => option === `climb-${way}` || option === `climb ${way}`);
           if (index < 0) continue;
           const away = Math.max(Math.abs(dx), Math.abs(dy));
           if (away < bestAway) { best = object; bestAway = away; bestIndex = index; }
@@ -1532,7 +1534,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         location: { x: loc.getX(), y: loc.getY(), z: loc.getZ() }, handled: false,
       }),
     });
-    if (!entry.climbingDown) note(player, "Staat op een verdieping; gaat de ladder of trap af.", "activity");
+    if (!entry.climbingDown) note(player, way === "up" ? "Staat onder de grond; klimt de ladder op." : "Staat op een verdieping; gaat de ladder of trap af.", "activity");
     entry.climbingDown = true;
     return true;
   }
@@ -1554,8 +1556,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const player = entry.player;
     const at = player.getLocation();
     if (at.getZ() === 0) {
-      entry.climbingDown = false;
       entry.roofSince = null;
+      // Under the ground (a basement, a dungeon: y 6400 and up) after a walk from there failed
+      // (the Wizards' Tower basement to the GE): up the ladder first, then the walk again.
+      if (entry.climbOut && at.getY() >= 6400) {
+        if (climbDown(entry, nowMs, "up")) return true;
+      }
+      entry.climbOut = false;
+      entry.climbingDown = false;
       return false;
     }
     // Up there for minutes and the course does not bring it down (an obstacle it cannot do from
