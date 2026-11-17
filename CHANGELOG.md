@@ -185,6 +185,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers kopen de spade en teleporttablets voor de Barrows eerst op de GE, in plaats van te lopen naar een winkel die ze niet kunnen bereiken (zoals in Darkmeyer).
 - Ahrim the Blighted speelt zijn eigen aanvalsanimatie als hij een spreuk cast (hij stond stil terwijl zijn spreuken insloegen).
 - Avonturiers gooien geen questitems (sleutels, de magneet, een research package) en clue geodes meer weg als "waardeloos".
 - Avonturiers blijven niet meer uren staan na een boodschap die geen vervolg vroeg (een GE-aankoop voor de Barrows, een bankbezoek in Edgeville). Na 20 seconden zonder lopende boodschap pakken ze hun klus weer op.

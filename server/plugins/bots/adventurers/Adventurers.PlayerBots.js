@@ -1635,7 +1635,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       return null;
     }
     const label = itemName(id).toLowerCase();
-    if ((Shopping.shopsSelling(id).length > 0 && shopFor(entry, id, label, amount)) || buyOnExchange(entry, id, label, amount)) {
+    // The GE first: a shop that sells it can lie out of reach (a spade at Darkmeyer's general
+    // store, behind Sins of the Father, and the run gave up "without a spade").
+    if (buyOnExchange(entry, id, label, amount) || (Shopping.shopsSelling(id).length > 0 && shopFor(entry, id, label, amount))) {
       resume();
       return true;
     }
