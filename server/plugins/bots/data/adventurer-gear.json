@@ -20,6 +20,7 @@
       { "item": "TORVA_PLATEBODY", "skill": "DEFENCE", "level": 80 },
       { "item": "BANDOS_CHESTPLATE", "skill": "DEFENCE", "level": 65 },
       { "item": "DHAROKS_PLATEBODY", "skill": "DEFENCE", "level": 70 },
+      { "item": "OBSIDIAN_PLATEBODY", "skill": "DEFENCE", "level": 60 },
       { "item": "DRAGON_PLATEBODY", "skill": "DEFENCE", "level": 70 },
       { "item": "DRAGON_CHAINBODY", "skill": "DEFENCE", "level": 60 },
       { "item": "GRANITE_BODY", "skill": "DEFENCE", "level": 50, "also": { "STRENGTH": 50 } },
@@ -34,6 +35,7 @@
       { "item": "TORVA_PLATELEGS", "skill": "DEFENCE", "level": 80 },
       { "item": "BANDOS_TASSETS", "skill": "DEFENCE", "level": 65 },
       { "item": "DHAROKS_PLATELEGS", "skill": "DEFENCE", "level": 70 },
+      { "item": "OBSIDIAN_PLATELEGS", "skill": "DEFENCE", "level": 60 },
       { "item": "DRAGON_PLATELEGS", "skill": "DEFENCE", "level": 60 },
       { "item": "GRANITE_LEGS", "skill": "DEFENCE", "level": 50 },
       { "item": "RUNE_PLATELEGS", "skill": "DEFENCE", "level": 40 },
@@ -48,6 +50,8 @@
       { "item": "NEITIZNOT_FACEGUARD", "skill": "DEFENCE", "level": 70 },
       { "item": "DHAROKS_HELM", "skill": "DEFENCE", "level": 70 },
       { "item": "DRAGON_FULL_HELM", "skill": "DEFENCE", "level": 70 },
+      { "item": "OBSIDIAN_HELMET", "skill": "DEFENCE", "level": 60 },
+      { "item": "BERSERKER_HELM", "skill": "DEFENCE", "level": 45, "quests": ["The Fremennik Trials"] },
       { "item": "HELM_OF_NEITIZNOT", "skill": "DEFENCE", "level": 55, "quests": ["The Fremennik Isles"], "tier": "NEITIZNOT" },
       { "item": "DRAGON_MED_HELM", "skill": "DEFENCE", "level": 60 },
       { "item": "GRANITE_HELM", "skill": "DEFENCE", "level": 50 },
@@ -60,9 +64,11 @@
     "shield": [
       { "item": "AVERNIC_DEFENDER", "skill": "DEFENCE", "level": 70, "also": { "ATTACK": 70 } },
       { "item": "DRAGON_DEFENDER", "skill": "DEFENCE", "level": 60, "also": { "ATTACK": 60 } },
+      { "item": "DRAGONFIRE_SHIELD", "skill": "DEFENCE", "level": 75 },
       { "item": "DRAGON_KITESHIELD", "skill": "DEFENCE", "level": 70 },
       { "item": "DRAGON_SQ_SHIELD", "skill": "DEFENCE", "level": 60 },
       { "item": "GRANITE_SHIELD", "skill": "DEFENCE", "level": 50, "also": { "STRENGTH": 50 } },
+      { "item": "RUNE_DEFENDER", "skill": "DEFENCE", "level": 40, "also": { "ATTACK": 40 } },
       { "item": "RUNE_KITESHIELD", "skill": "DEFENCE", "level": 40 },
       { "item": "ADAMANT_KITESHIELD", "skill": "DEFENCE", "level": 30 },
       { "item": "MITHRIL_KITESHIELD", "skill": "DEFENCE", "level": 20 },
@@ -73,23 +79,28 @@
       { "item": "FEROCIOUS_GLOVES", "skill": "ATTACK", "level": 80, "also": { "DEFENCE": 80 } },
       { "item": "BARROWS_GLOVES", "skill": "DEFENCE", "level": 1, "quests": ["Recipe for Disaster"] },
       { "item": "DRAGON_GLOVES", "skill": "DEFENCE", "level": 1, "quests": ["Recipe for Disaster"] },
-      { "item": "COMBAT_BRACELET", "skill": "DEFENCE", "level": 1 }
+      { "item": "COMBAT_BRACELET", "skill": "DEFENCE", "level": 1 },
+      { "item": "LEATHER_GLOVES", "skill": "DEFENCE", "level": 1 }
     ],
     "feet": [
       { "item": "PRIMORDIAL_BOOTS", "skill": "DEFENCE", "level": 75, "also": { "STRENGTH": 75 } },
       { "item": "DRAGON_BOOTS", "skill": "DEFENCE", "level": 60 },
-      { "item": "RUNE_BOOTS", "skill": "DEFENCE", "level": 40 }
+      { "item": "RUNE_BOOTS", "skill": "DEFENCE", "level": 40 },
+      { "item": "LEATHER_BOOTS", "skill": "DEFENCE", "level": 1 }
     ],
     "neck": [
       { "item": "AMULET_OF_TORTURE", "skill": "HITPOINTS", "level": 75 },
       { "item": "AMULET_OF_FURY", "skill": "HITPOINTS", "level": 1 },
       { "item": "AMULET_OF_STRENGTH", "skill": "HITPOINTS", "level": 1 },
-      { "item": "AMULET_OF_POWER", "skill": "HITPOINTS", "level": 1 }
+      { "item": "AMULET_OF_POWER", "skill": "HITPOINTS", "level": 1 },
+      { "item": "AMULET_OF_DEFENCE", "skill": "HITPOINTS", "level": 1 }
     ]
   },
   "styles": {
     "ranged": {
       "weapon": [
+        { "item": "TWISTED_BOW", "skill": "RANGED", "level": 85 },
+        { "item": "DARK_BOW", "skill": "RANGED", "level": 60 },
         { "item": "MAGIC_SHORTBOW", "skill": "RANGED", "level": 50 },
         { "item": "YEW_SHORTBOW", "skill": "RANGED", "level": 40 },
         { "item": "MAPLE_SHORTBOW", "skill": "RANGED", "level": 30 },
@@ -98,6 +109,8 @@
         { "item": "SHORTBOW", "skill": "RANGED", "level": 1 }
       ],
       "ammo": [
+        { "item": "DRAGON_ARROW", "skill": "RANGED", "level": 60 },
+        { "item": "AMETHYST_ARROW", "skill": "RANGED", "level": 50 },
         { "item": "RUNE_ARROW", "skill": "RANGED", "level": 40 },
         { "item": "ADAMANT_ARROW", "skill": "RANGED", "level": 30 },
         { "item": "MITHRIL_ARROW", "skill": "RANGED", "level": 20 },
@@ -106,39 +119,110 @@
         { "item": "BRONZE_ARROW", "skill": "RANGED", "level": 1 }
       ],
       "body": [
+        { "item": "MASORI_BODY", "skill": "RANGED", "level": 80, "also": { "DEFENCE": 30 } },
+        { "item": "ARMADYL_CHESTPLATE", "skill": "RANGED", "level": 70, "also": { "DEFENCE": 40 } },
+        { "item": "KARILS_LEATHERTOP", "skill": "RANGED", "level": 70, "also": { "DEFENCE": 70 } },
+        { "item": "BLACK_DHIDE_BODY", "skill": "RANGED", "level": 70, "also": { "DEFENCE": 40 } },
+        { "item": "RED_DHIDE_BODY", "skill": "RANGED", "level": 60, "also": { "DEFENCE": 40 } },
+        { "item": "BLUE_DHIDE_BODY", "skill": "RANGED", "level": 50, "also": { "DEFENCE": 40 } },
         { "item": "GREEN_DHIDE_BODY", "skill": "RANGED", "level": 40 },
         { "item": "STUDDED_BODY", "skill": "RANGED", "level": 20 },
         { "item": "LEATHER_BODY", "skill": "DEFENCE", "level": 10 }
       ],
       "legs": [
+        { "item": "MASORI_CHAPS", "skill": "RANGED", "level": 80, "also": { "DEFENCE": 30 } },
+        { "item": "ARMADYL_CHAINSKIRT", "skill": "RANGED", "level": 70, "also": { "DEFENCE": 40 } },
+        { "item": "KARILS_LEATHERSKIRT", "skill": "RANGED", "level": 70, "also": { "DEFENCE": 70 } },
+        { "item": "BLACK_DHIDE_CHAPS", "skill": "RANGED", "level": 70 },
+        { "item": "RED_DHIDE_CHAPS", "skill": "RANGED", "level": 60 },
+        { "item": "BLUE_DHIDE_CHAPS", "skill": "RANGED", "level": 50 },
         { "item": "GREEN_DHIDE_CHAPS", "skill": "RANGED", "level": 40 },
         { "item": "STUDDED_CHAPS", "skill": "RANGED", "level": 20 },
         { "item": "LEATHER_CHAPS", "skill": "RANGED", "level": 1 }
       ],
       "hands": [
+        { "item": "ZARYTE_VAMBRACES", "skill": "RANGED", "level": 80, "also": { "DEFENCE": 45 } },
+        { "item": "BLACK_DHIDE_VAMBRACES", "skill": "RANGED", "level": 70 },
         { "item": "GREEN_DHIDE_VAMBRACES", "skill": "RANGED", "level": 40 },
         { "item": "LEATHER_VAMBRACES", "skill": "RANGED", "level": 1 }
       ],
       "head": [
-        { "item": "COIF", "skill": "RANGED", "level": 20 }
+        { "item": "MASORI_MASK", "skill": "RANGED", "level": 80, "also": { "DEFENCE": 30 } },
+        { "item": "ARMADYL_HELMET", "skill": "RANGED", "level": 70, "also": { "DEFENCE": 40 } },
+        { "item": "KARILS_COIF", "skill": "RANGED", "level": 70, "also": { "DEFENCE": 70 } },
+        { "item": "ARCHER_HELM", "skill": "DEFENCE", "level": 45, "quests": ["The Fremennik Trials"] },
+        { "item": "ROBIN_HOOD_HAT", "skill": "RANGED", "level": 40 },
+        { "item": "COIF", "skill": "RANGED", "level": 20 },
+        { "item": "LEATHER_COWL", "skill": "RANGED", "level": 1 }
+      ],
+      "feet": [
+        { "item": "PEGASIAN_BOOTS", "skill": "RANGED", "level": 75, "also": { "DEFENCE": 75 } },
+        { "item": "RANGER_BOOTS", "skill": "RANGED", "level": 40 },
+        { "item": "SNAKESKIN_BOOTS", "skill": "RANGED", "level": 30, "also": { "DEFENCE": 30 } },
+        { "item": "LEATHER_BOOTS", "skill": "DEFENCE", "level": 1 }
+      ],
+      "neck": [
+        { "item": "NECKLACE_OF_ANGUISH", "skill": "HITPOINTS", "level": 75 },
+        { "item": "AMULET_OF_POWER", "skill": "HITPOINTS", "level": 1 }
       ]
     },
     "magic": {
       "weapon": [
+        { "item": "KODAI_WAND", "skill": "MAGIC", "level": 75 },
+        { "item": "STAFF_OF_THE_DEAD", "skill": "MAGIC", "level": 75, "also": { "ATTACK": 75 } },
+        { "item": "MASTER_WAND", "skill": "MAGIC", "level": 60 },
+        { "item": "MYSTIC_FIRE_STAFF", "skill": "MAGIC", "level": 40 },
+        { "item": "FIRE_BATTLESTAFF", "skill": "MAGIC", "level": 30, "also": { "ATTACK": 30 } },
         { "item": "STAFF_OF_FIRE", "skill": "MAGIC", "level": 1 },
         { "item": "STAFF_OF_AIR", "skill": "MAGIC", "level": 1 }
       ],
       "body": [
+        { "item": "ANCESTRAL_ROBE_TOP", "skill": "MAGIC", "level": 75, "also": { "DEFENCE": 65 } },
+        { "item": "AHRIMS_ROBETOP", "skill": "MAGIC", "level": 70, "also": { "DEFENCE": 70 } },
+        { "item": "INFINITY_TOP", "skill": "MAGIC", "level": 50, "also": { "DEFENCE": 25 } },
+        { "item": "SPLITBARK_BODY", "skill": "MAGIC", "level": 40, "also": { "DEFENCE": 40 } },
         { "item": "MYSTIC_ROBE_TOP", "skill": "MAGIC", "level": 40 },
         { "item": "BLUE_WIZARD_ROBE", "skill": "MAGIC", "level": 1 }
       ],
       "legs": [
+        { "item": "ANCESTRAL_ROBE_BOTTOM", "skill": "MAGIC", "level": 75, "also": { "DEFENCE": 65 } },
+        { "item": "AHRIMS_ROBESKIRT", "skill": "MAGIC", "level": 70, "also": { "DEFENCE": 70 } },
+        { "item": "INFINITY_BOTTOMS", "skill": "MAGIC", "level": 50, "also": { "DEFENCE": 25 } },
+        { "item": "SPLITBARK_LEGS", "skill": "MAGIC", "level": 40, "also": { "DEFENCE": 40 } },
         { "item": "MYSTIC_ROBE_BOTTOM", "skill": "MAGIC", "level": 40 },
         { "item": "BLUE_SKIRT", "skill": "MAGIC", "level": 1 }
       ],
       "head": [
+        { "item": "ANCESTRAL_HAT", "skill": "MAGIC", "level": 75, "also": { "DEFENCE": 65 } },
+        { "item": "AHRIMS_HOOD", "skill": "MAGIC", "level": 70, "also": { "DEFENCE": 70 } },
+        { "item": "INFINITY_HAT", "skill": "MAGIC", "level": 50, "also": { "DEFENCE": 25 } },
+        { "item": "FARSEER_HELM", "skill": "DEFENCE", "level": 45, "quests": ["The Fremennik Trials"] },
+        { "item": "SPLITBARK_HELM", "skill": "MAGIC", "level": 40, "also": { "DEFENCE": 40 } },
         { "item": "MYSTIC_HAT", "skill": "MAGIC", "level": 40 },
         { "item": "BLUE_WIZARD_HAT", "skill": "MAGIC", "level": 1 }
+      ],
+      "hands": [
+        { "item": "TORMENTED_BRACELET", "skill": "MAGIC", "level": 75 },
+        { "item": "INFINITY_GLOVES", "skill": "MAGIC", "level": 50, "also": { "DEFENCE": 25 } },
+        { "item": "SPLITBARK_GAUNTLETS", "skill": "MAGIC", "level": 40, "also": { "DEFENCE": 40 } },
+        { "item": "MYSTIC_GLOVES", "skill": "MAGIC", "level": 40, "also": { "DEFENCE": 20 } },
+        { "item": "LEATHER_GLOVES", "skill": "DEFENCE", "level": 1 }
+      ],
+      "feet": [
+        { "item": "ETERNAL_BOOTS", "skill": "MAGIC", "level": 75, "also": { "DEFENCE": 75 } },
+        { "item": "INFINITY_BOOTS", "skill": "MAGIC", "level": 50, "also": { "DEFENCE": 25 } },
+        { "item": "SPLITBARK_BOOTS", "skill": "MAGIC", "level": 40, "also": { "DEFENCE": 40 } },
+        { "item": "MYSTIC_BOOTS", "skill": "MAGIC", "level": 40, "also": { "DEFENCE": 20 } },
+        { "item": "WIZARD_BOOTS", "skill": "MAGIC", "level": 20 }
+      ],
+      "shield": [
+        { "item": "MAGES_BOOK", "skill": "MAGIC", "level": 60 },
+        { "item": "BOOK_OF_DARKNESS", "skill": "MAGIC", "level": 30 }
+      ],
+      "neck": [
+        { "item": "OCCULT_NECKLACE", "skill": "MAGIC", "level": 70 },
+        { "item": "AMULET_OF_POWER", "skill": "HITPOINTS", "level": 1 },
+        { "item": "AMULET_OF_MAGIC", "skill": "HITPOINTS", "level": 1 }
       ]
     }
   },
@@ -150,6 +234,8 @@
       { "item": "KNIFE", "skill": "FLETCHING", "level": 1 }
     ],
     "axe": [
+      { "item": "CRYSTAL_AXE", "skill": "WOODCUTTING", "level": 71, "also": { "AGILITY": 50 }, "quests": ["Song of the Elves"] },
+      { "item": "DRAGON_AXE", "skill": "WOODCUTTING", "level": 61 },
       { "item": "RUNE_AXE", "skill": "WOODCUTTING", "level": 41 },
       { "item": "ADAMANT_AXE", "skill": "WOODCUTTING", "level": 31 },
       { "item": "MITHRIL_AXE", "skill": "WOODCUTTING", "level": 21 },
@@ -158,6 +244,8 @@
       { "item": "BRONZE_AXE", "skill": "WOODCUTTING", "level": 1 }
     ],
     "pickaxe": [
+      { "item": "CRYSTAL_PICKAXE", "skill": "MINING", "level": 71, "also": { "AGILITY": 50 }, "quests": ["Song of the Elves"] },
+      { "item": "DRAGON_PICKAXE", "skill": "MINING", "level": 61 },
       { "item": "RUNE_PICKAXE", "skill": "MINING", "level": 41 },
       { "item": "ADAMANT_PICKAXE", "skill": "MINING", "level": 31 },
       { "item": "MITHRIL_PICKAXE", "skill": "MINING", "level": 21 },

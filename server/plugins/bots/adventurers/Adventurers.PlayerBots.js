@@ -869,6 +869,43 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * that failed from about the same spot in fifteen minutes and it casts the home teleport, as a
    * player who is stuck does (its plugin keeps the 30-minute cooldown and the combat check).
    */
+  /**
+   * The Al Kharid toll gate beside it, on the far side of where it is going: clicked through its
+   * own options (Pay-toll with 10 coins, else Open after the quest), and the walk sent again.
+   * Bots on the Al Kharid side stood at the gate with millions and never paid it.
+   */
+  const TOLL_GATE = { x: 3268, ys: [3227, 3228] };
+  function crossTollGate(entry, player, to) {
+    const at = player.getLocation();
+    if (at.getZ() !== 0 || Math.abs(at.getX() - TOLL_GATE.x) > 2 || at.getY() < 3225 || at.getY() > 3230) return false;
+    const goingWest = to.x < TOLL_GATE.x && at.getX() >= TOLL_GATE.x;
+    const goingEast = to.x >= TOLL_GATE.x && at.getX() < TOLL_GATE.x;
+    if (!goingWest && !goingEast) return false;
+    if (now() < (entry.tollAt ?? 0)) return false;
+    entry.tollAt = now() + 15_000;
+    const y = TOLL_GATE.ys.includes(at.getY()) ? at.getY() : TOLL_GATE.ys[0];
+    const gate = (core.MapObjects?.mapObjects?.get?.(core.MapObjects.getHash(TOLL_GATE.x, y, 0)) ?? [])
+      .find((object) => /gate/i.test(String(core.ObjectDefinition.forId(object.getId())?.getName?.() ?? "")));
+    if (!gate) return false;
+    const seen = (() => { try { return core.ObjectDefinition.forPlayer?.(gate.getId(), player) ?? core.ObjectDefinition.forId(gate.getId()); } catch { return core.ObjectDefinition.forId(gate.getId()); } })();
+    const options = (seen?.getInteractions?.() ?? []).map((option) => String(option ?? ""));
+    let index = options.findIndex((option) => /^pay-toll/i.test(option));
+    if (index < 0 || player.getInventory().getAmount(Trade.COINS) < 10) index = options.findIndex((option) => /^open$/i.test(option));
+    if (index < 0) return false;
+    const loc = gate.getLocation();
+    player.getMovementQueue().walkToObject(gate, {
+      execute: () => world.emitObjectInteraction?.({
+        player, object: gate, objectId: gate.getId(), clickType: index + 1,
+        location: { x: loc.getX(), y: loc.getY(), z: loc.getZ() }, handled: false,
+      }),
+    });
+    note(player, `Gaat door de tolpoort van Al Kharid (${options[index].toLowerCase()}).`, "activity");
+    metric({ kind: "toll_gate", bot: entry.name, option: options[index], to: placeName(to), where: [at.getX(), at.getY(), at.getZ()] });
+    // After the crossing: the walk again (the quest or the job asks for it on its next look).
+    if (entry.phase === "errand") entry.until = now() + 5_000;
+    return true;
+  }
+
   /** The home teleport through its plugin (cooldown, combat check, animation); true when cast. */
   function castHome(player) {
     const check = { player, check: true, ready: false, destination: null };
@@ -1002,6 +1039,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
           }
           return;
         }
+        // At the Al Kharid toll gate and the walk got no further: through it as a player does
+        // (Pay-toll, or Open after Prince Ali Rescue), then the walk again from the other side.
+        if (crossTollGate(entry, player, to)) return;
         note(player, `Kwam niet bij ${placeName(to)}: de weg was versperd.`, "activity");
         // From under the ground to a place above it: up the ladder at the next look.
         if (here.getY() >= 6400 && to.y < 6400) entry.climbOut = true;
@@ -2141,6 +2181,36 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     player.getEquipment().refreshItems?.();
     };
     giveGear();
+    // Its Ranged and Magic sets too, in the bank (it wears the melee set): the best its levels and
+    // coins allow, with arrows or runes, so it can switch styles as an account at its levels can.
+    for (const [style, skill] of [["ranged", "RANGED"], ["magic", "MAGIC"]]) {
+      if (levelOf(player, skill) < 20) continue;
+      const budget = Math.max(5_000, Number(profile.coins) || 0);
+      const banked = [];
+      for (const [slot, list] of Object.entries(Shopping.gear.styles?.[style] ?? {})) {
+        const best = list.find((entry) => Shopping.allowed(entry, helpers) && Number.isInteger(Shopping.idOf(core, entry.item))
+          && Value.itemValue(core, Shopping.idOf(core, entry.item), 1) * (slot === "ammo" ? 1000 : 1) <= budget);
+        const id = best ? Shopping.idOf(core, best.item) : null;
+        if (!Number.isInteger(id) || player.getInventory().getFreeSlots() < 1) continue;
+        acquire(player, id);
+        player.getInventory().add(new core.Item(id, slot === "ammo" ? 1000 : 1));
+        banked.push({ itemId: id, amount: slot === "ammo" ? 1000 : 1 });
+      }
+      if (style === "magic") {
+        const level = levelOf(player, skill);
+        const runes = [["AIR_RUNE", 2000], ["MIND_RUNE", 500], ["FIRE_RUNE", 1000], ...(level >= 35 ? [["CHAOS_RUNE", 500]] : []),
+          ...(level >= 60 ? [["DEATH_RUNE", 500]] : []), ...(level >= 80 ? [["BLOOD_RUNE", 500]] : [])];
+        for (const [name, amount] of runes) {
+          const id = Shopping.idOf(core, name);
+          if (!Number.isInteger(id) || Value.itemValue(core, id, amount) > budget / 4) continue;
+          acquire(player, id);
+          player.getInventory().add(new core.Item(id, amount));
+          banked.push({ itemId: id, amount });
+        }
+      }
+      deposit(player, banked);
+      if (banked.length > 0) given.push(`${style}-set op de bank`);
+    }
     const registered = questsByName();
     let done = 0;
     for (const quest of data.quests ?? []) {
@@ -3105,6 +3175,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const definition = core.ItemDefinition.forId(id);
       const slot = definition?.getEquipmentType?.()?.getSlot?.();
       if (!Number.isInteger(slot) || slot < 0 || slot === ammoSlot || equipment[slot]?.getId?.() > 0) return;
+      // The shield slot stays empty beside a two-handed weapon (a scythe).
+      if (slot === (core.Equipment?.SHIELD_SLOT ?? 5) && Trade.twoHanded(player, core)) return;
       if (definition.isNoted?.() || !mayWear(definition)) return;
       const value = Value.itemValue(core, id, 1);
       if (!best.has(slot) || value > best.get(slot).value) best.set(slot, { id, value });

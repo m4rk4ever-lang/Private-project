@@ -120,6 +120,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- De gear-lijsten voor alle drie de vechtstijlen lopen nu van level 1 tot endgame, met de tussenstappen ertussen: voor ranged onder meer d'hide, Karil's, Armadyl, Masori en de Twisted bow; voor magic onder meer splitbark, Infinity, Ahrim's, Ancestral en de Kodai wand; plus dragon- en crystal-tools. Testprofielen met Ranged of Magic krijgen die set met pijlen of runes op de bank.
 - Testopzet: geen wereldbots meer (site-bots en wilderness-bots staan op 0, met de nieuwe instelling `PlayerBots:wildernessBots`), en 15 extra avonturiers per clan (60 in totaal). Alle avonturiers beginnen opnieuw in Lumbridge. De originele accounts starten als nieuw account op level 3; de extra's krijgen een testprofiel van vroege vechter tot endgame (combat 126, alles 99, 2 miljard coins), met gear die past bij hun levels en geld.
 - De gear-lijsten van avonturiers lopen nu door tot endgame: Scythe of Vitur, Osmumten's fang, Torva, avernic defender, ferocious gloves, primordial boots en amulet of torture. Er zijn ook slots voor handschoenen, laarzen en amulet bijgekomen.
 - Elke avonturier heeft een eigen smaak in uitrusting: een scimitar, longsword, battleaxe, mace of warhammer, een kite- of square shield, een full of medium helm, een platebody of chainbody, platelegs of een plateskirt, en een cape in zijn eigen kleur zodra hij wat geld over heeft. Zo lopen ze niet meer allemaal in hetzelfde rond.
@@ -169,6 +170,8 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Een avonturier die aan de Al Kharid-kant van de tolpoort bleef staan (met genoeg coins) betaalt nu de tol of opent de poort na Prince Ali Rescue, en loopt daarna verder.
+- Een schild duwde een two-handed wapen (zoals de Scythe) uit de hand: de wooden shield van Tutorial Island werd in het lege schildslot gezet. Naast een two-hander blijft het schildslot nu leeg.
 - Een avonturier met een two-handed wapen (zoals een Scythe) trekt er geen schild bij aan; schild en wapen duwden elkaar steeds af.
 - Na een volledige reset loopt een avonturier niet meer terug naar de plek van zijn oude account.
 - Een avonturier die onder de grond staat (zoals in de kelder van de Wizards' Tower) en niet bij een plek boven de grond kan komen, klimt eerst de ladder op en probeert het dan opnieuw.

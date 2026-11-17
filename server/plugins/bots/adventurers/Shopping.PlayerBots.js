@@ -278,6 +278,14 @@ function buy(player, core, shopId, itemId, amount = 1) {
 function wear(player, core, itemId) {
   const inventorySlot = player.getInventory().getItems().findIndex((item) => item?.getId?.() === itemId);
   if (inventorySlot < 0) return false;
+  // No shield beside a two-handed weapon (a scythe, a bow): the game would take the weapon off for
+  // it (a wooden shield from Tutorial Island took a scythe off this way).
+  const definition = core.ItemDefinition?.forId?.(itemId);
+  const shieldSlot = core.Equipment?.SHIELD_SLOT ?? 5;
+  if (definition?.getEquipmentType?.()?.getSlot?.() === shieldSlot) {
+    const weapon = player.getEquipment().getItems()?.[core.Equipment?.WEAPON_SLOT ?? 3];
+    if (weapon && weapon.getId() > 0 && core.ItemDefinition?.forId?.(weapon.getId())?.isDoubleHanded?.() === true) return false;
+  }
   core.EquipPacketListener.equip(player, itemId, inventorySlot, core.Inventory.INTERFACE_ID);
   return (player.getEquipment().getItems() ?? []).some((item) => item?.getId?.() === itemId);
 }
