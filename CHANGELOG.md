@@ -185,6 +185,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers vechten tijdens een Barrows-run weer terug tegen de broers; hun aanval werd afgebroken alsof ze onderweg waren.
 - Een avonturier op weg naar een boss verkoopt zijn net gekochte spade, tablets en prayer potions niet meer meteen op de GE.
 - Een avonturier met een volle tas die zijn prayer potions noted ontving, bleef op de GE nieuwe kopen. Hij ruilt ze nu op de bank om voor drinkbare potions en zet zijn reserve-uitrusting daar neer.
 - Avonturiers kopen de spade en teleporttablets voor de Barrows eerst op de GE, in plaats van te lopen naar een winkel die ze niet kunnen bereiken (zoals in Darkmeyer).

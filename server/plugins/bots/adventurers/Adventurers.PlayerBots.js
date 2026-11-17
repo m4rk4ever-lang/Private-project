@@ -3182,7 +3182,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
     // Not out to fight (a quest, an errand, fishing): what attacks it on the way (Draynor Manor's
     // trees, a rat) is walked away from, as a player clicks on, not fought where it stands.
-    const fightingJob = entry.phase === "boss" || (entry.phase === "training" && DANGER_MODES.has(entry.plan?.mode) && entry.plan?.mode !== "thieving");
+    // A Barrows run is a fight too: without it the bot broke off every attack on Ahrim.
+    const fightingJob = entry.phase === "boss" || entry.phase === "barrows" || (entry.phase === "training" && DANGER_MODES.has(entry.plan?.mode) && entry.plan?.mode !== "thieving");
     // Auto-retaliate on only for a fight (as a player turns it off to walk past things).
     if (fightingJob !== (entry.retaliating ?? true)) {
       entry.retaliating = fightingJob;
