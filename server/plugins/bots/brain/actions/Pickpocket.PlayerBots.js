@@ -78,25 +78,24 @@ function createPickpocketAction(spec = {}, world = {}) {
 
   function nearestTarget(player, nowMs = Date.now()) {
     const here = player.getLocation();
-    let best = null;
-    let bestDistance = Infinity;
     // Every NPC around it, as TrainCombat looks: a bot has no client, so its local NPC list
     // (filled by the client update) can stay empty and it never found anyone to steal from.
     const near = world.core?.World?.getNpcsNear?.(here, SEARCH_TILES, player.getPrivateArea?.() ?? null);
+    const candidates = [];
     for (const npc of near ?? player.getLocalNpcs?.() ?? []) {
       if (!npc || npc.isRegistered?.() === false || !names.has(nameOf(npc, player).toLowerCase())) continue;
       if ((avoided.get(npc) ?? 0) > nowMs) continue;
       const distance = chebyshev(npc.getLocation(), here);
-      if (distance <= SEARCH_TILES && distance < bestDistance) {
-        best = npc;
-        bestDistance = distance;
-      }
+      if (distance <= SEARCH_TILES) candidates.push({ npc, distance });
     }
-    if (best && !reachable(player, best)) {
-      avoided.set(best, nowMs + AVOID_MS);
-      return null;
+    candidates.sort((a, b) => a.distance - b.distance);
+    // The nearest one it can walk to, not the nearest as the crow flies: a man inside a house
+    // with a closed door was picked again and again while one stood outside beside it.
+    for (const { npc } of candidates.slice(0, 5)) {
+      if (reachable(player, npc)) return npc;
+      avoided.set(npc, nowMs + AVOID_MS);
     }
-    return best;
+    return null;
   }
 
   /** Opens every coin pouch into coins, as "Open-all" does. */

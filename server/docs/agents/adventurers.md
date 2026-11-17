@@ -205,6 +205,7 @@ De metrics-regels, op `kind`:
   (de eigen uitleg van de actie, zoals site/target/approach bij combat), `npcsNear` (naam (level): aantal), `hp`, `freeSlots`.
 - `quest_done`: een voltooide quest: duur, aantal stappen en de gesprekskeuzes (`dialogue`: opties en wat hij koos).
 - `quest_fetch`: wat hij voor een quest ging halen (aangeraden of nodig) en of hij het na de boodschap echt in zijn tas had (`got`, `have`, `minutes`). Zo volgt op elke "gaat ... halen" in de log of het gelukt is.
+- `teleport`: elke teleport onderweg (spreuk, tablet, sieraad of home teleport), met waarheen en waarvoor. Ook als regel in het activiteitenlog.
   Mislukte quests staan in `adventurer-quest-feedback.jsonl`, nu ook met `dialogue`.
 - `stranded`: de bot teleporteerde naar huis omdat hij drie keer vanaf dezelfde plek vastliep (`teleportedOut` in `events`).
 - `death`: een avonturier stierf: fase, klus of quest, plek, door wie (`killer`) en of hij eten had (`hadFood`).

@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Teleporteert een avonturier onderweg (spreuk, tablet, sieraad of home teleport), dan staat dat in zijn activiteitenlog.
 - Als een avonturier iets gaat halen voor een quest, controleert hij daarna of het echt in zijn tas zit. In het log staat dan "Heeft ..." of "Kon ... niet halen".
 - Kan een avonturier een quest-item niet kopen, dan verzamelt hij het zelf als het een grondstof is (clay mijnen voor Doric's Quest, logs hakken, vis vangen) en gaat hij daarna terug naar zijn quest. Daarvoor is er een nieuwe bot-activiteit: clay minen.
 - Het spel start de Quest Helper-bridge zelf (en opnieuw als hij stopt) als die gebouwd is maar niet draait; zonder bridge liepen alle quests van de avonturiers na twee minuten vast. Uit te zetten met ADVENTURER_START_BRIDGE=0.
@@ -163,6 +164,8 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers in een quest liepen eindeloos een trap op en af (bijvoorbeeld bij de Duke in Lumbridge castle), omdat ze na de trap nog een oude Quest Helper-stap volgden. Ze wachten nu op een stap die ná de trap gevraagd is, kiezen bij een trap met twee kanten de richting die de stap aangeeft, en de trap telt niet als mislukte poging. Rune Mysteries komt zo tot in de kelder van de Wizards' Tower.
+- Een avonturier die zakken rolt, kiest de dichtstbijzijnde man waar hij ook echt heen kan lopen, niet een man achter een dichte deur.
 - Een avonturier op een verdieping met een quest-doel, zoals de Wizards' Tower-ladder of een trap, loopt naar de vrije tegel ernaast. Eerder liep hij naar de ladder zelf en meldde hij "de weg was versperd".
 - Een bovenverdieping vlak bij een agility-baan (zoals Lumbridge castle bij de Duke) telt niet meer als dak van die baan; alleen echt op de baan loopt een avonturier hem eerst af.
 - Bij `::advquestall` faalden bijna alle quests tegelijk met "fetch failed", omdat dertig avonturiers de Quest Helper tegelijk om een stap vroegen. Nu vragen er maximaal vier tegelijk. De helper gaat pas uit na drie mislukte vragen op rij, en dan maar twee minuten; een lopende quest wacht tot vijf minuten op een herstartende helper.

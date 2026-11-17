@@ -221,6 +221,14 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     const options = (definition?.getInteractions?.() ?? []).map((o) => String(o ?? ""));
     const text = String(step.text ?? "").toLowerCase();
     let index = options.findIndex((o) => o && text.includes(o.toLowerCase().replace(/-/g, " ").split(" ")[0]));
+    // Stairs with both ways (Lumbridge castle's first floor): the way the step's words point, not
+    // the first option ("Climb-up" to the second floor when the talisman goes to a basement).
+    const up = options.findIndex((o) => /^climb[- ]up$/i.test(o));
+    const down = options.findIndex((o) => /^climb[- ]down$/i.test(o));
+    if (up >= 0 && down >= 0) {
+      if (/\b(down|basement|cellar|ground floor|downstairs|below|dungeon|sewer)\b/.test(text)) index = down;
+      else if (/\b(up|upstairs|first floor|second floor|top floor|roof|tower top)\b/.test(text)) index = up;
+    }
     // Shut (a coffin, a chest): opened first, then the step's own option on the next try.
     if (index < 0) index = options.findIndex((o) => o && o.toLowerCase() === "open");
     if (index < 0) index = options.findIndex((o) => o && o.toLowerCase() !== "examine");
@@ -546,6 +554,23 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     let step;
     if (run.helperKey) {
       step = helperStep(run, player, nowMs);
+      // Just up or down a floor: the helper's last answer was asked on the other floor ("climb
+      // the stairs" once up them) and sent it back again, up and down for ever. It waits for an
+      // answer asked from here.
+      // (Underground counts as another floor: the Wizards' Tower basement is z 0 at y 9576.)
+      const floor = `${player.getLocation().getZ()}:${player.getLocation().getY() >= 6400 ? "under" : "over"}`;
+      // (A floor further is progress too: the tries of the stairs it just took start again.)
+      if (run.floor !== undefined && run.floor !== floor) {
+        run.floorAt = nowMs;
+        run.tries = 0;
+      }
+      run.floor = floor;
+      const said = helper.status?.(player);
+      // (Asked before the change, or the new question still on its way: the old step is still there.)
+      if (run.floorAt && said && Number.isFinite(said.answeredMsAgo) && (nowMs - said.answeredMsAgo < run.floorAt || said.busy)
+          && nowMs - run.floorAt < 20_000) {
+        return "running";
+      }
       // A helper step that does not move on in 6 minutes is stuck (logged, put aside).
       if (nowMs - run.stepSince > HELPER_STEP_MS || run.tries >= MAX_TRIES) return "failed";
       // The helper's first answer comes back a moment later; one that never comes is a reason.

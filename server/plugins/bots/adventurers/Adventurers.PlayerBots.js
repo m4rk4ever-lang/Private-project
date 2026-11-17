@@ -922,6 +922,16 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       },
     });
     if (!started) return false;
+    // A teleport for the way there (a spell, a tablet broken, jewellery rubbed: the game's own
+    // option, its charge and animation): in its log and the metrics (kind teleport), with the
+    // charges left, so the logs show they are used and used up.
+    const teleport = errands.errands?.get?.(entry.player)?.teleport;
+    if (teleport) {
+      const label = teleport.kind === "home" ? "home teleport" : teleport.kind === "spell" ? `spreuk ${teleport.name}`
+        : teleport.kind === "tablet" ? `tablet (${teleport.name})` : `sieraad naar ${teleport.name}`;
+      note(entry.player, `Teleporteert met ${label} richting ${placeName(to)}.`, "activity");
+      metric({ kind: "teleport", bot: entry.name, how: teleport.kind, name: teleport.name ?? null, to: placeName(to), reason });
+    }
     // What the page shows while it walks.
     entry.errand = { to: placeName(to), reason, since: now() };
     if (replan) {
