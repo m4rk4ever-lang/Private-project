@@ -127,6 +127,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Avonturiers kiezen hun geldklussen doelmatiger: een klus die eerder niets of verlies opleverde, geldt niet meer als geldklus, en iets nieuws proberen ("eens proberen") gebeurt nog maar af en toe. Een verwerkklus met gekochte materialen (zoals Herblore) telt niet meer als sparen voor een doel.
 - Avonturiers trainen een skill die al op 99 staat bijna nooit meer (alleen combat en Slayer nog wel, voor de loot).
 - Voor woodcutting, mining en fishing kiest een avonturier een plek die niet alleen dichtbij is, maar ook dicht bij een bank ligt, zoals een speler de willows bij een bank kiest boven die midden in het niets.
 - Avonturiers reizen slimmer:
@@ -184,6 +185,8 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Ahrim the Blighted speelt zijn eigen aanvalsanimatie als hij een spreuk cast (hij stond stil terwijl zijn spreuken insloegen).
+- Avonturiers gooien geen questitems (sleutels, de magneet, een research package) en clue geodes meer weg als "waardeloos".
 - Avonturiers blijven niet meer uren staan na een boodschap die geen vervolg vroeg (een GE-aankoop voor de Barrows, een bankbezoek in Edgeville). Na 20 seconden zonder lopende boodschap pakken ze hun klus weer op.
 - De Barrows-kist wordt door avonturiers weer goed aangeklikt (ook als hij open staat).
 - Een vastgelopen avonturier schrijft dat nog maar één keer per minuut in de logs, zodat de gedeelde logs niet vollopen.

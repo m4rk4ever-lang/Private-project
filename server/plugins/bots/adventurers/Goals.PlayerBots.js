@@ -113,7 +113,9 @@ function goalWeight(goal, option) {
   }
   // Saving up: what earns (loot, pickpockets, produce to sell) more, spending on materials less;
   // but its own logs, ore or fish cost nothing to work up, and the bows, bars and food sell.
-  if (option.mode.startsWith("buy_")) return option.stocked ? 1.2 : 0.3;
+  // Not "for the goal" (above 1) even with stock in the bank: that stock was often bought for it
+  // (Patrickbot 16 trained Herblore "for 212 gp" on kwuarm it bought, and earned nothing).
+  if (option.mode.startsWith("buy_")) return option.stocked ? 1 : 0.3;
   if (option.mode === "thieving") return 1.5;
   if (option.mode === "combat_training") return 1.2;
   // Logs, ore and fish sell too (willows, iron, a bag of cowhides from combat above).

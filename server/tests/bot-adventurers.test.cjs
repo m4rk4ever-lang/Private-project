@@ -69,7 +69,8 @@ test("from a boss's combat level an adventurer sometimes goes bossing", () => {
   const weak = chooseNext(adventurer({}, { combat: 30 }), data.quests, { bosses: data.bosses, bossChance: 1, random: () => 0 });
   assert.notEqual(weak.kind, "boss");
   const ids = require("../data/definitions/bot-activities.json").activities.map((activity) => activity.id);
-  for (const boss of data.bosses) assert.ok(ids.includes(boss.id), boss.id);
+  // A boss with its own run (kind "barrows": BarrowsRun.PlayerBots.js) has no brain activity.
+  for (const boss of data.bosses.filter((entry) => !entry.kind)) assert.ok(ids.includes(boss.id), boss.id);
 });
 
 test("every quest on the server is on the list, the path first, requirements from the cache", () => {

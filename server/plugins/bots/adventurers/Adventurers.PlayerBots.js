@@ -49,7 +49,7 @@ const CHARGED_ATTRIBUTE = "adventurers:charged";
 // The quests adventurers.json "grantedQuests" set complete for it (normalized names), to undo.
 const GRANTED_ATTRIBUTE = "adventurers:granted-quests";
 /** Quest and clue rewards (useRewards): never dropped as junk. */
-const REWARD_NAME = /antique lamp|casket|scroll box|clue scroll|clue bottle|clue nest|reward/i;
+const REWARD_NAME = /antique lamp|casket|scroll box|clue scroll|clue bottle|clue nest|clue geode|reward/i;
 /**
  * Its current job ({ kind, mode, skill, reason, style, bossId, activity, remainingMs, savedAt }),
  * one record that is overwritten, never appended: when a job starts and every TASK_SAVE_MS while
@@ -3242,6 +3242,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const pouch = /^coin pouch/i.test(String(core.ItemDefinition.forId(id)?.getName?.() ?? ""));
       // Rewards are never junk, worth nothing at the shop or not (a lamp's XP, a casket, a clue).
       if (REWARD_NAME.test(String(definition?.getName?.() ?? ""))) continue;
+      // Untradeable things are a quest's (a door key, the magnet, Silverlight's key, a research
+      // package): kept, a player does not throw them away halfway through a quest.
+      if (!Value.tradeable(core, id)) continue;
       if (!wearable && !pouch && each < (data.junkValue ?? 3) && !Trade.keepIds(player, core, { isFood }).has(id)) junk.push(id);
     }
     return { keep, sell, junk: [...new Set(junk)] };

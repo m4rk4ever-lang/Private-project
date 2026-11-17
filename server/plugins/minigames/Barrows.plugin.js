@@ -522,6 +522,10 @@ class AhrimCombat extends MagicCombatMethod {
       CombatSpells.CONFUSE, CombatSpells.WEAKEN, CombatSpells.CURSE];
     npc.getCombat().setCastSpell(spells[randomInt(0, spells.length - 1)]);
     super.start(npc, target);
+    // A spell's cast plays a player's casting animation, which Ahrim's model has not: his own
+    // attack animation instead, or he stood still while his spells landed.
+    const animation = npc.getAttackAnim?.();
+    if (Number.isInteger(animation) && animation > 0) npc.performAnimation(new Animation(animation));
   }
 
   hits(npc, target) {

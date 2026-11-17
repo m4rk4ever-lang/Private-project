@@ -102,15 +102,19 @@ function chooseNext(adventurer, quests, {
   // Now and then a stretch only to make money: what earned it the most per hour so far (its own
   // measure, adventurer.earn), a mode it has not tried yet now and then, a boss when it can.
   if (random() < moneyChance) {
-    const earners = options.filter((option) => MONEY_MODES.has(option.mode));
     const rate = (mode) => adventurer.earn?.[mode] ?? null;
+    // A way that earned nothing (or cost) when it tried it is no way to make money.
+    const earners = options.filter((option) => MONEY_MODES.has(option.mode) && !(rate(option.mode) !== null && rate(option.mode) <= 0));
     const untried = earners.filter((option) => rate(option.mode) === null);
     if (fightable.length > 0 && random() < 0.25) {
       return { kind: "boss", boss: fightable[Math.floor(random() * fightable.length)], reason: "geld verdienen" };
     }
-    const pick = untried.length > 0 && random() < 0.3
+    // Something new now and then (one pick in ten), else what it knows earns best: an untried
+    // way's guess counts for half against a measured rate ("eens proberen" came up too often).
+    const score = (option) => rate(option.mode) ?? (MONEY_GUESS[option.mode] ?? 0) / (earners.some((other) => rate(other.mode) > 0) ? 2 : 1);
+    const pick = untried.length > 0 && random() < 0.1
       ? untried[Math.floor(random() * untried.length)]
-      : [...earners].sort((a, b) => (rate(b.mode) ?? MONEY_GUESS[b.mode] ?? 0) - (rate(a.mode) ?? MONEY_GUESS[a.mode] ?? 0))[0];
+      : [...earners].sort((a, b) => score(b) - score(a))[0];
     if (pick) {
       const known = rate(pick.mode);
       return { kind: "train", mode: pick.mode, skill: pick.skill, money: true,
