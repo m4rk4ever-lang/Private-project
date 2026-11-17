@@ -172,7 +172,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
-- Een avonturier die aan de Al Kharid-kant van de tolpoort bleef staan (met genoeg coins) betaalt nu de tol of opent de poort na Prince Ali Rescue, en loopt daarna verder.
+- Een avonturier die aan de Al Kharid-kant van de tolpoort bleef staan (met genoeg coins) betaalt nu na een paar seconden stilstand de tol, of opent de poort na Prince Ali Rescue, en loopt daarna verder. Een bank achter de tolpoort telt bij het kiezen van een bank als een omweg.
 - Een schild duwde een two-handed wapen (zoals de Scythe) uit de hand: de wooden shield van Tutorial Island werd in het lege schildslot gezet. Naast een two-hander blijft het schildslot nu leeg.
 - Een avonturier met een two-handed wapen (zoals een Scythe) trekt er geen schild bij aan; schild en wapen duwden elkaar steeds af.
 - Na een volledige reset loopt een avonturier niet meer terug naar de plek van zijn oude account.

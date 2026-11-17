@@ -1994,6 +1994,22 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       }
       leaveUnreachableFight(entry, nowMs);
       protectionPrayer(entry, nowMs);
+      // Standing at the Al Kharid toll gate with a walk to its other side: through it now, not
+      // after the walk has given up (a long trip waits minutes before it calls itself stuck).
+      {
+        const here = entry.player.getLocation();
+        const errand = errands.errands?.get?.(entry.player);
+        const target = errand?.to ?? null;
+        const atGate = here.getZ() === 0 && Math.abs(here.getX() - TOLL_GATE.x) <= 1 && here.getY() >= 3226 && here.getY() <= 3229;
+        const spot = `${here.getX()},${here.getY()}`;
+        if (atGate && target) {
+          if (entry.gateSpot !== spot) { entry.gateSpot = spot; entry.gateSince = nowMs; }
+          else if (nowMs - entry.gateSince > 8_000) {
+            crossTollGate(entry, entry.player, target);
+            entry.gateSince = nowMs;
+          }
+        } else entry.gateSpot = null;
+      }
       eatWhenHurt(entry);
       if (!entry.player.getCombat?.()?.getTarget?.()) buryLowBones(entry.player);
       // Out of breath it walks; rested (40%) it runs again, as a player clicks run back on.
@@ -2796,7 +2812,16 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       .sort((a, b) => a.straight - b.straight).slice(0, 4);
     for (const { bank, straight } of near) {
       const walk = walkTiles({ x: at.getX(), y: at.getY() }, bank, player);
-      const away = Number.isFinite(walk) ? Math.min(walk, straight * 3) : straight * 3;
+      let away = Number.isFinite(walk) ? Math.min(walk, straight * 3) : straight * 3;
+      // Through the Al Kharid toll gate (a bank on its other side): a detour as players weigh it,
+      // and none at all without the toll. After a reset all sixty went to Al Kharid's bank from
+      // Lumbridge and queued at the gate on the way back.
+      const sideOf = (x) => x >= TOLL_GATE.x;
+      if (sideOf(at.getX()) !== sideOf(bank.x) && at.getY() > 3100 && at.getY() < 3340 && bank.y > 3100 && bank.y < 3340) {
+        const pays = player.getInventory().getAmount(Trade.COINS) >= 10 || questsByName().get(normalize("Prince Ali Rescue"))?.isComplete(player) === true;
+        if (!pays) continue;
+        away += 80;
+      }
       if (!best || away < best.away) best = { ...bank, away };
     }
     return best;
