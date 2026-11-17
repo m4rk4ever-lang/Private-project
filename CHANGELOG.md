@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Elke regel in de avonturierslogs vermeldt de versie van de server (de git-commit), zodat je na een update ziet welke regels bij welke versie horen.
 - Teleporteert een avonturier onderweg (spreuk, tablet, sieraad of home teleport), dan staat dat in zijn activiteitenlog.
 - Als een avonturier iets gaat halen voor een quest, controleert hij daarna of het echt in zijn tas zit. In het log staat dan "Heeft ..." of "Kon ... niet halen".
 - Kan een avonturier een quest-item niet kopen, dan verzamelt hij het zelf als het een grondstof is (clay mijnen voor Doric's Quest, logs hakken, vis vangen) en gaat hij daarna terug naar zijn quest. Daarvoor is er een nieuwe bot-activiteit: clay minen.
@@ -164,6 +165,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers die vogels vangen leggen hun snares bij de vogels die rondvliegen, niet op een leeg stuk strand ernaast.
 - Avonturiers op weg naar de Feldip Hills of de Gnome Stronghold gaven halverwege op met "de weg was versperd", omdat ze een paar minuten niet dichterbij kwamen terwijl de weg eerst om White Wolf Mountain loopt. Lange tochten krijgen nu meer tijd, naar verhouding van de afstand.
 - Avonturiers op het dak van een agility-baan (zoals Falador) bleven staan, omdat ze wachtten op een looproute naar de grond die vanaf het dak nooit lukt. Ze springen nu verder.
 - Avonturiers in een quest liepen eindeloos een trap op en af (bijvoorbeeld bij de Duke in Lumbridge castle), omdat ze na de trap nog een oude Quest Helper-stap volgden. Ze wachten nu op een stap die ná de trap gevraagd is, kiezen bij een trap met twee kanten de richting die de stap aangeeft, en de trap telt niet als mislukte poging. Rune Mysteries komt zo tot in de kelder van de Wizards' Tower.

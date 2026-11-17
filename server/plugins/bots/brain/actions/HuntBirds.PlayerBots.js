@@ -41,6 +41,25 @@ function createHuntBirdsAction(spec, world) {
     return null;
   }
 
+  const BIRD = /swift|wagtail|longtail|warbler|bird/i;
+  /** The nearest bird of the snare's kind within the site's reach, or null. */
+  function nearestBird(here) {
+    const site = new core.Location(siteX, siteY, 0);
+    let best = null;
+    let bestAway = Infinity;
+    for (const npc of core.World?.getNpcsNear?.(site, radius + 8, null) ?? []) {
+      if (!npc || npc.isRegistered?.() === false) continue;
+      const name = npc.getDefinition?.()?.getName?.() ?? core.NpcDefinition?.forId?.(npc.getId())?.getName?.() ?? "";
+      if (!BIRD.test(String(name))) continue;
+      const d = away(here, npc.getLocation().getX(), npc.getLocation().getY());
+      if (d < bestAway) {
+        best = npc;
+        bestAway = d;
+      }
+    }
+    return best;
+  }
+
   return {
     id: "huntBirds",
     update(ctx) {
@@ -75,6 +94,17 @@ function createHuntBirdsAction(spec, world) {
       // Lay one from the bag (the plugin refuses past its limit for the level).
       if (nowMs >= bot.layAt && player.getInventory().getAmount(snare) > 0) {
         bot.layAt = nowMs + LAY_RETRY_MS;
+        // Where the birds are, as a player lays a snare in their flight path: the nearest bird of
+        // the site (crimson swifts fly about the beach) within 2 tiles, else a walk to it first.
+        // Laid at the site's centre they went down on empty sand beside the birds.
+        const bird = nearestBird(here);
+        if (bird && away(here, bird.getLocation().getX(), bird.getLocation().getY()) > 2) {
+          const at = bird.getLocation();
+          requestMovement(player, at.getX() + Math.floor(Math.random() * 3) - 1, at.getY() + Math.floor(Math.random() * 3) - 1,
+            { state, nowMs, z: 0, reason: "brain_hunter", basicPather: true });
+          bot.layAt = nowMs + 1_500;
+          return "running";
+        }
         // On a tile of its own, a step or two from the last one.
         if (bot.laidAt && bot.laidAt === `${here.getX()},${here.getY()}`) {
           requestMovement(player, siteX + Math.floor(Math.random() * 5) - 2, siteY + Math.floor(Math.random() * 5) - 2,

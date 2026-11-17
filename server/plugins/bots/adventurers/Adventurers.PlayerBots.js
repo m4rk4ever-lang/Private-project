@@ -1,6 +1,19 @@
 "use strict";
 
 /**
+ * The game's version in every log line (`v`: the git commit it runs, short), so lines from before
+ * and after an update can be told apart when the logs are read later.
+ */
+const GAME_VERSION = (() => {
+  try {
+    return require("child_process").execSync("git rev-parse --short HEAD", { cwd: __dirname, stdio: ["ignore", "pipe", "ignore"], timeout: 3000 })
+      .toString().trim() || null;
+  } catch {
+    return process.env.GAME_VERSION ?? null;
+  }
+})();
+
+/**
  * Adventurers: a few named bots that start as new accounts in Lumbridge and play the game on
  * their own, for good, and keep a journal. Their progress is saved like a player's.
  *
@@ -202,7 +215,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
 
   function metric(line) {
     try {
-      metricsLog.write(`${JSON.stringify({ at: new Date().toISOString(), ...line })}\n`);
+      metricsLog.write(`${JSON.stringify({ at: new Date().toISOString(), v: GAME_VERSION, ...line })}\n`);
     } catch {
       // A help, not a must.
     }
@@ -500,7 +513,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // Every line also in the activity log, to look back at what an adventurer did and where.
     try {
       const at = player.getLocation?.();
-      activityLog.write(`${JSON.stringify({ at: new Date().toISOString(), bot: player.getUsername?.(), type, text,
+      activityLog.write(`${JSON.stringify({ at: new Date().toISOString(), v: GAME_VERSION, bot: player.getUsername?.(), type, text,
         where: at ? [at.getX(), at.getY(), at.getZ()] : null })}\n`);
     } catch {
       // A help, not a must.
@@ -1382,7 +1395,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const path = require("path");
       const file = path.join(process.cwd(), "logs", "adventurer-quest-feedback.jsonl");
       fs.mkdirSync(path.dirname(file), { recursive: true });
-      fs.appendFileSync(file, `${JSON.stringify(line)}\n`);
+      fs.appendFileSync(file, `${JSON.stringify({ v: GAME_VERSION, ...line })}\n`);
     } catch {
       // The log is a help, not a must: the quest is put aside either way.
     }
