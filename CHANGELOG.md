@@ -177,6 +177,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- De home teleport onderweg werd afgebroken doordat een avonturier in dezelfde tijd van uitrusting wisselde; tijdens de teleport doet hij nu niets anders.
 - Avonturiers op de dakbanen van Varrock en Al Kharid bleven bij één obstakel staan (een muur in Varrock, de tropical tree in Al Kharid): hun klik ging pas af als ze het obstakel "bereikt" hadden, en dat gebeurde aan de dakrand nooit. Staan ze ernaast, dan klikken ze nu direct.
 - Een avonturier met een two-handed wapen (zoals een Scythe) koopt en draagt geen schild meer als hij even een axe in de hand heeft.
 - High-level avonturiers trainen combat niet meer op monsters ver onder hun level (een combat 70 op jail guards van level 26): de laagste tegenstander is minstens zo'n 45% van hun combatlevel, en lage plekken zoals Lumbridge en Port Sarim hebben een maximumlevel.

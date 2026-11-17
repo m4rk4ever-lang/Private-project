@@ -2025,6 +2025,15 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     for (const entry of adventurers.values()) {
       if (!entry.player?.isRegistered?.()) continue;
       if (Number.isFinite(entry.lastTickAt)) account(entry, nowMs, Math.min(10_000, Math.max(0, nowMs - entry.lastTickAt)));
+      // An errand's teleport being cast (the home teleport takes 16 s): no gear changes or other
+      // clicks meanwhile, they broke it off and it walked instead.
+      {
+        const errand = errands.errands?.get?.(entry.player);
+        if (errand?.teleport && nowMs < (errand.walkFrom ?? 0)) {
+          entry.lastTickAt = nowMs;
+          continue;
+        }
+      }
       // Casting the home teleport: nothing else until it has landed.
       if (entry.homeUntil) {
         if (nowMs < entry.homeUntil) {
