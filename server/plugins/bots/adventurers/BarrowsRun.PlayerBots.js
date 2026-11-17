@@ -259,7 +259,14 @@ function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, 
     const room = v.room;
     if (room === 4) {
       progress(entry, nowMs, "chest", "Bij de kist in de middelste kamer.");
-      const chest = objectNear({ x: v.chest.x, y: v.chest.y, z: 0 }, [v.chest.id], 2);
+      // The object on the chest's own tile, whatever id it shows now (shut or open): by the map's
+      // id alone the bot's click missed it, where a player's click on the chest worked.
+      const chest = (core.MapObjects?.mapObjects?.get?.(core.MapObjects.getHash(v.chest.x, v.chest.y, 0)) ?? [])
+        .find((object) => object.getLocation().getX() === v.chest.x && object.getLocation().getY() === v.chest.y)
+        ?? objectNear({ x: v.chest.x, y: v.chest.y, z: 0 }, [v.chest.id], 2);
+      // Shut: Open (option 1); open: Search (option 1 again, as the plugin takes it).
+      if (nowMs < (run.chestAt ?? 0)) return "running";
+      run.chestAt = nowMs + 3_000;
       return click(player, chest, 1) ? "running" : fail(entry, "kist niet gevonden");
     }
     // Between rooms (in a doorway): a moment, the step through ends in the next room.

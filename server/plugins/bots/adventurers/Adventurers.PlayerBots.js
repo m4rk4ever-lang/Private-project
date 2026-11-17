@@ -383,6 +383,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         // Which processing skills it could take up now (coins or own stock) and has stock for.
         canProcess: buyableSkills(entry.player), stocked: stockedSkills(entry.player),
         time: Object.fromEntries(Object.entries(m.time).map(([kind, ms]) => [kind, minutes(ms)])), events: m.events,
+        // What it carries: each stack by name, how many and whether noted, and what it is out for.
+        inventory: (entry.player.getInventory().getItems() ?? []).filter((item) => item && item.getId() > 0).map((item) => {
+          const definition = core.ItemDefinition.forId(item.getId());
+          return { item: String(definition?.getName?.() ?? item.getId()), amount: item.getAmount(), ...(definition?.isNoted?.() ? { noted: true } : {}) };
+        }),
+        freeSlots: entry.player.getInventory().getFreeSlots(),
+        errand: entry.errand ? { to: entry.errand.to, reason: entry.errand.reason } : null,
+        savedTask: entry.savedTask ? { kind: entry.savedTask.kind, mode: entry.savedTask.mode ?? null, boss: entry.savedTask.bossId ?? null } : null,
       });
       entry.metrics = { since: nowMs, time: {}, xp, coins, events: {} };
     }
@@ -2344,6 +2352,18 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
           if (brain) brain.paused = false;
         }
       }
+      // An errand that ended without handing back (a GE purchase done, the job's next step
+      // never asked for): after 20 s with nothing under way it picks its job up again (its saved
+      // task: the next thing for the Barrows). Markbot 18 stood an hour at the exchange.
+      if (entry.phase === "errand" && !errands.busy(entry.player) && !entry.afterHop && !entry.homeUntil) {
+        entry.errandIdleSince ??= nowMs;
+        if (nowMs - entry.errandIdleSince > 20_000) {
+          entry.errandIdleSince = null;
+          entry.errand = null;
+          entry.until = 0;
+          countEvent(entry, "errandIdle");
+        }
+      } else entry.errandIdleSince = null;
       // Gone down or up the stairs on its way: on to the place itself once it has landed.
       if (entry.afterHop) {
         const hop = entry.afterHop;
@@ -2446,12 +2466,18 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         continue;
       }
       if (stuck(entry, nowMs)) {
-        note(entry.player, `Kon bij ${String(entry.activity ?? "zijn klus").replace(/_/g, " ")} niets doen; kiest iets anders.`, "activity");
+        // Once a minute in the logs at most: a bot stuck on Varrock's roof wrote 2,378 of these in
+        // two hours and pushed everything else out of the shared logs.
+        const quiet = nowMs - (entry.stuckLoggedAt ?? 0) < 60_000;
+        if (!quiet) {
+          entry.stuckLoggedAt = nowMs;
+          note(entry.player, `Kon bij ${String(entry.activity ?? "zijn klus").replace(/_/g, " ")} niets doen; kiest iets anders.`, "activity");
+        }
         countEvent(entry, "stuck");
         entry.jobEnd = "stuck";
         unstrand(entry, entry.player);
         const stuckAt = entry.player.getLocation();
-        metric({ kind: "stuck", bot: entry.name, mode: entry.plan?.mode ?? null, reason: entry.plan?.reason ?? null,
+        if (!quiet) metric({ kind: "stuck", bot: entry.name, mode: entry.plan?.mode ?? null, reason: entry.plan?.reason ?? null,
           combat: entry.player.getSkillManager().getCombatLevel(), where: [stuckAt.getX(), stuckAt.getY(), stuckAt.getZ()],
           home: stateOf(entry.player)?.home ?? null, ...brainSnapshot(entry) });
         entry.until = 0;
