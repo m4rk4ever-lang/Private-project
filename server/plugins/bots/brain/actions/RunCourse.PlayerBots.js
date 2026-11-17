@@ -149,17 +149,15 @@ function createRunCourseAction(spec, world) {
         sourceLocation: { x: player.getLocation().getX(), y: player.getLocation().getY(), z: player.getLocation().getZ() },
         handled: false,
       });
-      // Right beside it (on the obstacle's start tile): the click at once, as the client sends it;
+      // Near it (within 5 tiles: Varrock's wall stands 3 from where the lap stops): the click at once, as the client sends it;
       // the course walks the last step itself. A walk to an obstacle at a roof's edge (Al Kharid's
       // tropical tree, Varrock's gaps) never "reached" it and the click never went.
       const here = player.getLocation();
-      const nearBy = here.getZ() === at.getZ() && Math.max(Math.abs(here.getX() - at.getX()), Math.abs(here.getY() - at.getY())) <= 2;
-      if (nearBy && bot.lastDirect !== `${at.getX()},${at.getY()}`) {
-        bot.lastDirect = `${at.getX()},${at.getY()}`;
+      const nearBy = here.getZ() === at.getZ() && Math.max(Math.abs(here.getX() - at.getX()), Math.abs(here.getY() - at.getY())) <= 5;
+      if (nearBy) {
         click();
         return "running";
       }
-      bot.lastDirect = null;
       player.getMovementQueue().walkToObject(object, { execute: click });
       return "running";
     },

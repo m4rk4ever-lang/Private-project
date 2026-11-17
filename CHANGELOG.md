@@ -181,7 +181,7 @@ Indeling per versie:
 - Na een omgevallen boom of uitgeputte rots kiest een bot de dichtstbijzijnde volgende (hooguit een paar tegels verder), niet willekeurig een die ver weg staat.
 - Een klus die op een vaste plek hoort (bomen, rotsen, visplekken, stalls en pickpocketen) maar waarvoor de avonturier geen bereikbare plek heeft, begint hij niet meer op de plek waar hij toevallig staat (zoals redwoods "in" Lumbridge of bij de GE); hij kiest dan iets anders.
 - De home teleport onderweg werd afgebroken doordat een avonturier in dezelfde tijd van uitrusting wisselde; tijdens de teleport doet hij nu niets anders.
-- Avonturiers op de dakbanen van Varrock en Al Kharid bleven bij één obstakel staan (een muur in Varrock, de tropical tree in Al Kharid): hun klik ging pas af als ze het obstakel "bereikt" hadden, en dat gebeurde aan de dakrand nooit. Staan ze ernaast, dan klikken ze nu direct.
+- Avonturiers op de dakbanen van Varrock en Al Kharid bleven bij één obstakel staan (een muur in Varrock, de tropical tree in Al Kharid): hun klik ging pas af als ze het obstakel "bereikt" hadden, en dat gebeurde aan de dakrand nooit. Staan ze er tot 5 tegels vandaan, dan klikken ze nu direct.
 - Een avonturier met een two-handed wapen (zoals een Scythe) koopt en draagt geen schild meer als hij even een axe in de hand heeft.
 - High-level avonturiers trainen combat niet meer op monsters ver onder hun level (een combat 70 op jail guards van level 26): de laagste tegenstander is minstens zo'n 45% van hun combatlevel, en lage plekken zoals Lumbridge en Port Sarim hebben een maximumlevel.
 - De Al Kharid-tolpoort werd door de bots niet herkend (de poort heeft pas een naam als je hem als speler bekijkt); ze gaan er nu echt doorheen.
