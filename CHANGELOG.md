@@ -177,6 +177,8 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers kozen bij de Al Kharid-tolpoort soms "Open" zonder Prince Ali Rescue, waarna ze vastzaten in het gesprek met de wachter. Ze openen de poort nu alleen na die quest en betalen anders de tol. Bij een bankbezoek nemen ze een paar honderd coins mee als hun tas bijna leeg is.
+- De gameserver startte een tweede Quest Helper-bridge naast die van start.sh ("Address already in use"). Hij start er nu pas een als de bridge anderhalve minuut onbereikbaar blijft, en kijkt daarvoor elke minuut.
 - Avonturiers die materialen kopen voor een verwerkskill (bijvoorbeeld herblore) kopen nu een partij voor meerdere tasladingen. Wat noted van de GE komt, zetten ze op de bank en halen ze per taslading weer op. Eerder bleven ze staan met noted kruiden waar ze niets mee konden.
 - Voor een verwerkklus zetten avonturiers eerst alles op de bank behalve hun materialen, het gereedschap en hun coins.
 - Avonturiers kochten op de GE uitrusting die ze al op de bank hadden (ranged-, magic- en doel-items keken alleen naar tas en uitrusting), en kochten hetzelfde item steeds opnieuw. Ze kijken nu ook naar hun bank en kopen hetzelfde stuk niet binnen 6 uur nog een keer.

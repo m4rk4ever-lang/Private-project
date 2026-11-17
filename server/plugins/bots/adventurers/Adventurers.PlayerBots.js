@@ -932,8 +932,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (!gate) return false;
     const seen = seenOf(gate);
     const options = (seen?.getInteractions?.() ?? []).map((option) => String(option ?? ""));
-    let index = options.findIndex((option) => /^pay-toll/i.test(option));
-    if (index < 0 || player.getInventory().getAmount(Trade.COINS) < 10) index = options.findIndex((option) => /^open$/i.test(option));
+    // Open only after Prince Ali Rescue (free passage); before it Open starts the guard's talk, which
+    // a bot does not hold: then the toll, with 10 coins in its bag, or not at all.
+    const free = questsByName().get(normalize("Prince Ali Rescue"))?.isComplete(player) === true;
+    let index = free ? options.findIndex((option) => /^open$/i.test(option)) : -1;
+    if (index < 0 && player.getInventory().getAmount(Trade.COINS) >= 10) index = options.findIndex((option) => /^pay-toll/i.test(option));
     if (index < 0) return false;
     const loc = gate.getLocation();
     player.getMovementQueue().walkToObject(gate, {
@@ -3489,6 +3492,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
           if (Number.isInteger(id) && banked(banker, id) > 0 && banker.getInventory().getFreeSlots() > 2 && withdraw(banker, id, amount) > 0) travelBack.push(itemName(id));
         };
         if (levelOf(banker, "MAGIC") >= 25) for (const name of ["LAW_RUNE", "AIR_RUNE", "EARTH_RUNE", "WATER_RUNE", "FIRE_RUNE"]) take(name, 1_000);
+        // Some coins in the bag (the Al Kharid toll, a ferry, a shop on the way).
+        const carried = banker.getInventory().getAmount(Trade.COINS);
+        if (carried < 1_000 && banked(banker, Trade.COINS) > 0) withdraw(banker, Trade.COINS, 1_000 - carried);
         for (const name of [...TABLETS, ...JEWELLERY]) take(name, name.startsWith("AMULET") || name.startsWith("RING") || name.startsWith("GAMES") ? 1 : 20);
         if (travelBack.length > 0) note(banker, `Neemt mee om te reizen: ${travelBack.join(", ").toLowerCase()}.`, "activity");
       },
@@ -3922,6 +3928,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
 
 let bridgeStarting = 0;
 /** Starts the Quest Helper bridge when it is built and does not answer (see the startup hook). */
+let bridgeDownSince = 0;
 function keepBridgeUp(world) {
   if ((process.env.ADVENTURER_START_BRIDGE ?? "1") === "0" || Date.now() - bridgeStarting < 4 * 60_000) return;
   const path = require("path");
@@ -3932,7 +3939,13 @@ function keepBridgeUp(world) {
   const url = process.env.QUEST_HELPER_URL || `http://127.0.0.1:${Number(process.env.QUEST_HELPER_PORT || 16471)}`;
   fetch(`${url.replace(/\/$/, "")}/health`, { signal: AbortSignal.timeout(3000) }).then((response) => {
     if (!response.ok) throw new Error(String(response.status));
+    bridgeDownSince = 0;
   }).catch(() => {
+    // Not at the first miss: start.sh starts one too, and Java takes its time to answer; a second
+    // one only failed on the port ("Address already in use"). Down for 90 s: start it.
+    bridgeDownSince ||= Date.now();
+    if (Date.now() - bridgeDownSince < 90_000) return;
+    bridgeDownSince = 0;
     bridgeStarting = Date.now();
     try {
       fs.mkdirSync(path.join(process.cwd(), "logs"), { recursive: true });
@@ -4039,7 +4052,7 @@ function startAdventurers({ api, runtime, world, registry }) {
   api.onServerStartup?.(() => {
     const check = () => keepBridgeUp(world);
     setTimeout(check, 15_000).unref?.();
-    setInterval(check, 5 * 60_000).unref?.();
+    setInterval(check, 60_000).unref?.();
   });
   // The logs to the bot-logs branch every five minutes, from the game itself (manager.shareLogsNow).
   api.onServerStartup?.(() => {
