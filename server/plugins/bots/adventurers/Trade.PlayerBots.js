@@ -41,12 +41,16 @@ function equippedIds(player) {
 }
 
 /** Runes, ammunition (arrows, bolts, darts), teleport tablets and charged teleport jewellery. */
+/** A prayer restoring potion (Barrows, bosses): stock to use up to a reserve, the rest goods. */
+function isPrayerRestore(core, itemId) {
+  const name = String(core.ItemDefinition?.forId?.(itemId)?.getName?.() ?? "").toLowerCase();
+  return /^(prayer potion|super restore|sanfew serum)\(\d\)$/.test(name);
+}
+
 function isSupply(core, itemId) {
   const definition = core.ItemDefinition?.forId?.(itemId);
   const name = String(definition?.getName?.() ?? "").toLowerCase();
   if (/ rune$/.test(name) || / teleport$/.test(name) || /\(\d+\)$/.test(name) && /(glory|necklace|ring of|bracelet|pendant)/.test(name)) return true;
-  // Prayer restoring potions for its fights (Barrows, bosses): kept, never sold.
-  if (/^(prayer potion|super restore|sanfew serum)\(\d\)$/.test(name)) return true;
   const slot = definition?.getEquipmentType?.()?.getSlot?.();
   return Number.isInteger(slot) && slot === core.Equipment?.AMMUNITION_SLOT;
 }
@@ -121,6 +125,11 @@ function keepIds(player, core, { isFood = () => false } = {}) {
 
 /** Food it carries for itself; more than this (a bag of fish it caught and cooked) is stock. */
 const FOOD_CARRY = 10;
+/**
+ * Prayer potions it carries for itself, as food: more than this (a thousand it made training
+ * Herblore) are goods to sell; its bank keeps a reserve of its own (Adventurers need()).
+ */
+const POTION_CARRY = 8;
 
 /** How many bag slots these goods take (a stack takes one, each unstackable item one). */
 function slotsOf(player, goods) {
@@ -135,10 +144,15 @@ function slotsOf(player, goods) {
 function goodsToSell(player, core, keep, { isFood = null, worthless = false } = {}) {
   const totals = new Map();
   const food = new Map();
+  const potions = new Map();
   for (const item of player.getInventory().getItems() ?? []) {
     if (!item || !(item.getId() > 0)) continue;
     if (isFood?.(item.getId())) {
       food.set(item.getId(), (food.get(item.getId()) ?? 0) + item.getAmount());
+      continue;
+    }
+    if (isPrayerRestore(core, item.getId())) {
+      potions.set(item.getId(), (potions.get(item.getId()) ?? 0) + item.getAmount());
       continue;
     }
     // Runes, arrows and teleports are never sold, wherever the keep list came from.
@@ -150,6 +164,13 @@ function goodsToSell(player, core, keep, { isFood = null, worthless = false } = 
   for (const [id, amount] of [...food].sort((a, b) => b[1] - a[1])) {
     const kept = Math.min(amount, carry);
     carry -= kept;
+    if (amount > kept) totals.set(id, amount - kept);
+  }
+  // The fullest potions stay first, up to POTION_CARRY in all; the rest are goods.
+  let potionCarry = POTION_CARRY;
+  for (const [id, amount] of [...potions].sort((a, b) => b[1] - a[1])) {
+    const kept = Math.min(amount, potionCarry);
+    potionCarry -= kept;
     if (amount > kept) totals.set(id, amount - kept);
   }
   return [...totals].map(([itemId, amount]) => ({ itemId, amount, value: Value.itemValue(core, itemId, amount) }))
@@ -196,4 +217,4 @@ function finishedOffers(player, emit) {
 }
 
 module.exports = {
-  slotsOf, listsFor, isSupply, wearBest, keepIds, goodsToSell, sellAtExchange, buyAtExchange, finishedOffers, COINS, KEEP_TOOLS };
+  slotsOf, listsFor, isSupply, isPrayerRestore, wearBest, keepIds, goodsToSell, sellAtExchange, buyAtExchange, finishedOffers, COINS, KEEP_TOOLS };

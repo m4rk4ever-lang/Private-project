@@ -2398,6 +2398,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function need(player, itemId) {
     const id = baseId(itemId);
     if (isFood(id) || Trade.isSupply(core, id)) return Infinity;
+    // Prayer potions: a reserve for its own fights when it prays (Protect from Melee); what it
+    // makes beyond that (Herblore training) is for sale.
+    if (Trade.isPrayerRestore(core, id)) return levelOf(player, "PRAYER") >= 43 ? (data.potionReserve ?? 20) : 0;
     for (const [skill, recipe] of Object.entries(data.buyToTrain ?? {})) {
       const level = levelOf(player, skill);
       const tiers = recipe.tiers.map(([needed, names]) => ({ needed, ids: (Array.isArray(names) ? names : [names]).map((name) => Shopping.idOf(core, name)) }));
