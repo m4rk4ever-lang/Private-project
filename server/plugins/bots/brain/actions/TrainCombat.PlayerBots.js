@@ -792,4 +792,4 @@ function createTrainCombatAction(spec, world) {
   return action;
 }
 
-module.exports = { createTrainCombatAction };
+module.exports = { createTrainCombatAction, wearOwnGear };

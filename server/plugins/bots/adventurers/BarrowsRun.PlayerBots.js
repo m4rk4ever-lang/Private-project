@@ -24,7 +24,7 @@ const MAX_RUN_MS = 45 * 60_000;
 const FEARLESS = /fearless/i;
 
 // Runs in one go at most, then something else (a player stops for the bank or a change too).
-const MAX_RUNS = 5;
+const MAX_RUNS = 15;
 
 function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, castHome, isFood = () => false }) {
   const chebyshev = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
@@ -115,6 +115,22 @@ function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, 
     return true;
   }
 
+  /**
+   * The style for this brother, as players fight them: Magic against the five in armour (their
+   * Magic defence is low), not against Ahrim (a mage, whose Magic defence is high): melee there.
+   * Changed once a brother, not every tick.
+   */
+  function styleFor(entry, npc) {
+    const run = entry.barrows;
+    const style = /^ahrim/i.test(String(npc.getDefinition?.()?.getName?.() ?? "")) ? "melee" : "magic";
+    if (run.styleFor === npc.getIndex?.()) return;
+    run.styleFor = npc.getIndex?.();
+    try {
+      require("../brain/actions/TrainCombat.PlayerBots").wearOwnGear(entry.player, core, style);
+      note(entry.player, `Vecht met ${style === "magic" ? "magic" : "melee"} tegen ${npc.getDefinition?.()?.getName?.() ?? "de broer"}.`, "boss");
+    } catch {}
+  }
+
   function fight(player, npc) {
     const combat = player.getCombat?.();
     if (!combat || !npc?.isRegistered?.()) return false;
@@ -183,8 +199,9 @@ function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, 
     };
     const loot = Math.max(0, after.value - run.before.value);
     entry.barrowsCost = cost;
+    // With good prayer a run costs little food: what this one cost is enough to go on.
     const again = run.number < MAX_RUNS && after.barrowsTabs >= 1
-      && after.food >= cost.food + 2 && after.doses >= cost.doses + 4;
+      && after.food >= cost.food && after.doses >= Math.max(4, cost.doses);
     return { cost, loot, after, again };
   }
 
@@ -242,6 +259,7 @@ function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, 
     // A brother up: it fights him (the manager turns the right protection prayer on).
     if (v.brother?.isRegistered?.()) {
       progress(entry, nowMs, `fight ${v.brother.getIndex?.()}`, `Vecht tegen ${v.brother.getDefinition?.()?.getName?.() ?? "een broer"}.`);
+      styleFor(entry, v.brother);
       fight(player, v.brother);
       return "running";
     }

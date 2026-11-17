@@ -89,6 +89,9 @@ const Value = require("../../interface/ValueWarning");
 const COINS = 995;
 // Every two ticks (1.2 s): eating, the next job and the next step follow without standing around.
 const CHECK_TICKS = 2;
+// A Barrows stretch: restocked and back until this many runs or this long.
+const BARROWS_SESSION_RUNS = 10;
+const BARROWS_SESSION_MS = 60 * 60_000;
 const QUEST_TICK_MS = 6_000;
 /** A walk that ends this close to its place has arrived (the exact tile may be in a hut). */
 const NEAR_ENOUGH_TILES = 15;
@@ -1675,6 +1678,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       resume();
       return true;
     }
+    // A stretch of runs: at least BARROWS_SESSION_RUNS or BARROWS_SESSION_MS, restocking between.
+    if (!entry.barrowsSession || nowMs - entry.barrowsSession.since > 3 * BARROWS_SESSION_MS) entry.barrowsSession = { runs: 0, since: nowMs };
     entry.phase = "barrows";
     entry.plan = plan;
     entry.activity = null;
@@ -1713,7 +1718,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         const bank = nearestBank(player, entry);
         const unnotedId = (id) => core.ItemDefinition.forId(id)?.getNoteId?.() ?? id;
         if (bank && walkTo(entry, { ...bank, name: bank.name ?? bank.id }, { reason: "withdraw", arrive: (banker) => {
-          const spare = (banker.getInventory().getItems() ?? []).filter((item) => item && item.getId() > 0
+          // Its magic set stays with it (Magic is the style against the Barrows brothers).
+          const magicSet = new Set(Object.values(Shopping.gear.styles?.magic ?? {}).flat().map((piece) => Shopping.idOf(core, piece.item)).filter(Number.isInteger));
+          const spare = (banker.getInventory().getItems() ?? []).filter((item) => item && item.getId() > 0 && !magicSet.has(item.getId())
             && Number(core.ItemDefinition.forId(item.getId())?.getEquipmentType?.()?.getSlot?.() ?? -1) >= 0
             && !/axe|pickaxe|harpoon/i.test(String(core.ItemDefinition.forId(item.getId())?.getName?.() ?? "")))
             .map((item) => ({ itemId: item.getId(), amount: item.getAmount() }));
@@ -2379,9 +2386,23 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       // A Barrows run: its own steps; the fight's prayer and eating below go on as usual.
       if (entry.phase === "barrows") {
         const result = barrowsRun.tick(entry, nowMs);
+        const session = entry.barrowsSession;
         // Another run at once (it had enough left and broke a Barrows tablet).
-        if (result === "again") barrowsRun.start(entry, nowMs, (entry.barrows?.number ?? 1) + 1);
-        else if (result !== "running") {
+        if (result === "again") {
+          if (session) session.runs += 1;
+          barrowsRun.start(entry, nowMs, (entry.barrows?.number ?? 1) + 1);
+        } else if (result !== "running") {
+          // Out of supplies: to the bank and the exchange to restock, then back, until it has
+          // done at least BARROWS_SESSION_RUNS runs or spent BARROWS_SESSION_MS on them.
+          if (session && result === "done") session.runs += 1;
+          if (session && result === "done" && session.runs < BARROWS_SESSION_RUNS && nowMs - session.since < BARROWS_SESSION_MS) {
+            entry.savedTask = { kind: "boss", bossId: "boss_barrows", reason: `Barrows (${session.runs} runs, aanvullen)`, remainingMs: 0, savedAt: now() };
+            entry.prayerPotAt = 0;
+            note(entry.player, `Vult aan voor meer Barrows-runs (${session.runs} gedaan).`, "boss");
+          } else {
+            if (session) note(entry.player, `Klaar met de Barrows: ${session.runs} runs in ${Math.round((nowMs - session.since) / 60_000)} minuten.`, "boss");
+            entry.barrowsSession = null;
+          }
           entry.phase = "idle";
           entry.until = 0;
           entry.barrows = null;
