@@ -310,3 +310,16 @@ Nog open, gemeld door de eigenaar:
   Draynor dode bomen, banken van buiten de bank, koken bij Lumbridge-fornuis, meerdere werelden,
   charges opladen (scythe/trident), prayer flicking, clue scrolls, skilltiers uit
   `osrs-guides.md` (teaks, barbarian fishing, ...), Lumbridge-kasteelbank (trappen).
+
+### Aanvulling 17-11 (avond)
+Gefixt: errand-watchdog (bots bleven uren in fase "errand" na een GE- of bankboodschap met
+`replan: false`), Barrows-kist op zijn tegel aanklikken, stuck-metric max 1×/min (vulde de logs),
+inventaris in de bot-metric, geldklussen op gemeten opbrengst (minder "eens proberen"),
+questitems/geodes niet weggooien, Ahrim-animatie, bosskit eerst via de GE.
+Nog open:
+- Barrows nog niet tot de kist gezien; testserver: verkocht eerder zijn spade (vóór bossKit),
+  shop-route naar Darkmeyer (nu GE eerst). Opnieuw testen met `::advtrain Markbot 18:boss_barrows`.
+- Seers-rooftop: bot blijft op 2728,3491,3 en 2710,3475,3 staan (ook na de 10-tegel-fix) — RunCourse
+  nakijken; ook de Varrock-rooftop (3194,3416,1) waar meerdere bots uren vastzaten.
+- Bots rapen botten niet (gemeld): Loot.lootNear/takeStep lijkt intact, oorzaak nog niet gevonden.
+- Voorraad per bossrun bijhouden, construction, fletching, DT2-bosses voor endgame.
