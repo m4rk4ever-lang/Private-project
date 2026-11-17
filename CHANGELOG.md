@@ -120,6 +120,9 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Avonturiers reizen slimmer:
+  - Met Magic 25 of hoger kopen ze law runes en elementen voor teleport-spreuken; anders van elke teleport-tablet een paar. Hoe rijker, hoe meer ze inslaan.
+  - Bij een bankbezoek nemen ze hun law runes, tablets en teleport-sieraden mee in de tas, want alleen van daaruit teleporteren ze.
 - Capes tellen nu mee als uitrusting met stats, per vechtstijl: obsidian, fire, infernal en (infernal) max cape voor melee; Ava's-apparaten voor ranged; god capes voor magic. Een avonturier trekt de beste aan die hij heeft. Verdiende capes (fire, infernal, max) koopt hij niet en worden geen doel; een cape voor de kleur koopt hij alleen als hij nog geen cape heeft.
 - Hoge testprofielen hebben de capes die ze op dat niveau verdiend zouden hebben: midgame draagt een fire cape, late game een infernal cape, endgame een infernal max cape. Op de bank liggen Ava's-apparaten en een imbued saradomin cape.
 - De gear-lijsten voor alle drie de vechtstijlen lopen nu van level 1 tot endgame, met de tussenstappen ertussen: voor ranged onder meer d'hide, Karil's, Armadyl, Masori en de Twisted bow; voor magic onder meer splitbark, Infinity, Ahrim's, Ancestral en de Kodai wand; plus dragon- en crystal-tools. Testprofielen met Ranged of Magic krijgen die set met pijlen of runes op de bank.
@@ -172,6 +175,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Een avonturier met een two-handed wapen (zoals een Scythe) koopt en draagt geen schild meer als hij even een axe in de hand heeft.
 - High-level avonturiers trainen combat niet meer op monsters ver onder hun level (een combat 70 op jail guards van level 26): de laagste tegenstander is minstens zo'n 45% van hun combatlevel, en lage plekken zoals Lumbridge en Port Sarim hebben een maximumlevel.
 - De Al Kharid-tolpoort werd door de bots niet herkend (de poort heeft pas een naam als je hem als speler bekijkt); ze gaan er nu echt doorheen.
 - High-level avonturiers liepen voor magic trees en redwoods rondjes in Lumbridge, omdat elke plek met bomen meetelde. Yews, magic trees en redwoods hakken ze nu alleen waar die echt staan. Kunnen ze daar niet komen (redwoods in Kourend), dan kiezen ze de beste boom die wel bereikbaar is, of een andere klus.

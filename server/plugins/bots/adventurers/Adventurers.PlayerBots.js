@@ -806,9 +806,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         }
       }
     }
+    // Law runes and the elements of the teleport spells stay with it (it teleports from its bag).
+    const travel = new Set(["LAW_RUNE", "AIR_RUNE", "EARTH_RUNE", "WATER_RUNE", "FIRE_RUNE"].map((name) => Shopping.idOf(core, name)).filter(Number.isInteger));
+    const teleports = banker.getInventory().getAmount(Shopping.idOf(core, "LAW_RUNE")) > 0;
     for (const style of ["ranged", "magic"]) {
       if (style === using) continue;
       for (const id of styleSupplyIds(style)) {
+        if (teleports && travel.has(id)) continue;
         const amount = banker.getInventory().getAmount(id);
         if (amount > 0) goods.push({ itemId: id, amount });
       }
@@ -2264,6 +2268,17 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
     deposit(player, kept);
     if (kept.length > 0) given.push(`${kept.map((good) => itemName(good.itemId).toLowerCase()).join(", ")} op de bank`);
+    // Runes for teleports in its bag (Varrock 25, Lumbridge 31, Falador 37, Camelot 45, Ardougne
+    // 51), as a player with the levels and the coins travels: a max-level account walked everywhere.
+    if (levelOf(player, "MAGIC") >= 25 && (Number(profile.coins) || 0) >= 100_000) {
+      for (const [name, amount] of [["LAW_RUNE", 200], ["AIR_RUNE", 1000], ["FIRE_RUNE", 200], ["EARTH_RUNE", 200], ["WATER_RUNE", 200]]) {
+        const id = Shopping.idOf(core, name);
+        if (!Number.isInteger(id)) continue;
+        acquire(player, id);
+        player.getInventory().add(new core.Item(id, amount));
+      }
+      given.push("teleport-runes");
+    }
     // Its Ranged and Magic sets too, in the bank (it wears the melee set): the best its levels and
     // coins allow, with arrows or runes, so it can switch styles as an account at its levels can.
     for (const [style, skill] of [["ranged", "RANGED"], ["magic", "MAGIC"]]) {
@@ -3197,10 +3212,23 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
     // With coins to spare, a few teleport tablets for long walks (the errands break one when it
     // saves a long walk): the cheapest way round for an adventurer without the Magic for the spell.
-    if (Shopping.coinsOf(player) >= TABLET_BUDGET) {
+    // With the Magic for the spells (Varrock 25 up to Camelot 45), law runes and the elements
+    // instead: a player who can cast them does not buy tablets. More of them the richer it is.
+    const wealth = Shopping.coinsOf(player);
+    const stock = wealth >= 5_000_000 ? 100 : wealth >= 200_000 ? 40 : 15;
+    if (levelOf(player, "MAGIC") >= 25 && wealth >= TABLET_BUDGET * 2) {
+      top("LAW_RUNE", stock);
+      top("AIR_RUNE", stock * 5);
+      if (levelOf(player, "MAGIC") >= 31) top("EARTH_RUNE", stock * 2);
+      if (levelOf(player, "MAGIC") >= 37) top("WATER_RUNE", stock);
+      top("FIRE_RUNE", stock);
+    } else if (Shopping.coinsOf(player) >= TABLET_BUDGET) {
       const held = TABLETS.reduce((sum, name) => sum + (Number.isInteger(Shopping.idOf(core, name))
         ? player.getInventory().getAmount(Shopping.idOf(core, name)) + banked(player, Shopping.idOf(core, name)) : 0), 0);
-      if (held < 2) top(TABLETS[Math.floor(random() * TABLETS.length)], 3);
+      // Each of the tablets, a few of each (more when it is rich), not one random kind.
+      if (held < 4) for (const name of TABLETS) top(name, Math.max(3, Math.floor(stock / 5)));
+    }
+    if (Shopping.coinsOf(player) >= TABLET_BUDGET) {
       const owned = (name) => {
         const id = Shopping.idOf(core, name);
         return Number.isInteger(id) ? player.getInventory().getAmount(id) + banked(player, id) : 0;
@@ -3253,6 +3281,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * bronze dagger beats bare fists, a wooden shield beats none. Not a tool (axe, pickaxe), a bow
    * or a staff (those are its other ways of fighting), nor arrows. Of several, the dearest.
    */
+  /** Whether it owns a two-handed weapon from its gear lists (a scythe), worn or not. */
+  function ownsTwoHander(player) {
+    return (Shopping.gear.slots?.weapon ?? []).some((entry) => {
+      const id = Shopping.idOf(core, entry.item);
+      return Number.isInteger(id) && Shopping.ownsAnywhere(player, id) && core.ItemDefinition?.forId?.(id)?.isDoubleHanded?.() === true;
+    });
+  }
+
   function fillEmptySlots(player, { fromBank = false } = {}) {
     const equipment = player.getEquipment().getItems() ?? [];
     const skip = new Set([...Object.values(Shopping.gear.tools ?? {}).flat(), ...(Shopping.gear.styles?.ranged?.weapon ?? []),
@@ -3267,8 +3303,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const definition = core.ItemDefinition.forId(id);
       const slot = definition?.getEquipmentType?.()?.getSlot?.();
       if (!Number.isInteger(slot) || slot < 0 || slot === ammoSlot || equipment[slot]?.getId?.() > 0) return;
-      // The shield slot stays empty beside a two-handed weapon (a scythe).
-      if (slot === (core.Equipment?.SHIELD_SLOT ?? 5) && Trade.twoHanded(player, core)) return;
+      // The shield slot stays empty beside a two-handed weapon (a scythe), also while the axe is
+      // in its hand instead.
+      if (slot === (core.Equipment?.SHIELD_SLOT ?? 5) && (Trade.twoHanded(player, core) || ownsTwoHander(player))) return;
       if (definition.isNoted?.() || !mayWear(definition)) return;
       const value = Value.itemValue(core, id, 1);
       if (!best.has(slot) || value > best.get(slot).value) best.set(slot, { id, value });
@@ -3343,6 +3380,16 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         const stored = [...deposit(banker, Trade.goodsToSell(banker, core, keepHere, { isFood, worthless: true })),
           ...bankUnusedSupplies(entry, banker), ...bankUnusedTools(entry, banker)];
         if (stored.length > 0) note(banker, `Zet op de bank in ${bank.name ?? bank.id}: ${stored.slice(0, 5).map((good) => itemName(good.itemId)).join(", ")}${stored.length > 5 ? ` en ${stored.length - 5} meer` : ""}. Bruikbaars bewaart hij; de rest verkoopt hij later op de GE.`, "activity");
+        // Its means of travel back in the bag (it teleports only from there): law runes with the
+        // elements when it has the Magic for the spells, its tablets and charged jewellery.
+        const travelBack = [];
+        const take = (name, amount) => {
+          const id = Shopping.idOf(core, name);
+          if (Number.isInteger(id) && banked(banker, id) > 0 && banker.getInventory().getFreeSlots() > 2 && withdraw(banker, id, amount) > 0) travelBack.push(itemName(id));
+        };
+        if (levelOf(banker, "MAGIC") >= 25) for (const name of ["LAW_RUNE", "AIR_RUNE", "EARTH_RUNE", "WATER_RUNE", "FIRE_RUNE"]) take(name, 1_000);
+        for (const name of [...TABLETS, ...JEWELLERY]) take(name, name.startsWith("AMULET") || name.startsWith("RING") || name.startsWith("GAMES") ? 1 : 20);
+        if (travelBack.length > 0) note(banker, `Neemt mee om te reizen: ${travelBack.join(", ").toLowerCase()}.`, "activity");
       },
     });
   }

@@ -158,7 +158,13 @@ function shoppingList(player, core, { levelOf, questDone, modes = [], exchange =
     if (price > 0) wants.push({ itemId: capeId, name: capeOf(player), price });
   }
   // No whole set within reach: a single cheaper piece now and then (a weapon first, see below).
-  if (!setChosen) for (const [slot, list] of Object.entries(gear.slots)) if (slot !== "weapon") consider(list);
+  // A two-handed weapon of its own (a scythe): no shield to buy beside it (with an axe in hand
+  // the shield slot is empty for a while; a max-level account bought a rune kiteshield for it).
+  const ownsTwoHanded = (gear.slots.weapon ?? []).some((entry) => {
+    const id = idOf(core, entry.item);
+    return Number.isInteger(id) && ownsAnywhere(player, id) && core.ItemDefinition?.forId?.(id)?.isDoubleHanded?.() === true;
+  });
+  if (!setChosen) for (const [slot, list] of Object.entries(gear.slots)) if (slot !== "weapon" && !(slot === "shield" && ownsTwoHanded)) consider(list);
   if (modes.includes("woodcutting")) {
     consider(gear.tools.axe);
     consider(gear.tools.knife ?? []);
