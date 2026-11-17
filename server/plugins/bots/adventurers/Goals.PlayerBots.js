@@ -24,7 +24,8 @@ function candidates(view, { gear, levelOf, owns, worn, priceOf, questDone, idOf,
     const list = raw.map(variant);
     // The first piece better than what it has; lists run best first.
     const have = list.findIndex((entry) => owns(idOf(entry.item)) || worn(idOf(entry.item)));
-    const better = (have < 0 ? list : list.slice(0, have)).filter((entry) => (entry.quests ?? []).every(questDone));
+    // Earned pieces (a fire or infernal cape) are no goal: they are won, not bought or levelled for.
+    const better = (have < 0 ? list : list.slice(0, have)).filter((entry) => !entry.earned && (entry.quests ?? []).every(questDone));
     const next = better[better.length - 1];
     if (!next) return;
     const name = next.item.toLowerCase().replace(/_/g, " ");

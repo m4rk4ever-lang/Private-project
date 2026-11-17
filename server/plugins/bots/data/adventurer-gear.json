@@ -94,6 +94,12 @@
       { "item": "AMULET_OF_STRENGTH", "skill": "HITPOINTS", "level": 1 },
       { "item": "AMULET_OF_POWER", "skill": "HITPOINTS", "level": 1 },
       { "item": "AMULET_OF_DEFENCE", "skill": "HITPOINTS", "level": 1 }
+    ],
+    "cape": [
+      { "item": "INFERNAL_MAX_CAPE", "skill": "HITPOINTS", "level": 99, "earned": true },
+      { "item": "INFERNAL_CAPE", "skill": "HITPOINTS", "level": 1, "earned": true },
+      { "item": "FIRE_CAPE", "skill": "HITPOINTS", "level": 1, "earned": true },
+      { "item": "OBSIDIAN_CAPE", "skill": "HITPOINTS", "level": 1 }
     ]
   },
   "styles": {
@@ -164,6 +170,12 @@
       "neck": [
         { "item": "NECKLACE_OF_ANGUISH", "skill": "HITPOINTS", "level": 75 },
         { "item": "AMULET_OF_POWER", "skill": "HITPOINTS", "level": 1 }
+      ],
+      "cape": [
+        { "item": "AVAS_ASSEMBLER", "skill": "RANGED", "level": 70 },
+        { "item": "AVAS_ACCUMULATOR", "skill": "RANGED", "level": 50 },
+        { "item": "AVAS_ATTRACTOR", "skill": "RANGED", "level": 30 },
+        { "item": "FIRE_CAPE", "skill": "HITPOINTS", "level": 1, "earned": true }
       ]
     },
     "magic": {
@@ -223,6 +235,11 @@
         { "item": "OCCULT_NECKLACE", "skill": "MAGIC", "level": 70 },
         { "item": "AMULET_OF_POWER", "skill": "HITPOINTS", "level": 1 },
         { "item": "AMULET_OF_MAGIC", "skill": "HITPOINTS", "level": 1 }
+      ],
+      "cape": [
+        { "item": "IMBUED_SARADOMIN_CAPE", "skill": "MAGIC", "level": 75 },
+        { "item": "SARADOMIN_CAPE", "skill": "MAGIC", "level": 60 },
+        { "item": "FIRE_CAPE", "skill": "HITPOINTS", "level": 1, "earned": true }
       ]
     }
   },

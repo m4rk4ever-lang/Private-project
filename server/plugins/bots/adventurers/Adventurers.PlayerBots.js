@@ -2166,7 +2166,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       if (slot === "shield" && Trade.twoHanded(player, core)) continue;
       // Within what an account with its coins would own: a 10k fighter has no amulet of fury.
       const budget = Math.max(5_000, Number(profile.coins) || 0);
-      const best = list.find((entry) => Shopping.allowed(entry, helpers) && Number.isInteger(Shopping.idOf(core, entry.item))
+      const best = list.find((entry) => !entry.earned && Shopping.allowed(entry, helpers) && Number.isInteger(Shopping.idOf(core, entry.item))
         && Value.itemValue(core, Shopping.idOf(core, entry.item), 1) <= budget);
       const id = best ? Shopping.idOf(core, best.item) : null;
       if (!Number.isInteger(id) || player.getInventory().getFreeSlots() < 1 || Shopping.owns(player, id)) continue;
@@ -2207,7 +2207,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const budget = Math.max(5_000, Number(profile.coins) || 0);
       const banked = [];
       for (const [slot, list] of Object.entries(Shopping.gear.styles?.[style] ?? {})) {
-        const best = list.find((entry) => Shopping.allowed(entry, helpers) && Number.isInteger(Shopping.idOf(core, entry.item))
+        const best = list.find((entry) => !entry.earned && Shopping.allowed(entry, helpers) && Number.isInteger(Shopping.idOf(core, entry.item))
           && Value.itemValue(core, Shopping.idOf(core, entry.item), 1) * (slot === "ammo" ? 1000 : 1) <= budget);
         const id = best ? Shopping.idOf(core, best.item) : null;
         if (!Number.isInteger(id) || player.getInventory().getFreeSlots() < 1) continue;

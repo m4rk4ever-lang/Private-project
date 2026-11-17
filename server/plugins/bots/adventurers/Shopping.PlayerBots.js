@@ -98,6 +98,11 @@ function shoppingList(player, core, { levelOf, questDone, modes = [], exchange =
     for (const entry of list.map((piece) => variantOf(core, piece, player))) {
       if (!allowed(entry, { levelOf, questDone })) continue;
       const itemId = idOf(core, entry.item);
+      // Earned, not bought (a fire cape): the best it has when it has it, else the next one down.
+      if (entry.earned) {
+        if (Number.isInteger(itemId) && ownsAnywhere(player, itemId)) return;
+        continue;
+      }
       if (!Number.isInteger(itemId) || ownsAnywhere(player, itemId)) return; // has the best it may use
       // From a shop, or (exchange) at the Grand Exchange at a little over its guide price.
       const guide = Number(core.ItemDefinition?.forId?.(itemId)?.getGrandExchangeValue?.() ?? 0);

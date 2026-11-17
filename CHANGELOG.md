@@ -120,6 +120,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Capes tellen nu mee als uitrusting met stats, per vechtstijl: obsidian, fire, infernal en (infernal) max cape voor melee; Ava's-apparaten voor ranged; god capes voor magic. Een avonturier trekt de beste aan die hij heeft. Verdiende capes (fire, infernal, max) koopt hij niet en worden geen doel; een cape voor de kleur koopt hij alleen als hij nog geen cape heeft.
 - Hoge testprofielen hebben de capes die ze op dat niveau verdiend zouden hebben: midgame draagt een fire cape, late game een infernal cape, endgame een infernal max cape. Op de bank liggen Ava's-apparaten en een imbued saradomin cape.
 - De gear-lijsten voor alle drie de vechtstijlen lopen nu van level 1 tot endgame, met de tussenstappen ertussen: voor ranged onder meer d'hide, Karil's, Armadyl, Masori en de Twisted bow; voor magic onder meer splitbark, Infinity, Ahrim's, Ancestral en de Kodai wand; plus dragon- en crystal-tools. Testprofielen met Ranged of Magic krijgen die set met pijlen of runes op de bank.
 - Testopzet: geen wereldbots meer (site-bots en wilderness-bots staan op 0, met de nieuwe instelling `PlayerBots:wildernessBots`), en 15 extra avonturiers per clan (60 in totaal). Alle avonturiers beginnen opnieuw in Lumbridge. De originele accounts starten als nieuw account op level 3; de extra's krijgen een testprofiel van vroege vechter tot endgame (combat 126, alles 99, 2 miljard coins), met gear die past bij hun levels en geld.
