@@ -881,6 +881,42 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return true;
   }
 
+  /**
+   * The protection prayer a player turns on against a foe that hits hard in one style (the Barrows
+   * brothers, the Giant Mole, Sarachnis), when its Prayer level and points allow it; off again
+   * once the fight is over, as points drain while it is on. Turned on through the game's prayer
+   * handler, so the drain, the head icon and the level checks are the game's.
+   */
+  const PROTECT_AGAINST = [
+    { names: /^(dharok|guthan|torag|verac)|giant mole|sarachnis/i, prayer: "PROTECT_FROM_MELEE", level: 43 },
+    { names: /^karil/i, prayer: "PROTECT_FROM_MISSILES", level: 40 },
+    { names: /^ahrim/i, prayer: "PROTECT_FROM_MAGIC", level: 37 },
+  ];
+  function protectionPrayer(entry, nowMs) {
+    const player = entry.player;
+    let PrayerHandler;
+    try {
+      ({ PrayerHandler } = require("../../../src/main/typescript/elvarg/game/content/PrayerHandler"));
+    } catch {
+      return;
+    }
+    const target = player.getCombat?.()?.getTarget?.() ?? player.getCombat?.()?.getAttacker?.() ?? null;
+    const name = target?.isNpc?.() ? String(target.getDefinition?.()?.getName?.() ?? "") : "";
+    const want = name ? PROTECT_AGAINST.find((entry) => entry.names.test(name)) : null;
+    const points = player.getSkillManager().getCurrentLevel(core.Skill.PRAYER);
+    if (want && levelOf(player, "PRAYER") >= want.level && points > 0) {
+      entry.prayingUntil = nowMs + 8_000;
+      const id = PrayerHandler[want.prayer];
+      if (!PrayerHandler.isActivated(player, id)) PrayerHandler.activatePrayerPrayerId(player, id);
+      return;
+    }
+    // A few seconds after the fight (the next brother may come at once): all off again.
+    if (entry.prayingUntil && nowMs > entry.prayingUntil) {
+      entry.prayingUntil = null;
+      PrayerHandler.deactivatePrayers(player);
+    }
+  }
+
   function unstrand(entry, player) {
     const at = player.getLocation();
     const recent = (entry.blockedFrom ?? []).filter((spot) => now() - spot.at < 15 * 60_000
@@ -1866,6 +1902,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         }
       }
       leaveUnreachableFight(entry, nowMs);
+      protectionPrayer(entry, nowMs);
       eatWhenHurt(entry);
       if (!entry.player.getCombat?.()?.getTarget?.()) buryLowBones(entry.player);
       // Out of breath it walks; rested (40%) it runs again, as a player clicks run back on.

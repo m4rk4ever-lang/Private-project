@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Avonturiers zetten in een gevecht met een Barrows-broer, de Giant Mole of Sarachnis de juiste protection prayer aan (melee, missiles of magic), als hun Prayer-level en prayer-punten dat toelaten. Na het gevecht zetten ze hem weer uit.
 - Elke regel in de avonturierslogs vermeldt de versie van de server (de git-commit), zodat je na een update ziet welke regels bij welke versie horen.
 - Teleporteert een avonturier onderweg (spreuk, tablet, sieraad of home teleport), dan staat dat in zijn activiteitenlog.
 - Als een avonturier iets gaat halen voor een quest, controleert hij daarna of het echt in zijn tas zit. In het log staat dan "Heeft ..." of "Kon ... niet halen".
