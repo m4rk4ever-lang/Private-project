@@ -796,6 +796,16 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function bankUnusedSupplies(entry, banker, plan = entry.plan) {
     const using = planStyle(entry, plan);
     const goods = [];
+    // Prayer potions are stock for its fights, as food is: in the bank for a job without one.
+    const fighting = plan?.kind === "boss" || DANGER_MODES.has(plan?.mode);
+    if (!fighting) {
+      for (const item of banker.getInventory().getItems() ?? []) {
+        if (item && item.getId() > 0 && PRAYER_RESTORE.test(String(core.ItemDefinition.forId(item.getId())?.getName?.() ?? ""))
+            && !goods.some((good) => good.itemId === item.getId())) {
+          goods.push({ itemId: item.getId(), amount: banker.getInventory().getAmount(item.getId()) });
+        }
+      }
+    }
     for (const style of ["ranged", "magic"]) {
       if (style === using) continue;
       for (const id of styleSupplyIds(style)) {
@@ -1369,11 +1379,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // poor for them does not walk to the exchange before every fight.
     if (levelOf(player, "PRAYER") >= 43 && PROTECT_AGAINST.some((entry) => entry.names.test(boss.name ?? "")) && nowMs >= (entry.prayerPotAt ?? 0)) {
       const potion = Shopping.idOf(core, "PRAYER_POTION_4_");
+      // Its bank's stock first, part-drunk ones too (3, 2 or 1 dose), then a full one bought.
+      const doses = ["PRAYER_POTION_4_", "PRAYER_POTION_3_", "PRAYER_POTION_2_", "PRAYER_POTION_1_", "SUPER_RESTORE_4_", "SUPER_RESTORE_3_"]
+        .map((name) => Shopping.idOf(core, name)).filter(Number.isInteger);
       const carried = (player.getInventory().getItems() ?? []).filter((item) => item && PRAYER_RESTORE.test(String(core.ItemDefinition.forId(item.getId())?.getName?.() ?? ""))).length;
       if (Number.isInteger(potion) && carried < 2) {
         entry.prayerPotAt = nowMs + 30 * 60_000;
         entry.savedTask = { kind: "boss", bossId: boss.id, reason: plan.reason ?? "verder", remainingMs: 0, savedAt: now() };
-        if (acquireForQuest(entry, [potion], 4, "prayer potions")) {
+        if (acquireForQuest(entry, doses.length > 0 ? doses : [potion], 4, "prayer potions")) {
           note(player, `Gaat prayer potions halen voor ${boss.name}.`, "boss");
           return true;
         }

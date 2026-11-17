@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Prayer potions zijn voorraad, net als eten: bij klussen zonder gevecht gaan ze naar de bank, en voor een boss haalt een avonturier ze eerst daar op (ook aangebroken potions) voordat hij nieuwe koopt.
 - Avonturiers met Protect from Melee nemen prayer potions mee naar bosses waar ze tegen bidden (van hun bank, anders gekocht). Ze drinken er een als hun prayer-punten laag staan, en verkopen ze niet.
 - Avonturiers zetten in een gevecht met een Barrows-broer, de Giant Mole of Sarachnis de juiste protection prayer aan (melee, missiles of magic), als hun Prayer-level en prayer-punten dat toelaten. Na het gevecht zetten ze hem weer uit.
 - Elke regel in de avonturierslogs vermeldt de versie van de server (de git-commit), zodat je na een update ziet welke regels bij welke versie horen.
