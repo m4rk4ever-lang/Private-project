@@ -29,6 +29,20 @@ if [ -f .env ] && grep -q '^REACT_APP_DEFAULT_SERVER_NAME=Codespace$' .env; then
   sed -i 's/^REACT_APP_DEFAULT_SERVER_NAME=Codespace$/REACT_APP_DEFAULT_SERVER_NAME=Realm of Eeshwar/' .env
 fi
 
+# The bridge's own code changed: stop the old one, build the new one (started below).
+if [ "$before" != "$after" ] && git diff --name-only "$before" "$after" | grep -q '^tools/quest-helper-bridge/' \
+    && [ -x tools/quest-helper-bridge/gradlew ]; then
+  echo "[update] Quest Helper-bridge vernieuwen..."
+  pkill -f 'local.questbridge.BridgeServer' 2>/dev/null || true
+  pkill -f 'scripts/quest-helper-bridge.mjs' 2>/dev/null || true
+  for _ in $(seq 1 10); do
+    curl -fs --max-time 1 http://127.0.0.1:16471/health >/dev/null 2>&1 || (exec 3<>/dev/tcp/127.0.0.1/16471) 2>/dev/null || break
+    sleep 1
+  done
+  (cd tools/quest-helper-bridge && bash ./gradlew -q --no-daemon installDist) \
+    || echo "[update] De bridge bouwen lukte niet; de oude versie blijft (bash scripts/quest-helper-setup.sh)."
+fi
+
 # The Quest Helper bridge (quests in the game and the adventurers' quests): start it when it is
 # built and does not answer, as the codespace does when it opens.
 if [ -x tools/quest-helper-bridge/build/install/offline-quest-helper-bridge/bin/offline-quest-helper-bridge ] \

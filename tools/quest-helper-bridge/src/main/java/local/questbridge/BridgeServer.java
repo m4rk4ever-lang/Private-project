@@ -21,7 +21,9 @@ public final class BridgeServer {
     BridgeEngine engine = new BridgeEngine();
     HttpServer server =
         HttpServer.create(new InetSocketAddress(InetAddress.getByName("127.0.0.1"), port), 16);
-    server.setExecutor(Executors.newFixedThreadPool(2));
+    // Quests are evaluated one at a time (BridgeEngine is synchronized); the extra threads keep
+    // /health and /close answering while the game's adventurers wait in line for /evaluate.
+    server.setExecutor(Executors.newFixedThreadPool(8));
     server.createContext(
         "/",
         exchange -> {

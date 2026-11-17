@@ -3957,6 +3957,24 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
 }
 
 let bridgeStarting = 0;
+/**
+ * The bridge's state: "up" (health answers), "busy" (the port takes a connection but health does
+ * not answer in time: a bridge working through quests in line) or "down" (nothing on the port).
+ */
+function bridgeState() {
+  const url = process.env.QUEST_HELPER_URL || `http://127.0.0.1:${Number(process.env.QUEST_HELPER_PORT || 16471)}`;
+  return fetch(`${url.replace(/\/$/, "")}/health`, { signal: AbortSignal.timeout(3000) }).then((response) => {
+    if (!response.ok) throw new Error(String(response.status));
+    return "up";
+  }).catch(() => new Promise((resolve) => {
+    const socket = require("net").connect({ host: "127.0.0.1", port: Number(new URL(url).port || 80) });
+    const done = (state) => { socket.destroy(); resolve(state); };
+    socket.setTimeout(2000);
+    socket.once("connect", () => done("busy"));
+    socket.once("error", () => done("down"));
+    socket.once("timeout", () => done("down"));
+  }));
+}
 /** Starts the Quest Helper bridge when it is built and does not answer (see the startup hook). */
 let bridgeDownSince = 0;
 function keepBridgeUp(world) {
@@ -3966,26 +3984,18 @@ function keepBridgeUp(world) {
   const root = path.join(__dirname, "..", "..", "..", "..");
   const bin = path.join(root, "tools", "quest-helper-bridge", "build", "install", "offline-quest-helper-bridge", "bin", "offline-quest-helper-bridge");
   if (!fs.existsSync(bin)) return;
-  const url = process.env.QUEST_HELPER_URL || `http://127.0.0.1:${Number(process.env.QUEST_HELPER_PORT || 16471)}`;
-  fetch(`${url.replace(/\/$/, "")}/health`, { signal: AbortSignal.timeout(3000) }).then((response) => {
-    if (!response.ok) throw new Error(String(response.status));
-    bridgeDownSince = 0;
-  }).catch(() => {
-    // Not at the first miss: start.sh starts one too, and Java takes its time to answer; a second
-    // one only failed on the port ("Address already in use"). Down for 90 s: start it.
+  bridgeState().then((state) => {
+    if (state === "busy") world?.log?.("adventurer_bridge_busy", {});
+    if (state !== "down") {
+      bridgeDownSince = 0;
+      return;
+    }
+    // Not at the first miss: start.sh and `update` start one too, and Java takes its time to open
+    // its port. Nothing on the port for 90 s: start it.
     bridgeDownSince ||= Date.now();
     if (Date.now() - bridgeDownSince < 90_000) return;
     bridgeDownSince = 0;
-    // The bridge answers one quest at a time on two threads: with the adventurers' requests in
-    // flight, /health waits in line and times out although the bridge runs. A port that still
-    // accepts a connection means it is busy, not down; a second one would only fail on the port.
-    const port = Number(new URL(url).port || 80);
-    const socket = require("net").connect({ host: "127.0.0.1", port });
-    socket.setTimeout(2000);
-    socket.once("connect", () => { socket.destroy(); world?.log?.("adventurer_bridge_busy", { port }); });
-    const start = () => { socket.destroy(); startBridge(world, root, fs, path); };
-    socket.once("error", start);
-    socket.once("timeout", start);
+    startBridge(world, root, fs, path);
   });
 }
 
@@ -4063,13 +4073,13 @@ function startAdventurers({ api, runtime, world, registry }) {
     }
     // The quests are played with the Quest Helper bridge: without it every one fails in two
     // minutes ("fetch failed"), so the sweep is refused with how to start it.
-    const url = process.env.QUEST_HELPER_URL || `http://127.0.0.1:${Number(process.env.QUEST_HELPER_PORT || 16471)}`;
-    fetch(`${url.replace(/\/$/, "")}/health`, { signal: AbortSignal.timeout(3000) }).then((response) => {
-      if (!response.ok) throw new Error(`status ${response.status}`);
+    bridgeState().then((state) => {
+      if (state === "down") {
+        player.sendMessage("De Quest Helper-bridge draait niet; start hem eerst (yarn bridge) en probeer het dan opnieuw.");
+        return;
+      }
       const out = manager.questSweep();
-      player.sendMessage(`${out.length} avonturiers proberen elk een andere quest: ${out.map(([name, quest]) => `${name} → ${quest}`).join("; ").slice(0, 400)}`);
-    }).catch(() => {
-      player.sendMessage("De Quest Helper-bridge draait niet; start hem eerst (yarn bridge) en probeer het dan opnieuw.");
+      player.sendMessage(`${state === "busy" ? "(De bridge is druk bezig; de quests komen op gang.) " : ""}${out.length} avonturiers proberen elk een andere quest: ${out.map(([name, quest]) => `${name} → ${quest}`).join("; ").slice(0, 400)}`);
     });
     return true;
   }, rights.OWNER, "Every adventurer at once on a different quest, each on to the next untried one when done or stuck (two hours; ::advquestall stop ends it): ::advquestall");
