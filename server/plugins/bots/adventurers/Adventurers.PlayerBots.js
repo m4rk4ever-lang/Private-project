@@ -1190,7 +1190,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     } else {
       const level = plan.mode === "combat_training" ? view.combat : view.levels[plan.skill] ?? 1;
       // A quest's own errand names its activity (clay_rocks for Doric's clay); else the best one.
-      const id = plan.activity ?? bestActivity(plan.mode, level, definitions);
+      const id = plan.activity ?? reachableActivity(player, plan.mode, level);
       // Fighting on an empty stomach is how adventurers die: food first, if it can buy some.
       if (plan.mode === "combat_training" && stockFood(entry, plan, nowMs)) return true;
       // A gathering job wants room for what it gathers: things for other jobs (a pickaxe, snares,
@@ -1237,7 +1237,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       // bots' travel with its hubs and spreading.
       const place = Sites.pickSite(player, activity, {
         core, random, distance: (from, to, who) => (from.z !== (to.z ?? 0) ? walkTiles(from, to, who) + 50 : walkTiles(from, to, who)),
-        meets: (who, requires, site) => travelMeets(who, requires, site),
+        meets: (who, requires, site) => travelMeets(who, requires, site), destinations: destinationsFor(id),
       });
       Sites.settleAt(stateOf(player), place);
       if (place) world.log?.("adventurer_site", { name: entry.name, activity: id, site: place.id });
@@ -1664,6 +1664,43 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (!entry.climbingDown) note(player, way === "up" ? "Staat onder de grond; klimt de ladder op." : "Staat op een verdieping; gaat de ladder of trap af.", "activity");
     entry.climbingDown = true;
     return true;
+  }
+
+  /**
+   * The best activity of a mode its level allows that has a spot it can walk to: magic trees or
+   * redwoods with no reachable spot (Kourend's woodcutting guild) give way to the next tier
+   * down (yews), as a player chops where they can get to. Without this a high-level account
+   * started the job at home and walked round Lumbridge for it.
+   */
+  /**
+   * The places an activity can be done (adventurers.json "activitySites": magic trees only where
+   * magic trees grow), else every place of its kind. Lumbridge counted as a place for magic trees.
+   */
+  function destinationsFor(id) {
+    const all = require("../brain/Travel.PlayerBots").data.destinations ?? [];
+    const only = data.activitySites?.[id];
+    return Array.isArray(only) ? all.filter((place) => only.includes(place.id)) : all;
+  }
+
+  function reachableActivity(player, mode, level) {
+    let last = null;
+    for (let cap = level; cap >= 1; cap -= 1) {
+      const id = bestActivity(mode, cap, definitions);
+      if (!id) return null;
+      if (id === last) continue;
+      last = id;
+      const activity = registry?.byId?.get(id) ?? null;
+      if (!activity) return id;
+      const site = Sites.pickSite(player, activity, {
+        core, random: () => 0, distance: (from, to, who) => (from.z !== (to.z ?? 0) ? walkTiles(from, to, who) + 50 : walkTiles(from, to, who)),
+        meets: (who, requires, place) => travelMeets(who, requires, place), destinations: destinationsFor(id),
+      });
+      if (site) return id;
+      // A job done anywhere (no spots of its own) is fine; a tree, rock or fishing spot is not.
+      if (!["woodcutting", "mining", "fishing"].includes(mode) && Sites.sitesFor(activity, 99, { meets: () => true }).length === 0) return id;
+    }
+    // Nothing of this kind it can reach now: another job instead.
+    return null;
   }
 
   /** The rooftop course it stands on (up a floor, within 70 tiles of its start), or null. */

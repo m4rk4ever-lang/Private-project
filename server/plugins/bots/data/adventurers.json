@@ -243,6 +243,11 @@
     }
   ],
   "bossChance": 0.25,
+  "activitySites": {
+    "yew_trees": ["edgeville", "grand_exchange", "falador", "catherby", "seers_village", "tree_gnome_stronghold", "woodcutting_guild"],
+    "magic_trees": ["sorcerers_tower_magics", "tree_gnome_stronghold", "woodcutting_guild"],
+    "redwood_trees": ["woodcutting_guild"]
+  },
   "generation": 18,
   "grandExchange": {
     "x": 3164,
