@@ -1900,6 +1900,19 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // it weighs it up. Cheap things go; what is worth the walk stays and it tries a bank again
     // shortly instead of starting a new job with a full bag.
     if (!clearBag(entry.player)) {
+      // A bag full of things it keeps (the last job's materials: 21 raw monkfish for a firemaking
+      // job): to the nearest bank with them, everything but coins, food and tools goes in. It
+      // waited forever beside the GE's bank otherwise.
+      const bank = nearestBank(entry.player, entry);
+      if (bank && walkTo(entry, { ...bank, name: bank.name ?? bank.id }, {
+        reason: "bank",
+        urgent: true,
+        arrive: (banker) => {
+          const keep = Trade.keepIds(banker, core, { isFood });
+          const stored = deposit(banker, Trade.goodsToSell(banker, core, keep, { isFood, worthless: true }));
+          if (stored.length > 0) note(banker, `Maakt zijn volle tas leeg op de bank: ${stored.slice(0, 5).map((good) => itemName(good.itemId).toLowerCase()).join(", ")}${stored.length > 5 ? ` en ${stored.length - 5} meer` : ""}.`, "activity");
+        },
+      })) return;
       entry.phase = "waiting";
       entry.until = nowMs + 60_000;
       return;
@@ -2155,6 +2168,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       }
       if (entry.phase === "training" && entry.buying && entry.player.getInventory().getAmount(entry.buying) <= 0
           && !errands.busy(entry.player)) {
+        // Out of this load with more in its bank and time left: the next load, the same job, as a
+        // player banks and goes on (it switched job after every single load, a minute each).
+        if (banked(entry.player, entry.buying) > 0 && entry.until - nowMs > 60_000 && entry.plan?.kind === "train") {
+          entry.savedTask = { kind: "train", mode: entry.plan.mode, skill: entry.plan.skill, reason: entry.plan.reason,
+            target: entry.plan.target ?? null, remainingMs: entry.until - nowMs, savedAt: now(), afterTrip: true };
+          entry.jobEnd = "next load";
+        }
         entry.buying = null;
         entry.until = 0;
       }
