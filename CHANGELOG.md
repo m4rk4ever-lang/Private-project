@@ -165,6 +165,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers kregen de diagonale binnendeur van de Wizards' Tower niet open ("I can't reach that!" van een paar tegels afstand). Ze lopen nu eerst naar een tegel naast de deur en openen hem dan.
 - De home teleport van een vastzittende avonturier werd meteen weer afgebroken, omdat hij tijdens de spreuk bleef klikken en lopen. Daardoor bleef hij op hetzelfde dak of in hetzelfde huis staan. Tijdens de spreuk staat hij nu stil, tot hij geland is.
 - Een avonturier die al minuten op het dak van een agility-baan staat en de baan niet af kan lopen, gebruikt de home teleport naar Lumbridge.
 - Een avonturier die een quest-doel op een geblokkeerde tegel heeft (zoals de ladder in de Wizards' Tower) loopt naar een tegel er direct naast, niet naar een tegel twee verder in een andere kamer.

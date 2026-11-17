@@ -419,6 +419,30 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     world.log?.("adventurer_quest_door", { name: player.getUsername?.(), at: `${here.getX()},${here.getY()},${here.getZ()}`,
       target, door: best ? `${core.ObjectDefinition.forId(best.object.getId())?.getName?.()}@${best.x},${best.y} click ${best.clickType}` : null });
     if (!best) return false;
+    // A diagonal door (the Wizards' Tower's inner one) is not reached from a few tiles off: the
+    // game's own path to it fails ("I can't reach that!", for a player too). First to a free tile
+    // beside it, one it has not tried in the last half minute, then the click.
+    if (Number(best.object.getType?.()) === 9 && Math.max(Math.abs(best.x - here.getX()), Math.abs(best.y - here.getY())) > 1) {
+      const tried = (openWayTo.tried ??= new WeakMap()).get(player) ?? new Map();
+      openWayTo.tried.set(player, tried);
+      const free = [[1, 1], [-1, -1], [1, -1], [-1, 1], [1, 0], [-1, 0], [0, 1], [0, -1]]
+        .map(([dx, dy]) => ({ x: best.x + dx, y: best.y + dy }))
+        .filter((tile) => (tried.get(`${tile.x},${tile.y}`) ?? 0) < nowMs)
+        .filter((tile) => {
+          try {
+            return core.RegionManager?.blocked?.(new core.Location(tile.x, tile.y, here.getZ()), null) !== true;
+          } catch {
+            return true;
+          }
+        })
+        .sort((a, b) => Math.max(Math.abs(a.x - here.getX()), Math.abs(a.y - here.getY())) - Math.max(Math.abs(b.x - here.getX()), Math.abs(b.y - here.getY())));
+      if (free[0]) {
+        tried.set(`${free[0].x},${free[0].y}`, nowMs + 30_000);
+        // As a minimap click (its brain rests during a quest, so no brain walk).
+        player.getMovementQueue().requestWalk(new core.Location(free[0].x, free[0].y, here.getZ()));
+        return true;
+      }
+    }
     player.getMovementQueue().walkToObject(best.object, {
       execute: () => world.emitObjectInteraction?.({
         player, object: best.object, objectId: best.object.getId(), clickType: best.clickType,
