@@ -899,6 +899,54 @@ function chestCount(request) {
   if (request.category === "Barrows Chests") request.count = Number(request.player.getAttribute(ATTRIBUTE)?.chests) || 0;
 }
 
+/**
+ * "barrows:bot-view" { player, view }: what an adventurer bot (plugins/bots) needs to play a run,
+ * as a player sees it on the spot: the brothers' mounds, crypts and coffins, which brothers are
+ * dead and which crypt hides the tunnel (a player finds it by searching), the tunnel's doors and
+ * rooms, the chest, and the puzzle's right answer while one is open (a player sees the pattern).
+ * "barrows:bot-answer-puzzle" { player }: clicks that answer, as the player's click would.
+ */
+function botView(request) {
+  const { player } = request;
+  if (!player) return;
+  const run = getRun(player);
+  const state = session(player);
+  const map = getTunnelMap();
+  const pending = state.puzzle;
+  request.view = {
+    phase: phaseOf(player),
+    room: roomAt(player.getLocation()),
+    run: {
+      tunnel: run.tunnel, killed: [...run.killed], openDoors: [...run.openDoors], exitRoom: run.exitRoom,
+      puzzleDoor: run.puzzleDoor, puzzleSolved: run.puzzleSolved, chestOpen: run.chestOpen, looted: run.looted,
+    },
+    brother: state.brother,
+    crossing: Boolean(state.crossing),
+    brothers: BROTHERS.map((brother) => ({
+      npcId: brother.npcId, coffin: brother.coffin, stairs: brother.stairs,
+      surface: { x: brother.surface.getX(), y: brother.surface.getY(), z: 0 },
+      crypt: { x: brother.crypt.getX(), y: brother.crypt.getY(), z: brother.crypt.getZ() },
+    })),
+    links: DOOR_LINKS.map(([varbit, a, b]) => ({ varbit, a, b })),
+    doors: map.doors.map((door) => ({ x: door.x, y: door.y, id: door.id, varbit: door.varbit,
+      sides: doorSides(door).map((side) => ({ x: side.getX(), y: side.getY(), room: roomAt(side) })) })),
+    ladders: map.ladders.map((ladder) => ({ x: ladder.x, y: ladder.y, id: ladder.id, room: roomAt(new Location(ladder.x, ladder.y)) })),
+    chest: { x: map.chest.x, y: map.chest.y, id: map.chest.id },
+    roomCentre: (room) => { const at = roomLocation(room); return { x: at.getX(), y: at.getY(), z: 0 }; },
+    puzzleOpen: Boolean(pending),
+  };
+}
+
+function botAnswerPuzzle(request) {
+  const { player } = request;
+  const pending = player ? session(player).puzzle : null;
+  if (!pending) return;
+  const slot = pending.options.indexOf(0);
+  const event = { player, buttonId: (PUZZLE_ID << 16) | PUZZLE_BUTTONS[slot], handled: false };
+  answerPuzzle(event);
+  request.answered = event.handled;
+}
+
 module.exports = {
   name: "Barrows",
   description: "Adds the Barrows minigame: the six brothers' crypts and puzzle door, the prayer drain, the reward chest and the Barrows minimap.",
@@ -928,6 +976,8 @@ module.exports = {
       }
     });
     api.onCustomEvent("barrows:minimap-reveal", ({ player }) => syncMinimap(player, phaseOf(player)));
+    api.onCustomEvent("barrows:bot-view", botView);
+    api.onCustomEvent("barrows:bot-answer-puzzle", botAnswerPuzzle);
     api.onNpcDeath(handleNpcDeath);
     api.onCustomEvent("collection-log:category-count", chestCount);
     api.onCustomEvent("combat-achievements:kill-count", answerKillCount);

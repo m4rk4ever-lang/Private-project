@@ -54,6 +54,8 @@ function distance(a, b) {
 const TABLETS = Object.freeze({
   VARROCK_TELEPORT: "varrock teleport", LUMBRIDGE_TELEPORT: "lumbridge teleport",
   FALADOR_TELEPORT: "falador teleport", CAMELOT_TELEPORT: "camelot teleport",
+  // The Barrows run (BarrowsRun.PlayerBots.js) breaks one to get there.
+  BARROWS_TELEPORT: "barrows teleport",
 });
 
 /** No teleport into the Wilderness for an errand. */

@@ -46,6 +46,8 @@ const GENERATION_ATTRIBUTE = "adventurers:generation";
 const TEST_PROFILE_ATTRIBUTE = "adventurers:test-profile";
 // Its test start's weapons with charges were charged (scythe, trident, blowpipe ...).
 const CHARGED_ATTRIBUTE = "adventurers:charged";
+// The quests adventurers.json "grantedQuests" set complete for it (normalized names), to undo.
+const GRANTED_ATTRIBUTE = "adventurers:granted-quests";
 /** Quest and clue rewards (useRewards): never dropped as junk. */
 const REWARD_NAME = /antique lamp|casket|scroll box|clue scroll|clue bottle|clue nest|reward/i;
 /**
@@ -60,6 +62,7 @@ const TravelHubs = require("../behaviours/navigation/TravelHubs.PlayerBots");
 const Sites = require("./Sites.PlayerBots");
 const { createHelperSteps } = require("./QuestHelperSteps.PlayerBots");
 const { createQuestPlay } = require("./QuestPlay.PlayerBots");
+const { createBarrowsRun } = require("./BarrowsRun.PlayerBots");
 /** A quest a bot could not finish is put aside this long. */
 const QUEST_ASIDE_MS = 60 * 60_000;
 const Shopping = require("./Shopping.PlayerBots");
@@ -404,6 +407,15 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   const questFeedback = [];
   /** name -> { name, player, phase, until, plan, startedAt } */
   const adventurers = new Map();
+  // Barrows runs (BarrowsRun.PlayerBots.js): mounds, crypts, tunnels, chest.
+  const barrowsRun = createBarrowsRun({
+    core, api, world,
+    note: (player, text, kind) => note(player, text, kind),
+    metric: (line) => metric(line),
+    walkTo: (entry, to, options) => walkTo(entry, to, options),
+    errandBusy: (player) => errands.busy(player),
+    castHome: (player) => castHome(player),
+  });
   // Quests played for real (QuestPlay.PlayerBots.js): walk, Talk-to, answer.
   const questPlay = createQuestPlay({
     core, world, now,
@@ -920,7 +932,6 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   // Mining Guild, dungeons), from the live-game transport table the agents' travel_to uses
   // (plugins/agent/data/transports.json, Shortest Path). Only plain ones: a skill level at most,
   // no items, quests or varbits asked.
-  const UNDERGROUND_Y = 6400;
   const LEVEL_HOPS = (() => {
     try {
       const data = require("../../agent/data/transports.json");
@@ -1553,10 +1564,62 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return null;
   }
 
+  /**
+   * A tool it must carry (a spade for the Barrows mounds): from its bank, else a shop or the GE,
+   * then `resume`. True while it is on its way for it; false when it has one; null when it cannot.
+   */
+  function fetchTool(entry, name, resume, amount = 1) {
+    const { player } = entry;
+    const id = Shopping.idOf(core, name);
+    if (!Number.isInteger(id) || player.getInventory().getAmount(id) > 0) return false;
+    if (banked(player, id) > 0) {
+      const bank = nearestBank(player, entry);
+      if (bank && walkTo(entry, { ...bank, name: bank.name ?? bank.id }, { reason: "withdraw", arrive: (banker) => { withdraw(banker, id, amount); resume(); } })) return true;
+      return null;
+    }
+    const label = itemName(id).toLowerCase();
+    if ((Shopping.shopsSelling(id).length > 0 && shopFor(entry, id, label, amount)) || buyOnExchange(entry, id, label, amount)) {
+      resume();
+      return true;
+    }
+    return null;
+  }
+
+  /** A Barrows run (adventurers.json boss "kind": "barrows"): a spade, food and prayer potions first. */
+  function startBarrows(entry, plan, nowMs) {
+    const { player } = entry;
+    const resume = () => { entry.savedTask = { kind: "boss", bossId: plan.boss.id, reason: plan.reason ?? "verder", remainingMs: 0, savedAt: now() }; };
+    const spade = fetchTool(entry, "SPADE", resume);
+    if (spade === true) return true;
+    if (spade === null) {
+      note(player, "Kan niet naar de Barrows: geen spade te krijgen.", "boss");
+      return false;
+    }
+    // Tablets there and back, as players go: a Barrows teleport there (the walk through
+    // Morytania is long), a Varrock teleport home from the chest. Not having them is no stop.
+    for (const [name, amount] of [["BARROWS_TELEPORT", 5], ["VARROCK_TELEPORT", 5]]) {
+      if (fetchTool(entry, name, resume, amount) === true) return true;
+    }
+    if (stockFood(entry, plan, nowMs)) {
+      resume();
+      return true;
+    }
+    entry.phase = "barrows";
+    entry.plan = plan;
+    entry.activity = null;
+    entry.until = Infinity;
+    const brain = runtimeEntry(player)?.brain;
+    if (brain) brain.paused = true;
+    barrowsRun.start(entry, nowMs);
+    return true;
+  }
+
   function startBoss(entry, plan, nowMs) {
     const { player } = entry;
     const { boss } = plan;
-    if (!registry?.byId?.get(boss.id)) return false;
+    // The Barrows only with Protect from Melee (43): the brothers hit too hard without it.
+    if (boss.kind === "barrows" && levelOf(player, "PRAYER") < 43) return false;
+    if (boss.kind !== "barrows" && !registry?.byId?.get(boss.id)) return false;
     // Behind a way in (a spade and a mole hill): that first.
     const entering = enterBoss(entry, plan, nowMs);
     if (entering === true) return true;
@@ -1564,7 +1627,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // Prayer potions along for a boss it prays against (Protect from Melee and up): its own from
     // the bank, else bought, then back to this boss. Once in half an hour at most, so a bot too
     // poor for them does not walk to the exchange before every fight.
-    if (levelOf(player, "PRAYER") >= 43 && PROTECT_AGAINST.some((entry) => entry.names.test(boss.name ?? "")) && nowMs >= (entry.prayerPotAt ?? 0)) {
+    if (levelOf(player, "PRAYER") >= 43 && (boss.kind === "barrows" || PROTECT_AGAINST.some((entry) => entry.names.test(boss.name ?? ""))) && nowMs >= (entry.prayerPotAt ?? 0)) {
       const potion = Shopping.idOf(core, "PRAYER_POTION_4_");
       // Its bank's stock first, part-drunk ones too (3, 2 or 1 dose), then a full one bought.
       const doses = ["PRAYER_POTION_4_", "PRAYER_POTION_3_", "PRAYER_POTION_2_", "PRAYER_POTION_1_", "SUPER_RESTORE_4_", "SUPER_RESTORE_3_"]
@@ -1580,6 +1643,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         entry.savedTask = null;
       }
     }
+    if (boss.kind === "barrows") return startBarrows(entry, plan, nowMs);
     startActivity(player, boss.id, { home: boss, nowMs });
     walkTo(entry, boss, { reason: "boss", replan: false });
     entry.phase = "boss";
@@ -1829,6 +1893,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * willows by a bank over the ones in the middle of nowhere.
    */
   function siteDistance(from, to, who, mode) {
+    // Under the ground (the Mining Guild below Falador): measured from the spot above it, and a
+    // little for the way down; its 9741 made every bank 6400 tiles away and the guild never won.
+    if (to.y >= UNDERGROUND_Y && from.y < UNDERGROUND_Y) {
+      return siteDistance(from, { ...to, y: to.y - UNDERGROUND_Y, z: 0 }, who, mode) + 15;
+    }
     const walk = from.z !== (to.z ?? 0) ? walkTiles(from, to, who) + 50 : walkTiles(from, to, who);
     if (!["woodcutting", "mining", "fishing"].includes(mode) || !Number.isFinite(walk)) return walk;
     const toBank = Math.min(...(data.banks ?? []).map((bank) => Math.max(Math.abs(bank.x - to.x), Math.abs(bank.y - to.y))));
@@ -2214,6 +2283,17 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         const brain = runtimeEntry(entry.player)?.brain;
         if (brain) brain.paused = false;
         entry.until = 0;
+      }
+      // A Barrows run: its own steps; the fight's prayer and eating below go on as usual.
+      if (entry.phase === "barrows") {
+        const result = barrowsRun.tick(entry, nowMs);
+        if (result !== "running") {
+          entry.phase = "idle";
+          entry.until = 0;
+          entry.barrows = null;
+          const brain = runtimeEntry(entry.player)?.brain;
+          if (brain) brain.paused = false;
+        }
       }
       // Gone down or up the stairs on its way: on to the place itself once it has landed.
       if (entry.afterHop) {
@@ -2624,6 +2704,38 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function levelOf(player, skillName) {
     const skill = core.Skill[skillName];
     return skill ? player.getSkillManager().getMaxLevel(skill) : 1;
+  }
+
+  /**
+   * For now (adventurers.json "grantedQuests"): the quests that open a skill, a minigame or an
+   * area (Druidic Ritual, Rune Mysteries, Priest in Peril ...) stand complete for it, the stage
+   * only: no experience, items or quest points, as ::allquests sets them. Until the bots can play
+   * them, so their progress is not stuck behind them. Taken off the list: set back to not started.
+   */
+  function grantQuests(bot) {
+    const quests = questsByName();
+    const wanted = new Set((data.grantedQuests?.quests ?? []).map(normalize));
+    const before = bot.getAttribute(GRANTED_ATTRIBUTE);
+    const granted = new Set(Array.isArray(before) ? before : []);
+    for (const key of [...granted]) {
+      if (wanted.has(key)) continue;
+      const quest = quests.get(key);
+      if (quest && quest.getStage(bot) === (quest.completionValue ?? 2)) quest.setStage(bot, 0);
+      granted.delete(key);
+    }
+    const missing = [];
+    for (const key of wanted) {
+      const quest = quests.get(key);
+      if (!quest) { missing.push(key); continue; }
+      if (quest.isComplete(bot)) continue;
+      quest.setStage(bot, quest.completionValue ?? 2);
+      granted.add(key);
+    }
+    bot.setAttribute(GRANTED_ATTRIBUTE, [...granted]);
+    if (missing.length > 0 && !grantQuests.warned) {
+      grantQuests.warned = true;
+      world?.log?.("adventurer_granted_quest_unknown", { quests: missing });
+    }
   }
 
   function questDone(player) {
@@ -3808,6 +3920,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         bot.setAttribute(CHARGED_ATTRIBUTE, true);
         Trade.wearBest(bot, core, { levelOf: (skill) => levelOf(bot, skill), questDone: questDone(bot) }, "melee");
       }
+      grantQuests(bot);
       // It knows Death already: a death leaves a grave without the first-death tutorial.
       emit("gravestones:met-death", { player: bot });
       adventurers.get(name).savedTask = Tasks.freshTask(bot.getAttribute?.(TASK_ATTRIBUTE), Date.now());
@@ -4059,6 +4172,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (!entry?.player?.isRegistered?.() || !mode) return false;
     errands.errands?.delete?.(entry.player);
     entry.questRun = null;
+    // A boss by its id or name (::advtrain Markbot 18:boss_barrows), for a test run.
+    const boss = (data.bosses ?? []).find((entry2) => entry2.id === mode || String(entry2.name).toLowerCase() === String(mode).toLowerCase());
+    if (boss) return startBoss(entry, { kind: "boss", boss, reason: "op verzoek" }, now());
     const skill = mode === "slayer" ? "SLAYER" : String(mode).replace(/^combat_/, "").toUpperCase();
     startTraining(entry, { kind: "train", mode, skill, reason: "op verzoek" }, now());
     return true;
@@ -4183,6 +4299,7 @@ function startAdventurers({ api, runtime, world, registry }) {
   // Saved too: without it every restart started the test accounts over (applyTestProfile).
   api.persistAttribute(TEST_PROFILE_ATTRIBUTE, null);
   api.persistAttribute(CHARGED_ATTRIBUTE, false);
+  api.persistAttribute(GRANTED_ATTRIBUTE, []);
   const manager = createAdventurers({ api, runtime, world, registry });
   api.onPlayerLevelUp(manager.onLevelUp);
   api.onCustomEvent("npc-drops:roll", manager.onDrops);

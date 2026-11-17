@@ -14,6 +14,8 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Avonturiers met combat 90+ en Prayer 43+ doen Barrows-runs: met een spade, eten, prayer potions en Barrows- en Varrock-teleporttablets graven ze de heuvels in, verslaan de broers met de juiste protection prayer, gaan door de tunnels (deuren en puzzel) naar de kist en teleporteren daarna weg. Test een run met `::advtrain <naam>:boss_barrows`.
+- Tijdelijk staan de quests die een skill, minigame of gebied openen (zoals Druidic Ritual, Rune Mysteries, Priest in Peril, Lost City, Fairytale, Song of the Elves en Desert Treasure) voor avonturiers op voltooid, zonder beloningen (geen XP, items of questpunten), tot de bots ze zelf kunnen spelen. De lijst staat in adventurers.json (grantedQuests).
 - Avonturiers kunnen trappen en ladders naar ondergronds nemen (en weer omhoog), zoals de Mining Guild onder Falador (vanaf Mining 60).
 - In `::teleports` staan nu ook de andere drie Desert Treasure II-bosses: Duke Sucellus (bij zijn poort), de Leviathan (bij de roeiboot) en de Whisperer (bij zijn kamer). Vardorvis stond er al.
 - Bij een dood van een avonturier staat in de logs wie hem het laatst raakte (met level), waar hij stierf, of hij eten en prayer had, en een grove reden (geen eten, sterkere tegenstander, verloor met eten bij zich).
@@ -179,6 +181,8 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers lopen niet meer naar de Bounty Hunter-winkel (Deadman Mode) in Edgeville of naar andere winkels die geen coins aannemen.
+- De Mining Guild onder Falador telt bij het kiezen van een mijnplek weer mee (de afstand werd gemeten alsof hij 6400 tegels ver lag).
 - Avonturiers met een testprofiel krijgen wapens met charges (zoals de scythe of vitur) geladen. Eerder viel de scythe na de eerste klap terug naar uncharged en droegen ze een rune scimitar met rune sq shield. Bestaande testbots worden één keer bijgeladen.
 - Een avonturier die potions maakt verkoopt zijn eigen materialen (zoals kwuarm potion (unf) en limpwurt root) niet meer op de GE om ze daarna opnieuw te kopen.
 - Avonturiers die hakken of minen wisselen niet meer bij elk bankbezoek hun axe of pickaxe voor hun wapen (en terug).

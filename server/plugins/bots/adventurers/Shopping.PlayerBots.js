@@ -31,6 +31,11 @@ function shopsSelling(itemId) {
       keeperAt.get(spawn.id).push({ x: spawn.x, y: spawn.y, z: spawn.level ?? 0 });
     }
     for (const shop of Array.isArray(shopsFile) ? shopsFile : shopsFile.shops ?? []) {
+      // Not the shops of other game modes (Deadman's Bounty Hunter shop in Edgeville, paid in
+      // other currency): a bot walked there for prayer potions, found none, and went on to the GE.
+      if (/deadman|bounty hunter|leagues?|tournament|\(pvp\)/i.test(String(shop.name ?? ""))) continue;
+      // Only shops that take coins (not marks of grace, tokkul, Nightmare Zone points ...).
+      if (shop.currency && !/^(coins?|gp)$/i.test(String(shop.currency))) continue;
       const npcIds = (shop.npcInteractions ?? []).flatMap((link) => link.npcIds ?? []);
       const keepers = npcIds.flatMap((id) => keeperAt.get(id) ?? []);
       if (keepers.length === 0) continue;
