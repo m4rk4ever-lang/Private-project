@@ -752,7 +752,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         for (const id of ids) got += withdraw(banker, id, 1000);
         if (got > 0) {
           note(banker, `Haalt zijn ${ids.map(itemName).join(" en ").toLowerCase()} van de bank.`, "activity");
-          entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, remainingMs: 0, savedAt: now() };
+          entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, planActivity: plan.activity ?? null, remainingMs: 0, savedAt: now() };
         }
       },
     });
@@ -762,7 +762,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function bankUnusedTools(entry, banker, plan = entry.plan) {
     // No job yet (a new account's first bank visit): its starter tools stay with it.
     if (!plan) return [];
-    const needed = new Set(Object.values(toolsFor(plan?.mode, entry.activity, plan?.skill)).flat()
+    const needed = new Set(Object.values(toolsFor(plan?.mode, plan === entry.plan ? entry.activity : plan.activity, plan?.skill)).flat()
       .map((name) => Shopping.idOf(core, name)).filter(Number.isInteger));
     const all = [...Object.values(Shopping.gear.tools ?? {}).flat().map((entry) => entry.item),
       ...Object.values(Shopping.gear.fishingTools ?? {}).flat(), "TINDERBOX", "HAMMER", "CHISEL", "NEEDLE", "KNIFE"];
@@ -966,7 +966,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
             }
             if (got > 0) {
               note(banker, `Haalt zijn ${style === "ranged" ? "boog en pijlen" : "runes"} van de bank om te ${style === "ranged" ? "boogschieten" : "toveren"}.`, "activity");
-              entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, remainingMs: 0, savedAt: now() };
+              entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, planActivity: plan.activity ?? null, remainingMs: 0, savedAt: now() };
             }
           },
         });
@@ -1050,16 +1050,20 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       if (plan.mode === "combat_training" && stockFood(entry, plan, nowMs)) return true;
       // A gathering job wants room for what it gathers: things for other jobs (a pickaxe, snares,
       // a pot) go to the bank first, as a player empties the bag before a fishing trip.
-      if (["woodcutting", "mining", "fishing"].includes(plan.mode) && player.getInventory().getFreeSlots() < 18
+      // A quest's few pieces of clay need no empty bag: only room for them.
+      const room = entry.gather ? Math.min(18, entry.gather.amount + 1) : 18;
+      if (["woodcutting", "mining", "fishing"].includes(plan.mode) && player.getInventory().getFreeSlots() < room
           && nowMs >= (entry.clearBagAt ?? 0)) {
-        entry.clearBagAt = nowMs + 20 * 60_000;
+        // Not again for a few minutes; for 20 when the bank could take nothing (all of it needed).
+        entry.clearBagAt = nowMs + 3 * 60_000;
         const bank = nearestBank(player, entry);
         if (bank && walkTo(entry, { ...bank, name: bank.name ?? bank.id }, {
           reason: "bank",
           arrive: (banker) => {
             const stored = [...bankUnusedTools(entry, banker, plan), ...bankUnusedSupplies(entry, banker, plan), ...deposit(banker, sortBag(banker).keep)];
             if (stored.length > 0) note(banker, `Maakt zijn tas leeg voor ${plan.mode}: ${stored.map((good) => itemName(good.itemId)).join(", ")}.`, "activity");
-            entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, remainingMs: 0, savedAt: now() };
+            else entry.clearBagAt = now() + 20 * 60_000;
+            entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, planActivity: plan.activity ?? null, remainingMs: 0, savedAt: now() };
           },
         })) return true;
       }
@@ -1525,7 +1529,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (entry.phase === "training" && entry.plan?.kind === "train" && entry.plan.mode !== "slayer"
         && Number.isFinite(entry.until) && entry.until - nowMs > 2 * 60_000 && !entry.savedTask) {
       entry.savedTask = { kind: "train", mode: entry.plan.mode, skill: entry.plan.skill, reason: entry.plan.reason,
-        style: entry.plan.style ?? null, target: entry.plan.target ?? null, activity: entry.activity, remainingMs: entry.until - nowMs, savedAt: now(), afterTrip: true };
+        style: entry.plan.style ?? null, target: entry.plan.target ?? null, planActivity: entry.plan.activity ?? null, activity: entry.activity, remainingMs: entry.until - nowMs, savedAt: now(), afterTrip: true };
     }
     if (waitForOffers(entry, nowMs)) return;
     // Waiting at the exchange for its materials: collect once they are in, then to work.
@@ -1846,7 +1850,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
           && !carriesFood(entry.player) && nowMs >= (entry.stockFoodAt ?? 0) && !errands.busy(entry.player)) {
         note(entry.player, "Heeft geen eten meer; haalt eerst nieuw eten.", "activity");
         entry.jobEnd = "out of food";
-        entry.savedTask = { kind: "train", mode: entry.plan.mode, skill: entry.plan.skill, reason: entry.plan.reason, target: entry.plan.target ?? null, remainingMs: 0, savedAt: now() };
+        entry.savedTask = { kind: "train", mode: entry.plan.mode, skill: entry.plan.skill, reason: entry.plan.reason, target: entry.plan.target ?? null, planActivity: entry.plan.activity ?? null, remainingMs: 0, savedAt: now() };
         entry.until = 0;
       }
       // A finished Slayer task ends the stretch: back to a master, or something else.
@@ -1857,7 +1861,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       // A full bag ends the stretch: off to sell (trade()), as a player banks or sells.
       // A full bag ends a gathering stretch; a processing one (fletching, burning: buy_) starts
       // with a bag full of its materials, and runs out of them instead.
-      const gathering = !String(entry.plan?.mode ?? "").startsWith("buy_");
+      const gathering = !String(entry.plan?.mode ?? "").startsWith("buy_") && !String(entry.activity ?? "").startsWith("process_") && !entry.buying;
       if (nowMs >= entry.until || (entry.phase === "training" && gathering && entry.player.getInventory().getFreeSlots() === 0)) {
         entry.jobEnd ??= nowMs >= entry.until ? "time up" : "full bag";
         next(entry, nowMs);
@@ -2021,7 +2025,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         emit("ge:collect", { player: buyer });
         acquire(buyer, itemId);
         note(buyer, `Koopt ${amount > 1 ? `${amount} x ` : ""}${label} op de GE (~${Math.ceil(guide * 1.05 * amount).toLocaleString("nl-NL")} gp).`, "activity");
-        if (plan?.mode) entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, remainingMs: 0, savedAt: now() };
+        if (plan?.mode) entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, planActivity: plan.activity ?? null, remainingMs: 0, savedAt: now() };
       },
     });
   }
@@ -2108,7 +2112,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     entry.stockFoodAt = nowMs + 10 * 60_000;
     const amount = Shopping.gear.foodAmount ?? 14;
     const resume = () => {
-      if (plan?.kind === "train") entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, remainingMs: 0, savedAt: now() };
+      if (plan?.kind === "train") entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, planActivity: plan.activity ?? null, remainingMs: 0, savedAt: now() };
     };
     const inBank = (Shopping.gear.food ?? []).map((food) => Shopping.idOf(core, food.item))
       .find((id) => Number.isInteger(id) && banked(player, id) >= 5);
@@ -2141,7 +2145,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const hitpoints = player.getSkillManager().getMaxLevel(core.Skill.HITPOINTS);
     if (hitpoints >= TRAVEL_FOOD_UNTIL_HP || foodSlots(player).length > 0 || nowMs < (entry.foodTriedAt ?? 0)) return false;
     entry.foodTriedAt = nowMs + 20 * 60_000;
-    const resume = () => { entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, remainingMs: 0, savedAt: now() }; };
+    const resume = () => { entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, planActivity: plan.activity ?? null, remainingMs: 0, savedAt: now() }; };
     const inBank = (Shopping.gear.food ?? []).map((entry) => Shopping.idOf(core, entry.item))
       .find((id) => Number.isInteger(id) && banked(player, id) >= 3);
     const bank = inBank !== undefined ? nearestBank(player, entry) : null;
@@ -2942,7 +2946,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       arrive: (banker) => {
         // What it may wear from its bank goes on first, so it is not banked with the rest.
         fillEmptySlots(banker, { fromBank: true });
-        const stored = [...deposit(banker, Trade.goodsToSell(banker, core, Trade.keepIds(banker, core, { isFood }), { isFood, worthless: true })),
+        // The materials of its job (oak logs to fletch) stay in the bag here too.
+        const keepHere = Trade.keepIds(banker, core, { isFood });
+        for (const id of workingMaterials(entry)) keepHere.add(id);
+        const stored = [...deposit(banker, Trade.goodsToSell(banker, core, keepHere, { isFood, worthless: true })),
           ...bankUnusedSupplies(entry, banker), ...bankUnusedTools(entry, banker)];
         if (stored.length > 0) note(banker, `Zet op de bank in ${bank.name ?? bank.id}: ${stored.slice(0, 5).map((good) => itemName(good.itemId)).join(", ")}${stored.length > 5 ? ` en ${stored.length - 5} meer` : ""}. Bruikbaars bewaart hij; de rest verkoopt hij later op de GE.`, "activity");
       },
@@ -3036,7 +3043,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
           spent += cost;
         }
         if (bought.length > 0) note(buyer, `Koopt op de GE: ${bought.join(", ")} (~${spent.toLocaleString("nl-NL")} gp).`, "activity");
-        if (plan?.mode) entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, remainingMs: 0, savedAt: now() };
+        if (plan?.mode) entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, planActivity: plan.activity ?? null, remainingMs: 0, savedAt: now() };
       },
     });
   }

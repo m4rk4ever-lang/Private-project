@@ -26,6 +26,7 @@ function taskRecord(entry, nowMs, wallMs) {
     target: plan.target?.skill ? { skill: plan.target.skill, level: plan.target.level } : null,
     bossId: plan.boss?.id ?? null,
     activity: entry.activity ?? null,
+    planActivity: plan.activity ?? null,
     remainingMs: Math.max(0, Math.round((entry.until ?? nowMs) - nowMs)),
     savedAt: wallMs,
   };
@@ -59,6 +60,8 @@ function planOf(task, bosses = []) {
   return {
     kind: "train", mode: task.mode, skill: task.skill, reason: task.reason ?? "verder",
     ...(task.style ? { style: task.style } : {}),
+    // A job for one place (clay_rocks for a quest's clay) keeps it; else the best one again.
+    ...(task.planActivity ? { activity: task.planActivity } : {}),
     ...(targetOf(task) ? { target: targetOf(task) } : {}),
   };
 }

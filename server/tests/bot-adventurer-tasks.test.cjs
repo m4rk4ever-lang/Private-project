@@ -9,7 +9,7 @@ test("a running job is saved as one plain record with the time it has left", () 
     plan: { kind: "train", mode: "woodcutting", skill: "WOODCUTTING", reason: "doel" } };
   const record = Tasks.taskRecord(entry, 10_000, 1_700_000_000_000);
   assert.deepEqual(record, { kind: "train", mode: "woodcutting", skill: "WOODCUTTING", reason: "doel", style: null, target: null,
-    bossId: null, activity: "oak_trees", remainingMs: 5 * 60_000, savedAt: 1_700_000_000_000 });
+    bossId: null, activity: "oak_trees", planActivity: null, remainingMs: 5 * 60_000, savedAt: 1_700_000_000_000 });
   assert.deepEqual(JSON.parse(JSON.stringify(record)), record);
   assert.equal(Tasks.taskRecord({ ...entry, phase: "errand" }, 0, 0), null);
   assert.equal(Tasks.taskRecord({ ...entry, plan: { kind: "quest", quest: {} } }, 0, 0), null);

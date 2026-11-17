@@ -162,6 +162,9 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Een avonturier die klei gaat hakken voor Doric's Quest gaat na het legen van zijn tas ook echt naar de kleirotsen, niet naar coal.
+- Avonturiers die fletchen of iets anders met materialen van de bank maken, zetten die materialen niet meteen weer terug op de bank (dat werd een lus van honderden bankbezoeken).
+- Avonturiers maken hun tas vaker leeg voor woodcutting, mining of fishing, zodat ze niet met een tas vol gereedschap en spullen gaan hakken.
 - Avonturiers met agility onder 10 lopen niet meer vanaf de andere kant van de wereld naar de Gnome Stronghold-baan (die tocht lukt nog niet); ze kiezen dan iets anders.
 - Avonturiers zoeken de monsters van hun Slayer-taak alleen nog op het vasteland waar ze lopend kunnen komen, niet op ondergrondse kaarten of in Kourend waar ze niet heen konden.
 - Een avonturier die ergens gestrand is (het eiland van Misthalin Mystery na een mislukte quest, binnen het hek van Draynor Manor, onder de grond) en drie keer vanaf dezelfde plek nergens heen kan, gebruikt de home teleport naar Lumbridge, zoals een speler die vastzit.
