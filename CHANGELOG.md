@@ -125,6 +125,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Avonturiers trainen een skill die al op 99 staat bijna nooit meer (alleen combat en Slayer nog wel, voor de loot).
 - Voor woodcutting, mining en fishing kiest een avonturier een plek die niet alleen dichtbij is, maar ook dicht bij een bank ligt, zoals een speler de willows bij een bank kiest boven die midden in het niets.
 - Avonturiers reizen slimmer:
   - Met Magic 25 of hoger kopen ze law runes en elementen voor teleport-spreuken; anders van elke teleport-tablet een paar. Hoe rijker, hoe meer ze inslaan.

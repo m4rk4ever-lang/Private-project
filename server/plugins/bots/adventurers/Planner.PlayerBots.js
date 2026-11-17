@@ -158,6 +158,9 @@ function trainingWeight(option, options, adventurer, { focus = {}, busyModes = n
   weight *= focus[option.mode] ?? 1;
   weight *= 1 + Math.max(0, average - option.level) * 0.2;
   if (busyModes.has(option.mode)) weight *= 0.5;
+  // A skill at 99 gives no levels any more: hardly ever trained for its own sake (a maxed bot
+  // ran Seers' rooftop for "achterstand"). Fighting and Slayer still bring loot.
+  if (option.level >= 99 && option.mode !== COMBAT && option.mode !== "slayer" && !String(option.mode).startsWith("combat_")) weight *= 0.05;
   // One skill feeds the next: with logs in the bank fletching or burning comes up more often.
   if (option.mode.startsWith("buy_") && (adventurer.stocked ?? []).includes(option.skill)) weight *= 3;
   // What it gathers feeds the next skill, as for a player: a woodcutter far ahead of its
