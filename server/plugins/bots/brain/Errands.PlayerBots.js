@@ -111,7 +111,9 @@ function bestTeleport(core, player, to, { jewelleryData = null, questDone = () =
     const after = Math.max(Math.abs(x - to.x), Math.abs(y - to.y));
     if (walk - after >= TELEPORT_SAVES && (!best || after < best.after)) best = { ...option, after };
   };
-  const landing = new Map(spells.map((spell) => [spell.name, spell.destination]));
+  // Tablets land where their spell does, of any spellbook (the Barrows tablet is Arceuus').
+  const landing = new Map([...spells, ...(core?.ArceuusSpells?.getTeleportDestinations?.() ?? []), ...(core?.LunarSpells?.getTeleportDestinations?.() ?? [])]
+    .map((spell) => [spell.name, spell.destination]));
   for (const spell of spells) {
     if (!ERRAND_SPELLS.has(spell.name) || spell.spellbook !== player.getSpellbook?.()) continue;
     if (QUEST_SPELLS[spell.name] && !questDone(QUEST_SPELLS[spell.name])) continue;

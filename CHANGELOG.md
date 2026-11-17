@@ -181,6 +181,9 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers die naar een boss gaan zetten hun prayer potions, spade en teleporttablets niet meer bij de GE op de bank (waarna ze nieuwe kochten).
+- Avonturiers graven weer echt met hun spade (Barrows-heuvels, molshoop van de Giant Mole); de klik koos de verkeerde menuoptie.
+- Een Barrows-teleporttablet wordt nu gebruikt om naar de Barrows te reizen.
 - Avonturiers lopen niet meer naar de Bounty Hunter-winkel (Deadman Mode) in Edgeville of naar andere winkels die geen coins aannemen.
 - De Mining Guild onder Falador telt bij het kiezen van een mijnplek weer mee (de afstand werd gemeten alsof hij 6400 tegels ver lag).
 - Avonturiers met een testprofiel krijgen wapens met charges (zoals de scythe of vitur) geladen. Eerder viel de scythe na de eerste klap terug naar uncharged en droegen ze een rune scimitar met rune sq shield. Bestaande testbots worden één keer bijgeladen.

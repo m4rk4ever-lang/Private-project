@@ -847,7 +847,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const using = planStyle(entry, plan);
     const goods = [];
     // Prayer potions are stock for its fights, as food is: in the bank for a job without one.
-    const fighting = plan?.kind === "boss" || DANGER_MODES.has(plan?.mode);
+    // Also on its way to a boss (the job saved while it fetches potions, a spade, tablets): the
+    // potions it just bought went straight back into the bank at the exchange, then it bought more.
+    const fighting = plan?.kind === "boss" || DANGER_MODES.has(plan?.mode) || entry.savedTask?.kind === "boss" || entry.phase === "barrows";
     if (!fighting) {
       for (const item of banker.getInventory().getItems() ?? []) {
         if (item && item.getId() > 0 && PRAYER_RESTORE.test(String(core.ItemDefinition.forId(item.getId())?.getName?.() ?? ""))
@@ -1547,8 +1549,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
           const items = digger.getInventory().getItems() ?? [];
           const slot = items.findIndex((item) => item && item.getId() === spade);
           if (slot >= 0) {
-            api.emitItemAction?.({ player: digger, interfaceId: core.Inventory.INTERFACE_ID, item: items[slot], itemId: spade, slot,
-              clickType: 1, option: "Dig", handled: false });
+            // The click names the option by its place in the spade's menu (Dig is not first).
+            const actions = core.CacheDefinitions?.getItem?.(spade)?.inventoryActions ?? [];
+            const index = actions.findIndex((option) => option === "Dig");
+            if (index >= 0) api.emitItemAction?.({ player: digger, interfaceId: core.Inventory.INTERFACE_ID, item: items[slot], itemId: spade, slot,
+              clickType: index + 1, option: "Dig", handled: false });
           }
           resume();
           entry.until = 0;
@@ -3632,7 +3637,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const bag = sortBag(player);
     dropJunk(player, bag.junk);
     // The exchange has its bank: what it keeps for later goes in there, not up for sale.
-    const stored = [...deposit(player, bag.keep), ...(entry ? [...bankUnusedSupplies(entry, player), ...bankUnusedTools(entry, player)] : [])];
+    const kit = entry ? bossKit(entry) : new Set();
+    const stored = [...deposit(player, bag.keep.filter((good) => !kit.has(good.itemId))), ...(entry ? [...bankUnusedSupplies(entry, player), ...bankUnusedTools(entry, player)] : [])];
     if (stored.length > 0) note(player, `Bewaart op de bank: ${stored.map((good) => itemName(good.itemId)).join(", ")}.`, "activity");
     const pulled = withdrawToSell(player);
     const goods = Trade.goodsToSell(player, core, keepAtExchange(player), { isFood });
@@ -3768,6 +3774,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         // The materials of its job (oak logs to fletch) stay in the bag here too.
         const keepHere = Trade.keepIds(banker, core, { isFood });
         for (const id of workingMaterials(entry)) keepHere.add(id);
+        for (const id of bossKit(entry)) keepHere.add(id);
         const stored = [...deposit(banker, Trade.goodsToSell(banker, core, keepHere, { isFood, worthless: true })),
           ...bankUnusedSupplies(entry, banker), ...bankUnusedTools(entry, banker)];
         if (stored.length > 0) note(banker, `Zet op de bank in ${bank.name ?? bank.id}: ${stored.slice(0, 5).map((good) => itemName(good.itemId)).join(", ")}${stored.length > 5 ? ` en ${stored.length - 5} meer` : ""}. Bruikbaars bewaart hij; de rest verkoopt hij later op de GE.`, "activity");
@@ -3789,6 +3796,26 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   }
 
   /** The materials its current or next job uses up (a buy_ job's logs, bars, raw fish). */
+  /**
+   * What it carries for the boss it is on or getting ready for (a spade, the Barrows and Varrock
+   * tablets, prayer potions): not into the bank on the way. Its spade went in at the exchange and
+   * it bought another; its prayer potions too, and it bought those again.
+   */
+  function bossKit(entry) {
+    const ids = new Set();
+    const bossId = entry.plan?.kind === "boss" ? entry.plan.boss?.id : entry.savedTask?.kind === "boss" ? entry.savedTask.bossId : null;
+    if (!bossId && entry.phase !== "barrows") return ids;
+    const boss = (data.bosses ?? []).find((candidate) => candidate.id === bossId);
+    const names = ["PRAYER_POTION_4_", "PRAYER_POTION_3_", "PRAYER_POTION_2_", "PRAYER_POTION_1_", "SUPER_RESTORE_4_", "SUPER_RESTORE_3_",
+      ...(boss?.via ? [boss.via.tool, boss.via.light] : []),
+      ...(boss?.kind === "barrows" || entry.phase === "barrows" ? ["SPADE", "BARROWS_TELEPORT", "VARROCK_TELEPORT"] : [])];
+    for (const name of names.filter(Boolean)) {
+      const id = Shopping.idOf(core, name);
+      if (Number.isInteger(id)) ids.add(id);
+    }
+    return ids;
+  }
+
   function workingMaterials(entry) {
     const ids = new Set();
     for (const plan of [entry.resume, entry.plan, entry.savedTask]) {

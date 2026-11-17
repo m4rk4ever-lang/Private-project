@@ -72,7 +72,11 @@ function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, 
     const spade = (player.getInventory().getItems() ?? []).findIndex((item) => item && /^spade$/i.test(String(core.ItemDefinition.forId(item.getId())?.getName?.() ?? "")));
     if (spade < 0) return false;
     const item = player.getInventory().getItems()[spade];
-    api.emitItemAction?.({ player, interfaceId: core.Inventory.INTERFACE_ID, item, itemId: item.getId(), slot: spade, clickType: 1, option: "Dig", handled: false });
+    // The click names the option by its place in the item's menu (the spade's Dig is not first).
+    const actions = core.CacheDefinitions?.getItem?.(item.getId())?.inventoryActions ?? [];
+    const index = actions.findIndex((option) => option === "Dig");
+    if (index < 0) return false;
+    api.emitItemAction?.({ player, interfaceId: core.Inventory.INTERFACE_ID, item, itemId: item.getId(), slot: spade, clickType: index + 1, option: "Dig", handled: false });
     return true;
   }
 
@@ -149,10 +153,13 @@ function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, 
     return "failed";
   }
 
-  function progress(entry, nowMs, step) {
+  const NAMES = ["Ahrim", "Dharok", "Guthan", "Karil", "Torag", "Verac"];
+  /** Each new step in its log, readable: where it is in the run and why. */
+  function progress(entry, nowMs, step, text = null) {
     if (entry.barrows.step !== step) {
       entry.barrows.step = step;
       entry.barrows.progressAt = nowMs;
+      if (text) note(entry.player, text, "boss");
     }
   }
 
@@ -182,7 +189,7 @@ function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, 
     if (answerPrompt(player)) return "running";
     // A brother up: it fights him (the manager turns the right protection prayer on).
     if (v.brother?.isRegistered?.()) {
-      progress(entry, nowMs, `fight ${v.brother.getDefinition?.()?.getName?.() ?? "broer"}`);
+      progress(entry, nowMs, `fight ${v.brother.getIndex?.()}`, `Vecht tegen ${v.brother.getDefinition?.()?.getName?.() ?? "een broer"}.`);
       fight(player, v.brother);
       return "running";
     }
@@ -203,12 +210,14 @@ function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, 
 
     if (v.phase === "surface" || v.phase === "outside") {
       const mound = v.brothers[next].surface;
-      progress(entry, nowMs, `mound ${next}`);
+      progress(entry, nowMs, `mound ${next}`, `Gaat naar de heuvel van ${NAMES[next]} om te graven${othersDone ? " (de tunnel)" : ""}.`);
       if (chebyshev(at, mound) > 1) {
         player.getMovementQueue().requestWalk(new core.Location(mound.x, mound.y, 0));
         return "running";
       }
       if (!dig(player)) return fail(entry, "geen spade");
+      run.digs = (run.digs ?? 0) + 1;
+      if (run.digs === 5) note(player, "Graaft maar komt niet in de crypte.", "boss");
       return "running";
     }
 
@@ -216,7 +225,7 @@ function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, 
       // The crypt it stands in: the brother whose crypt is nearest.
       const index = v.brothers.map((brother, i) => ({ i, away: chebyshev(at, brother.crypt) })).sort((a, b) => a.away - b.away)[0].i;
       const brother = v.brothers[index];
-      progress(entry, nowMs, `crypt ${index}`);
+      progress(entry, nowMs, `crypt ${index}`, `In de crypte van ${NAMES[index]}.`);
       const coffin = objectNear(brother.crypt, [brother.coffin]);
       const stairs = objectNear(brother.crypt, [brother.stairs]);
       if (index === v.run.tunnel) {
@@ -237,7 +246,7 @@ function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, 
     if (v.crossing) return "running";
     const room = v.room;
     if (room === 4) {
-      progress(entry, nowMs, "chest");
+      progress(entry, nowMs, "chest", "Bij de kist in de middelste kamer.");
       const chest = objectNear({ x: v.chest.x, y: v.chest.y, z: 0 }, [v.chest.id], 2);
       return click(player, chest, 1) ? "running" : fail(entry, "kist niet gevonden");
     }
@@ -250,7 +259,7 @@ function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, 
     const route = routeRooms(v, room);
     if (!route || route.length === 0) return fail(entry, "geen open deur naar de kist");
     const step = route[0];
-    progress(entry, nowMs, `tunnel ${room}→${step.to}`);
+    progress(entry, nowMs, `tunnel ${room}→${step.to}`, `In de tunnels: van kamer ${room} naar kamer ${step.to}.`);
     const door = v.doors.filter((entry2) => entry2.varbit === step.varbit)
       .map((entry2) => ({ door: entry2, side: entry2.sides.find((side) => side.room === room) }))
       .filter((pair) => pair.side)
