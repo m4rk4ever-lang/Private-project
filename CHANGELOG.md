@@ -163,6 +163,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Bij `::advquestall` faalden bijna alle quests tegelijk met "fetch failed", omdat dertig avonturiers de Quest Helper tegelijk om een stap vroegen. Nu vragen er maximaal vier tegelijk. De helper gaat pas uit na drie mislukte vragen op rij, en dan maar twee minuten; een lopende quest wacht tot vijf minuten op een herstartende helper.
 - Een avonturier die op het dak van een agility-baan staat als hij aan een quest begint, loopt eerst de baan af tot hij beneden is en gaat dan verder met die quest. Eerder liep elke quest vanaf daar vast op "geen trap gevonden".
 - Een avonturier die op een dak van een agility-baan staat zonder lopende ronde (zoals bij de tropical tree in Al Kharid) gaat verder met het obstakel waar hij staat, in plaats van vast te blijven staan.
 - Avonturiers halen voor een quest geen aangeraden teleport-items meer (zoals The Chronicle), en de log zegt nu "gaat halen" in plaats van "haalt", omdat het halen nog kan mislukken.

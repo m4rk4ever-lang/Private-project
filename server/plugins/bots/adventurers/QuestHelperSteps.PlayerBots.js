@@ -116,6 +116,12 @@ function createHelperSteps({ core, now = () => Date.now(), log = () => {} }) {
 
   // The bridge did not answer (not running, restarting): no new helper quests for a while.
   let downUntil = 0;
+  // Failed answers in a row: one alone (a busy moment) does not switch the helper off.
+  let failures = 0;
+  // Questions in flight at once: thirty adventurers in a quest sweep asked all together, and the
+  // bridge choked on it ("fetch failed" for all). The rest ask a moment later.
+  const MAX_IN_FLIGHT = 4;
+  let inFlight = 0;
 
   function available() {
     return runtime() !== null && typeof process.env.QUEST_HELPER_TOKEN === "string" && process.env.QUEST_HELPER_TOKEN.length >= 24
@@ -136,8 +142,9 @@ function createHelperSteps({ core, now = () => Date.now(), log = () => {} }) {
     if (state.questKey !== questKey) Object.assign(state, { questKey, busy: false, at: 0, step: null, error: null });
     asked.set(player, state);
     const instance = runtime();
-    if (instance && !state.busy && now() - state.at >= ASK_EVERY_MS) {
+    if (instance && !state.busy && now() - state.at >= ASK_EVERY_MS && inFlight < MAX_IN_FLIGHT) {
       state.busy = true;
+      inFlight += 1;
       state.at = now();
       let snapshot = null;
       try {
@@ -150,6 +157,7 @@ function createHelperSteps({ core, now = () => Date.now(), log = () => {} }) {
         snapshot = { ...built, objectDefinitions: objectDefinitions(core, built.objects) };
       } catch (error) {
         state.busy = false;
+        inFlight -= 1;
         state.error = String(error?.message ?? error);
         return state.step;
       }
@@ -167,13 +175,18 @@ function createHelperSteps({ core, now = () => Date.now(), log = () => {} }) {
             .map((req) => ({ ids: req.ids, amount: Math.max(1, Number(req.quantity) || 1), name: req.name }));
         }
         state.error = null;
+        failures = 0;
       }, (error) => {
         state.error = String(error?.message ?? error);
-        // No bridge to talk to: the helper is off for ten minutes (quests are not started).
-        if (/fetch failed|ECONNREFUSED|engine hasn't been started|not configured/i.test(state.error)) downUntil = now() + 10 * 60_000;
+        // No bridge to talk to three times in a row: no new helper quests for two minutes, while
+        // the game starts it again (keepBridgeUp).
+        if (/fetch failed|ECONNREFUSED|engine hasn't been started|not configured/i.test(state.error) && (failures += 1) >= 3) {
+          downUntil = now() + 2 * 60_000;
+        }
         log("adventurer_quest_helper_error", { player: player.getUsername?.(), questKey, error: state.error });
       }).finally(() => {
         state.busy = false;
+        inFlight -= 1;
       });
     }
     return state.step;

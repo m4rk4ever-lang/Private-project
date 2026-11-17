@@ -531,7 +531,8 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
         const said = helper.status?.(player);
         if (said?.error) run.reason = `quest helper error: ${said.error}`;
         else if (nowMs - run.stepSince > 60_000) run.reason = "quest helper gave no step for a minute";
-        if (nowMs - run.stepSince > 2 * 60_000) return "failed";
+        // The bridge restarting (or busy with a whole sweep) gets five minutes before it gives up.
+        if (nowMs - run.stepSince > (said?.error ? 5 : 2) * 60_000) return "failed";
         return "running";
       }
       if (step.kind === "complete") return "done";
