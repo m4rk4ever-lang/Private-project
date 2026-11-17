@@ -1243,7 +1243,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       // Its own choice of spot (Sites.PlayerBots.js): the nearest fitting one, not the world
       // bots' travel with its hubs and spreading.
       const place = Sites.pickSite(player, activity, {
-        core, random, distance: (from, to, who) => (from.z !== (to.z ?? 0) ? walkTiles(from, to, who) + 50 : walkTiles(from, to, who)),
+        core, random, distance: (from, to, who) => siteDistance(from, to, who, plan.mode),
         meets: (who, requires, site) => travelMeets(who, requires, site), destinations: destinationsFor(id, player),
       });
       Sites.settleAt(stateOf(player), place);
@@ -1683,6 +1683,18 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * The places an activity can be done (adventurers.json "activitySites": magic trees only where
    * magic trees grow), else every place of its kind. Lumbridge counted as a place for magic trees.
    */
+  /**
+   * How far a spot is for a job: the walk there, and for a gathering job (logs, ore, fish: a
+   * full bag again and again) also the walk from it to the nearest bank, as a player picks the
+   * willows by a bank over the ones in the middle of nowhere.
+   */
+  function siteDistance(from, to, who, mode) {
+    const walk = from.z !== (to.z ?? 0) ? walkTiles(from, to, who) + 50 : walkTiles(from, to, who);
+    if (!["woodcutting", "mining", "fishing"].includes(mode) || !Number.isFinite(walk)) return walk;
+    const toBank = Math.min(...(data.banks ?? []).map((bank) => Math.max(Math.abs(bank.x - to.x), Math.abs(bank.y - to.y))));
+    return walk + (Number.isFinite(toBank) ? toBank * 1.5 : 0);
+  }
+
   function destinationsFor(id, player = null) {
     const all = require("../brain/Travel.PlayerBots").data.destinations ?? [];
     const only = data.activitySites?.[id];
@@ -1707,7 +1719,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const activity = registry?.byId?.get(id) ?? null;
       if (!activity) return id;
       const site = Sites.pickSite(player, activity, {
-        core, random: () => 0, distance: (from, to, who) => (from.z !== (to.z ?? 0) ? walkTiles(from, to, who) + 50 : walkTiles(from, to, who)),
+        core, random: () => 0, distance: (from, to, who) => siteDistance(from, to, who, mode),
         meets: (who, requires, place) => travelMeets(who, requires, place), destinations: destinationsFor(id, player),
       });
       if (site) return id;

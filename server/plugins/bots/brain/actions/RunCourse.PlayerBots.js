@@ -143,14 +143,24 @@ function createRunCourseAction(spec, world) {
       }
       const at = object.getLocation();
       bot.clickAt = nowMs + CLICK_COOLDOWN_MS;
-      player.getMovementQueue().walkToObject(object, {
-        execute: () => world.emitObjectInteraction?.({
-          player, object, objectId: object.getId(), clickType: 1,
-          location: { x: at.getX(), y: at.getY(), z: at.getZ() },
-          sourceLocation: { x: player.getLocation().getX(), y: player.getLocation().getY(), z: player.getLocation().getZ() },
-          handled: false,
-        }),
+      const click = () => world.emitObjectInteraction?.({
+        player, object, objectId: object.getId(), clickType: 1,
+        location: { x: at.getX(), y: at.getY(), z: at.getZ() },
+        sourceLocation: { x: player.getLocation().getX(), y: player.getLocation().getY(), z: player.getLocation().getZ() },
+        handled: false,
       });
+      // Right beside it (on the obstacle's start tile): the click at once, as the client sends it;
+      // the course walks the last step itself. A walk to an obstacle at a roof's edge (Al Kharid's
+      // tropical tree, Varrock's gaps) never "reached" it and the click never went.
+      const here = player.getLocation();
+      const nearBy = here.getZ() === at.getZ() && Math.max(Math.abs(here.getX() - at.getX()), Math.abs(here.getY() - at.getY())) <= 2;
+      if (nearBy && bot.lastDirect !== `${at.getX()},${at.getY()}`) {
+        bot.lastDirect = `${at.getX()},${at.getY()}`;
+        click();
+        return "running";
+      }
+      bot.lastDirect = null;
+      player.getMovementQueue().walkToObject(object, { execute: click });
       return "running";
     },
     stop(ctx) {

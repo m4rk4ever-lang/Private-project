@@ -120,6 +120,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Voor woodcutting, mining en fishing kiest een avonturier een plek die niet alleen dichtbij is, maar ook dicht bij een bank ligt, zoals een speler de willows bij een bank kiest boven die midden in het niets.
 - Avonturiers reizen slimmer:
   - Met Magic 25 of hoger kopen ze law runes en elementen voor teleport-spreuken; anders van elke teleport-tablet een paar. Hoe rijker, hoe meer ze inslaan.
   - Bij een bankbezoek nemen ze hun law runes, tablets en teleport-sieraden mee in de tas, want alleen van daaruit teleporteren ze.
@@ -175,6 +176,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers op de dakbanen van Varrock en Al Kharid bleven bij één obstakel staan (een muur in Varrock, de tropical tree in Al Kharid): hun klik ging pas af als ze het obstakel "bereikt" hadden, en dat gebeurde aan de dakrand nooit. Staan ze ernaast, dan klikken ze nu direct.
 - Een avonturier met een two-handed wapen (zoals een Scythe) koopt en draagt geen schild meer als hij even een axe in de hand heeft.
 - High-level avonturiers trainen combat niet meer op monsters ver onder hun level (een combat 70 op jail guards van level 26): de laagste tegenstander is minstens zo'n 45% van hun combatlevel, en lage plekken zoals Lumbridge en Port Sarim hebben een maximumlevel.
 - De Al Kharid-tolpoort werd door de bots niet herkend (de poort heeft pas een naam als je hem als speler bekijkt); ze gaan er nu echt doorheen.
