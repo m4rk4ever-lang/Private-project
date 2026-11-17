@@ -1162,6 +1162,16 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       // prayer up; without one the prayer goes off and the brother hits through.
       if (points * 10 < levelOf(player, "PRAYER") * 3) drinkPrayer(entry, nowMs);
       const id = PrayerHandler[want.prayer];
+      // Flicking, as players save points: below half its prayer, the prayer is up only around
+      // the foe's attack tick (its next attack cycle), off in between. Above half it stays on,
+      // so a missed tick costs nothing.
+      const next = Number(target?.getCombat?.()?.nextAttackCycle);
+      const cycle = Number(core.World?.getProcessCycle?.());
+      if (points * 2 < levelOf(player, "PRAYER") && Number.isFinite(next) && Number.isFinite(cycle) && next - cycle > 1) {
+        if (PrayerHandler.isActivated(player, id)) PrayerHandler.deactivatePrayers(player);
+        entry.flicking = true;
+        return;
+      }
       if (!PrayerHandler.isActivated(player, id)) PrayerHandler.activatePrayerPrayerId(player, id);
       return;
     }

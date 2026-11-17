@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Avonturiers flicken hun protection prayer als hun prayer onder de helft zakt: aan rond de aanval van de tegenstander, ertussen uit. Met genoeg punten blijft de prayer gewoon aan.
 - De metrics van elke avonturier tonen nu zijn inventaris (item, aantal, noted), vrije plekken, lopende boodschap en opgeslagen klus.
 - Avonturiers nemen agility-shortcuts die hun level toelaat als die een flink stuk lopen schelen, zoals de underwall tunnel tussen de Grand Exchange en Edgeville (Agility 21). Lukt een shortcut niet, dan laten ze hem een half uur links liggen.
 - Avonturiers met combat 90+ en Prayer 43+ doen Barrows-runs: met een spade, eten, prayer potions en Barrows- en Varrock-teleporttablets graven ze de heuvels in, verslaan de broers met de juiste protection prayer, gaan door de tunnels (deuren en puzzel) naar de kist en teleporteren daarna weg. Test een run met `::advtrain <naam>:boss_barrows`.
