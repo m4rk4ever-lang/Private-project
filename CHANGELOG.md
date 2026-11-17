@@ -163,6 +163,8 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Een avonturier op een verdieping met een quest-doel, zoals de Wizards' Tower-ladder of een trap, loopt naar de vrije tegel ernaast. Eerder liep hij naar de ladder zelf en meldde hij "de weg was versperd".
+- Een bovenverdieping vlak bij een agility-baan (zoals Lumbridge castle bij de Duke) telt niet meer als dak van die baan; alleen echt op de baan loopt een avonturier hem eerst af.
 - Bij `::advquestall` faalden bijna alle quests tegelijk met "fetch failed", omdat dertig avonturiers de Quest Helper tegelijk om een stap vroegen. Nu vragen er maximaal vier tegelijk. De helper gaat pas uit na drie mislukte vragen op rij, en dan maar twee minuten; een lopende quest wacht tot vijf minuten op een herstartende helper.
 - Een avonturier die op het dak van een agility-baan staat als hij aan een quest begint, loopt eerst de baan af tot hij beneden is en gaat dan verder met die quest. Eerder liep elke quest vanaf daar vast op "geen trap gevonden".
 - Een avonturier die op een dak van een agility-baan staat zonder lopende ronde (zoals bij de tropical tree in Al Kharid) gaat verder met het obstakel waar hij staat, in plaats van vast te blijven staan.

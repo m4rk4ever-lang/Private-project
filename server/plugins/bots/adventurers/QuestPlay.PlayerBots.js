@@ -511,6 +511,28 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     }
   }
 
+  /**
+   * A tile to walk to for this place: the place itself, or when something stands on it (the
+   * Wizards' Tower ladder at 3104,3162, stairs, a statue) the free tile beside it nearest to the
+   * walker. A walk to the ladder's own tile found no route ("de weg was versperd").
+   */
+  function standAt(place, from) {
+    const z = place.z ?? 0;
+    const blocked = (x, y) => {
+      try {
+        return core.RegionManager?.blocked?.(new core.Location(x, y, z), null) === true;
+      } catch {
+        return false;
+      }
+    };
+    if (!blocked(place.x, place.y)) return place;
+    const sides = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1], [2, 0], [-2, 0], [0, 2], [0, -2]]
+      .map(([dx, dy]) => ({ x: place.x + dx, y: place.y + dy }))
+      .filter((tile) => !blocked(tile.x, tile.y))
+      .sort((a, b) => Math.max(Math.abs(a.x - from.x), Math.abs(a.y - from.y)) - Math.max(Math.abs(b.x - from.x), Math.abs(b.y - from.y)));
+    return sides[0] ? { ...place, x: sides[0].x, y: sides[0].y } : place;
+  }
+
   function tick(entry, nowMs = now(), { busy = false } = {}) {
     const run = entry.questRun;
     if (!run) return "failed";
@@ -665,7 +687,7 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
         return "running";
       }
       // A walk that could not start (that way was blocked a moment ago) counts as a try.
-      if (!walkTo(entry, { x: at.getX(), y: at.getY(), z: here.z, name: step.npc }, { reason: "quest", replan: false, say: false })) { run.tries += 1; run.reason = "walk to the stairs refused"; }
+      if (!walkTo(entry, { ...standAt({ x: at.getX(), y: at.getY(), z: here.z }, here), name: step.npc }, { reason: "quest", replan: false, say: false })) { run.tries += 1; run.reason = "walk to the stairs refused"; }
       return "running";
     }
     if (hop.climb) {
@@ -678,12 +700,12 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
         climb(player, hop);
         return "running";
       }
-      if (!walkTo(entry, { x: hop.x, y: hop.y, z: hop.z, name: step.npc }, { reason: "quest", replan: false, say: false })) { run.tries += 1; run.reason = "walk to the ladder refused"; }
+      if (!walkTo(entry, { ...standAt({ x: hop.x, y: hop.y, z: hop.z }, here), name: step.npc }, { reason: "quest", replan: false, say: false })) { run.tries += 1; run.reason = "walk to the ladder refused"; }
       return "running";
     }
     const away = here.z === target.z ? Math.max(Math.abs(here.x - target.x), Math.abs(here.y - target.y)) : Infinity;
     if (away > NEAR_TILES) {
-      if (!walkTo(entry, { ...target, name: step.npc }, { reason: "quest", replan: false, say: run.tries === 0 && !run.walking })) { run.tries += 1; run.reason = "walk to the step refused (blocked recently)"; }
+      if (!walkTo(entry, { ...standAt(target, here), name: step.npc }, { reason: "quest", replan: false, say: run.tries === 0 && !run.walking })) { run.tries += 1; run.reason = "walk to the step refused (blocked recently)"; }
       run.walking = true;
       return "running";
     }

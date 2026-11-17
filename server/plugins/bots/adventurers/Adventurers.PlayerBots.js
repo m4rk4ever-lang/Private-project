@@ -1506,8 +1506,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   /** The rooftop course it stands on (up a floor, within 70 tiles of its start), or null. */
   function roofCourse(at) {
     if (at.getZ() === 0) return null;
+    // On the course itself: one of its obstacles' start tiles on this floor within 15 tiles. Not
+    // only near its start (Lumbridge castle's first floor is 68 tiles from Al Kharid's).
+    const { COURSES } = require("../../skills/agility/courses/Courses.Agility");
     const course = (data.agilityCourses ?? []).find((option) => option.course !== "gnome"
-      && Math.max(Math.abs(at.getX() - option.x), Math.abs(at.getY() - option.y)) <= 70);
+      && (COURSES.find((entry) => entry.key === option.course)?.obstacles ?? []).some((obstacle) => Array.isArray(obstacle.route)
+        && (obstacle.route[2] ?? 0) === at.getZ()
+        && Math.max(Math.abs(at.getX() - obstacle.route[0]), Math.abs(at.getY() - obstacle.route[1])) <= 15));
     return course && registry?.byId?.get(`agility_${course.course}`) ? course : null;
   }
 
