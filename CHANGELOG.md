@@ -178,6 +178,9 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Een `update` laat de Quest Helper-bridge nu draaien en start hem als hij er niet is; quests in het spel werken daardoor direct na een update.
+- Avonturiers starten geen tweede Quest Helper-bridge meer als de eerste druk bezig is.
+- Een iron longsword (en andere spullen met één vreemde GE-transactie) telt niet meer als 1m gp in het bezit van een avonturier en op de GE.
 - Lage avonturiers (combat onder 35) gaan niet meer naar plekken voorbij White Wolf Mountain (Catherby, Seers' Village, Gnome Stronghold); de white wolves onderweg doodden ze. Bij thieving nemen ze eten mee, want de knights en wachters slaan terug.
 - Een avonturier zonder pickaxe of axe die er geen kan kopen, gaat niet meer met lege handen naar de mijn of het bos; hij doet eerst iets anders. Mithril en hogere ertsen worden niet meer "in Falador" gezocht, waar ze aan de oppervlakte niet liggen.
 - Avonturiers wisselden na elke taslading van klus bij verwerkskills (firemaking, fletching, smithing: één lading duurde een minuut). Met nog voorraad op de bank halen ze nu de volgende lading en gaan ze door met dezelfde klus.

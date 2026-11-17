@@ -41,6 +41,8 @@ game_pids() {
     case "$cmd" in *vscode*|*code-server*) continue ;; esac
     exe=${cmd%% *}
     case "${exe##*/}" in node|yarn|tsx|npm|npx|nodemon|ts-node|concurrently|esbuild|sh|bash) ;; *) continue ;; esac
+    # The Quest Helper bridge is not part of the game: it keeps running across an update.
+    case "$cmd" in *quest-helper-bridge*|*" bridge") continue ;; esac
     # Ours: the command names this checkout, or one of the game's own scripts.
     case "$cmd" in
       *"$repo/"*|*"$repo_real/"*|*elvarg/Server.ts*|*local-panel.cjs*|*craco*|*run-with-env.mjs*|*"--names server,client"*) echo "$pid" ;;

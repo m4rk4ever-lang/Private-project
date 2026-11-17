@@ -3976,6 +3976,21 @@ function keepBridgeUp(world) {
     bridgeDownSince ||= Date.now();
     if (Date.now() - bridgeDownSince < 90_000) return;
     bridgeDownSince = 0;
+    // The bridge answers one quest at a time on two threads: with the adventurers' requests in
+    // flight, /health waits in line and times out although the bridge runs. A port that still
+    // accepts a connection means it is busy, not down; a second one would only fail on the port.
+    const port = Number(new URL(url).port || 80);
+    const socket = require("net").connect({ host: "127.0.0.1", port });
+    socket.setTimeout(2000);
+    socket.once("connect", () => { socket.destroy(); world?.log?.("adventurer_bridge_busy", { port }); });
+    const start = () => { socket.destroy(); startBridge(world, root, fs, path); };
+    socket.once("error", start);
+    socket.once("timeout", start);
+  });
+}
+
+function startBridge(world, root, fs, path) {
+    if (Date.now() - bridgeStarting < 4 * 60_000) return;
     bridgeStarting = Date.now();
     try {
       fs.mkdirSync(path.join(process.cwd(), "logs"), { recursive: true });
@@ -3988,7 +4003,6 @@ function keepBridgeUp(world) {
     } catch (error) {
       world?.log?.("adventurer_bridge_start_failed", { error: String(error?.message ?? error) });
     }
-  });
 }
 
 /** Starts the adventurers on server start; serves /api/adventurers and the commands. */

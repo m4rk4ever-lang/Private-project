@@ -135,8 +135,16 @@ function loadItemPrices() {
 
     // Some live quotes are inverted (high below low). Charge the higher guide price
     // as the buy and the lower as the sell so the spread cannot be arbitraged.
-    const buy = Math.max(...prices);
-    const sell = Math.min(...prices);
+    let buy = Math.max(...prices);
+    let sell = Math.min(...prices);
+    // One odd trade can stand as the live quote (an iron longsword "bought" for 1,000,000 beside
+    // 75): far apart, the side nearer the item's own store value is the real price, for both.
+    const store = Number(definition.value) || 0;
+    if (buy > sell * 5 && store > 0) {
+      const real = Math.abs(Math.log(buy / store)) < Math.abs(Math.log(sell / store)) ? buy : sell;
+      buy = real;
+      sell = real;
+    }
     definition.grandExchangeValue = buy;
     definition.grandExchangeSellValue = sell;
     const noteId = definition.getNoteId();

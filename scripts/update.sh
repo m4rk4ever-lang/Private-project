@@ -29,5 +29,14 @@ if [ -f .env ] && grep -q '^REACT_APP_DEFAULT_SERVER_NAME=Codespace$' .env; then
   sed -i 's/^REACT_APP_DEFAULT_SERVER_NAME=Codespace$/REACT_APP_DEFAULT_SERVER_NAME=Realm of Eeshwar/' .env
 fi
 
+# The Quest Helper bridge (quests in the game and the adventurers' quests): start it when it is
+# built and does not answer, as the codespace does when it opens.
+if [ -x tools/quest-helper-bridge/build/install/offline-quest-helper-bridge/bin/offline-quest-helper-bridge ] \
+    && ! curl -fs --max-time 2 http://127.0.0.1:16471/health >/dev/null 2>&1 \
+    && ! (exec 3<>/dev/tcp/127.0.0.1/16471) 2>/dev/null; then
+  nohup yarn bridge > /tmp/quest-helper-bridge.log 2>&1 &
+  echo "[update] Quest Helper-bridge gestart (log: /tmp/quest-helper-bridge.log)"
+fi
+
 echo "[update] Spel starten..."
 exec yarn start
