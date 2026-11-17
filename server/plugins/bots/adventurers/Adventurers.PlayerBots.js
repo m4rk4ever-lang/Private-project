@@ -1246,6 +1246,15 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         core, random, distance: (from, to, who) => siteDistance(from, to, who, plan.mode),
         meets: (who, requires, site) => travelMeets(who, requires, site), destinations: destinationsFor(id, player),
       });
+      // A job that belongs at a place (trees, rocks, stalls, fishing spots) with none it can reach
+      // now: not started where it happens to stand (redwoods "at" Lumbridge or the GE, round and
+      // round); the planner picks something else.
+      if (!place && (["woodcutting", "mining", "fishing"].includes(plan.mode)
+          || Sites.sitesFor(activity, 99, { meets: () => true, destinations: destinationsFor(id, null) }).length > 0)) {
+        world.log?.("adventurer_no_site", { name: entry.name, activity: id, mode: plan.mode });
+        metric({ kind: "no_site", bot: entry.name, activity: id, mode: plan.mode, reason: plan.reason ?? null });
+        return false;
+      }
       Sites.settleAt(stateOf(player), place);
       if (place) world.log?.("adventurer_site", { name: entry.name, activity: id, site: place.id });
       const home = stateOf(player)?.home ?? null;

@@ -250,7 +250,8 @@ Open, van makkelijk naar moeilijk:
 Generatie staat op 18: niet meer verhogen zonder expliciete vraag van de eigenaar (elke verhoging reset alle accounts).
 
 Nog open, gemeld door de eigenaar:
-- Woodcutting: na een boom die omvalt kiest de bot een boom ver weg in plaats van de dichtstbijzijnde (InteractObject findTarget).
+- Na een boom die omvalt (en bij combat en andere skills: een volgend doel) kiest de bot er een ver weg in plaats van de dichtstbijzijnde (InteractObject findTarget, TrainCombat target ordering).
+- "Wacht even (geen bank bereikbaar)": 9 van 60 bots in een test na 7878535; uitzoeken waarom geen bank bereikbaar is.
 - Gathering met een tas vol spullen die hij niet gebruikt: vaker en grondiger leegmaken (clearBag-drempel 18 vrije vakjes, keep-lijst).
 - Banken "van buiten de bank" (Draynor): bankt zodra de errand binnen ARRIVE_TILES (3) is, ook door een muur heen; moet de balie echt bereiken.
 - Lumbridge castle-bank (verdieping 2): loopklussen naar een andere verdieping klimmen geen trappen; daarna toevoegen aan banks.
