@@ -244,3 +244,16 @@ Open, van makkelijk naar moeilijk:
 6. Quest-vervolgstappen uit de sweeps: deur Hetty (Witch's Potion), Veos (fix gepusht, nog niet bevestigd),
    Corsair Curse (schip), Druidic Ritual na Sanfew, Doric na het gesprek (clay: kopen met bankgeld of minen).
 7. Verdieping-af (ladder in huis Varrock) werkte nog niet in test; dakbanen via kaartscan wel gepusht.
+
+## Stand 17-11-2026 (ochtend) en volgende stappen
+
+Generatie staat op 18: niet meer verhogen zonder expliciete vraag van de eigenaar (elke verhoging reset alle accounts).
+
+Nog open, gemeld door de eigenaar:
+- Woodcutting: na een boom die omvalt kiest de bot een boom ver weg in plaats van de dichtstbijzijnde (InteractObject findTarget).
+- Gathering met een tas vol spullen die hij niet gebruikt: vaker en grondiger leegmaken (clearBag-drempel 18 vrije vakjes, keep-lijst).
+- Banken "van buiten de bank" (Draynor): bankt zodra de errand binnen ARRIVE_TILES (3) is, ook door een muur heen; moet de balie echt bereiken.
+- Lumbridge castle-bank (verdieping 2): loopklussen naar een andere verdieping klimmen geen trappen; daarna toevoegen aan banks.
+- Agility Varrock obstakel 4 (muur 3194,3416) en Al Kharid tropical tree: directe klik ingebouwd (7ed416d), in-game nog 7 nieuwe stuck-meldingen gezien; verder uitzoeken.
+- Kopen van law runes (rijk + Magic 25) nog niet in-game gezien; teleports met sieraden/tablets/home wel.
+- Charges: trident, blowpipe, Tumeken's shadow; prayer flicking; Barrows-run (taak 43); clue scrolls.
