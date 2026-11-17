@@ -1850,7 +1850,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const item = entry.buyGoal;
       entry.buyGoal = null;
       const id = Shopping.idOf(core, item);
-      if (Number.isInteger(id) && !Shopping.owns(entry.player, id) && shopFor(entry, id, itemName(id), 1)) return;
+      if (Number.isInteger(id) && !Shopping.ownsAnywhere(entry.player, id) && shopFor(entry, id, itemName(id), 1)) return;
     }
     // Died and left a grave: back for its things first, as a player runs back to the grave.
     if (reclaimGrave(entry)) return;
@@ -3220,8 +3220,15 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       exchange: true,
     });
     const bids = [];
+    // Bought once lately: not again (it sold it, or it is in a bank it did not look in): a
+    // mid-level account bought the same vambraces and amulet three times over.
+    const entry = adventurers.get(player.getUsername?.());
+    const recent = (entry ? (entry.boughtGear ??= new Map()) : new Map());
+    const fresh = (id) => (recent.get(id) ?? 0) < now();
+    const remember = (id) => recent.set(id, now() + 6 * 60 * 60_000);
     for (const want of list) {
-      if (bid(player, core, emit, want.itemId, 1)) bids.push(want.name.toLowerCase().replace(/_/g, " "));
+      if (!fresh(want.itemId)) continue;
+      if (bid(player, core, emit, want.itemId, 1)) { remember(want.itemId); bids.push(want.name.toLowerCase().replace(/_/g, " ")); }
     }
     // For each style it fights with: a better bow or staff and its own armour (d'hide, robes),
     // one piece a visit, when it costs at most the gear share of what it has.
@@ -3229,14 +3236,15 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     for (const style of fightingStyles(player)) {
       for (const [slot, entries] of Object.entries(Shopping.gear.styles?.[style] ?? {})) {
         if (slot === "ammo") continue;
-        const ownedAt = entries.findIndex((entry) => Shopping.owns(player, Shopping.idOf(core, entry.item)));
-        const better = (ownedAt < 0 ? entries : entries.slice(0, ownedAt)).filter((entry) => Shopping.allowed(entry, rules));
+        // What it owns anywhere (its bank too): it bought gear it had in the bank.
+        const ownedAt = entries.findIndex((entry) => Shopping.ownsAnywhere(player, Shopping.idOf(core, entry.item)));
+        const better = (ownedAt < 0 ? entries : entries.slice(0, ownedAt)).filter((entry) => !entry.earned && Shopping.allowed(entry, rules));
         const want = better[0];
         const id = want ? Shopping.idOf(core, want.item) : null;
         if (!Number.isInteger(id)) continue;
         const price = Shopping.estimatedPrice(core, id, 1);
-        if (price <= 0 || price > Shopping.coinsOf(player) * (Shopping.gear.budgetShare ?? 0.5)) continue;
-        if (bid(player, core, emit, id, 1)) bids.push(want.item.toLowerCase().replace(/_/g, " "));
+        if (price <= 0 || price > Shopping.coinsOf(player) * (Shopping.gear.budgetShare ?? 0.5) || !fresh(id)) continue;
+        if (bid(player, core, emit, id, 1)) { remember(id); bids.push(want.item.toLowerCase().replace(/_/g, " ")); }
       }
     }
     if (bids.length > 0) note(player, `Biedt op de GE op: ${bids.join(", ")}.`, "activity");

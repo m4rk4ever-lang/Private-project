@@ -177,6 +177,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Avonturiers kochten op de GE uitrusting die ze al op de bank hadden (ranged-, magic- en doel-items keken alleen naar tas en uitrusting), en kochten hetzelfde item steeds opnieuw. Ze kijken nu ook naar hun bank en kopen hetzelfde stuk niet binnen 6 uur nog een keer.
 - Avonturiers gaan alleen naar Morytania (Slayer Tower, Canifis, Mort'ton) als ze Priest in Peril hebben gedaan. Eerder probeerden ze de Slayer Tower via de Wilderness te bereiken. Ook voor Slayer-taken zoeken ze geen monsters meer in Morytania zonder die quest, of in de Wilderness.
 - Pickpocketen op paladins gebeurt in Ardougne. Wie pickpocket heroes nog niet kan doen (de Heroes' Guild heeft nog geen plek), pakt de beste thieving-klus die wel bereikbaar is.
 - Na een omgevallen boom of uitgeputte rots kiest een bot de dichtstbijzijnde volgende (hooguit een paar tegels verder), niet willekeurig een die ver weg staat.
