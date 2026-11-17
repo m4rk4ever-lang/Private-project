@@ -3590,6 +3590,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // Herblore with 127 kwuarm potions and limpwurt roots in the bank: sold them all at the
     // exchange, then bought 140 of each back for the same job.
     if (entry) {
+      // Nor its boss kit: the spade it had just bought went straight up for sale.
+      for (const id of bossKit(entry)) keep.add(id);
       for (const id of workingMaterials(entry)) {
         keep.add(id);
         const noted = core.ItemDefinition.forId(id)?.getNoteId?.();
