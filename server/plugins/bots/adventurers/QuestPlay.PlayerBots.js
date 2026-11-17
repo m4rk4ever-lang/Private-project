@@ -88,7 +88,7 @@ function stepDone(quest, player, step) {
 let routeFinder = null;
 
 function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), quests = () => [], playthroughs = data.quests, stateOf = () => null,
-  helper = null, acquire = () => false, buyNamed = () => false }) {
+  helper = null, acquire = () => false, buyNamed = () => false, metric = () => {} }) {
   /**
    * The brain's own door opener (DoorOpening.PlayerBots.js): it clicks a door only when opening
    * it provably shortens the way to the target (it lifts the door's clipping and routes again).
@@ -488,6 +488,29 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
    * The planning tick: "running", "done" (the quest is complete) or "failed" (put aside).
    * Walks, climbs and talks; the quest plugin does the rest.
    */
+  /**
+   * What it set off to get ("gaat ... halen"): once the errand is over, checked in its bag. The
+   * outcome goes into its log and the metrics (kind quest_fetch), so a line saying it fetches
+   * something is followed by whether it did.
+   */
+  function fetching(entry, run, ids, amount, name, why, nowMs) {
+    const player = entry.player;
+    const before = ids.reduce((sum, id) => sum + (player.getInventory().getAmount(id) ?? 0), 0);
+    (run.fetching ??= []).push({ ids, amount, name, why, before, since: nowMs });
+  }
+
+  function checkFetched(entry, run, nowMs) {
+    if (!run.fetching?.length) return;
+    const player = entry.player;
+    for (const job of run.fetching.splice(0)) {
+      const have = job.ids.reduce((sum, id) => sum + (player.getInventory().getAmount(id) ?? 0), 0);
+      const got = have >= job.amount || have > job.before;
+      note?.(player, got ? `Heeft ${job.name} voor ${run.name}.` : `Kon ${job.name} niet halen voor ${run.name}; gaat zonder verder.`, "quest");
+      metric({ kind: "quest_fetch", bot: entry.name, quest: run.name, item: job.name, why: job.why, amount: job.amount,
+        have, got, minutes: Math.round((nowMs - job.since) / 600) / 100 });
+    }
+  }
+
   function tick(entry, nowMs = now(), { busy = false } = {}) {
     const run = entry.questRun;
     if (!run) return "failed";
@@ -497,6 +520,7 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     if (!quest) return "failed";
     if (quest.isComplete(player)) return "done";
     if (busy || player.getDialogueManager?.()?.isActive?.() || core.MultiChatboxPrompt?.getPending?.(player)) return "running";
+    checkFetched(entry, run, nowMs);
     let step;
     if (run.helperKey) {
       step = helperStep(run, player, nowMs);
@@ -535,6 +559,7 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
         run.recAt = nowMs + 5_000;
         if (acquire(entry, rec.ids, rec.amount, rec.name)) {
           note?.(player, `Gaat ${rec.amount > 1 ? `${rec.amount} x ` : ""}${rec.name} halen voor ${run.name} (aangeraden).`, "quest");
+          fetching(entry, run, rec.ids, rec.amount, rec.name, "recommended", nowMs);
           return "running";
         }
       }
@@ -544,7 +569,10 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
       if (needs.length > 0 && nowMs >= (run.needsAt ?? 0)) {
         run.needsAt = nowMs + 60_000;
         const need = needs[0];
-        if (acquire(entry, need.ids, need.amount, need.name)) return "running";
+        if (acquire(entry, need.ids, need.amount, need.name)) {
+          fetching(entry, run, need.ids, need.amount, need.name, "needed", nowMs);
+          return "running";
+        }
         // A step with a place of its own (shear the sheep for the wool it lacks) is done
         // regardless: what it misses may be what this very step makes. Only a step with
         // nothing to go and do fails on it.

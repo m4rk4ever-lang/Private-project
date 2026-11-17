@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Als een avonturier iets gaat halen voor een quest, controleert hij daarna of het echt in zijn tas zit. In het log staat dan "Heeft ..." of "Kon ... niet halen".
 - Kan een avonturier een quest-item niet kopen, dan verzamelt hij het zelf als het een grondstof is (clay mijnen voor Doric's Quest, logs hakken, vis vangen) en gaat hij daarna terug naar zijn quest. Daarvoor is er een nieuwe bot-activiteit: clay minen.
 - Het spel start de Quest Helper-bridge zelf (en opnieuw als hij stopt) als die gebouwd is maar niet draait; zonder bridge liepen alle quests van de avonturiers na twee minuten vast. Uit te zetten met ADVENTURER_START_BRIDGE=0.
 - Eigenaarscommando `::advquestall`: alle avonturiers proberen tegelijk elk een andere quest (blokkades opgeheven), en wie klaar is of vastloopt pakt de volgende quest die in de sweep nog niemand probeerde, twee uur lang; zo wordt in één run het hele questpad getest. `::advquestall stop` beëindigt de sweep.
@@ -162,6 +163,7 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Een avonturier die op het dak van een agility-baan staat als hij aan een quest begint, loopt eerst de baan af tot hij beneden is en gaat dan verder met die quest. Eerder liep elke quest vanaf daar vast op "geen trap gevonden".
 - Een avonturier die op een dak van een agility-baan staat zonder lopende ronde (zoals bij de tropical tree in Al Kharid) gaat verder met het obstakel waar hij staat, in plaats van vast te blijven staan.
 - Avonturiers halen voor een quest geen aangeraden teleport-items meer (zoals The Chronicle), en de log zegt nu "gaat halen" in plaats van "haalt", omdat het halen nog kan mislukken.
 - Een avonturier die klei gaat hakken voor Doric's Quest gaat na het legen van zijn tas ook echt naar de kleirotsen, niet naar coal.

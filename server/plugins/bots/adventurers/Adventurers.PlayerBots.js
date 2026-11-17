@@ -400,6 +400,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     helper: createHelperSteps({ core, now, log: (event, details) => world.log?.(event, details) }),
     // An item a quest step needs: from its bank, else a shop or the Grand Exchange.
     acquire: (entry, ids, amount, name) => acquireForQuest(entry, ids, amount, name),
+    metric: (line) => metric(line),
     // "Purchase a bucket from ...": the item by its name, bought where it is sold.
     buyNamed: (entry, name) => {
       const id = Shopping.idOf(core, String(name).toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/S$/, ""))
@@ -1326,6 +1327,15 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const brain = runtimeEntry(entry.player)?.brain;
     const busy = errands.busy(entry.player);
     if (brain && !busy) brain.paused = true;
+    // On a rooftop course (Al Kharid's roofs have no ladder): the course down first, then the
+    // quest again, not "no stairs found" for every quest it tries from up there.
+    if (!busy && entry.plan?.quest && roofCourse(entry.player.getLocation())) {
+      entry.afterRoof = entry.plan.quest;
+      entry.questRun = null;
+      if (brain) brain.paused = false;
+      getOffRoof(entry, nowMs);
+      return;
+    }
     const result = questPlay.tick(entry, nowMs, { busy });
     if (result === "running") return;
     if (brain) brain.paused = false;
@@ -1493,6 +1503,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return true;
   }
 
+  /** The rooftop course it stands on (up a floor, within 70 tiles of its start), or null. */
+  function roofCourse(at) {
+    if (at.getZ() === 0) return null;
+    const course = (data.agilityCourses ?? []).find((option) => option.course !== "gnome"
+      && Math.max(Math.abs(at.getX() - option.x), Math.abs(at.getY() - option.y)) <= 70);
+    return course && registry?.byId?.get(`agility_${course.course}`) ? course : null;
+  }
+
   function getOffRoof(entry, nowMs) {
     const player = entry.player;
     const at = player.getLocation();
@@ -1502,9 +1520,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
     // A ladder or stairs down nearby first: that is a house or a bank, not a rooftop course.
     if (!entry.offRoof && climbDown(entry, nowMs)) return true;
-    const course = (data.agilityCourses ?? []).find((option) => option.course !== "gnome"
-      && Math.max(Math.abs(at.getX() - option.x), Math.abs(at.getY() - option.y)) <= 70);
-    if (!course || !registry?.byId?.get(`agility_${course.course}`)) return false;
+    const course = roofCourse(at);
+    if (!course) return false;
     startActivity(player, `agility_${course.course}`, { home: course, nowMs });
     entry.activity = `agility_${course.course}`;
     entry.phase = "training";
@@ -1524,6 +1541,12 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (errands.busy(entry.player)) return;
     clanFunds(entry, nowMs);
     if (getOffRoof(entry, nowMs)) return;
+    // Down from the roof it was on when its quest began: on with that quest now.
+    if (entry.afterRoof) {
+      const quest = entry.afterRoof;
+      entry.afterRoof = null;
+      if (startQuest(entry, { kind: "quest", quest })) return;
+    }
     // A full bag halfway through a job (a money-making stretch above all): it sells or banks and
     // then goes back to the same job for the time it had left, not to something new after one load.
     if (entry.phase === "training" && entry.plan?.kind === "train" && entry.plan.mode !== "slayer"
@@ -1774,6 +1797,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       if (!entry.player.getCombat?.()?.getTarget?.()) buryLowBones(entry.player);
       // Out of breath it walks; rested (40%) it runs again, as a player clicks run back on.
       if (entry.player.isRunningReturn?.() === false && (entry.player.getRunEnergy?.() ?? 0) >= 40) entry.player.setRunning?.(true);
+      // Down from the roof: the course was only the way down.
+      if (entry.phase === "training" && entry.plan?.reason === "van het dak af" && entry.player.getLocation().getZ() === 0) {
+        entry.jobEnd ??= "off the roof";
+        entry.until = 0;
+      }
       if (entry.phase === "training" && entry.buying && entry.player.getInventory().getAmount(entry.buying) <= 0
           && !errands.busy(entry.player)) {
         entry.buying = null;
