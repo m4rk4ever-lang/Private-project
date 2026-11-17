@@ -254,7 +254,20 @@
   "activitySites": {
     "yew_trees": ["edgeville", "grand_exchange", "falador", "catherby", "seers_village", "tree_gnome_stronghold", "woodcutting_guild"],
     "magic_trees": ["sorcerers_tower_magics", "tree_gnome_stronghold", "woodcutting_guild"],
-    "redwood_trees": ["woodcutting_guild"]
+    "redwood_trees": ["woodcutting_guild"],
+    "copper_tin_rocks": ["lumbridge_swamp", "varrock_east_mine", "varrock_west_mine", "rimmington", "al_kharid_mine"],
+    "clay_rocks": ["rimmington", "varrock_west_mine"],
+    "iron_rocks": ["varrock_east_mine", "varrock_west_mine", "al_kharid_mine", "rimmington", "falador"],
+    "coal_rocks": ["barbarian_village", "al_kharid_mine", "lumbridge_swamp", "mining_guild", "falador"],
+    "mithril_rocks": ["al_kharid_mine", "lumbridge_swamp", "mining_guild", "falador"],
+    "adamantite_rocks": ["al_kharid_mine", "lumbridge_swamp", "mining_guild", "falador"],
+    "runite_rocks": ["mining_guild"],
+    "net_fishing": ["lumbridge_swamp", "draynor", "karamja_musa_point", "catherby"],
+    "fly_fishing": ["lumbridge", "barbarian_village", "shilo_village"],
+    "lobster_fishing": ["karamja_musa_point", "catherby", "fishing_guild"],
+    "harpoon_fishing": ["karamja_musa_point", "catherby", "fishing_guild"],
+    "shark_fishing": ["catherby", "fishing_guild"],
+    "anglerfish_fishing": ["piscarilius"]
   },
   "generation": 18,
   "grandExchange": {
