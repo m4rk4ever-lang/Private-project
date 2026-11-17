@@ -952,11 +952,51 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
   })();
 
+  // Agility shortcuts on the surface (the Grand Exchange's underwall tunnel to Edgeville, 21),
+  // from the same table: taken when one is close by and saves a good part of the walk.
+  const SHORTCUT_HOPS = (() => {
+    try {
+      const rows = require("../../agent/data/transports.json")?.transports?.agility_shortcuts ?? [];
+      const hops = [];
+      for (const [from, to, menu, id, skills, items, quests, varbits, varps] of rows) {
+        if (!Array.isArray(from) || !Array.isArray(to) || items || quests || varbits || varps) continue;
+        if (from[2] !== 0 || to[2] !== 0 || from[1] >= UNDERGROUND_Y || to[1] >= UNDERGROUND_Y) continue;
+        const needs = [...String(skills ?? "").matchAll(/(\d+)\s+([A-Za-z]+)/g)].map(([, level, skill]) => ({ level: Number(level), skill: skill.toUpperCase() }));
+        hops.push({ from: { x: from[0], y: from[1], z: 0 }, to: { x: to[0], y: to[1], z: 0 }, menu: String(menu), id, needs, shortcut: true });
+      }
+      return hops;
+    } catch {
+      return [];
+    }
+  })();
+
+  // player -> Map(shortcut key -> until): one that did not take it across is left for half an hour.
+  const failedShortcuts = new WeakMap();
+  const shortcutKey = (hop) => `${hop.from.x},${hop.from.y}`;
+
+  /** A shortcut near it that saves at least 15 tiles and a third of the walk to `to`, or null. */
+  function shortcutHop(player, to) {
+    const here = player.getLocation();
+    if (here.getZ() !== 0 || (to.z ?? 0) !== 0 || here.getY() >= UNDERGROUND_Y || to.y >= UNDERGROUND_Y) return null;
+    const at = { x: here.getX(), y: here.getY() };
+    const away = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+    const direct = away(at, to);
+    let best = null;
+    let bestCost = Infinity;
+    for (const hop of SHORTCUT_HOPS) {
+      if (away(at, hop.from) > 30 || hop.needs.some(({ level, skill }) => levelOf(player, skill) < level)) continue;
+      if ((failedShortcuts.get(player)?.get(shortcutKey(hop)) ?? 0) > now()) continue;
+      const cost = away(at, hop.from) + 5 + away(hop.to, to);
+      if (cost + 15 <= direct && cost <= direct * 0.67 && cost < bestCost) { bestCost = cost; best = hop; }
+    }
+    return best;
+  }
+
   /** The way down or up to reach `to` when it is on the other side of the ground, or null. */
   function levelHop(player, to) {
     const here = player.getLocation();
     const goingDown = to.y >= UNDERGROUND_Y;
-    if ((here.getY() >= UNDERGROUND_Y) === goingDown) return null;
+    if ((here.getY() >= UNDERGROUND_Y) === goingDown) return shortcutHop(player, to);
     let best = null;
     let bestCost = Infinity;
     for (const hop of LEVEL_HOPS) {
@@ -1151,7 +1191,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
           }
           note(player, `${hop.menu.split(" ")[0].replace(/-/g, " ")} (${hop.menu.split(" ").slice(1).join(" ").toLowerCase()}) op weg naar ${placeName(to)}.`, "activity");
           metric({ kind: "level_hop", bot: entry.name, menu: hop.menu, from: [hop.from.x, hop.from.y, hop.from.z], to: placeName(to) });
-          entry.afterHop = { to, options, down: hop.to.y >= UNDERGROUND_Y, until: now() + 20_000 };
+          entry.afterHop = { to, options, down: hop.to.y >= UNDERGROUND_Y, until: now() + 20_000, landing: hop.shortcut ? hop.to : null, key: hop.shortcut ? shortcutKey(hop) : null };
         },
       });
     }
@@ -2303,7 +2343,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       // Gone down or up the stairs on its way: on to the place itself once it has landed.
       if (entry.afterHop) {
         const hop = entry.afterHop;
-        const landed = (entry.player.getLocation().getY() >= UNDERGROUND_Y) === hop.down;
+        const spot = entry.player.getLocation();
+        const landed = hop.landing
+          ? Math.max(Math.abs(spot.getX() - hop.landing.x), Math.abs(spot.getY() - hop.landing.y)) <= 2
+          : (spot.getY() >= UNDERGROUND_Y) === hop.down;
         if (landed) {
           entry.afterHop = null;
           if (walkTo(entry, hop.to, { ...hop.options, hopped: true })) {
@@ -2315,7 +2358,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
           continue;
         } else {
           entry.afterHop = null;
-          note(entry.player, `Kwam niet ${hop.down ? "naar beneden" : "naar boven"} op weg naar ${placeName(hop.to)}.`, "activity");
+          if (hop.key) {
+            if (!failedShortcuts.has(entry.player)) failedShortcuts.set(entry.player, new Map());
+            failedShortcuts.get(entry.player).set(hop.key, nowMs + 30 * 60_000);
+          }
+          note(entry.player, hop.landing ? `Kwam niet door de shortcut op weg naar ${placeName(hop.to)}.` : `Kwam niet ${hop.down ? "naar beneden" : "naar boven"} op weg naar ${placeName(hop.to)}.`, "activity");
           entry.until = 0;
         }
       }

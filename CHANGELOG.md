@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Toegevoegd
+- Avonturiers nemen agility-shortcuts die hun level toelaat als die een flink stuk lopen schelen, zoals de underwall tunnel tussen de Grand Exchange en Edgeville (Agility 21). Lukt een shortcut niet, dan laten ze hem een half uur links liggen.
 - Avonturiers met combat 90+ en Prayer 43+ doen Barrows-runs: met een spade, eten, prayer potions en Barrows- en Varrock-teleporttablets graven ze de heuvels in, verslaan de broers met de juiste protection prayer, gaan door de tunnels (deuren en puzzel) naar de kist en teleporteren daarna weg. Test een run met `::advtrain <naam>:boss_barrows`.
 - Tijdelijk staan de quests die een skill, minigame of gebied openen (zoals Druidic Ritual, Rune Mysteries, Priest in Peril, Lost City, Fairytale, Song of the Elves en Desert Treasure) voor avonturiers op voltooid, zonder beloningen (geen XP, items of questpunten), tot de bots ze zelf kunnen spelen. De lijst staat in adventurers.json (grantedQuests).
 - Avonturiers kunnen trappen en ladders naar ondergronds nemen (en weer omhoog), zoals de Mining Guild onder Falador (vanaf Mining 60).
