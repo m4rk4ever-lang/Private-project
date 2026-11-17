@@ -1249,7 +1249,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       // A job that belongs at a place (trees, rocks, stalls, fishing spots) with none it can reach
       // now: not started where it happens to stand (redwoods "at" Lumbridge or the GE, round and
       // round); the planner picks something else.
-      if (!place && (["woodcutting", "mining", "fishing"].includes(plan.mode)
+      if (!place && (["woodcutting", "mining", "fishing", "thieving"].includes(plan.mode)
           || Sites.sitesFor(activity, 99, { meets: () => true, destinations: destinationsFor(id, null) }).length > 0)) {
         world.log?.("adventurer_no_site", { name: entry.name, activity: id, mode: plan.mode });
         metric({ kind: "no_site", bot: entry.name, activity: id, mode: plan.mode, reason: plan.reason ?? null });
@@ -1733,7 +1733,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       });
       if (site) return id;
       // A job done anywhere (no spots of its own) is fine; a tree, rock or fishing spot is not.
-      if (!["woodcutting", "mining", "fishing"].includes(mode) && Sites.sitesFor(activity, 99, { meets: () => true }).length === 0) return id;
+      if (!["woodcutting", "mining", "fishing", "thieving"].includes(mode) && Sites.sitesFor(activity, 99, { meets: () => true }).length === 0) return id;
     }
     // Nothing of this kind it can reach now: another job instead.
     return null;

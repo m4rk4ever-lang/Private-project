@@ -177,8 +177,9 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Pickpocketen op paladins gebeurt in Ardougne. Wie pickpocket heroes nog niet kan doen (de Heroes' Guild heeft nog geen plek), pakt de beste thieving-klus die wel bereikbaar is.
 - Na een omgevallen boom of uitgeputte rots kiest een bot de dichtstbijzijnde volgende (hooguit een paar tegels verder), niet willekeurig een die ver weg staat.
-- Een klus die op een vaste plek hoort (bomen, rotsen, stalls, visplekken) maar waarvoor de avonturier geen bereikbare plek heeft, begint hij niet meer op de plek waar hij toevallig staat (zoals redwoods "in" Lumbridge of bij de GE); hij kiest dan iets anders.
+- Een klus die op een vaste plek hoort (bomen, rotsen, visplekken, stalls en pickpocketen) maar waarvoor de avonturier geen bereikbare plek heeft, begint hij niet meer op de plek waar hij toevallig staat (zoals redwoods "in" Lumbridge of bij de GE); hij kiest dan iets anders.
 - De home teleport onderweg werd afgebroken doordat een avonturier in dezelfde tijd van uitrusting wisselde; tijdens de teleport doet hij nu niets anders.
 - Avonturiers op de dakbanen van Varrock en Al Kharid bleven bij één obstakel staan (een muur in Varrock, de tropical tree in Al Kharid): hun klik ging pas af als ze het obstakel "bereikt" hadden, en dat gebeurde aan de dakrand nooit. Staan ze ernaast, dan klikken ze nu direct.
 - Een avonturier met een two-handed wapen (zoals een Scythe) koopt en draagt geen schild meer als hij even een axe in de hand heeft.

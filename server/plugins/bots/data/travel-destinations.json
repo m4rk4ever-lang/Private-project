@@ -689,7 +689,7 @@
     },
     {
       "id": "ardougne_knights",
-      "activities": ["pickpocket_guards", "pickpocket_knights"],
+      "activities": ["pickpocket_guards", "pickpocket_knights", "pickpocket_paladins"],
       "x": 2655,
       "y": 3300,
       "z": 0,
