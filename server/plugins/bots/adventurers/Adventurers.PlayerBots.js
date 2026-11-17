@@ -2113,6 +2113,34 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       if (!level || level <= 1) continue;
       skills.setCurrentLevel(skill, level, false).setMaxLevels(skill, level, false).setExperience(skill, SkillManager.getExperienceForLevel(level));
     }
+    // (Before its quests: their rewards would fill the bag first.)
+    // Gear to match its levels, as an account at those levels would own: per slot the best piece
+    // its levels and quests allow (a weapon, armour, an axe and a pickaxe), then worn.
+    const helpers = { levelOf: (skill) => levelOf(player, skill), questDone: questDone(player) };
+    const given = [];
+    // Twice: now, and after its quests for what they open (a dragon scimitar after Monkey Madness).
+    const giveGear = () => {
+    for (const [slot, list] of [...Object.entries(Trade.listsFor("melee", player, core)), ["axe", Shopping.gear.tools?.axe ?? []], ["pickaxe", Shopping.gear.tools?.pickaxe ?? []]]) {
+      // The best allowed piece the game knows (a list entry without an item id is passed over).
+      // No shield beside a two-handed weapon (a scythe): it would take the weapon off again.
+      if (slot === "shield" && Trade.twoHanded(player, core)) continue;
+      // Within what an account with its coins would own: a 10k fighter has no amulet of fury.
+      const budget = Math.max(5_000, Number(profile.coins) || 0);
+      const best = list.find((entry) => Shopping.allowed(entry, helpers) && Number.isInteger(Shopping.idOf(core, entry.item))
+        && Value.itemValue(core, Shopping.idOf(core, entry.item), 1) <= budget);
+      const id = best ? Shopping.idOf(core, best.item) : null;
+      if (!Number.isInteger(id) || player.getInventory().getFreeSlots() < 1 || Shopping.owns(player, id)) continue;
+      acquire(player, id);
+      player.getInventory().add(new core.Item(id, 1));
+      // Worn at once: the quests' rewards after this fill the bag (a late-game account got none).
+      Shopping.wear(player, core, id);
+      given.push(best.item);
+    }
+    Trade.wearBest(player, core, helpers, "melee");
+    player.getInventory().refreshItems?.();
+    player.getEquipment().refreshItems?.();
+    };
+    giveGear();
     const registered = questsByName();
     let done = 0;
     for (const quest of data.quests ?? []) {
@@ -2124,26 +2152,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         // A quest that cannot be completed this way is left open.
       }
     }
+    giveGear();
     if (profile.coins) {
       acquire(player, Trade.COINS);
       player.getInventory().add(new core.Item(Trade.COINS, profile.coins));
     }
-    // Gear to match its levels, as an account at those levels would own: per slot the best piece
-    // its levels and quests allow (a weapon, armour, an axe and a pickaxe), then worn.
-    const helpers = { levelOf: (skill) => levelOf(player, skill), questDone: questDone(player) };
-    const given = [];
-    for (const [slot, list] of [...Object.entries(Trade.listsFor("melee", player, core)), ["axe", Shopping.gear.tools?.axe ?? []], ["pickaxe", Shopping.gear.tools?.pickaxe ?? []]]) {
-      // The best allowed piece the game knows (a list entry without an item id is passed over).
-      const best = list.find((entry) => Shopping.allowed(entry, helpers) && Number.isInteger(Shopping.idOf(core, entry.item)));
-      const id = best ? Shopping.idOf(core, best.item) : null;
-      if (!Number.isInteger(id) || player.getInventory().getFreeSlots() < 1) continue;
-      acquire(player, id);
-      player.getInventory().add(new core.Item(id, 1));
-      given.push(best.item);
-    }
-    Trade.wearBest(player, core, helpers, "melee");
-    player.getInventory().refreshItems?.();
-    player.getEquipment().refreshItems?.();
     player.setAttribute(TEST_PROFILE_ATTRIBUTE, profile.name);
     note(player, `Testaccount (${profile.name}): begint met andere levels, ${done} quests, ${profile.coins ?? 0} coins en ${given.length > 0 ? given.map((item) => item.toLowerCase().replace(/_/g, " ")).join(", ") : "geen extra gear"}.`);
   }
@@ -2190,6 +2203,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // A new account starts in Lumbridge, wherever the old one was.
     const start = data.spawn;
     player.moveTo?.(new core.Location(start.x, start.y, start.z ?? 0));
+    // Its brain's home too (set from the saved spot at login): else it walked back to where the
+    // old account had been.
+    const brainState = runtimeEntry(player)?.state ?? runtime.botStatesByName?.get?.(player.getUsername?.());
+    if (brainState) brainState.home = { x: start.x, y: start.y, z: start.z ?? 0 };
     note(player, "Een nieuw avontuur begint in Lumbridge, met alleen de spullen van Tutorial Island.");
   }
 

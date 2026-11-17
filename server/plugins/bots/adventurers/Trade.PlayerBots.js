@@ -65,6 +65,17 @@ function wornRank(list, core, worn) {
  * Wears found gear that beats what it wears and that its levels and quests allow, through the
  * game's equip. Returns the names it put on.
  */
+/** Whether the weapon it wears takes both hands. */
+function twoHanded(player, core) {
+  const weapon = player.getEquipment().getItems()?.[core.Equipment?.WEAPON_SLOT ?? 3];
+  if (!weapon || !(weapon.getId() > 0)) return false;
+  try {
+    return weapon.getDefinition?.()?.isDoubleHanded?.() === true || core.ItemDefinition?.forId?.(weapon.getId())?.isDoubleHanded?.() === true;
+  } catch {
+    return false;
+  }
+}
+
 function listsFor(style = "melee", player = null, core = null) {
   const lists = Object.fromEntries(Object.entries(Shopping.gear.slots ?? {}).map(([slot, list]) => [slot, tasted(list, core, player)]));
   const own = Shopping.gear.styles?.[style];
@@ -80,6 +91,9 @@ function wearBest(player, core, { levelOf, questDone }, style = "melee", { skipW
   for (const [slot, list] of Object.entries(listsFor(style, player, core))) {
     // A job with its tool in hand (an axe, a pickaxe): the weapon stays off until it is done.
     if (skipWeapon && slot === "weapon") continue;
+    // A two-handed weapon in hand (a scythe, a bow, a two-handed staff): no shield beside it, or
+    // the shield took the weapon off and the weapon the shield, again and again.
+    if (slot === "shield" && twoHanded(player, core)) continue;
     const held = inventoryIds(player);
     const rank = wornRank(list, core, equippedIds(player));
     for (let index = 0; index < rank; index += 1) {
@@ -217,4 +231,4 @@ function finishedOffers(player, emit) {
 }
 
 module.exports = {
-  slotsOf, listsFor, isSupply, isPrayerRestore, wearBest, keepIds, goodsToSell, sellAtExchange, buyAtExchange, finishedOffers, COINS, KEEP_TOOLS };
+  slotsOf, listsFor, twoHanded, isSupply, isPrayerRestore, wearBest, keepIds, goodsToSell, sellAtExchange, buyAtExchange, finishedOffers, COINS, KEEP_TOOLS };

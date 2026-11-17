@@ -3,6 +3,10 @@
   "budgetShare": 0.6,
   "slots": {
     "weapon": [
+      { "item": "SCYTHE_OF_VITUR", "skill": "ATTACK", "level": 80, "also": { "STRENGTH": 90 } },
+      { "item": "OSMUMTENS_FANG", "skill": "ATTACK", "level": 82 },
+      { "item": "GHRAZI_RAPIER", "skill": "ATTACK", "level": 80 },
+      { "item": "ABYSSAL_TENTACLE", "skill": "ATTACK", "level": 75 },
       { "item": "ABYSSAL_WHIP", "skill": "ATTACK", "level": 70 },
       { "item": "DRAGON_SCIMITAR", "skill": "ATTACK", "level": 60, "quests": ["Monkey Madness I"] },
       { "item": "RUNE_SCIMITAR", "skill": "ATTACK", "level": 40 },
@@ -13,6 +17,7 @@
       { "item": "BRONZE_SCIMITAR", "skill": "ATTACK", "level": 1 }
     ],
     "body": [
+      { "item": "TORVA_PLATEBODY", "skill": "DEFENCE", "level": 80 },
       { "item": "BANDOS_CHESTPLATE", "skill": "DEFENCE", "level": 65 },
       { "item": "DHAROKS_PLATEBODY", "skill": "DEFENCE", "level": 70 },
       { "item": "DRAGON_PLATEBODY", "skill": "DEFENCE", "level": 70 },
@@ -26,6 +31,7 @@
       { "item": "BRONZE_PLATEBODY", "skill": "DEFENCE", "level": 1 }
     ],
     "legs": [
+      { "item": "TORVA_PLATELEGS", "skill": "DEFENCE", "level": 80 },
       { "item": "BANDOS_TASSETS", "skill": "DEFENCE", "level": 65 },
       { "item": "DHAROKS_PLATELEGS", "skill": "DEFENCE", "level": 70 },
       { "item": "DRAGON_PLATELEGS", "skill": "DEFENCE", "level": 60 },
@@ -38,6 +44,8 @@
       { "item": "BRONZE_PLATELEGS", "skill": "DEFENCE", "level": 1 }
     ],
     "head": [
+      { "item": "TORVA_FULL_HELM", "skill": "DEFENCE", "level": 80 },
+      { "item": "NEITIZNOT_FACEGUARD", "skill": "DEFENCE", "level": 70 },
       { "item": "DHAROKS_HELM", "skill": "DEFENCE", "level": 70 },
       { "item": "DRAGON_FULL_HELM", "skill": "DEFENCE", "level": 70 },
       { "item": "HELM_OF_NEITIZNOT", "skill": "DEFENCE", "level": 55, "quests": ["The Fremennik Isles"], "tier": "NEITIZNOT" },
@@ -50,6 +58,8 @@
       { "item": "IRON_FULL_HELM", "skill": "DEFENCE", "level": 1 }
     ],
     "shield": [
+      { "item": "AVERNIC_DEFENDER", "skill": "DEFENCE", "level": 70, "also": { "ATTACK": 70 } },
+      { "item": "DRAGON_DEFENDER", "skill": "DEFENCE", "level": 60, "also": { "ATTACK": 60 } },
       { "item": "DRAGON_KITESHIELD", "skill": "DEFENCE", "level": 70 },
       { "item": "DRAGON_SQ_SHIELD", "skill": "DEFENCE", "level": 60 },
       { "item": "GRANITE_SHIELD", "skill": "DEFENCE", "level": 50, "also": { "STRENGTH": 50 } },
@@ -58,6 +68,23 @@
       { "item": "MITHRIL_KITESHIELD", "skill": "DEFENCE", "level": 20 },
       { "item": "STEEL_KITESHIELD", "skill": "DEFENCE", "level": 5 },
       { "item": "IRON_KITESHIELD", "skill": "DEFENCE", "level": 1 }
+    ],
+    "hands": [
+      { "item": "FEROCIOUS_GLOVES", "skill": "ATTACK", "level": 80, "also": { "DEFENCE": 80 } },
+      { "item": "BARROWS_GLOVES", "skill": "DEFENCE", "level": 1, "quests": ["Recipe for Disaster"] },
+      { "item": "DRAGON_GLOVES", "skill": "DEFENCE", "level": 1, "quests": ["Recipe for Disaster"] },
+      { "item": "COMBAT_BRACELET", "skill": "DEFENCE", "level": 1 }
+    ],
+    "feet": [
+      { "item": "PRIMORDIAL_BOOTS", "skill": "DEFENCE", "level": 75, "also": { "STRENGTH": 75 } },
+      { "item": "DRAGON_BOOTS", "skill": "DEFENCE", "level": 60 },
+      { "item": "RUNE_BOOTS", "skill": "DEFENCE", "level": 40 }
+    ],
+    "neck": [
+      { "item": "AMULET_OF_TORTURE", "skill": "HITPOINTS", "level": 75 },
+      { "item": "AMULET_OF_FURY", "skill": "HITPOINTS", "level": 1 },
+      { "item": "AMULET_OF_STRENGTH", "skill": "HITPOINTS", "level": 1 },
+      { "item": "AMULET_OF_POWER", "skill": "HITPOINTS", "level": 1 }
     ]
   },
   "styles": {

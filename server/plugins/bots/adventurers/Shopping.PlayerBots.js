@@ -222,7 +222,7 @@ function capeOf(player) {
 
 /** The metal of a gear piece ("RUNE_PLATEBODY" -> "RUNE") and its rank, best first. */
 // From the best a player gets to (Bandos, Barrows) down to bronze.
-const TIER_ORDER = ["BANDOS", "DHAROKS", "DRAGON", "NEITIZNOT", "GRANITE", "RUNE", "ADAMANT", "MITHRIL", "BLACK", "STEEL", "IRON", "BRONZE"];
+const TIER_ORDER = ["TORVA", "BANDOS", "DHAROKS", "DRAGON", "NEITIZNOT", "GRANITE", "RUNE", "ADAMANT", "MITHRIL", "BLACK", "STEEL", "IRON", "BRONZE"];
 function tierOf(name) {
   return String(name).split("_")[0];
 }

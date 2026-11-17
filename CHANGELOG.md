@@ -120,7 +120,9 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
-- Testopzet: geen wereldbots meer (site-bots en wilderness-bots staan op 0, met de nieuwe instelling `PlayerBots:wildernessBots`), en 15 extra avonturiers per clan (60 in totaal). Alle avonturiers beginnen opnieuw. De originele accounts starten als nieuw account; de extra's krijgen een testprofiel met levels, quests, coins en passende gear (3× vroege vechter, 3× skiller, 3× middenmoot, 2× gevorderd, 2× mix, 1× veteraan en 1× elite op bijna max level).
+- Testopzet: geen wereldbots meer (site-bots en wilderness-bots staan op 0, met de nieuwe instelling `PlayerBots:wildernessBots`), en 15 extra avonturiers per clan (60 in totaal). Alle avonturiers beginnen opnieuw in Lumbridge. De originele accounts starten als nieuw account op level 3; de extra's krijgen een testprofiel van vroege vechter tot endgame (combat 126, alles 99, 2 miljard coins), met gear die past bij hun levels en geld.
+- De gear-lijsten van avonturiers lopen nu door tot endgame: Scythe of Vitur, Osmumten's fang, Torva, avernic defender, ferocious gloves, primordial boots en amulet of torture. Er zijn ook slots voor handschoenen, laarzen en amulet bijgekomen.
+
 - Elke avonturier heeft een eigen smaak in uitrusting: een scimitar, longsword, battleaxe, mace of warhammer, een kite- of square shield, een full of medium helm, een platebody of chainbody, platelegs of een plateskirt, en een cape in zijn eigen kleur zodra hij wat geld over heeft. Zo lopen ze niet meer allemaal in hetzelfde rond.
 - Er draaien nog maar half zoveel wereldbots als eerst (bevolking 0,24), zodat er ruimte is voor de extra avonturiers.
 - Avonturiers kiezen minder vaak combat of een quest: een quest wordt in ongeveer 1 op de 5 keuzes gestart en training voor een quest-eis in 1 op de 4, zodat de 15 avonturiers meer verschillende skills trainen.
@@ -169,6 +171,8 @@ Indeling per versie:
 - Avonturiers die sparen voor een doel (betere uitrusting, een teleport-amulet, gereedschap) verkopen ook materialen van hun bank op de GE, zoals logs, edelstenen of staven, tot het tekort gedekt is. Runes, pijlen en eten houden ze.
 
 ### Opgelost
+- Een avonturier met een two-handed wapen (zoals een Scythe) trekt er geen schild bij aan; schild en wapen duwden elkaar steeds af.
+- Na een volledige reset loopt een avonturier niet meer terug naar de plek van zijn oude account.
 - Een avonturier die onder de grond staat (zoals in de kelder van de Wizards' Tower) en niet bij een plek boven de grond kan komen, klimt eerst de ladder op en probeert het dan opnieuw.
 - Avonturiers kregen de diagonale binnendeur van de Wizards' Tower niet open ("I can't reach that!" van een paar tegels afstand). Ze lopen nu eerst naar een tegel naast de deur en openen hem dan.
 - De home teleport van een vastzittende avonturier werd meteen weer afgebroken, omdat hij tijdens de spreuk bleef klikken en lopen. Daardoor bleef hij op hetzelfde dak of in hetzelfde huis staan. Tijdens de spreuk staat hij nu stil, tot hij geland is.
