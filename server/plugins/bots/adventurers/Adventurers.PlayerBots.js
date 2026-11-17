@@ -2082,7 +2082,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (!clan || profiles.length === 0) return null;
     const extra = Math.max(0, Math.floor(Number(data.extraPerClan) || 0));
     const index = clan.members.indexOf(name) - (clan.members.length - extra);
-    return index >= 0 ? profiles[index % profiles.length] : null;
+    // Each profile `count` times in a row (one elite per clan, three new fighters ...).
+    const slots = profiles.flatMap((profile) => Array.from({ length: Math.max(1, Math.floor(Number(profile.count) || 1)) }, () => profile));
+    return index >= 0 ? slots[index % slots.length] : null;
   }
 
   const settingProfile = new WeakSet();
@@ -2126,8 +2128,24 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       acquire(player, Trade.COINS);
       player.getInventory().add(new core.Item(Trade.COINS, profile.coins));
     }
+    // Gear to match its levels, as an account at those levels would own: per slot the best piece
+    // its levels and quests allow (a weapon, armour, an axe and a pickaxe), then worn.
+    const helpers = { levelOf: (skill) => levelOf(player, skill), questDone: questDone(player) };
+    const given = [];
+    for (const [slot, list] of [...Object.entries(Trade.listsFor("melee", player, core)), ["axe", Shopping.gear.tools?.axe ?? []], ["pickaxe", Shopping.gear.tools?.pickaxe ?? []]]) {
+      // The best allowed piece the game knows (a list entry without an item id is passed over).
+      const best = list.find((entry) => Shopping.allowed(entry, helpers) && Number.isInteger(Shopping.idOf(core, entry.item)));
+      const id = best ? Shopping.idOf(core, best.item) : null;
+      if (!Number.isInteger(id) || player.getInventory().getFreeSlots() < 1) continue;
+      acquire(player, id);
+      player.getInventory().add(new core.Item(id, 1));
+      given.push(best.item);
+    }
+    Trade.wearBest(player, core, helpers, "melee");
+    player.getInventory().refreshItems?.();
+    player.getEquipment().refreshItems?.();
     player.setAttribute(TEST_PROFILE_ATTRIBUTE, profile.name);
-    note(player, `Testaccount (${profile.name}): begint met andere levels, ${done} quests en ${profile.coins ?? 0} coins.`);
+    note(player, `Testaccount (${profile.name}): begint met andere levels, ${done} quests, ${profile.coins ?? 0} coins en ${given.length > 0 ? given.map((item) => item.toLowerCase().replace(/_/g, " ")).join(", ") : "geen extra gear"}.`);
   }
 
   /** Back to a new account: level 1 (10 Hitpoints), no items, no quests, an empty journal. */

@@ -234,6 +234,10 @@ module.exports = {
       type: "number", label: "Bot population", default: 1, min: 0, max: 4,
       help: "Multiplies every bot site's bot counts: 0.5 halves the population, 2 doubles it, 0 spawns no site bots. Each group keeps at least one bot. Lower it when the server cannot keep up.",
     },
+    "PlayerBots:wildernessBots": {
+      type: "number", label: "Wilderness bots", defaultText: "Shipped value in bot-sites.json (pvp.botPool)", min: 0, max: 200,
+      help: "How many PvP bots roam the Wilderness in all; 0 spawns none. Replaces pvp.botPool in bot-sites.json.",
+    },
     "PlayerBots:activeRegionBotsByRegion": {
       type: "json", label: "Wilderness bots per map square", defaultText: "Shipped value in bot-sites.json",
       help: "Target number of bots in individual 64x64 map squares, keyed plane:regionX:regionY with whole-number counts. Replaces pvp.activeRegionBotsByRegion in bot-sites.json.",

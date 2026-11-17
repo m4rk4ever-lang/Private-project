@@ -20,13 +20,15 @@
   ],
   "questChance": 0.2,
   "moneyChance": 0.1,
-  "extraPerClan": 5,
+  "extraPerClan": 15,
   "testProfiles": [
-    { "name": "vroege vechter", "levels": { "ATTACK": 30, "STRENGTH": 30, "DEFENCE": 25, "HITPOINTS": 30, "PRAYER": 15, "WOODCUTTING": 15, "MINING": 15, "FISHING": 10, "COOKING": 10 }, "quests": 5, "coins": 5000 },
-    { "name": "skiller", "levels": { "WOODCUTTING": 45, "MINING": 40, "FISHING": 45, "COOKING": 40, "FIREMAKING": 35, "FLETCHING": 30, "SMITHING": 25, "CRAFTING": 20, "THIEVING": 25, "AGILITY": 20 }, "quests": 3, "coins": 15000 },
-    { "name": "middenmoot", "all": 35, "levels": { "ATTACK": 40, "STRENGTH": 40, "DEFENCE": 40, "HITPOINTS": 40 }, "quests": 12, "coins": 30000 },
-    { "name": "gevorderd", "all": 50, "levels": { "ATTACK": 60, "STRENGTH": 60, "DEFENCE": 60, "HITPOINTS": 60, "RANGED": 50, "MAGIC": 50 }, "quests": 20, "coins": 100000 },
-    { "name": "mix", "random": [1, 60], "quests": 8, "coins": 20000 }
+    { "name": "vroege vechter", "count": 3, "levels": { "ATTACK": 30, "STRENGTH": 30, "DEFENCE": 25, "HITPOINTS": 30, "PRAYER": 15, "WOODCUTTING": 15, "MINING": 15, "FISHING": 10, "COOKING": 10 }, "quests": 5, "coins": 5000 },
+    { "name": "skiller", "count": 3, "levels": { "WOODCUTTING": 45, "MINING": 40, "FISHING": 45, "COOKING": 40, "FIREMAKING": 35, "FLETCHING": 30, "SMITHING": 25, "CRAFTING": 20, "THIEVING": 25, "AGILITY": 20 }, "quests": 3, "coins": 15000 },
+    { "name": "middenmoot", "count": 3, "all": 35, "levels": { "ATTACK": 40, "STRENGTH": 40, "DEFENCE": 40, "HITPOINTS": 40 }, "quests": 12, "coins": 30000 },
+    { "name": "gevorderd", "count": 2, "all": 50, "levels": { "ATTACK": 60, "STRENGTH": 60, "DEFENCE": 60, "HITPOINTS": 60, "RANGED": 50, "MAGIC": 50 }, "quests": 20, "coins": 100000 },
+    { "name": "mix", "count": 2, "random": [1, 60], "quests": 8, "coins": 20000 },
+    { "name": "veteraan", "count": 1, "all": 65, "levels": { "ATTACK": 75, "STRENGTH": 75, "DEFENCE": 70, "HITPOINTS": 75, "PRAYER": 70, "RANGED": 70, "MAGIC": 70 }, "quests": 30, "coins": 500000 },
+    { "name": "elite", "count": 1, "all": 90, "levels": { "ATTACK": 99, "STRENGTH": 99, "DEFENCE": 99, "HITPOINTS": 99, "PRAYER": 95, "RANGED": 99, "MAGIC": 99, "SLAYER": 90 }, "quests": 60, "coins": 5000000 }
   ],
   "logSize": 40,
   "quests": [
@@ -241,7 +243,7 @@
     }
   ],
   "bossChance": 0.25,
-  "generation": 11,
+  "generation": 12,
   "grandExchange": {
     "x": 3164,
     "y": 3487,

@@ -120,6 +120,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Testopzet: geen wereldbots meer (site-bots en wilderness-bots staan op 0, met de nieuwe instelling `PlayerBots:wildernessBots`), en 15 extra avonturiers per clan (60 in totaal). Alle avonturiers beginnen opnieuw. De originele accounts starten als nieuw account; de extra's krijgen een testprofiel met levels, quests, coins en passende gear (3× vroege vechter, 3× skiller, 3× middenmoot, 2× gevorderd, 2× mix, 1× veteraan en 1× elite op bijna max level).
 - Elke avonturier heeft een eigen smaak in uitrusting: een scimitar, longsword, battleaxe, mace of warhammer, een kite- of square shield, een full of medium helm, een platebody of chainbody, platelegs of een plateskirt, en een cape in zijn eigen kleur zodra hij wat geld over heeft. Zo lopen ze niet meer allemaal in hetzelfde rond.
 - Er draaien nog maar half zoveel wereldbots als eerst (bevolking 0,24), zodat er ruimte is voor de extra avonturiers.
 - Avonturiers kiezen minder vaak combat of een quest: een quest wordt in ongeveer 1 op de 5 keuzes gestart en training voor een quest-eis in 1 op de 4, zodat de 15 avonturiers meer verschillende skills trainen.

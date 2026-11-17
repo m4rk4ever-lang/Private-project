@@ -82,6 +82,9 @@ function readBotSites(file, raw) {
   if (regionDensity !== undefined) {
     (sitesFile.pvp ??= {}).activeRegionBotsByRegion = regionDensity;
   }
+  // How many Wilderness roamers (pvp.botPool): 0 for none, e.g. a test run with adventurers only.
+  const wilderness = Number(PluginManager.getPluginConfig("PlayerBots:wildernessBots"));
+  if (Number.isInteger(wilderness) && wilderness >= 0) (sitesFile.pvp ??= {}).botPool = wilderness;
   applySiteOverrides(sitesFile, siteOverrides(raw));
   return scalePopulation(sitesFile, Number(PluginManager.getPluginConfig(POPULATION_CONFIG_KEY) ?? 1));
 }
