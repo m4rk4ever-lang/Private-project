@@ -1691,7 +1691,27 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       // Its bank's stock first, part-drunk ones too (3, 2 or 1 dose), then a full one bought.
       const doses = ["PRAYER_POTION_4_", "PRAYER_POTION_3_", "PRAYER_POTION_2_", "PRAYER_POTION_1_", "SUPER_RESTORE_4_", "SUPER_RESTORE_3_"]
         .map((name) => Shopping.idOf(core, name)).filter(Number.isInteger);
-      const carried = (player.getInventory().getItems() ?? []).filter((item) => item && PRAYER_RESTORE.test(String(core.ItemDefinition.forId(item.getId())?.getName?.() ?? ""))).length;
+      const restores = (player.getInventory().getItems() ?? []).filter((item) => item && PRAYER_RESTORE.test(String(core.ItemDefinition.forId(item.getId())?.getName?.() ?? "")));
+      // Bought with a full bag they came noted (one stack, counted as one, never drinkable): it
+      // bought four more every time (Markbot 18's loop at the exchange). To the bank: the noted
+      // ones and its spare gear in, eight to drink out.
+      const noted = restores.filter((item) => core.ItemDefinition.forId(item.getId())?.isNoted?.());
+      if (noted.length > 0 && nowMs >= (entry.unnoteAt ?? 0)) {
+        entry.unnoteAt = nowMs + 5 * 60_000;
+        const bank = nearestBank(player, entry);
+        const unnotedId = (id) => core.ItemDefinition.forId(id)?.getNoteId?.() ?? id;
+        if (bank && walkTo(entry, { ...bank, name: bank.name ?? bank.id }, { reason: "withdraw", arrive: (banker) => {
+          const spare = (banker.getInventory().getItems() ?? []).filter((item) => item && item.getId() > 0
+            && Number(core.ItemDefinition.forId(item.getId())?.getEquipmentType?.()?.getSlot?.() ?? -1) >= 0
+            && !/axe|pickaxe|harpoon/i.test(String(core.ItemDefinition.forId(item.getId())?.getName?.() ?? "")))
+            .map((item) => ({ itemId: item.getId(), amount: item.getAmount() }));
+          deposit(banker, [...noted.map((item) => ({ itemId: item.getId(), amount: item.getAmount() })), ...spare]);
+          const got = withdraw(banker, unnotedId(noted[0].getId()), 8);
+          note(banker, `Ruilt noted prayer potions op de bank om: ${got} om te drinken mee.`, "boss");
+          entry.savedTask = { kind: "boss", bossId: boss.id, reason: plan.reason ?? "verder", remainingMs: 0, savedAt: now() };
+        } })) return true;
+      }
+      const carried = restores.filter((item) => !core.ItemDefinition.forId(item.getId())?.isNoted?.()).length;
       if (Number.isInteger(potion) && carried < 2) {
         entry.prayerPotAt = nowMs + 30 * 60_000;
         entry.savedTask = { kind: "boss", bossId: boss.id, reason: plan.reason ?? "verder", remainingMs: 0, savedAt: now() };
