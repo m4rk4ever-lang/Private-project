@@ -5,6 +5,14 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 20-11-2026 (22:10): Slayer naar Nieve per Slayer ring (branch `adventurers/slayer-travel`)
+
+- **Observatie (eigenaar, screenshot 21:55):** Patrickbot 15 (20,7M gp) loopt van de GE naar Nieve, ~730 tegels.
+- **Analyse:** vóór vandaag gingen Slayer-bots naar Mazchna (46 loopjes, 46 vast). Door Morytania `onFoot: false` (PR #25) kiest `mastersFor` voor combat 85+ Nieve. Maar ook de Gnome Stronghold haalden bots te voet nooit: 0 van 16 (vast rond 2693,3426). Hubs `gnome_stronghold_gate`/`gnome_agility` hebben geen links. Mijn eigen fix verschoof dus het probleem.
+- **Fix:** lockedAreas krijgt "Gnome Stronghold" `[2370,3375,2500,3520]` `onFoot: false`. `startSlayer`: een meester telt als bereikbaar te voet of via `slayerRingTo` (bestemming uit `Teleports.Jewellery` "slayer" binnen 15 tegels, quest gedaan: Stronghold Slayer Cave 2431,3424 naast Nieve). Niet te voet: ring uit de bank (`fetchTools`) of kopen (`buyOnExchange` SLAYER_RING_8_), dan loopt `walkTo` met de ring-teleport (`lockedAway` laat hem door). Taakplekken: `lockedAway` vervangt de losse Priest in Peril-check.
+- **Validatie:** `bot-slayer`-test aangepast. Suite 136 tests, 16 vaste fails. Niet ingame getest: of `bestTeleport` de slayer ring kiest (Rub/Teleport-submenu) en of de ring op de GE staat (`onExchange`). Controle: `errand` naar Nieve met `teleport: "jewellery"`, en `decision` met `way: slayer_ring_buy`.
+- **Agility:** de Gnome-baan valt nu ook af (`place_unreachable`); was 0 van 16.
+
 ## Sessie 20-11-2026 (22:15): punten 1-8 van de eigenaar (branch `adventurers/roadmap-batch`, PR na deze sessie)
 
 Eén branch, één commit per punt. Basis: logs tot 20:28 UTC (v 450f871) en de feedback-log sinds 17:00.

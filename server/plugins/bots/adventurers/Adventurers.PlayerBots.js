@@ -131,6 +131,8 @@ const TABLETS = ["VARROCK_TELEPORT", "LUMBRIDGE_TELEPORT", "FALADOR_TELEPORT", "
  * dueling, an amulet of glory. Each charge is one errand teleport (Errands.PlayerBots.js).
  */
 const JEWELLERY = ["GAMES_NECKLACE_8_", "RING_OF_DUELING_8_", "AMULET_OF_GLORY_4_"];
+/** Slayer rings, the one it buys first; any charge takes it to a master's teleport spot. */
+const SLAYER_RINGS = ["SLAYER_RING_8_", "SLAYER_RING_7_", "SLAYER_RING_6_", "SLAYER_RING_5_", "SLAYER_RING_4_", "SLAYER_RING_3_", "SLAYER_RING_2_", "SLAYER_RING_1_", "SLAYER_RING_ETERNAL_"];
 const TABLET_BUDGET = 5000;
 /** Arrows, or casts' worth of runes, it wants before it fights that way. */
 /** Places the travel data has no stop for, named on the page when an adventurer is there. */
@@ -4140,17 +4142,43 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * with a task it fights only the task's monsters, at the nearest place it can fight them.
    * A task it cannot do here (Wilderness, a dungeon, a finishing item) puts Slayer aside.
    */
+  /**
+   * A Slayer ring's destination within 15 tiles of `place` whose quest it has done, or null. Whether
+   * it owns a ring is not asked: one is bought when it needs it (startSlayer).
+   */
+  function slayerRingTo(player, place) {
+    const ring = (require("../../items/Teleports.Jewellery").JEWELLERY ?? []).find((piece) => piece.key === "slayer");
+    return (ring?.destinations ?? []).find((spot) => (spot.tile[2] ?? 0) === (place.z ?? 0)
+      && Math.max(Math.abs(spot.tile[0] - place.x), Math.abs(spot.tile[1] - place.y)) <= 15
+      && (!spot.quest || questsByName().get(normalize(spot.quest.name))?.isComplete(player) === true)) ?? null;
+  }
+
   function startSlayer(entry, plan, nowMs) {
     const { player } = entry;
     const task = Slayer.currentTask(emit, player);
     const here = { x: player.getLocation().getX(), y: player.getLocation().getY() };
     if (!task) {
-      // The best master its levels allow and it can walk to; of equals, the nearest.
+      // The best master its levels allow and it can get to: on foot, or with a Slayer ring's
+      // teleport beside it (Nieve: the Stronghold Slayer Cave). Of equals, the nearest.
+      const walkable = (place) => TravelHubs.onFoot(place, null, (name) => questsByName().get(normalize(name))?.isComplete(player) === true, (item) => Shopping.owns(player, Shopping.idOf(core, item)));
       const options = Slayer.mastersFor({ combat: player.getSkillManager().getCombatLevel(), slayer: levelOf(player, "SLAYER") },
-        (place) => TravelHubs.onFoot(place, null, (name) => questsByName().get(normalize(name))?.isComplete(player) === true, (item) => Shopping.owns(player, Shopping.idOf(core, item))));
+        (place) => walkable(place) || slayerRingTo(player, place) !== null);
       const best = options.filter((option) => option.combat === options[0]?.combat);
       const master = Slayer.nearest(best.length > 0 ? best : Slayer.MASTERS, (place) => walkTiles(here, place, player));
       if (!master) return cannot(entry, "place_unreachable", { slayer: "master" });
+      // Not on foot (the Stronghold: 0 of 16 walks arrived): its Slayer ring in the bag first,
+      // from the bank or the exchange; the walk then teleports (Errands' bestTeleport).
+      if (!walkable(master)) {
+        const ring = slayerRingTo(player, master);
+        const ids = SLAYER_RINGS.map((name) => Shopping.idOf(core, name)).filter(Number.isInteger);
+        if (!ids.some((id) => player.getInventory().getAmount(id) > 0)) {
+          const inBank = ids.find((id) => banked(player, id) > 0);
+          if (inBank !== undefined) return fetchTools(entry, plan, [inBank]) || cannot(entry, "place_unreachable", { slayer: master.name, way: "slayer_ring_bank" });
+          const buy = Shopping.idOf(core, SLAYER_RINGS[0]);
+          note(player, `Koopt een Slayer ring om naar ${master.name} te teleporteren (${ring.label}).`, "activity");
+          return buyOnExchange(entry, buy, SLAYER_RINGS[0], 1) || cannot(entry, "place_unreachable", { slayer: master.name, way: "slayer_ring_buy" });
+        }
+      }
       return walkTo(entry, master, {
         reason: "slayer",
         arrive: (slayer) => {
@@ -4177,12 +4205,12 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // On the mainland it can walk (x 2400+, y 2400-4300): not Kourend (by boat), nor the maps of
     // places one only gets into another way (1893,5189: under the ground, like the Mole Hole).
     const onMainland = (place) => place.x >= 2400 && place.y >= 2400 && place.y <= 4300;
-    // Morytania's monsters only after Priest in Peril; none in the Wilderness (y 3520 and up between
-    // x 2944 and 3392), where an adventurer does not go for a task.
-    const morytania = questsByName().get(normalize("Priest in Peril"))?.isComplete(entry.player) === true;
+    // Behind a quest or not on foot (travel-hubs.json lockedAreas: Morytania, the Gnome
+    // Stronghold) only with a teleport there (lockedAway); none in the Wilderness (y 3520 and up
+    // between x 2944 and 3392), where an adventurer does not go for a task.
     const wilderness = (place) => place.x >= 2944 && place.x <= 3392 && place.y >= 3520 && place.y < 4000;
     const open = targets.filter((place) => !blockedNear(entry, place, 15) && place.y < UNDERGROUND_Y && onMainland(place)
-      && (morytania || !inMorytania(place)) && !wilderness(place));
+      && !lockedAway(player, place) && !wilderness(place));
     const spot = Slayer.nearest(open, (place) => walkTiles(here, place, player));
     if (!spot) {
       note(player, `Kan zijn Slayer-taak (${String(task.name).toLowerCase()}) hier nog niet doen; laat Slayer even liggen.`, "activity");

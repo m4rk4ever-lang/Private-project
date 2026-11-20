@@ -953,6 +953,12 @@
  ],
  "lockedAreas": [
   {
+   "name": "Gnome Stronghold",
+   "area": [2370, 3375, 2500, 3520],
+   "onFoot": false,
+   "onFootWhy": "Te voet niet bewezen: 16 van 16 loopjes naar de Gnome Stronghold (agility) liepen vast, vooral rond 2693,3426 (logs 17:08-20:28 UTC, 20-11-2026). De hubs gnome_stronghold_gate en gnome_agility hebben geen links. Alleen per teleport (slayer ring: Stronghold Slayer Cave), tot de route ingame is gecheckt (plan_route)."
+  },
+  {
    "name": "Morytania",
    "area": [
     3410,

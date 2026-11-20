@@ -47,8 +47,11 @@ test("an adventurer asks the best Slayer master its levels allow and it can walk
   for (const locked of data.lockedAreas) delete locked.onFoot;
   const opened = (place) => Hubs.onFoot(place, data, () => true);
   assert.equal(Slayer.mastersFor({ combat: 40, slayer: 1 }, opened)[0].combat, 20);
-  // Nieve (the Gnome Stronghold) from combat 85; Vannaka (Edgeville Dungeon) is underground.
-  const high = Slayer.mastersFor({ combat: 90, slayer: 1 }, walkable(false));
+  // Nieve (the Gnome Stronghold) from combat 85, but not on foot for now (0 of 16 walks there
+  // arrived, 20-11-2026): Adventurers takes a Slayer ring's teleport instead. With the flag gone
+  // it is the first; Vannaka (Edgeville Dungeon) is underground either way.
+  assert.ok(!Slayer.mastersFor({ combat: 90, slayer: 1 }, walkable(false)).some((m) => m.name === "Nieve"));
+  const high = Slayer.mastersFor({ combat: 90, slayer: 1 }, (place) => Hubs.onFoot(place, data, () => false));
   assert.equal(high[0].combat, 85);
   assert.ok(!high.some((m) => m.name === "Vannaka"));
 });

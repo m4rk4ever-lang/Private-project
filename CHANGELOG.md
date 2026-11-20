@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Avonturiers met combat 85+ liepen voor een Slayer-taak van de GE helemaal naar Nieve in de Gnome Stronghold, en kwamen daar te voet nooit aan (0 van 16 keer). Ze halen nu hun Slayer ring uit de bank, of kopen er een op de GE, en teleporteren naar de Stronghold Slayer Cave naast Nieve. Slayer-taken op plekken die ze te voet niet halen, slaan ze over, tenzij ze er kunnen teleporteren.
 - Avonturiers vonden bij Cook's Assistant de meelbak in de molen van Lumbridge niet en gaven de quest op. Ze herkennen nu ook objecten die van uiterlijk wisselen (vol of leeg, open of dicht).
 - Avonturiers liepen steeds te voet naar Morytania (Mazchna, Slayer Tower, Mort'ton) en kwamen bijna nooit aan: 1 van de 117 keer. Ze verloren daar ruim 3 uur aan. Morytania geldt nu als alleen bereikbaar met een teleport, tot de route via de tempel van Paterdomus in het spel is gecontroleerd.
 - Avonturiers vochten met een slechter wapen terwijl er een beter in de bank lag. Bij de bank en de GE halen ze nu betere uitrusting voor hun vechtstijl uit de bank en trekken die aan, als hun levels en quests dat toelaten.
