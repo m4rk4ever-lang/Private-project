@@ -5,6 +5,34 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Controle 20-11-2026 17:30: eerste data van `e59bc71`
+
+Basis: `bot-logs` push 16:26 UTC. `e59bc71` 16:01 tot 16:26 (**24,5 min**, 60 avonturiers).
+
+| Vraag | Uitkomst (24,5 min) |
+| --- | --- |
+| Banklus klus-uitrusting weg? | **Ja.** `errandInstant`: Markbot 10 6 (was 669), Jorgbot 9 2 (643), Markbot 6 2 (572), Patrickbot 18 0. |
+| Activiteitenlog | 2.718 regels, ~6.650 per uur (was ~11.500). Dekt ~3 uur. |
+| Metrics | 1.329 regels, ~3.250 per uur. Dekt ~6 uur. |
+| `buy_nothing` | 4, alle `not-exchangeable`: lit candle (2), ghostspeak amulet (2). |
+| Bevroren (20 min stil) | 0. |
+| Tijd | errand 32,6% (was 35,1%), walking 24,1%, working 18,1% (was 16,9%), idle 11,1%, quest 8,6%. |
+| 0 XP de hele periode | 11 van 60. Niet allemaal lussen (quests, nieuwe accounts); niet verder uitgezocht. |
+
+**Nog in een lus:**
+- **Jorgbot 4**: 554 × `errandInstant` + 64 errands `exchange` naar de GE, **geen enkele
+  activiteitenregel**, 0 XP. Doel "1.155 gp voor amulet of defence" terwijl hij 16.887 gp heeft.
+  `trade()` kiest de GE, `atExchange` doet niets zichtbaars, opnieuw. Mogelijke redenen: een
+  afgerond bod dat niet op te halen is (`waiting`), of goederen die niet te koop gezet worden.
+  Niet uit de logs te halen.
+- **Patrickbot 1** (nieuw): 434 × `errandInstant`, ook `exchange` bij de GE; kocht wel een adamant
+  scimitar.
+
+Dit zijn precies de gevallen voor Fase 2b (algemene lusbewaking, zie roadmap): de bewaking moet de
+reeks en de reden van de keuze in een metric zetten, zodat zo'n lus zichzelf uitlegt.
+
+---
+
 ## Sessie 20-11-2026 (17:00): uitrusting heen en weer naar de bank
 
 Branch: `adventurers/kit-bank-loop` (op `docs/controle-1650`, vanaf `main` `ad1c718`).
