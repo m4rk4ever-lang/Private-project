@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Avonturiers op de daken van Seers' Village en Falador bleven staan na een sprong, net te ver van het volgende obstakel. Op een dak klikken ze het volgende obstakel nu aan zoals een speler, ook van een paar tegels verder, en de baan loopt ze erheen.
 - Een avonturier die een candle kocht om bij de Giant Mole te komen, verkocht die bij het volgende GE-bezoek weer. De candle en de tinderbox horen nu bij zijn uitrusting voor die boss.
 - Een avonturier die niet van een agility-dak af kwam en naar huis teleporteerde, ging meteen terug naar hetzelfde obstakel. Nu laten alle avonturiers die baan een uur liggen en vervalt zijn bewaarde agility-klus.
 - Een avonturier die in een tunnel vastzat en elke kwartier opnieuw tevergeefs naar de bank probeerde te lopen, bleef daar uren staan. Na drie mislukte pogingen binnen een uur zonder XP teleporteert hij nu naar huis.

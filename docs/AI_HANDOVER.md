@@ -5,6 +5,28 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 20-11-2026 (20:50): klikken op een dak (oorzaak Seers en Falador)
+
+Branch: `adventurers/roof-click` (vanaf `main` `3e0f7a6`).
+
+De eigenaar loopt als speler wel van de landing naar het volgende obstakel. In
+`brain/actions/RunCourse.PlayerBots.js` klikt de bot alleen meteen binnen 5 tegels; verder weg
+eerst `walkToObject`, die op een dakrand nooit "aankomt" (het commentaar noemde dat al voor Al
+Kharid en Varrock, en bij een herstart op het dak al voor Seers' 8 tegels). Seers landt ~8
+tegels, Falador ~6 tegels van de volgende gap.
+
+Aangepast: `CLICK_TILES` (5) en `ROOF_CLICK_TILES` (10). Op een verdieping boven 0 klikt hij het
+obstakel op dezelfde verdieping binnen 10 tegels meteen aan; de baan loopt het laatste stuk zelf.
+
+Validatie: bot-tests zoals eerder. Geen unit-test (RunCourse laadt Navigation en daarmee de core).
+**Niet in game getest.** Bevestigen: `::volg` op een bot op Seers of Falador; in de logs geen
+`stuck` meer op (2710, 3475, 3) en (3050, 3366, 3), en `job` met `ended` anders dan `stuck`.
+
+Risico: een obstakel op hetzelfde dak dat binnen 10 tegels ligt maar niet het volgende is, wordt
+niet aangeklikt (alleen het volgende obstakel uit de lap wordt gezocht).
+
+---
+
 ## Sessie 20-11-2026 (20:45): Patrickbot 17 vast op Seers' rooftop
 
 Branch: `adventurers/roof-course-trouble` (vanaf `main` `5e887a4`).

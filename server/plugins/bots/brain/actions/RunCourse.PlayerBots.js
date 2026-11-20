@@ -14,6 +14,10 @@ const PROGRESS_ATTRIBUTE = "agility.progress";
 /** How far around it looks for the next obstacle. */
 const SEARCH_REGIONS = 1;
 const CLICK_COOLDOWN_MS = 2400;
+/** Within this many tiles of the next obstacle it clicks it at once; the course walks the rest. */
+const CLICK_TILES = 5;
+/** On a roof (floor above 0) from further: the lap lands up to ~8 tiles short of the next gap. */
+const ROOF_CLICK_TILES = 10;
 /** No progress on an obstacle this long: back to the start of the lap. */
 const STUCK_MS = 45_000;
 
@@ -157,8 +161,13 @@ function createRunCourseAction(spec, world) {
       // Near it (within 5 tiles: Varrock's wall stands 3 from where the lap stops): the click at once, as the client sends it;
       // the course walks the last step itself. A walk to an obstacle at a roof's edge (Al Kharid's
       // tropical tree, Varrock's gaps) never "reached" it and the click never went.
+      // Up on a roof the reach is longer: the lap lands a few tiles short of the next gap (Seers
+      // 2710,3475 to the gap near 2702,3470; Falador 3050,3366 to the gap near 3045,3361) and the
+      // walk to it along the roof's edge never arrives. A player clicks it from there and the
+      // course walks them over (the owner, 20-11-2026); so does the bot now.
       const here = player.getLocation();
-      const nearBy = here.getZ() === at.getZ() && Math.max(Math.abs(here.getX() - at.getX()), Math.abs(here.getY() - at.getY())) <= 5;
+      const reach = here.getZ() > 0 ? ROOF_CLICK_TILES : CLICK_TILES;
+      const nearBy = here.getZ() === at.getZ() && Math.max(Math.abs(here.getX() - at.getX()), Math.abs(here.getY() - at.getY())) <= reach;
       if (nearBy) {
         click();
         return "running";
