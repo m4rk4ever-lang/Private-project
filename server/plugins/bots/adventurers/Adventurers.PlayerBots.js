@@ -1390,7 +1390,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    */
   function lockedAway(player, to) {
     if ((to.z ?? 0) !== 0 || to.y >= UNDERGROUND_Y) return false;
-    const locked = (travelHubsData.lockedAreas ?? []).some(({ area: [minX, minY, maxX, maxY] }) => to.x >= minX && to.x <= maxX && to.y >= minY && to.y <= maxY);
+    const locked = (travelHubsData.lockedAreas ?? []).some(({ area }) => TravelHubs.inArea(to, area));
     if (!locked) return false;
     if (TravelHubs.onFoot(to, null, questDone(player), (item) => Shopping.owns(player, Shopping.idOf(core, item)))) return false;
     try {
@@ -1424,6 +1424,30 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // carried runes for Falador Teleport but walked from the GE through the underwall tunnel to
     // Falador Park, the tunnel's few steps being too short a walk for a teleport (20-11-2026).
     const teleportFirst = !hopped && teleportsNear(entry.player, to);
+    // Across the water (the mainland and Karamja): to the boat's dock, on board through the NPC's
+    // own option and fare (travel-hubs.json "boats"), then on from where it lands (tickAll). The
+    // owner: "there is a perfectly good boat for 30 gp" (20-11-2026).
+    const boat = hopped || teleportFirst ? null : TravelHubs.boatFor(here(entry.player), { x: to.x, y: to.y, z: to.z ?? 0 });
+    if (boat) {
+      if (Shopping.coinsOf(entry.player) < boat.fare) {
+        entry.refusal = { why: "no_fare", errand: reason, to: placeName(to), place: { x: to.x, y: to.y, z: to.z ?? 0 } };
+        return false;
+      }
+      const options = { reason, arrive, replan, say, urgent };
+      return walkTo(entry, { x: boat.from[0], y: boat.from[1], z: boat.from[2] ?? 0, name: `de boot (${boat.name})` }, {
+        reason, replan, say, urgent, hopped: true,
+        arrive: (sailor) => {
+          const ok = board(sailor, boat);
+          metric({ kind: "boat", bot: entry.name, to: boat.name, ok, why: ok ? null : "no_npc", for: placeName(to) });
+          if (!ok) {
+            note(sailor, `Vond geen schipper voor de boot ${boat.name}.`, "activity");
+            return;
+          }
+          note(sailor, `Neemt de boot: ${boat.name} (${boat.fare} gp), op weg naar ${placeName(to)}.`, "activity");
+          entry.afterHop = { to, options, until: now() + 45_000, landing: { x: boat.to[0], y: boat.to[1] }, radius: 10, boat: true };
+        },
+      });
+    }
     const hop = hopped || teleportFirst ? null : levelHop(entry.player, to);
     if (hop) {
       const options = { reason, arrive, replan, say, urgent };
@@ -1607,6 +1631,53 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * landing sets the game's "has visited Zeah" (ClientOfKourend.Quest.js), which the jewellery's
    * Kourend teleports ask for. Then `resume`.
    */
+  /** On board: the boat's NPC near the dock, clicked on its destination option (fare paid by the ferry's plugin). */
+  function board(player, boat) {
+    const names = new Set(boat.npcs.map((name) => name.toLowerCase()));
+    const wanted = boat.options.map((option) => option.toLowerCase());
+    let npcs = [];
+    try {
+      npcs = core.World.getNpcsNear(player.getLocation(), 10, null) ?? [];
+    } catch {
+      npcs = [];
+    }
+    for (const npc of npcs) {
+      const definition = npc.getCurrentDefinition?.(player) ?? npc.getDefinition?.();
+      if (!names.has(String(definition?.getName?.() ?? "").toLowerCase())) continue;
+      const actions = (definition?.getActions?.() ?? []).map((action) => String(action ?? "").toLowerCase());
+      const index = actions.findIndex((action) => wanted.includes(action));
+      if (index < 0 || !core.operateNpc) continue;
+      core.operateNpc(player, npc.getIndex(), index + 1);
+      return true;
+    }
+    return false;
+  }
+
+  /** Off a ship's deck (Captain Barnaby lands on 2775,3233,1): the gangplank's Cross, near it. */
+  function crossGangplank(entry, nowMs) {
+    const player = entry.player;
+    if (nowMs < (entry.plankAt ?? 0)) return true;
+    entry.plankAt = nowMs + 4_000;
+    const at = player.getLocation();
+    for (let dx = -8; dx <= 8; dx += 1) {
+      for (let dy = -8; dy <= 8; dy += 1) {
+        for (const object of core.MapObjects?.mapObjects?.get?.(core.MapObjects.getHash(at.getX() + dx, at.getY() + dy, at.getZ())) ?? []) {
+          const loc = object.getLocation();
+          if (loc.getX() !== at.getX() + dx || loc.getY() !== at.getY() + dy) continue;
+          const options = (core.ObjectDefinition.forId(object.getId())?.getInteractions?.() ?? []).map((option) => String(option ?? "").toLowerCase());
+          const index = options.findIndex((option) => option === "cross");
+          if (index < 0) continue;
+          player.getMovementQueue().walkToObject(object, {
+            execute: () => world.emitObjectInteraction?.({ player, object, objectId: object.getId(), clickType: index + 1,
+              location: { x: loc.getX(), y: loc.getY(), z: loc.getZ() }, handled: false }),
+          });
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   function sailVeos(entry, to, resume = () => {}) {
     const option = Math.hypot(to.x - 1824, to.y - 3691) <= Math.hypot(to.x - 1504, to.y - 3399) ? "port piscarilius" : "land's end";
     return walkTo(entry, { ...VEOS_PORT_SARIM, name: "Veos in Port Sarim" }, {
@@ -3058,8 +3129,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         const hop = entry.afterHop;
         const spot = entry.player.getLocation();
         const landed = hop.landing
-          ? Math.max(Math.abs(spot.getX() - hop.landing.x), Math.abs(spot.getY() - hop.landing.y)) <= 2
+          ? Math.max(Math.abs(spot.getX() - hop.landing.x), Math.abs(spot.getY() - hop.landing.y)) <= (hop.radius ?? 2)
           : (spot.getY() >= UNDERGROUND_Y) === hop.down;
+        // Off the boat's deck first (a floor up), then the walk on.
+        if (landed && hop.boat && spot.getZ() > 0 && nowMs < hop.until) {
+          crossGangplank(entry, nowMs);
+          entry.lastTickAt = nowMs;
+          continue;
+        }
         if (landed) {
           entry.afterHop = null;
           if (walkTo(entry, hop.to, { ...hop.options, hopped: true })) {

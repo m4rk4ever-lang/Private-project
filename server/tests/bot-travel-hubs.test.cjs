@@ -48,3 +48,36 @@ test("the Gnome Stronghold and Canifis are joined to Lumbridge's network (links 
   assert.equal(Hubs.onFoot({ x: 3494, y: 3485 }, null, () => false), false);
   assert.equal(Hubs.onFoot({ x: 3494, y: 3485 }, null, () => true), true);
 });
+
+test("into Morytania only by its own hubs: not straight across the Salve from Digsite (collision-map audit, 20-11-2026)", () => {
+  const Hubs = require("../plugins/bots/behaviours/navigation/TravelHubs.PlayerBots");
+  const mortTon = { x: 3506, y: 3304, z: 0 };
+  // From Digsite (146 tiles straight, across the river) it does not walk at it: the hubs lead on.
+  const first = Hubs.nextLeg({ x: 3360, y: 3410, z: 0 }, mortTon);
+  assert.ok(first, "a hub, not a straight walk");
+  assert.notEqual(first.key, "digsite");
+  // Inside Morytania a short walk goes straight.
+  assert.equal(Hubs.nextLeg({ x: 3494, y: 3485, z: 0 }, { x: 3428, y: 3537, z: 0 }), null);
+  assert.equal(Hubs.onFoot(mortTon, null, () => true), true);
+  assert.equal(Hubs.onFoot(mortTon, null, () => false), false);
+});
+
+test("Karamja: across by boat (Port Sarim, Ardougne, Rimmington), not on foot (collision-map audit, 20-11-2026)", () => {
+  const Hubs = require("../plugins/bots/behaviours/navigation/TravelHubs.PlayerBots");
+  const musa = { x: 2918, y: 3176, z: 0 };
+  // Reached through a boat whose dock it can walk to.
+  assert.equal(Hubs.onFoot(musa, null, () => true), true);
+  // Shilo Village (Duradel) only after its quest, Karamja or not.
+  assert.equal(Hubs.onFoot({ x: 2869, y: 2982, z: 0 }, null, () => false), false);
+  assert.equal(Hubs.onFoot({ x: 2869, y: 2982, z: 0 }, null, () => true), true);
+  // The boats: from Lumbridge to Musa Point Captain Tobias, back with the customs officer,
+  // Ardougne to Brimhaven with Captain Barnaby; none on the same side of the water.
+  assert.deepEqual(Hubs.boatFor({ x: 3222, y: 3218, z: 0 }, musa).npcs[0], "Captain Tobias");
+  assert.deepEqual(Hubs.boatFor(musa, { x: 3212, y: 3428, z: 0 }).npcs, ["Customs officer"]);
+  assert.deepEqual(Hubs.boatFor({ x: 2662, y: 3305, z: 0 }, { x: 2760, y: 3178, z: 0 }).options, ["Brimhaven"]);
+  assert.equal(Hubs.boatFor({ x: 3222, y: 3218, z: 0 }, { x: 3212, y: 3428, z: 0 }), null);
+  assert.equal(Hubs.boatFor(musa, { x: 2869, y: 2982, z: 0 }), null);
+  // The mainland beside it stays mainland: Rimmington, Port Sarim.
+  assert.equal(Hubs.boatArea({ x: 2957, y: 3215, z: 0 }), null);
+  assert.equal(Hubs.boatArea({ x: 3041, y: 3193, z: 0 }), null);
+});

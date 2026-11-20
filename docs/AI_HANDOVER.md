@@ -5,6 +5,17 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 20-11-2026 (22:30): audit van hubs en bestemmingen (branch `adventurers/hub-audit`)
+
+- **Methode:** BFS/A* op de collision map van Shortest Path (zie roadmap), plain transports + Priest in Peril. Script stond in `/tmp/route` (niet in de repo); opnieuw maken: regio's `x_y` van 64×64, bit = ((z·64·64 + (y%64)·64 + x%64)·4 + flag), flag 0 = noord open, 1 = oost open.
+- **Links:** 162/162 te lopen. Tree Gnome Village 2,2-2,7× (doolhof). `brimhaven_dock` los (eiland).
+- **Opgelost:**
+  - Karamja: geen looproute (Duradel en Musa Point golden als te voet; 21 walk_blocked naar Musa Point). Eerst als `onFoot: false` gebouwd; **eigenaar: "er loopt een perfecte boot voor 30 gp, kijk kritisch"**. Nu per boot: `boats` in travel-hubs.json (Tobias/Lorris/Thresnor Port Sarim→Musa Point, Customs officer terug, Barnaby Ardougne/Brimhaven/Rimmington; opties en fare uit transports.json en de plugins), Karamja `byBoat` met twee rechthoeken (`area` mag een lijst zijn). `onFoot`: eiland bereikbaar als een boot-kade te voet bereikbaar is. `walkTo`: `TravelHubs.boatFor` → naar de kade, `board` (NPC-optie via `core.operateNpc`), `afterHop` met `landing` en `radius: 10`, op een dek eerst `crossGangplank`; refusal `no_fare` zonder 30 gp in de tas; metric `boat` met `for`. Shilo Village als quest-slot vóór Karamja in de lijst.
+  - **Les (tweede keer vanavond):** niet afsluiten wat een speler gewoon kan bereiken; eerst de route of het transport zoeken.
+  - Morytania `enterVia: ["canifis","mort_ton"]`: `nextLeg` loopt vanaf buiten het gebied altijd via hubs en de laatste etappe begint bij een van die hubs; `onFoot` telt alleen die hubs. Hub `mort_ton` [3489,3290], link canifis-mort_ton 551 (BFS 399 × 1,38). Mort'ton-Barrows BFS 76, Canifis-Slayer Tower 88.
+- **Open:** Feldip Hills/Corsair Cove vanaf Yanille geen route zonder quest-transport (logs: Feldip 16× aangekomen, misschien via teleport); Barbarian Assault 342 tegels vanaf gnome_agility.
+- **Validatie:** 2 nieuwe tests in `bot-travel-hubs`. Suite 139 tests, 16 vaste fails. Niet ingame getest.
+
 ## Sessie 20-11-2026 (22:20): Morytania en Gnome Stronghold te voet; Slayer ring als voorkeur (branch `adventurers/slayer-travel`)
 
 - **Observatie (eigenaar, 21:55):** Patrickbot 15 loopt van de GE naar Nieve (~730 tegels). Eigenaar: "er is map zat om door te lopen; teleport als voorkeur, geen zekerheid".
