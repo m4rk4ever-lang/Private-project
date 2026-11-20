@@ -5,6 +5,34 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Controle 20-11-2026 19:33: waarom klussen niet starten (`696c6cd`)
+
+Basis: `bot-logs` push 18:31 UTC. `696c6cd` 18:06 tot 18:30 (**24 min**, 60 avonturiers).
+
+| Vraag | Uitkomst (24 min) |
+| --- | --- |
+| Keuzes die niet startten | 76 van 197 (39%). |
+| Reden bekend | 35 (46%): `tool_unbuyable` 26, `place_unreachable` 8, `too_poor` 1. |
+| Reden `unknown` | 41 (54%): `combat_magic` 13, `slayer` 7, `buy_*` 15, `mining` 3, overig 3. Paden die nog stil falen (vooral een `walkTo` of `shopFor` die `false` geeft). |
+| Gekozen terwijl uitgesloten | 0 (exclude-fix werkt). |
+| `loop` | 1 (Jorgbot 17, `exchange`). |
+| Volume | metrics ~3.700/u, activiteit ~7.200/u. |
+| Tijd | errand 30,4%, walking 26,6%, working 14,8%, idle 12,1%. |
+
+`tool_unbuyable`: bird snare 13× (hunter; Markbot 8, Markbot 9, Eeshwar, Bekoek), harpoon 6×
+(Jorgbot 19, `slayer` en `combat_training`), fly fishing rod, lobster pot, axe, pickaxe
+(Eeshwar, weinig geld).
+
+`place_unreachable` (alle `z: 0`): Giant Mole (1752, 5237) 6×. Die ligt onder Falador en gaat via
+de molshoop met een spade (`boss.via`); `enterBoss` gaf `null`. Wintertodt (1630, 3974) 2×: Kourend,
+per boot, niet te voet. Geen gevallen met een hogere verdieping gezien.
+
+**Conclusie:** de planner kiest steeds opnieuw klussen waarvan hij al kon weten dat ze niet gaan
+(dezelfde bot meerdere keren hunter zonder snare). Voorstel voor `canExecute` v1 staat in het
+verslag aan de eigenaar; nog niets gebouwd.
+
+---
+
 ## Sessie 20-11-2026 (19:05): Fase 4 stap 1, waarom een klus niet start
 
 Branch: `adventurers/can-execute` (vanaf `main` `f7a284a`).
