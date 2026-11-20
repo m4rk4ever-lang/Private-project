@@ -35,3 +35,13 @@ test("food by the place: none where it is safe for its level, a little where it 
   assert.match(far.reason, /scorpion .* bank op 200 tegels/);
   assert.equal(foodFor({ danger: undefined }).food, 2, "place not known yet: the careful default");
 });
+
+test("a gathering job carries one way to teleport: jewellery, else Varrock's runes, else one tablet", () => {
+  const { travelKit, KIT_RUNES } = require("../plugins/bots/adventurers/Loadout.PlayerBots");
+  assert.equal(travelKit({ mode: "combat_training", magic: 60, hasJewellery: true }), null, "other jobs keep all");
+  assert.deepEqual(travelKit({ mode: "mining", magic: 60, hasJewellery: true, tablets: ["VARROCK_TELEPORT"] }).jewellery, 1);
+  assert.deepEqual(travelKit({ mode: "mining", magic: 60, hasJewellery: true }).runes, [], "no runes beside the jewellery");
+  assert.deepEqual(travelKit({ mode: "fishing", magic: 30 }).runes, [...KIT_RUNES]);
+  assert.deepEqual(travelKit({ mode: "woodcutting", magic: 10, tablets: ["VARROCK_TELEPORT", "CAMELOT_TELEPORT"] }).tablets, ["VARROCK_TELEPORT"]);
+  assert.equal(travelKit({ mode: "woodcutting", magic: 10 }).text, "geen");
+});

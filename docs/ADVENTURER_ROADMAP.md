@@ -177,6 +177,19 @@ candle), Fase 5 (unlock-waarde).
      is (Markbot 18 liep twee uur naar de Edgeville-ladder vanuit een andere tunnel).
   Klaar als: Wintertodt niet meer `place_unreachable` voor bots die er kunnen komen, en geen
   `walk_blocked` naar een trap in een andere tunnel.
+  **Stap 1 en de Kourend-helft van stap 2 gebouwd 20-11-2026** (Veos, games necklace na een
+  bezoek, Wintertodt via `kourendWay`). Geen Kourend-hubs: binnen Kourend lopen naar verre plekken
+  kan nog stranden.
+- **Gear uit de bank (§20, gemeld door de eigenaar 20-11-2026):** hoge-level bots dragen een
+  Torva-helm met een rune sq shield en een dragon scimitar terwijl de bank beter heeft.
+  `Trade.wearBest` kijkt alleen in de tas (`inventoryIds`), en `fillEmptySlots(fromBank)` vult
+  alleen lege slots. Een beter wapen of schild uit de bank komt dus nooit in de plaats van wat hij
+  draagt. Fix: bij een bankbezoek per slot het beste toegestane item uit bank en tas vergelijken
+  met wat hij draagt (niet tijdens een gathering-klus voor het wapen).
+- **Vechtstijl (§22):** ranged en magic bestaan als klus (`combat_ranged`, `combat_magic`, gewogen
+  ×3 als die stijl ≥ 10 levels achter Attack ligt) en de Barrows gaan met magic (behalve Ahrim).
+  Geen keuze per tegenstander (zwakte) of per boss buiten de Barrows; gear wordt standaard als
+  melee gekozen (`wearBest(..., "melee")`).
 - Minigames (op verzoek van de eigenaar, geen prioriteit nu): Wintertodt (nu altijd
   `place_unreachable`: Kourend per boot), Pest Control, Barbarian Assault, Guardians of the Rift
   en andere die als plugin bestaan. Eerst zichtbaar in de logging (welke minigames de planner zou

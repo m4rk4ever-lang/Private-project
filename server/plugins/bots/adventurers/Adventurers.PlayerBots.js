@@ -77,7 +77,7 @@ if (!data.expandedClans) {
 const { runPaced } = require("../runtime/SpawnPacing.PlayerBots");
 const npcSpawns = require("../../../data/definitions/npc-spawns.json");
 const { markHonest, markAdventurer } = require("../brain/Honest.PlayerBots");
-const { errandsFor, inWilderness } = require("../brain/Errands.PlayerBots");
+const { errandsFor, inWilderness, bestTeleport } = require("../brain/Errands.PlayerBots");
 const { createLoopGuard } = require("./Loops.PlayerBots");
 const Requirements = require("./Requirements.PlayerBots");
 const Loadout = require("./Loadout.PlayerBots");
@@ -145,6 +145,10 @@ const TRAVEL_FOOD = 8;
 const MAGIC_START_BUDGET = 2500;
 const MAGIC_RUNES = ["AIR_RUNE", "MIND_RUNE", "WATER_RUNE", "EARTH_RUNE", "FIRE_RUNE", "CHAOS_RUNE"];
 const WINTERTODT = travelData.minigames.find((game) => game.id === "wintertodt");
+/** Veos at Port Sarim (npc-spawns.json): his ship sails to Great Kourend (Ferries.plugin.js). */
+const VEOS_PORT_SARIM = Object.freeze({ x: 3054, y: 3245, z: 0 });
+/** Great Kourend and Kebos on the surface (ClientOfKourend.Quest.js inKourend). */
+const inKourend = (place) => place && place.x >= 1024 && place.x < 2048 && place.y >= 3200 && place.y < 4096 && (place.z ?? 0) === 0;
 
 function normalize(name) {
   return String(name ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "");
@@ -484,6 +488,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       });
     }
     const label = name ?? itemName(ids[0]);
+    // A light it makes itself (a lit candle for a quest is not sold lit): the unlit one and a
+    // tinderbox, at the Firemaking level the game asks.
+    for (const id of ids) {
+      const light = unlitFor(id);
+      if (!light || levelOf(player, "FIREMAKING") < light.level) continue;
+      const lit = lightItem(entry, id, light.unlitId, { label: entry.questRun?.name ?? "zijn quest", log: "quest", replan: false });
+      if (lit === "lit" || lit === true) return true;
+    }
     for (const id of ids) {
       if (Shopping.shopsSelling(id).length > 0 && shopFor(entry, id, label, amount, { replan: false })) return true;
       if (buyOnExchange(entry, id, label, amount, { replan: false })) return true;
@@ -935,6 +947,20 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return decision.food;
   }
 
+  /** Charged teleport jewellery by its name (a games necklace(5), a ring of dueling(3) ...). */
+  const JEWELLERY_NAME = /^(games necklace|ring of dueling|amulet of glory|skills necklace|combat bracelet|ring of wealth)\s*\(\d\)/i;
+  const isJewellery = (id) => JEWELLERY_NAME.test(String(core.ItemDefinition?.forId?.(id)?.getName?.() ?? ""));
+
+  /** The travel things its gathering job carries (Loadout.travelKit), or null: all of them. */
+  function travelKitFor(entry, player, plan = entry.plan ?? entry.savedTask) {
+    const owned = (name) => {
+      const id = Shopping.idOf(core, name);
+      return Number.isInteger(id) && player.getInventory().getAmount(id) + banked(player, id) > 0;
+    };
+    const hasJewellery = (player.getInventory().getItems() ?? []).some((item) => item && isJewellery(item.getId())) || JEWELLERY.some(owned);
+    return Loadout.travelKit({ mode: plan?.mode, magic: levelOf(player, "MAGIC"), hasJewellery, tablets: TABLETS.filter(owned) });
+  }
+
   function bankOffLoadout(entry, banker, plan = entry.plan ?? entry.savedTask) {
     const mode = plan?.mode;
     if (!Loadout.GATHERING.has(mode)) return [];
@@ -944,8 +970,16 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const tools = toolsFor(mode, activityId);
     const keep = new Set([...workingMaterials(entry), ...bossKit(entry), Trade.COINS,
       ...[...(tools.any ?? []), ...(tools.all ?? [])].map((name) => Shopping.idOf(core, name)).filter(Number.isInteger)]);
+    // Travel things: only its one way to teleport (travelKit), the rest goes in with the other things.
+    const kit = travelKitFor(entry, banker, plan);
+    const kitIds = new Set([...(kit?.runes ?? []), ...(kit?.tablets ?? [])].map((name) => Shopping.idOf(core, name)).filter(Number.isInteger));
+    const travelIds = new Set([...Loadout.TRAVEL_RUNES, ...TABLETS].map((name) => Shopping.idOf(core, name)).filter(Number.isInteger));
+    let jewelleryLeft = kit?.jewellery ?? Infinity;
     const kindOf = (id) => {
-      if (keep.has(id) || Trade.isSupply(core, id) || !Value.tradeable(core, id)) return "keep";
+      if (keep.has(id)) return "keep";
+      if (kit && isJewellery(id)) return jewelleryLeft-- > 0 ? "keep" : "other";
+      if (kit && travelIds.has(id)) return kitIds.has(id) ? "keep" : "other";
+      if (Trade.isSupply(core, id) || !Value.tradeable(core, id)) return "keep";
       return isFood(id) ? "food" : "other";
     };
     const items = (banker.getInventory().getItems() ?? []).filter((item) => item && item.getId() > 0)
@@ -1340,11 +1374,30 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       trade: fresh ? entry.lastTrade : null, ge, coins: Shopping.coinsOf(player), freeSlots: player.getInventory().getFreeSlots() });
   }
 
+  /** Whether one of its teleports (spell, tablet, jewellery) saves a long walk to `to` now. */
+  function teleportsNear(player, to) {
+    try {
+      const questDone = (key) => {
+        const query = { player, key, complete: false };
+        emit("quest:is-complete", query);
+        return query.complete === true;
+      };
+      // Not for a place under the ground: that one needs its ladder after the teleport too.
+      return (to.z ?? 0) === 0 && to.y < UNDERGROUND_Y && bestTeleport(core, player, to, { questDone }) !== null;
+    } catch {
+      return false;
+    }
+  }
+
   function walkTo(entry, to, { reason, arrive = () => {}, replan = true, say = true, urgent = false, hopped = false } = {}) {
     const run = runtimeEntry(entry.player);
     // On the other side of the ground (the Dwarven Mine below Falador, the Mining Guild): first to
     // the stairs or ladder, down or up as a player goes, then on from where it lands (tickAll).
-    const hop = hopped ? null : levelHop(entry.player, to);
+    // A teleport that lands near the place goes before a shortcut or ladder on the way: Patrickbot 17
+    // carried runes for Falador Teleport but walked from the GE through the underwall tunnel to
+    // Falador Park, the tunnel's few steps being too short a walk for a teleport (20-11-2026).
+    const teleportFirst = !hopped && teleportsNear(entry.player, to);
+    const hop = hopped || teleportFirst ? null : levelHop(entry.player, to);
     if (hop) {
       const options = { reason, arrive, replan, say, urgent };
       return walkTo(entry, { ...hop.from, name: placeName(to) }, {
@@ -1473,6 +1526,80 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   }
 
   /**
+   * The way to a place in Great Kourend (transport plan step 1, roadmap): "there" when it is in
+   * Kourend or can teleport there now (a charged games necklace after a first visit: the errand
+   * takes Wintertodt Camp); true while it gets there (the ship, or a necklace from the bank or
+   * the exchange); a reason string when it cannot.
+   */
+  function kourendWay(entry, plan, place) {
+    const { player } = entry;
+    const at = player.getLocation();
+    if (inKourend({ x: at.getX(), y: at.getY(), z: at.getZ() })) return "there";
+    const resume = () => { entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, planActivity: plan.activity ?? null, remainingMs: 0, savedAt: now() }; };
+    let visited = false;
+    try {
+      visited = require("../../items/Teleports.Jewellery").visitedKourend(player) === true;
+    } catch {
+      visited = false;
+    }
+    // The ship only after X Marks the Spot (the owner; the Wiki: that quest opens every Kourend
+    // quest, and Port Sarim's Veos is its completed form, ClientOfKourend.Quest.js).
+    if (!visited && !xMarksDone(player)) return "quest_x_marks_the_spot";
+    if (!visited) return sailVeos(entry, place, resume) ? true : "no_ship";
+    const necklace = (player.getInventory().getItems() ?? []).some((item) => item && /^games necklace\s*\(\d\)/i.test(itemName(item.getId())));
+    if (necklace) return "there";
+    const id = Shopping.idOf(core, "GAMES_NECKLACE_8_");
+    if (!Number.isInteger(id)) return "no_necklace";
+    if (banked(player, id) > 0) {
+      const bank = nearestBank(player, entry);
+      return bank && walkTo(entry, { ...bank, name: bank.name ?? bank.id }, { reason: "withdraw", arrive: (banker) => { withdraw(banker, id, 1); resume(); } }) ? true : "no_necklace";
+    }
+    if ((Shopping.shopsSelling(id).length > 0 && shopFor(entry, id, "games necklace", 1)) || buyOnExchange(entry, id, "games necklace", 1)) {
+      resume();
+      return true;
+    }
+    return "no_necklace";
+  }
+
+  /** X Marks the Spot done: Veos's ship to Great Kourend is open. */
+  function xMarksDone(player) {
+    return questsByName().get(normalize("X Marks the Spot"))?.isComplete(player) === true;
+  }
+
+  /**
+   * Veos's ship from Port Sarim to Great Kourend, as a player takes it: to Veos, his travel option
+   * for the port nearest `to` (Port Piscarilius or Land's End), the Ferries plugin sails it. The
+   * landing sets the game's "has visited Zeah" (ClientOfKourend.Quest.js), which the jewellery's
+   * Kourend teleports ask for. Then `resume`.
+   */
+  function sailVeos(entry, to, resume = () => {}) {
+    const option = Math.hypot(to.x - 1824, to.y - 3691) <= Math.hypot(to.x - 1504, to.y - 3399) ? "port piscarilius" : "land's end";
+    return walkTo(entry, { ...VEOS_PORT_SARIM, name: "Veos in Port Sarim" }, {
+      reason: "boat",
+      arrive: (sailor) => {
+        const here = sailor.getLocation();
+        let npc = null;
+        try {
+          npc = core.World.getNpcsNear(here, 8, null).find((other) => String(other.getCurrentDefinition?.(sailor)?.getName?.() ?? other.getDefinition?.()?.getName?.() ?? "") === "Veos") ?? null;
+        } catch {
+          npc = null;
+        }
+        const actions = (npc?.getCurrentDefinition?.(sailor)?.getActions?.() ?? npc?.getDefinition?.()?.getActions?.() ?? []).map((action) => String(action ?? "").toLowerCase());
+        const clickType = actions.findIndex((action) => action === option) + 1;
+        if (!npc || !clickType || !core.operateNpc) {
+          note(sailor, "Vond Veos of zijn boot niet in Port Sarim.", "activity");
+          metric({ kind: "boat", bot: entry.name, to: option, ok: false, why: !npc ? "no_veos" : "no_option" });
+          return;
+        }
+        core.operateNpc(sailor, npc.getIndex(), clickType);
+        note(sailor, `Vaart met Veos naar ${option === "land's end" ? "Land's End" : "Port Piscarilius"} (Great Kourend).`, "activity");
+        metric({ kind: "boat", bot: entry.name, to: option, ok: true });
+        resume();
+      },
+    });
+  }
+
+  /**
    * Why a picked job could not start (Phase 4, AI_Constitution §7): a requirement it lacks, in
    * words a requirement check can use, with the place (x, y and floor z) where one is involved.
    * The decision metric carries it. Always returns false, so `return cannot(...)` reads as before.
@@ -1583,7 +1710,12 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
     if (plan.mode === "wintertodt") {
       // Wintertodt is in Kourend: by boat, not on foot. Not until it can get there.
-      if (!TravelHubs.onFoot(WINTERTODT)) return cannot(entry, "place_unreachable", { activity: "wintertodt", place: placeOf(WINTERTODT) });
+      // Kourend is not on foot: the ship once (Veos), then a games necklace's Wintertodt Camp.
+      if (!TravelHubs.onFoot(WINTERTODT)) {
+        const way = kourendWay(entry, plan, WINTERTODT);
+        if (way === true) return true;
+        if (way !== "there") return cannot(entry, "place_unreachable", { activity: "wintertodt", place: placeOf(WINTERTODT), way });
+      }
       startActivity(player, "wintertodt", { home: WINTERTODT, nowMs });
       walkTo(entry, { ...WINTERTODT, name: "Wintertodt" }, { reason: "wintertodt", replan: false });
       entry.activity = "wintertodt";
@@ -1833,25 +1965,32 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * it cannot get them.
    */
   function lightUp(entry, via, resume) {
+    return lightItem(entry, Shopping.idOf(core, via.light), Shopping.idOf(core, via.lightFrom), { label: via.name, resume, log: "boss" });
+  }
+
+  /**
+   * Any light it lights itself (a lit candle from a candle, a torch, a lantern): the unlit one and
+   * a tinderbox (bank, shop or exchange), then the tinderbox used on it. Same returns as lightUp.
+   */
+  function lightItem(entry, litId, unlitId, { label = "zijn klus", resume = () => {}, log = "activity", replan = true } = {}) {
     const { player } = entry;
     const inventory = player.getInventory();
-    const litId = Shopping.idOf(core, via.light);
-    const unlitId = Shopping.idOf(core, via.lightFrom);
     const tinderId = Shopping.idOf(core, "TINDERBOX");
     if (![litId, unlitId, tinderId].every(Number.isInteger)) return null;
     for (const id of [unlitId, tinderId]) {
       if (inventory.getAmount(id) > 0) continue;
       if (banked(player, id) > 0) {
         const bank = nearestBank(player, entry);
-        if (bank && walkTo(entry, { ...bank, name: bank.name ?? bank.id }, { reason: "withdraw", arrive: (banker) => { withdraw(banker, id, 1); resume(); } })) return true;
+        // Inside a quest its walks hand back to the quest (replan false), as acquireForQuest's do.
+        if (bank && walkTo(entry, { ...bank, name: bank.name ?? bank.id }, { reason: replan ? "withdraw" : "quest", replan, arrive: (banker) => { withdraw(banker, id, 1); resume(); } })) return true;
         return null;
       }
-      const label = itemName(id).toLowerCase();
-      if ((Shopping.shopsSelling(id).length > 0 && shopFor(entry, id, label, 1)) || buyOnExchange(entry, id, label, 1)) {
+      const what = itemName(id).toLowerCase();
+      if ((Shopping.shopsSelling(id).length > 0 && shopFor(entry, id, what, 1, { replan })) || buyOnExchange(entry, id, what, 1, { replan })) {
         resume();
         return true;
       }
-      note(player, `Kan geen licht maken voor ${via.name}: geen ${label} te krijgen.`, "boss");
+      note(player, `Kan geen licht maken voor ${label}: geen ${what} te krijgen.`, log);
       return null;
     }
     const items = inventory.getItems() ?? [];
@@ -1860,10 +1999,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     world.emitItemOnItem?.({ player, usedItem: items[used], usedItemId: tinderId, usedItemSlot: used,
       usedWithItem: items[on], usedWithItemId: unlitId, usedWithItemSlot: on, handled: false });
     if (inventory.getAmount(litId) > 0) {
-      note(player, `Steekt een ${itemName(unlitId).toLowerCase()} aan met zijn tinderbox.`, "boss");
+      note(player, `Steekt een ${itemName(unlitId).toLowerCase()} aan met zijn tinderbox (voor ${label}).`, log);
       return "lit";
     }
-    note(player, `Kon de ${itemName(unlitId).toLowerCase()} niet aansteken.`, "boss");
+    note(player, `Kon de ${itemName(unlitId).toLowerCase()} niet aansteken.`, log);
     return null;
   }
 
@@ -2578,10 +2717,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         const emptyShop = shop && (entry.emptyShops?.get(`${shop.shopId}:${id}`) ?? 0) > now();
         if (shop && !emptyShop && shop.distance <= (data.shopRadius ?? 80) && Shopping.coinsOf(player) >= Shopping.estimatedPrice(core, id, 1)) return true;
         const guide = Number(core.ItemDefinition?.forId?.(id)?.getGrandExchangeValue?.() ?? 0);
-        return (entry.noExchangeBuyUntil ?? 0) <= now() && guide > 0 && coins() >= Math.ceil(guide * 1.05) + 50
+        return (entry.noExchangeBuyUntil ?? 0) <= now() && guide > 0 && onExchange(id) && coins() >= Math.ceil(guide * 1.05) + 50
           && !blockedPlace(entry, data.grandExchange);
       },
-      reachable: (place) => TravelHubs.onFoot(place, null, questDone(player), (item) => Shopping.owns(player, idOf(item)))
+      // Kourend: by Veos's ship from Port Sarim after X Marks the Spot (later a games necklace),
+      // so Port Sarim on foot and that quest done.
+      reachable: (place) => (!inKourend(place) || xMarksDone(player))
+        && TravelHubs.onFoot(inKourend(place) ? VEOS_PORT_SARIM : place, null, questDone(player), (item) => Shopping.owns(player, idOf(item)))
         && !blockedPlace(entry, place),
       remembered: (key) => Requirements.recall(entry.cannot, key, now()),
       toolsFor: (option) => {
@@ -2968,8 +3110,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         }
       }
       if (entry.needFood && carriesFood(entry.player)) entry.needFood = false;
-      // Gathered what its quest needed (entry.gatherFor): back to that quest.
-      if (entry.gather && entry.phase === "training") {
+      // Gathered what its quest needed (entry.gatherFor): back to that quest. Also when it is on
+      // an errand (at the exchange it had enough, and the errand was the next thing it did).
+      if (entry.gather && entry.phase !== "quest" && !errands.busy(entry.player)) {
         const have = entry.player.getInventory().getAmount(entry.gather.itemId) + banked(entry.player, entry.gather.itemId);
         if (have >= entry.gather.amount || nowMs >= entry.until) {
           const quest = entry.gather.quest;
@@ -3299,6 +3442,28 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * it set off. Only shops within data.shopRadius tiles: a longer walk is not worth one item.
    */
   /**
+   * Whether the Grand Exchange trades it: the exchange's own rule (GrandExchange.plugin.js
+   * exchangeable: the unnoted item is tradeable). Asked before a trip, not found out there: a lit
+   * candle, a ghostspeak amulet and a combat bracelet were bought for and refused at the exchange
+   * (buy_nothing, not-exchangeable, 20-11-2026).
+   */
+  function onExchange(itemId) {
+    try {
+      const definition = core.ItemDefinition.forId(itemId);
+      return core.ItemDefinition.forId(definition.unNote?.() ?? itemId)?.isTradeable?.() !== false;
+    } catch {
+      return true;
+    }
+  }
+
+  /** The unlit item a tinderbox lights into `litId` (LightSources.plugin.js), or null. */
+  function unlitFor(litId) {
+    const request = { litId };
+    emit("light-sources:unlit-for", request);
+    return Number.isInteger(request.unlitId) ? { unlitId: request.unlitId, level: request.level ?? 1 } : null;
+  }
+
+  /**
    * A trip to buy at the exchange that bought nothing. It went round this silently, a trip every
    * second or two at the exchange itself (3 of 60 adventurers, v 84ecd13, 20-11-2026: 1,379
    * errands in 25 minutes, no log line). Now it says why, counts it and does not buy at the
@@ -3321,6 +3486,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const { player } = entry;
     const notBuyable = (why) => { entry.refusal = { why: "not_buyable", detail: { item: String(name), because: why } }; return false; };
     if ((entry.noExchangeBuyUntil ?? 0) > now()) return notBuyable("exchange_resting");
+    if (!onExchange(itemId)) return notBuyable("not_exchangeable");
     const guide = Number(core.ItemDefinition?.forId?.(itemId)?.getGrandExchangeValue?.() ?? 0);
     // Its coins in the bag and in its bank: the exchange has a bank, it takes out what it needs.
     const cost = Math.ceil(guide * 1.05) * amount;
@@ -4378,11 +4544,26 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
           const id = Shopping.idOf(core, name);
           if (Number.isInteger(id) && banked(banker, id) > 0 && banker.getInventory().getFreeSlots() > 2 && withdraw(banker, id, amount) > 0) travelBack.push(itemName(id));
         };
-        if (levelOf(banker, "MAGIC") >= 25) for (const name of ["LAW_RUNE", "AIR_RUNE", "EARTH_RUNE", "WATER_RUNE", "FIRE_RUNE"]) take(name, 1_000);
+        // A gathering job takes one way to teleport (Loadout.travelKit), the same one its bank visit
+        // leaves in the bag; any other job takes them all, as before.
+        const kit = travelKitFor(entry, banker);
+        const runes = kit ? kit.runes : levelOf(banker, "MAGIC") >= 25 ? Loadout.TRAVEL_RUNES : [];
+        for (const name of runes) take(name, 1_000);
         // Some coins in the bag (the Al Kharid toll, a ferry, a shop on the way).
         const carried = banker.getInventory().getAmount(Trade.COINS);
         if (carried < 1_000 && banked(banker, Trade.COINS) > 0) withdraw(banker, Trade.COINS, 1_000 - carried);
-        for (const name of [...TABLETS, ...JEWELLERY]) take(name, name.startsWith("AMULET") || name.startsWith("RING") || name.startsWith("GAMES") ? 1 : 20);
+        const carriesJewellery = (banker.getInventory().getItems() ?? []).some((item) => item && isJewellery(item.getId()));
+        const jewellery = kit ? (kit.jewellery > 0 && !carriesJewellery ? JEWELLERY : []) : JEWELLERY;
+        for (const name of kit ? kit.tablets : TABLETS) take(name, 20);
+        for (const name of jewellery) {
+          const before = travelBack.length;
+          take(name, 1);
+          if (kit && travelBack.length > before) break;
+        }
+        if (kit && kit.text !== entry.travelNote) {
+          entry.travelNote = kit.text;
+          note(banker, `Neemt voor ${String(entry.plan?.mode ?? "deze klus").replace(/_/g, " ")} één reismiddel mee: ${kit.text}.`, "activity");
+        }
         if (travelBack.length > 0) note(banker, `Neemt mee om te reizen: ${travelBack.join(", ").toLowerCase()}.`, "activity");
       },
     });
@@ -4416,6 +4597,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
 
   function workingMaterials(entry) {
     const ids = new Set();
+    // What it gathers for a quest (clay for Doric's Quest) is the quest's, not goods: Markbot 3
+    // mined clay, banked it and sold it at the exchange, and mined again (20-11-2026).
+    if (Number.isInteger(entry.gather?.itemId)) ids.add(entry.gather.itemId);
     for (const plan of [entry.resume, entry.plan, entry.savedTask]) {
       const mode = String(plan?.mode ?? "");
       // The bow and arrows or the runes of a ranged or magic job: it fetched them from the bank
@@ -4484,7 +4668,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function buyManyOnExchange(entry, wants) {
     const { player } = entry;
     const priced = wants.map((want) => ({ ...want, guide: Number(core.ItemDefinition?.forId?.(want.itemId)?.getGrandExchangeValue?.() ?? 0) }))
-      .filter((want) => want.guide > 0);
+      .filter((want) => want.guide > 0 && onExchange(want.itemId));
     if (priced.length === 0 || Shopping.coinsOf(player) + banked(player, Trade.COINS) < Math.ceil(priced[0].guide * 1.05) + 50) return false;
     if (blockedPlace(entry, data.grandExchange) || (entry.noExchangeBuyUntil ?? 0) > now()) return false;
     const plan = entry.plan;
@@ -4592,6 +4776,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function resumeTask(entry, nowMs) {
     const task = entry.savedTask;
     entry.savedTask = null;
+    // A job that gathered for a quest goes back to that quest when it has enough, after a restart too.
+    if (task?.gather && !entry.gather) entry.gather = { ...task.gather };
     const plan = Tasks.planOf(task, (data.bosses ?? []).filter((boss) => boss.onFoot !== false));
     if (!plan) return false;
     // Already at the level the job was for (combat 10 at combat 25): something new instead.

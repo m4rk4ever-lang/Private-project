@@ -27,6 +27,9 @@ function taskRecord(entry, nowMs, wallMs) {
     bossId: plan.boss?.id ?? null,
     activity: entry.activity ?? null,
     planActivity: plan.activity ?? null,
+    // Gathering for a quest (clay for Doric's Quest): which item, how many, for which quest. Without
+    // it a restarted bot mined on for ever and never went back to the quest.
+    gather: Number.isInteger(entry.gather?.itemId) ? { itemId: entry.gather.itemId, amount: entry.gather.amount, quest: entry.gather.quest } : null,
     remainingMs: Math.max(0, Math.round((entry.until ?? nowMs) - nowMs)),
     savedAt: wallMs,
   };

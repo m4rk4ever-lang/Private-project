@@ -9,7 +9,7 @@ test("a running job is saved as one plain record with the time it has left", () 
     plan: { kind: "train", mode: "woodcutting", skill: "WOODCUTTING", reason: "doel" } };
   const record = Tasks.taskRecord(entry, 10_000, 1_700_000_000_000);
   assert.deepEqual(record, { kind: "train", mode: "woodcutting", skill: "WOODCUTTING", reason: "doel", style: null, target: null,
-    bossId: null, activity: "oak_trees", planActivity: null, remainingMs: 5 * 60_000, savedAt: 1_700_000_000_000 });
+    bossId: null, activity: "oak_trees", planActivity: null, gather: null, remainingMs: 5 * 60_000, savedAt: 1_700_000_000_000 });
   assert.deepEqual(JSON.parse(JSON.stringify(record)), record);
   assert.equal(Tasks.taskRecord({ ...entry, phase: "errand" }, 0, 0), null);
   assert.equal(Tasks.taskRecord({ ...entry, plan: { kind: "quest", quest: {} } }, 0, 0), null);
@@ -47,4 +47,12 @@ test("an older saved job without the field gets its level from the reason", () =
   assert.deepEqual(Tasks.planOf({ kind: "train", mode: "combat_training", skill: "COMBAT", reason: "The Restless Ghost (combat 10)" }).target, { skill: "COMBAT", level: 10 });
   assert.deepEqual(Tasks.planOf({ kind: "train", mode: "mining", skill: "MINING", reason: "The Knight's Sword (mining 10)" }).target, { skill: "MINING", level: 10 });
   assert.equal(Tasks.planOf({ kind: "train", mode: "mining", skill: "MINING", reason: "afwisseling" }).target, undefined);
+});
+
+test("gathering for a quest is saved with the job, so a restart goes back to the quest", () => {
+  const entry = { phase: "training", activity: "clay_rocks", until: 60_000, gather: { itemId: 434, amount: 6, quest: "Doric's Quest" },
+    plan: { kind: "train", mode: "mining", skill: "MINING", reason: "clay voor Doric's Quest", activity: "clay_rocks" } };
+  const record = Tasks.taskRecord(entry, 0, 1_700_000_000_000);
+  assert.deepEqual(record.gather, { itemId: 434, amount: 6, quest: "Doric's Quest" });
+  assert.deepEqual(JSON.parse(JSON.stringify(record)).gather, record.gather, "saved as plain data");
 });

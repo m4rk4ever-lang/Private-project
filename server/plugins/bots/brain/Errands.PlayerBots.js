@@ -81,7 +81,9 @@ function jewelleryDestinations(source = null) {
     const destinations = piece.destinations ?? byKey.get(piece.destinationsFrom)?.destinations ?? [];
     const usable = destinations
       .map((destination, index) => ({ ...destination, index: index + 1 }))
-      .filter((destination) => Array.isArray(destination.tile) && !destination.quest && !destination.kourend
+      // Kourend destinations (Wintertodt Camp, the Kourend guilds) stay, marked: bestTeleport uses
+      // them only once the player has been to Great Kourend (the game's own zeah_playerhasvisited).
+      .filter((destination) => Array.isArray(destination.tile) && !destination.quest
         && !destination.colosseumRank && !destination.unlock && !destination.requires
         && !inWilderness(destination.tile[0], destination.tile[1]) && (destination.tile[2] ?? 0) === 0);
     for (const [itemId, charges] of piece.charged ?? []) {
@@ -101,7 +103,16 @@ function carriesRunes(player, runes) {
  * The teleport it can use that lands nearest `to`, if it saves a long walk; else null.
  * { kind: "spell", name } | { kind: "tablet", slot } | { kind: "jewellery", slot, index, label }.
  */
-function bestTeleport(core, player, to, { jewelleryData = null, questDone = () => false } = {}) {
+/** Whether the player has been to Great Kourend once (Teleports.Jewellery.js visitedKourend). */
+function visitedKourendOf(player) {
+  try {
+    return require("../../items/Teleports.Jewellery").visitedKourend(player) === true;
+  } catch {
+    return false;
+  }
+}
+
+function bestTeleport(core, player, to, { jewelleryData = null, questDone = () => false, visitedKourend = visitedKourendOf } = {}) {
   const spells = core?.SpellTeleports?.getTeleportDestinations?.() ?? [];
   const here = player.getLocation();
   const walk = distance(here, to);
@@ -129,6 +140,7 @@ function bestTeleport(core, player, to, { jewelleryData = null, questDone = () =
       if (land && core.ItemIdentifiers?.[key] === id) consider({ kind: "tablet", slot, name: spellName }, land.getX(), land.getY());
     }
     for (const destination of (jewelleryData ? jewelleryDestinations(jewelleryData) : jewelleryDestinations()).get(id) ?? []) {
+      if (destination.kourend && !visitedKourend(player)) continue;
       consider({ kind: "jewellery", slot, index: destination.index, name: destination.label }, destination.tile[0], destination.tile[1]);
     }
   });
