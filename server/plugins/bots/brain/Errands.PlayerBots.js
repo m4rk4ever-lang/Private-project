@@ -198,13 +198,20 @@ function createErrands({ now = () => Date.now(), log = () => {}, core = null, mo
     return true;
   }
 
-  function end(player, errand, ok) {
+  /**
+   * `why` is null on arrival, else "stuck", "no-closer" or "too-long". arrive/fail get how it went
+   * as their second argument ({ ms, why, tilesLeft, teleport }), so the caller can measure errands
+   * (the adventurers' `errand` metric).
+   */
+  function end(player, errand, ok, why = null) {
     errands.delete(player);
     clear(player);
     if (errand.entry.brain) errand.entry.brain.paused = false;
+    const at = player.getLocation();
+    const outcome = { ms: now() - errand.since, why, tilesLeft: distance(at, errand.to), teleport: errand.teleport?.kind ?? null };
     try {
-      if (ok) errand.arrive(player);
-      else errand.fail(player);
+      if (ok) errand.arrive(player, outcome);
+      else errand.fail(player, outcome);
     } finally {
       log("bot_errand", { username: player.getUsername?.() ?? null, reason: errand.reason, ok, ms: now() - errand.since });
     }
@@ -267,9 +274,10 @@ function createErrands({ now = () => Date.now(), log = () => {}, core = null, mo
       const noCloser = Math.max(NO_CLOSER_MS, errand.span * 1_000);
       const maxMs = Math.max(MAX_MS, errand.span * 2_400);
       if (still || nowMs - errand.bestAt > noCloser || nowMs - errand.since > maxMs) {
+        const why = still ? "stuck" : nowMs - errand.bestAt > noCloser ? "no-closer" : "too-long";
         log("bot_errand_failed", { username: player.getUsername?.() ?? null, reason: errand.reason, at: tile,
-          to: `${errand.to.x},${errand.to.y},${errand.to.z ?? 0}`, why: still ? "stuck" : nowMs - errand.bestAt > noCloser ? "no-closer" : "too-long" });
-        end(player, errand, false);
+          to: `${errand.to.x},${errand.to.y},${errand.to.z ?? 0}`, why });
+        end(player, errand, false, why);
         continue;
       }
       // The brain is paused, so its walk is driven from here, a leg at a time.

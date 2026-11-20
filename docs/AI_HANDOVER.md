@@ -5,6 +5,72 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 20-11-2026 (middag): Phase 2, errands meetbaar maken
+
+Branch: `adventurers/errand-metric` (vanaf `main` `e210ce9`).
+
+### Wat onderzocht is
+
+- Alle zes kerndocumenten en de constitution (§19 tot §35 opnieuw gelezen).
+- `bot-logs` (push 20-11-2026 14:18 UTC). De server stond uit van 17-11 22:08 tot 20-11 14:16.
+  Er is dus **geen nieuwe runtime-data** van `7a8e40b` na de vorige sessie.
+- Van `e210ce9` (Fase 1-fix) zijn er pas 11 metric-regels (40 seconden). **Fase 1 is nog niet
+  gevalideerd.**
+- `brain/Errands.PlayerBots.js` en `walkTo` in `Adventurers.PlayerBots.js`.
+
+### Wat gevonden is
+
+- De 5-minuten-regels (`bot.errand`) tonen alleen dát een bot op boodschap is, niet hoe lang een
+  boodschap duurt of hoe hij eindigt. De runner logt `bot_errand` en `bot_errand_failed` alleen
+  in de serverlog, die niet naar `bot-logs` gaat. Fase 2 kon daardoor niet gemeten worden.
+- Hoe het einde werkt: de runner meldt aankomst binnen 3 tegels (`ARRIVE_TILES`), of opgeven na
+  45 s stilstaan (`stuck`), 4 min niet dichterbij (`no-closer`) of te lang (`too-long`). Bij
+  opgeven telt `walkTo` het binnen 15 tegels toch als aangekomen (`NEAR_ENOUGH_TILES`). Elke
+  "bank door de muur" kost dus minstens 45 seconden stilstaan voordat de bot bankiert.
+  Hypothese, nog niet gemeten: dit is een groot deel van de bank-errandtijd.
+
+### Wat aangepast is
+
+Eén ding: errands meetbaar maken. Geen gedragswijziging.
+
+- `server/plugins/bots/brain/Errands.PlayerBots.js`: `arrive` en `fail` krijgen als tweede
+  argument `{ ms, why, tilesLeft, teleport }`. Bestaande aanroepers negeren het.
+- `server/plugins/bots/adventurers/Adventurers.PlayerBots.js` (`walkTo`): metric `errand` per
+  boodschap, met `ended` = `arrived` / `near` / `toll_gate` / `blocked`, plus `why`, `seconds`,
+  `tilesLeft`, `teleport`, `hop`, `where`.
+- `server/tests/bot-errands.test.cjs`: test voor de uitkomst (stuck na 46 s, 10 tegels over;
+  aankomst na 30 s).
+- `docs/OBSERVABILITY.md`: metric-soort `errand` en analyse-recept per bestemming.
+- `docs/ADVENTURER_ROADMAP.md`: Fase 2, instrumentatie klaar.
+- `CHANGELOG.md`: regel onder "Toegevoegd".
+
+Validatie:
+
+- Bot-tests: 16 fouten van 109 voor, 16 van 110 na. De nieuwe test slaagt.
+- `Adventurers.PlayerBots.js` laadt in deze omgeving niet (ongebouwde core), dus `walkTo` is
+  alleen met `node --check` gecontroleerd. **Niet in game getest.**
+
+### Openstaande risico's
+
+1. Fase 1 (banklus) en deze metric zijn allebei nog niet in echte logs bevestigd.
+2. Volume: één regel per errand. Bij 60 bots en errands van 1 à 2 minuten zijn dat ruwweg
+   1.000 à 2.000 regels per uur extra. Met de cap van 20.000 regels per log daalt de dekking van
+   `adventurers-metrics.jsonl` mogelijk van ongeveer 5 naar 3 à 4 uur. Na de eerste push meten;
+   bij te veel de cap voor dit log verhogen in `scripts/share-bot-logs.sh`.
+3. Errands die stoppen door dood of uitloggen schrijven geen regel.
+
+Alle risico's van de vorige sessie (hieronder) gelden nog.
+
+### Aanbevolen volgende stap
+
+1. Branch mergen en deployen. Na 1 à 2 uur `bot-logs` ophalen.
+2. Fase 1 controleren: bevroren bots (recept), `bank_nothing`.
+3. Recept "Errands" draaien. Kijk naar het aandeel `near` bij bank-errands en hun `seconds`
+   tegenover `arrived`. Als `near` groot is: de oorzaak is het bankpunt of de route tot in het
+   gebouw (deur, muur), en die fix is de eerste gedragswijziging van Fase 2.
+
+---
+
 ## Sessie 20-11-2026: Phase 1, Project Foundation
 
 Branch: `adventurers/bank-stall-full-bag` (vanaf `main` `9563445`).

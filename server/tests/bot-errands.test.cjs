@@ -48,6 +48,28 @@ test("a blocked walk gives up after a minute without getting closer", () => {
   assert.equal(brain.paused, false);
 });
 
+test("an errand tells how it ended: how long, why it gave up, tiles left (the errand metric)", () => {
+  let clock = 0;
+  const errands = createErrands({ now: () => clock, move: () => {}, clear: () => {} });
+  const brain = { paused: false, dispatchMovement: () => {} };
+  // Stands still 10 tiles short of the bank, as a bot behind its wall does.
+  const stuck = walker(3100, 3100);
+  let failed = null;
+  errands.go({ player: stuck, brain }, { x: 3090, y: 3100 }, { fail: (_, outcome) => { failed = outcome; } });
+  errands.tick();
+  clock += 46_000;
+  errands.tick();
+  assert.deepEqual(failed, { ms: 46_000, why: "stuck", tilesLeft: 10, teleport: null });
+  // Arrives.
+  const walking = walker(3200, 3200);
+  let arrived = null;
+  errands.go({ player: walking, brain }, { x: 3164, y: 3487 }, { arrive: (_, outcome) => { arrived = outcome; } });
+  clock += 30_000;
+  walking.at = loc(3165, 3486);
+  errands.tick();
+  assert.deepEqual(arrived, { ms: 30_000, why: null, tilesLeft: 1, teleport: null });
+});
+
 test("a teleport is cast only with the level, the runes and a long walk saved", () => {
   const rune = (id, amount) => ({ getId: () => id, getAmount: () => amount });
   const core = {

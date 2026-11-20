@@ -1236,23 +1236,34 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // A quest's walks hand back to the quest, not to the job's brain (its roaming walked the bot
     // off the castle stairs the moment it got there).
     const hold = () => { if (reason === "quest" && run.brain) run.brain.paused = true; };
+    // One `errand` metric per errand: how long, and how it ended. "arrived" (within ARRIVE_TILES),
+    // "near" (gave up but within NEAR_ENOUGH_TILES, counted as there: a bank through the wall),
+    // "toll_gate" or "blocked". Phase 2 of the roadmap measures bank errands with it.
+    const measured = (player, ended, outcome) => {
+      const at = player.getLocation();
+      metric({ kind: "errand", bot: entry.name, reason, to: placeName(to), ended, why: outcome?.why ?? null,
+        seconds: Math.round((outcome?.ms ?? 0) / 1000), tilesLeft: outcome?.tilesLeft ?? null,
+        teleport: outcome?.teleport ?? null, hop: hopped || undefined, where: [at.getX(), at.getY(), at.getZ()] });
+    };
     const started = errands.go(run, to, {
       reason,
-      arrive: (player) => {
+      arrive: (player, outcome) => {
         hold();
         entry.errand = null;
+        measured(player, "arrived", outcome);
         try {
           arrive(player);
         } finally {
           if (replan) entry.until = 0;
         }
       },
-      fail: (player) => {
+      fail: (player, outcome) => {
         hold();
         entry.errand = null;
         // Already there in all but the last tile (the spot itself in a hut or on rocks): there.
         const here = player.getLocation();
         if (here.getZ() === (to.z ?? 0) && Math.max(Math.abs(here.getX() - to.x), Math.abs(here.getY() - to.y)) <= NEAR_ENOUGH_TILES) {
+          measured(player, "near", outcome);
           try {
             arrive(player);
           } finally {
@@ -1262,7 +1273,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         }
         // At the Al Kharid toll gate and the walk got no further: through it as a player does
         // (Pay-toll, or Open after Prince Ali Rescue), then the walk again from the other side.
-        if (crossTollGate(entry, player, to)) return;
+        if (crossTollGate(entry, player, to)) {
+          measured(player, "toll_gate", outcome);
+          return;
+        }
+        measured(player, "blocked", outcome);
         note(player, `Kwam niet bij ${placeName(to)}: de weg was versperd.`, "activity");
         // From under the ground to a place above it: up the ladder at the next look.
         if (here.getY() >= 6400 && to.y < 6400) entry.climbOut = true;
