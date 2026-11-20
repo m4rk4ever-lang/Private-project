@@ -80,6 +80,7 @@ const { markHonest, markAdventurer } = require("../brain/Honest.PlayerBots");
 const { errandsFor } = require("../brain/Errands.PlayerBots");
 const { createLoopGuard } = require("./Loops.PlayerBots");
 const Requirements = require("./Requirements.PlayerBots");
+const Loadout = require("./Loadout.PlayerBots");
 /** Within this many tiles of its job's place it is there, and its stretch runs. */
 const ARRIVED_TILES = 25;
 /** A walk that never gets there (a blocked way) stops pausing the stretch after this. */
@@ -863,6 +864,30 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   }
 
   /**
+   * At a bank: what a gathering job does not carry goes in (Loadout.PlayerBots.js, Phase 4b):
+   * food beyond a couple of pieces and things of no use to it (a bucket, a pot, spare weapons).
+   * Its tools, coins, runes and teleports, quest items (untradeable), job materials and kit stay.
+   * Only at a bank visit it makes anyway.
+   */
+  function bankOffLoadout(entry, banker, plan = entry.plan ?? entry.savedTask) {
+    const mode = plan?.mode;
+    if (!Loadout.GATHERING.has(mode)) return [];
+    const activityId = plan === entry.plan ? entry.activity ?? plan.activity : plan.planActivity ?? plan.activity ?? null;
+    const tools = toolsFor(mode, activityId);
+    const keep = new Set([...workingMaterials(entry), ...bossKit(entry), Trade.COINS,
+      ...[...(tools.any ?? []), ...(tools.all ?? [])].map((name) => Shopping.idOf(core, name)).filter(Number.isInteger)]);
+    const kindOf = (id) => {
+      if (keep.has(id) || Trade.isSupply(core, id) || !Value.tradeable(core, id)) return "keep";
+      return isFood(id) ? "food" : "other";
+    };
+    const items = (banker.getInventory().getItems() ?? []).filter((item) => item && item.getId() > 0)
+      .map((item) => ({ itemId: item.getId(), amount: item.getAmount() }));
+    const stored = deposit(banker, Loadout.offLoadout(items, { mode, kindOf }));
+    if (stored.length > 0) countEvent(entry, "loadoutBanked");
+    return stored;
+  }
+
+  /**
    * At a bank: the arrows, bows and runes of the ways of fighting the job does not use go in
    * (a woodcutter does not carry 300 arrows about). Those of its own style stay with it.
    */
@@ -1508,7 +1533,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         if (bank && walkTo(entry, { ...bank, name: bank.name ?? bank.id }, {
           reason: "bank",
           arrive: (banker) => {
-            const stored = [...bankUnusedTools(entry, banker, { ...plan, activity: plan.activity ?? id }), ...bankUnusedSupplies(entry, banker, plan), ...deposit(banker, sortBag(banker).keep)];
+            const stored = [...bankUnusedTools(entry, banker, { ...plan, activity: plan.activity ?? id }), ...bankUnusedSupplies(entry, banker, plan), ...deposit(banker, sortBag(banker).keep),
+              ...bankOffLoadout(entry, banker, { ...plan, planActivity: plan.activity ?? id })];
             if (stored.length > 0) note(banker, `Maakt zijn tas leeg voor ${plan.mode}: ${stored.map((good) => itemName(good.itemId)).join(", ")}.`, "activity");
             else entry.clearBagAt = now() + 20 * 60_000;
             entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, planActivity: plan.activity ?? null, remainingMs: 0, savedAt: now() };
@@ -4059,7 +4085,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const priced = new Set(Trade.goodsToSell(player, core, keepHere, { isFood }).map((good) => good.itemId));
     const unpriced = Trade.goodsToSell(player, core, keepHere, { isFood, worthless: true }).filter((good) => !priced.has(good.itemId));
     const stored = [...deposit(player, bag.keep.filter((good) => !kit.has(good.itemId))), ...deposit(player, unpriced),
-      ...(entry ? [...bankUnusedSupplies(entry, player), ...bankUnusedTools(entry, player)] : [])];
+      ...(entry ? [...bankUnusedSupplies(entry, player), ...bankUnusedTools(entry, player), ...bankOffLoadout(entry, player)] : [])];
     if (stored.length > 0) note(player, `Bewaart op de bank: ${stored.map((good) => itemName(good.itemId)).join(", ")}.`, "activity");
     const pulled = withdrawToSell(player);
     const goods = Trade.goodsToSell(player, core, keepAtExchange(player), { isFood });
@@ -4199,7 +4225,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         for (const id of workingMaterials(entry)) keepHere.add(id);
         for (const id of bossKit(entry)) keepHere.add(id);
         const stored = [...deposit(banker, Trade.goodsToSell(banker, core, keepHere, { isFood, worthless: true })),
-          ...bankUnusedSupplies(entry, banker), ...bankUnusedTools(entry, banker)];
+          ...bankUnusedSupplies(entry, banker), ...bankUnusedTools(entry, banker), ...bankOffLoadout(entry, banker)];
         if (stored.length > 0) note(banker, `Zet op de bank in ${bank.name ?? bank.id}: ${stored.slice(0, 5).map((good) => itemName(good.itemId)).join(", ")}${stored.length > 5 ? ` en ${stored.length - 5} meer` : ""}. Bruikbaars bewaart hij; de rest verkoopt hij later op de GE.`, "activity");
         // Its means of travel back in the bag (it teleports only from there): law runes with the
         // elements when it has the Magic for the spells, its tablets and charged jewellery.

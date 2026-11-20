@@ -5,6 +5,48 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 20-11-2026 (19:55): Fase 4b stap 1, loadout bij gathering
+
+Branch: `adventurers/loadout` (vanaf `main` `f167bd3`). **Niet gemerged vóór de controle van
+20:01**, zodat `canExecute` v1 en deze wijziging in aparte versies te meten zijn.
+
+### Bewijs
+
+Op verzoek van de eigenaar ("bij gathering zit de halve inventory nog vol"). Metrics 20-11-2026,
+278 `bot`-regels tijdens woodcutting, mining en fishing: ~10 van 28 vakjes buiten de klus
+(eten 3,7, reis 2,8, overig 1,7, munten 0,9, gereedschap 0,8); 160 van 206 klussen eindigden
+op "full bag".
+
+### Wat aangepast is
+
+- Nieuw: `server/plugins/bots/adventurers/Loadout.PlayerBots.js`. `offLoadout(items, { mode,
+  kindOf })`: alleen voor gathering; `keep` blijft, `food` tot 2 stuks, de rest naar de bank.
+- `Adventurers.PlayerBots.js`: `bankOffLoadout(entry, banker, plan)` met `kindOf`: gereedschap van
+  de klus (`toolsFor` met de activiteit), munten, `Trade.isSupply` (runes, tablets, sieraden,
+  munitie), niet-verhandelbaar (quest-items), `workingMaterials`, `bossKit` = `keep`; `isFood` =
+  `food`; de rest weg. Aangeroepen op de drie bankmomenten die er al zijn: het bankpad van
+  `trade()`, `atExchange` en het leeghalen van de tas in `startTraining`. Event `loadoutBanked`.
+- `server/tests/bot-loadout.test.cjs`: 2 tests.
+- `docs/OBSERVABILITY.md` (event, recept), `docs/ADVENTURER_ROADMAP.md`, `CHANGELOG.md`.
+
+Validatie: bot-tests 16 van 122 fout (zelfde 16); de 2 nieuwe slagen. Adventurers-deel alleen
+`node --check`. **Niet in game getest.**
+
+### Risico's
+
+1. Quest-items die verhandelbaar zijn (bucket, pot) gaan de bank in; `acquireForQuest` haalt ze
+   terug, wat een extra banktrip kost als een quest ze nodig heeft.
+2. 2 stuks eten bij gathering in een gevaarlijke omgeving (scorpions bij Al Kharid). Te zien aan
+   `fledLowHp` en `death` bij gathering.
+3. Reisspullen niet aangepakt (2,8 vakjes).
+
+### Volgende stap
+
+Na de controle van 20:01 mergen en deployen. Dan meten met het recept "Tas bij gathering": vrije
+vakjes (was ~15,6 midden in een klus) en ladingen per banktrip.
+
+---
+
 ## Sessie 20-11-2026 (19:45): Fase 4 stap 2, `canExecute` v1
 
 Branch: `adventurers/can-execute-v1` (vanaf `main` `696c6cd`, met `docs/controle-1933`).

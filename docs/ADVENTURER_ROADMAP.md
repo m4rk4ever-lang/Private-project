@@ -140,6 +140,9 @@ candle), Fase 5 (unlock-waarde).
 - Eerst meten: vrije vakjes bij de start van een gathering-klus en ladingen per banktrip.
 - Klaar als: bij gathering gemiddeld 3 of minder vakjes vast met spullen buiten de loadout, en
   meer grondstoffen per banktrip.
+- **Stap 1 gebouwd 20-11-2026** (`Loadout.PlayerBots.js`): gathering houdt 2 stuks eten, en
+  spullen zonder nut voor de klus gaan bij het bankbezoek dat er toch al is naar de bank.
+  Reisspullen (2,8 vakjes) blijven nog: de errands teleporteren ermee.
 
 ### Fase 5: Progression op unlock-waarde (§10, §11)
 
