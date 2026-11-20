@@ -5,6 +5,14 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 20-11-2026 (22:20): Morytania en Gnome Stronghold te voet; Slayer ring als voorkeur (branch `adventurers/slayer-travel`)
+
+- **Observatie (eigenaar, 21:55):** Patrickbot 15 loopt van de GE naar Nieve (~730 tegels). Eigenaar: "er is map zat om door te lopen; teleport als voorkeur, geen zekerheid".
+- **Correctie op PR #25:** Morytania `onFoot: false` verschoof Slayer-bots van Mazchna naar Nieve, en de Stronghold faalde ook (0/16, vast bij 2693,3426 met 219 tegels te gaan: een directe wandeling zonder hub-link). De echte oorzaak in beide gevallen: hubs zonder links (`canifis`, `gnome_stronghold_gate`, `gnome_agility`).
+- **Fix:** links geteld met een BFS op de collision map van Shortest Path (methode in de roadmap, kalibratie 1,38 op 18 gemeten links): `paterdomus`-`canifis` 228 (via valluik 3405,3506 en de Holy barrier; zonder de 65-Agility-shortcut), `fishing_guild_road`-`gnome_stronghold_gate` 251, `gnome_stronghold_gate`-`gnome_agility` 81. Vlag `onFoot: false` weg bij Morytania; het mechanisme blijft in `TravelHubs.onFoot` (getest).
+- **Slayer:** meester bereikbaar te voet of via `slayerRingTo`. Bij > 300 tegels (`SLAYER_RING_TILES`) of niet te voet: ring uit bank of GE (eens per 30 min proberen), anders lopen. Taakplekken via `lockedAway`.
+- **Validatie:** suite 137 tests, 16 vaste fails; nieuwe test in `bot-travel-hubs` (Stronghold en Canifis verbonden). Niet ingame getest: of de walker de tempelgang (valluik, hekken 3444/3445, barrier) neemt, en of de ring gekozen wordt. In de logs: errands naar Mazchna/Nieve/Gnome Stronghold `arrived`; `teleport: "jewellery"` naar Nieve.
+
 ## Sessie 20-11-2026 (22:15): punten 1-8 van de eigenaar (branch `adventurers/roadmap-batch`, PR na deze sessie)
 
 Eén branch, één commit per punt. Basis: logs tot 20:28 UTC (v 450f871) en de feedback-log sinds 17:00.

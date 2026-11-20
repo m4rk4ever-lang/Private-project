@@ -949,6 +949,21 @@
    "mudskipper",
    "wizards_tower",
    388
+  ],
+  [
+   "fishing_guild_road",
+   "gnome_stronghold_gate",
+   251
+  ],
+  [
+   "gnome_stronghold_gate",
+   "gnome_agility",
+   81
+  ],
+  [
+   "paterdomus",
+   "canifis",
+   228
   ]
  ],
  "lockedAreas": [
@@ -960,9 +975,7 @@
     3920,
     3610
    ],
-   "quest": "Priest in Peril",
-   "onFoot": false,
-   "onFootWhy": "Te voet niet bewezen: 117 loopjes naar Mazchna, Slayer Tower en Mort'ton, 1 aangekomen, 201 min verloren (17:08-20:27 UTC, 20-11-2026). Ze strandden bij de tolpoort van Al Kharid en ten oosten van Varrock. Alleen met een teleport, tot de route via de Paterdomus-tempel in het spel is gecheckt (plan_route); dan deze twee regels weg."
+   "quest": "Priest in Peril"
   },
   {
    "name": "Kharidian Desert (past the Shantay Pass)",
