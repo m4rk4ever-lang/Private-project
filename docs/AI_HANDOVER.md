@@ -5,6 +5,92 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 20-11-2026 (17:00): uitrusting heen en weer naar de bank
+
+Branch: `adventurers/kit-bank-loop` (op `docs/controle-1650`, vanaf `main` `ad1c718`).
+
+### Oorzaak (in code bevestigd)
+
+1. `startTraining` voor `combat_ranged` / `combat_magic`: geen boog en pijlen of runes bij zich, dus
+   naar de dichtstbijzijnde bank (bij de GE is dat de GE) en ze ophalen; de klus wordt `savedTask`.
+2. De volgende beslissing begint met `trade()`. Die telt boog, pijlen en runes als goederen
+   (meer dan `keepValue` 200 gp), want `workingMaterials` beschermde alleen buy-to-train-materialen.
+   Dus naar de GE (`exchange`).
+3. `atExchange` zet `bag.keep` op de bank (alleen de boss-kit was uitgezonderd).
+4. `resumeTask` → `startTraining` → stap 1.
+
+Bij Patrickbot 18 hetzelfde met de Barrows-magic-set: `bossKit` bevatte alleen potions, spade
+en tablets.
+
+### Wat aangepast is
+
+`server/plugins/bots/adventurers/Adventurers.PlayerBots.js`:
+- `workingMaterials`: ook de spullen (`styleSupplyIds`) van de vechtstijl van `resume`, `plan` of
+  `savedTask` als die ranged of magic is. Werkt daardoor in `trade()`, het bankpad en
+  `keepAtExchange`.
+- `bossKit`: bij de Barrows ook de magic-set en runes.
+- `atExchange` en `bankUnusedSupplies` laten `workingMaterials` en `bossKit` in de tas.
+- `CHANGELOG.md`: regel onder "Opgelost".
+
+Validatie: bot-tests 16 van 111 fout (zelfde 16). Alleen `node --check` voor deze code (laadt hier
+niet). **Niet in game getest.** Barrows-set gecontroleerd: kodai wand en ancestral staan in
+`styles.magic` van `plugins/bots/data/adventurer-gear.json`.
+
+### Risico's
+
+1. Een oude `savedTask` met ranged of magic houdt pijlen of runes in de tas tijdens een andere klus
+   (een paar vakjes). Bewust: liever dat dan de lus.
+2. Jorgbot 4 (710 × `errandInstant`) had geen activiteitenregels. Zijn lus kan een andere oorzaak
+   hebben (`exchange` zonder iets te doen, doel "1.155 gp voor amulet of defence", 19 vrije vakjes).
+   Na deploy controleren.
+3. `errandInstant` zegt niet welke boodschap. Overweeg de reden mee te tellen als de lus terugkomt.
+
+### Volgende stap
+
+Na deploy: `errandInstant` per bot (verwacht: Markbot 10, Jorgbot 9, Markbot 6, Patrickbot 18 laag)
+en activiteitenlog-regels per uur (was ~11.500). Daarna Jorgbot 4.
+
+---
+
+## Controle 20-11-2026 16:50: eerste data van `ad1c718`
+
+Basis: `bot-logs` push 15:50 UTC. `ad1c718` 15:21 tot 15:50 (**29 min**, 60 avonturiers).
+Het metrics-log begint nu bij 14:29 UTC: de overstroming van `84ecd13` (18.192 regels in 50 min)
+heeft alles van `7a8e40b` en `e210ce9` uit `bot-logs` geduwd.
+
+| Vraag | Uitkomst (29 min) |
+| --- | --- |
+| Waarom mislukte het kopen? | 6 × `buy_nothing`, alle 6 `not-exchangeable`, met 8 vrije GE-slots. **Vermoeden "slots vol" klopt niet.** Items: lit candle (4 bots), ghostspeak amulet, combat bracelet. De bots probeerden dingen op de GE te kopen die daar niet verhandelbaar zijn. `buyOnExchange` kijkt alleen of er een guide-prijs is. De afkoeltijd werkt: 6 keer in 29 min, niet honderden. |
+| Metric-volume | 1.808 regels in 29 min, ~3.700 per uur (was ~22.000 per uur in `84ecd13`). Metrics-log dekt ~5 uur. |
+| Activiteitenlog | 5.661 regels in 29 min, ~11.500 per uur: dekt **minder dan 2 uur**. Ruim de helft komt van de banklus hieronder. |
+| Fase 1 (bevroren bots) | 0 bots 25 min of langer stil. 1 × `bank_nothing`. |
+| Tijdsbesteding | errand 35,1% (was 57,6%), working 16,9%, walking 23,3%, idle 12,7%. |
+| "Binnen 15 tegels" bij banken | 8 van 268 bank-errands (3%), gemiddeld 67 s tegenover 16 s bij echt aankomen. Samen ~9 min. **Geen grote kostenpost**; de hypothese uit de vorige sessie vervalt. |
+
+**Nieuwe grootste lus: uitrusting heen en weer naar de bank.** `errandInstant` per bot in 29 min:
+Jorgbot 4 (710), Markbot 10 (669), Jorgbot 9 (643), Markbot 6 (572). Allemaal 0 XP, fase
+`errand` bij de GE. Hun log, honderden keren om en om:
+- Markbot 10 (439 ×): "Bewaart op de bank: yew shortbow, shortbow, rune arrow…" en "Haalt zijn boog
+  en pijlen van de bank om te boogschieten."
+- Jorgbot 9 (429 ×) en Markbot 6 (398 ×): "Bewaart op de bank: amulet of power, air rune, mind
+  rune, staff of fire…" en "Haalt zijn runes van de bank om te toveren."
+- Patrickbot 18 (106 ×): Barrows-magic-set naar de bank en weer terug, bij Ardougne Zuid.
+
+Vermoedelijke oorzaak (nog niet in code bevestigd): `trade()` ziet de spullen van de klus waar de
+bot mee bezig is (boog en pijlen, runes en staff, Barrows-set) als goederen en zet ze op de bank;
+de klus haalt ze er meteen weer uit. `workingMaterials(entry)` beschermt materialen maar
+waarschijnlijk niet de wapens en munitie van een combat-klus. Mogelijk speelt de één-van-elk-regel
+van Fase 1 mee (meerdere bogen). De oude pingpong-bots (Patrickbot 17, Jorgbot 10, Patrickbot 8)
+doen nu weer gewoon iets.
+
+Kleinere bevinding: quest- en uitrustingsaankopen proberen niet-verhandelbare items (lit candle)
+op de GE. Afgevangen door de afkoeltijd, maar het quest-item wordt zo niet gehaald.
+
+Aanbevolen volgende stap: de banklus voor klus-uitrusting. Begin in `trade()` en `keepIds` /
+`workingMaterials` met Markbot 10 (ranged) als voorbeeld.
+
+---
+
 ## Sessie 20-11-2026 (16:00): stille kooplus bij de GE
 
 Branch: `adventurers/ge-buy-loop` (vanaf `main` `84ecd13`).

@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Avonturiers die gingen boogschieten of toveren zetten hun boog, pijlen en runes bij de GE op de bank en haalden ze meteen weer op, honderden keren achter elkaar. Hetzelfde gebeurde met de magic-set voor de Barrows. De spullen voor hun klus blijven nu bij ze.
 - Sommige avonturiers stonden bij de Grand Exchange en probeerden elke seconde opnieuw een upgrade te kopen die niet lukte, zonder dat ergens te melden. Nu zeggen ze in hun log waarom het niet lukte (bijvoorbeeld alle GE-slots bezet) en proberen ze het pas na een half uur weer op de GE.
 - Avonturiers met een tas vol dubbele spullen (acht dezelfde staffs, tientallen gesmede axes) bleven uren bij een bank staan zonder iets te doen. Ze houden nu één exemplaar van elk stuk uitrusting en gereedschap; de rest gaat naar de bank of de GE. Kan de bank toch niets aannemen, dan staat dat in hun log en gaan ze verder met een klus.
 
