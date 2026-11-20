@@ -1535,7 +1535,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       // Priest in Peril), that it has not found blocked lately.
       const course = (data.agilityCourses ?? []).find((option) => level >= option.level
         && (option.quests ?? []).every((name) => questsByName().get(normalize(name))?.isComplete(player) === true)
-        && !blockedPlace(entry, option));
+        && !blockedPlace(entry, option) && !((troubledCourses.get(option.course) ?? 0) > now()));
       if (!course || !registry?.byId?.get(`agility_${course.course}`)) return cannot(entry, "no_agility_course", { level, course: course?.course ?? null });
       startActivity(player, `agility_${course.course}`, { home: course, nowMs });
       walkTo(entry, course, { reason: "agility", replan: false });
@@ -2363,6 +2363,15 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return course && registry?.byId?.get(`agility_${course.course}`) ? course : null;
   }
 
+  /**
+   * Rooftop courses an adventurer could not get down from (home teleport off the roof), shared by
+   * all of them for COURSE_TROUBLE_MS (AI_Constitution §18, §25): course key -> until. Patrickbot 17
+   * teleported off Seers' rooftop and its saved job sent it straight back to the same obstacle
+   * (2710, 3475, 3), round and round (20-11-2026).
+   */
+  const troubledCourses = new Map();
+  const COURSE_TROUBLE_MS = 60 * 60_000;
+
   function getOffRoof(entry, nowMs) {
     const player = entry.player;
     const at = player.getLocation();
@@ -2385,8 +2394,12 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       entry.roofSince = null;
       entry.offRoof = false;
       countEvent(entry, "teleportedOut");
-      metric({ kind: "stranded", bot: entry.name, where: [at.getX(), at.getY(), at.getZ()], why: "roof" });
-      note(player, "Komt niet van het dak af; teleporteert naar huis (Lumbridge).", "activity");
+      // That course is out for a while, for every adventurer, and its saved job does not send it back.
+      const stuckOn = roofCourse(at)?.course ?? null;
+      if (stuckOn) troubledCourses.set(stuckOn, nowMs + COURSE_TROUBLE_MS);
+      if (entry.savedTask?.mode === "agility") entry.savedTask = null;
+      metric({ kind: "stranded", bot: entry.name, where: [at.getX(), at.getY(), at.getZ()], why: "roof", course: stuckOn });
+      note(player, `Komt niet van het dak af; teleporteert naar huis (Lumbridge).${stuckOn ? ` Laat de ${stuckOn}-baan een uur liggen.` : ""}`, "activity");
       entry.phase = "waiting";
       entry.until = nowMs + 20_000;
       return true;
