@@ -2530,7 +2530,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         : startTraining(entry, plan, nowMs);
       const failure = started ? null : entry.startFailure ?? (entry.refusal ? { why: entry.refusal.why === "not_buyable" ? "not_buyable" : "errand_refused", detail: entry.refusal } : null);
       // A missing requirement keeps this option out for a while (no pick, fail, same pick again).
-      if (failure) Requirements.remember(entry.cannot, plan, failure, now());
+      if (failure) Requirements.remember(entry.cannot, plan, failure, now(), { restingUntil: entry.noErrandUntil ?? 0 });
       decisionMetric(entry, plan, why, { attempt, started, exclude, failure, blocked: attempt === 0 ? checked.blocked : undefined });
       if (started) {
         entry.idleReason = null;

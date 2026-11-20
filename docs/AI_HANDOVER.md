@@ -33,7 +33,9 @@ waarschijnlijk geld of `noExchangeBuyUntil`; 3 Mole-starts wel.
 
 **`errands_resting` is nu de grootste oorzaak van niet-gestarte keuzes** (17 van 26): na een
 mislukte boodschap 10 min geen nieuwe, en de planner kiest intussen klussen die een boodschap
-nodig hebben. Kan in `canExecute` (een klus die een boodschap vraagt terwijl die rust).
+nodig hebben. **Gedaan 20:40:** `Requirements.remember` onthoudt een `errand_refused` met
+`errands_resting` tot `noErrandUntil` (niet 30 min); `canExecute` sluit die klus zolang uit. Test
+in `bot-requirements.test.cjs`.
 
 ---
 
