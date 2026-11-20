@@ -78,6 +78,7 @@ const { runPaced } = require("../runtime/SpawnPacing.PlayerBots");
 const npcSpawns = require("../../../data/definitions/npc-spawns.json");
 const { markHonest, markAdventurer } = require("../brain/Honest.PlayerBots");
 const { errandsFor } = require("../brain/Errands.PlayerBots");
+const { createLoopGuard } = require("./Loops.PlayerBots");
 /** Within this many tiles of its job's place it is there, and its stretch runs. */
 const ARRIVED_TILES = 25;
 /** A walk that never gets there (a blocked way) stops pausing the stretch after this. */
@@ -101,6 +102,8 @@ const FULL_BAG_RETRY_MS = 30 * 60_000;
 const BUY_RETRY_MS = 30 * 60_000;
 /** An errand shorter than this (it was already there) is counted, not written as its own line. */
 const INSTANT_ERRAND_MS = 3_000;
+/** A trade decision this recent is shown with a loop report. */
+const LOOP_TRADE_MS = 60_000;
 /** Below this share of its Hitpoints with nothing to eat, a dangerous job stops. */
 const DANGER_HP_SHARE = 0.5;
 const DANGER_MODES = new Set(["combat_training", "combat_ranged", "combat_magic", "slayer", "thieving"]);
@@ -172,6 +175,7 @@ function walkTiles(here, place, player) {
 function createAdventurers({ api, runtime, world, registry, random = Math.random, now = () => Date.now(), errands = errandsFor(api) }) {
   const core = api.core;
   const emit = (name, payload) => api.emitCustomEvent(name, payload);
+  const loopGuard = createLoopGuard({ now });
   const QuestRuntime = require("../../quests/QuestRuntime");
   // All quests on this server, the path first; requirements from the cache.
   const questList = createQuestList({ core, path: data.quests, getRegistered: () => QuestRuntime.getRegisteredQuests() });
@@ -1210,6 +1214,33 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
   }
 
+  /**
+   * After each errand it sets off: the same one again and again without XP is a loop. Once per
+   * loop: a log line, event `loop`, metric `loop` with its last errands and what drove the choice
+   * (plan, saved job, goal, and for a trade trip why it went), and the errand is refused a while.
+   */
+  function noteLoop(entry, reason, to) {
+    const report = loopGuard.record(entry, reason, placeKey(to), { to: placeName(to), progressAt: entry.xpAt ?? 0 });
+    if (!report) return;
+    const { player } = entry;
+    const minutes = Math.max(1, Math.round(report.seconds / 60));
+    note(player, `Ging ${report.repeats} keer in ${minutes} min naar ${placeName(to)} (${reason}) zonder vooruit te komen. Doet dat een kwartier niet en kiest iets anders.`, "activity");
+    countEvent(entry, "loop");
+    let ge = null;
+    if (/grand exchange/i.test(placeName(to))) {
+      const peek = { player, peek: true };
+      emit("ge:collect", peek);
+      ge = { finished: peek.finished ?? null, waiting: peek.waiting ?? null, freeSlots: peek.freeSlots ?? null };
+    }
+    const fresh = (entry.lastTrade?.at ?? 0) > now() - LOOP_TRADE_MS;
+    metric({ kind: "loop", bot: entry.name, reason, to: placeName(to), repeats: report.repeats, seconds: report.seconds,
+      recent: report.recent, phase: entry.phase ?? null,
+      plan: entry.plan ? { mode: entry.plan.mode ?? null, reason: entry.plan.reason ?? null } : null,
+      savedTask: entry.savedTask ? { kind: entry.savedTask.kind ?? null, mode: entry.savedTask.mode ?? null } : null,
+      goal: Goals.describe(player.getAttribute(GOAL_ATTRIBUTE) ?? null) ?? null,
+      trade: fresh ? entry.lastTrade : null, ge, coins: Shopping.coinsOf(player), freeSlots: player.getInventory().getFreeSlots() });
+  }
+
   function walkTo(entry, to, { reason, arrive = () => {}, replan = true, say = true, urgent = false, hopped = false } = {}) {
     const run = runtimeEntry(entry.player);
     // On the other side of the ground (the Dwarven Mine below Falador, the Mining Guild): first to
@@ -1235,6 +1266,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // `urgent`: a full bag to bank goes even while other errands rest after a failed one.
     if (!run || errands.busy(entry.player) || (replan && !urgent && (entry.noErrandUntil ?? 0) > now())) return false;
     if (blockedPlace(entry, to)) return false;
+    // The same errand over and over without XP was a loop (Loops.PlayerBots.js): not now.
+    if (loopGuard.blocked(entry, reason, placeKey(to))) return false;
     // The errand walks it through its brain's navigation (doors, stairs, long routes). A new
     // adventurer has none until its first job, and its first move is often an errand (the bank):
     // without one it never took a step, gave up after a minute and tried the next bank forever.
@@ -1311,6 +1344,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       },
     });
     if (!started) return false;
+    noteLoop(entry, reason, to);
     // A teleport for the way there (a spell, a tablet broken, jewellery rubbed: the game's own
     // option, its charge and animation): in its log and the metrics (kind teleport), with the
     // charges left, so the logs show they are used and used up.
@@ -4034,6 +4068,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // player does in the middle of a woodcutting trip, and sells another time.
     const extra = bank ? distanceTo(player, ge) - bank.away : 0;
     const toExchange = geOpen && (!bank || extra <= 40 || ((fund || waiting || worth >= (data.sellValue ?? 5000)) && extra <= SELL_DETOUR_TILES));
+    // Why it goes, for the loop report: a loop to the exchange then says what drove it.
+    entry.lastTrade = { at: now(), waiting, fund, worth, full, cluttered, goods: goods.slice(0, 5).map((good) => itemName(good.itemId)) };
     if (toExchange) return walkTo(entry, ge, { reason: "exchange", arrive: atExchange, urgent });
     // Saving up or offers waiting are reasons for the exchange only: to a bank it goes with
     // a bag to empty, else it would walk there for nothing, again and again.

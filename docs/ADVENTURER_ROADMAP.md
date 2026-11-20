@@ -86,6 +86,8 @@ vorige versie zijn bekeken.
   (`errandInstant`). Elke fix was lokaal; de beslisstap kijkt niet of een actie iets opleverde.
 - Eén bewaking in de beslisstap: dezelfde boodschap of beslissing een aantal keer zonder XP, geld
   of voortgang → event, metric met de reeks, en een andere keuze.
+- **Gebouwd 20-11-2026** voor boodschappen (`Loops.PlayerBots.js`, metric `loop`). Beslissingen
+  zonder boodschap (een klus die steeds opnieuw start) vallen er nog buiten.
 - Klaar als: geen bot met een hoog `errandInstant` of een herhalende reeks zonder voortgang in de
   logs, ook bij nieuwe oorzaken.
 

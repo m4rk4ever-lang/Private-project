@@ -29,7 +29,7 @@ Werkregels voor iedereen (mens of agent) die aan het Adventurer Platform werkt. 
 - Elke herhaling of fallback schrijft een event (`countEvent`) of metric. Stil falen is een bug.
 - Bij falen: Analyse, Recovery, Retry. Recovery-middelen die er al zijn: repath via de
   routeplanner, `blockedPlaces`, `noErrandUntil`, `unstrand` (home teleport na 3 keer vast op
-  dezelfde plek), `clearBag`, de errand-watchdog, `fullBagBankAt` en `noExchangeBuyUntil` (30 min na een bezoek dat niets opleverde).
+  dezelfde plek), `clearBag`, de errand-watchdog, `fullBagBankAt` en `noExchangeBuyUntil` (30 min na een bezoek dat niets opleverde), en de algemene lusbewaking `Loops.PlayerBots.js` (dezelfde boodschap 8 keer in 5 min zonder XP: metric `loop`, 15 min geweigerd). Een nieuwe lus hoort eerst daar zichtbaar te worden; fix daarna de oorzaak.
 
 ## 4. Valideren
 
