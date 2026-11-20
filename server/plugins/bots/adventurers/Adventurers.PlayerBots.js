@@ -4872,7 +4872,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const at = player.getLocation();
     const here = point ? { x: point.x, y: point.y } : { x: at.getX(), y: at.getY() };
     let best = null;
-    for (const place of [...LANDMARKS, ...travelData.destinations, ...travelData.hangouts, ...travelData.minigames]) {
+    // The agility courses too: a bot on the Falador roof's south-west ledges (3013,3335) was "bij
+    // giant mole hole" in ::volg, the nearest place known, though it ran the course (20-11-2026).
+    const courses = (data.agilityCourses ?? []).map((course) => ({ id: course.name ?? course.course, x: course.x, y: course.y }));
+    for (const place of [...LANDMARKS, ...travelData.destinations, ...travelData.hangouts, ...travelData.minigames, ...courses]) {
       const distance = Math.max(Math.abs(place.x - here.x), Math.abs(place.y - here.y));
       if (!best || distance < best.distance) best = { id: place.id, distance };
     }

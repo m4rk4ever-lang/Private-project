@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- `::volg` en de logs noemden een bot op de Falador-daken "bij giant mole hole". Agility-banen tellen nu mee als plek, dus er staat "Falador Rooftop".
 - Een avonturier op het Falador-dak kon tijdens het trainen een loopje starten (eten halen, bank) en liep dan op dakhoogte door de lucht boven de stad. Daar bleef hij tot een uur hangen. Vanaf een dakbaan starten ze nu geen loopje meer, en wie langer dan vijf minuten op een verdieping staat zonder naar beneden te komen, teleporteert naar huis.
 - Avonturiers liepen steeds naar Morytania (Mazchna, Slayer Tower, Mort'ton, Canifis Rooftop) en kwamen er nooit, omdat geen route daar naartoe leidt. Een boodschap naar een afgesloten gebied wordt nu meteen geweigerd, tenzij ze een teleport hebben die daar landt (zoals een Barrows-tablet), en ze kiezen die klus een half uur niet opnieuw.
 - Een avonturier die clay of iets anders verzamelde voor een quest, verkocht het bij de GE en ging opnieuw verzamelen. Nu houdt hij het, ziet hij ook onderweg dat hij genoeg heeft, en weet hij na een herstart nog voor welke quest het was.
