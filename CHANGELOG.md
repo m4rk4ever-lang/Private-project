@@ -14,7 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
-- Avonturiers liepen naar Karamja (Musa Point, Duradel in Shilo Village) alsof het geen eiland was, en liepen vast. Karamja geldt nu als alleen bereikbaar met een teleport, zoals een amulet of glory.
+- Avonturiers liepen naar Karamja (Musa Point, Brimhaven) alsof het geen eiland was, en liepen vast. Ze nemen nu de boot: van Port Sarim met Captain Tobias, tussen Ardougne, Brimhaven en Rimmington met Captain Barnaby, en terug met de douane. Een teleport, zoals een amulet of glory, gaat nog steeds voor. Shilo Village (Duradel) telt pas na de quest Shilo Village.
 - Op weg naar Mort'ton of de Barrows probeerden avonturiers vanaf de Digsite rechtdoor over de rivier Salve te lopen. Ze gaan Morytania nu altijd binnen via de tempel van Paterdomus en Canifis, en er is een tussenstop bij Mort'ton.
 - Avonturiers liepen naar Morytania (Mazchna, Slayer Tower, Mort'ton) en naar de Gnome Stronghold (Nieve, de agility-baan) en kwamen er bijna nooit aan: 1 van de 117 en 0 van de 16 keer. De routekaart miste de stukken via de tempel van Paterdomus en via de poort van de Stronghold. Die zijn toegevoegd. Voor een lange tocht naar een Slayer-meester nemen ze nu bij voorkeur een Slayer ring mee om te teleporteren. Lukt dat niet, dan lopen ze.
 - Avonturiers vonden bij Cook's Assistant de meelbak in de molen van Lumbridge niet en gaven de quest op. Ze herkennen nu ook objecten die van uiterlijk wisselen (vol of leeg, open of dicht).

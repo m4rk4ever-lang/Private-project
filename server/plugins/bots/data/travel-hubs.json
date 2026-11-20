@@ -1,5 +1,5 @@
 {
- "_comment": "Stepping stones for long walks (behaviours/navigation/TravelHubs.PlayerBots.js): hubs are towns and crossroads [x, y]; links [a, b, tiles] are walks between two hubs that the route planner found in game (tiles: the walk's length). A walk too long to plan in one go goes hub to hub along these links. Add a hub with its links (checked with the agent MCP's plan_route) to open up a part of the map. lockedAreas: parts of the map behind a quest [minX, minY, maxX, maxY]; a bot goes there only with that quest done, or carrying that item (item: a Shantay pass for the desert). enterVia: the hubs inside the area a walk goes in from (Morytania: past the Salve only through Paterdomus to Canifis); the last leg into the area starts at one of them. onFoot: false: not on foot at all (an island), only by teleport.",
+ "_comment": "Stepping stones for long walks (behaviours/navigation/TravelHubs.PlayerBots.js): hubs are towns and crossroads [x, y]; links [a, b, tiles] are walks between two hubs that the route planner found in game (tiles: the walk's length). A walk too long to plan in one go goes hub to hub along these links. Add a hub with its links (checked with the agent MCP's plan_route) to open up a part of the map. lockedAreas: parts of the map behind a quest [minX, minY, maxX, maxY]; a bot goes there only with that quest done, or carrying that item (item: a Shantay pass for the desert). enterVia: the hubs inside the area a walk goes in from (Morytania: past the Salve only through Paterdomus to Canifis); the last leg into the area starts at one of them. onFoot: false: not on foot at all (an island), only by teleport. area: one [minX, minY, maxX, maxY] or a list of them. boats: NPC ferries (plugins/agent/data/transports.json boats; PiratesTreasure.Quest.js, BarnabyFerry.plugin.js) from a dock to a dock, with the NPC's options and the fare; an area with byBoat is reached through them (Adventurers.walkTo).",
  "hubs": {
   "lumbridge": [
    3222,
@@ -1001,15 +1001,160 @@
    "item": "SHANTAY_PASS"
   },
   {
+   "name": "Shilo Village",
+   "area": [
+    2817,
+    2944,
+    2880,
+    3006
+   ],
+   "quest": "Shilo Village"
+  },
+  {
    "name": "Karamja",
    "area": [
-    2735,
-    2870,
-    2940,
-    3235
+    [
+     2735,
+     2870,
+     2900,
+     3240
+    ],
+    [
+     2900,
+     2870,
+     2975,
+     3195
+    ]
    ],
    "onFoot": false,
-   "onFootWhy": "Een eiland: geen looproute van het vasteland (BFS op de collision map, 20-11-2026). 21 vastgelopen loopjes naar Musa Point; Duradel in Shilo Village gold als te voet bereikbaar. Alleen per teleport (glory naar Karamja) tot de boten in de routeplanner zitten (transportplan stap 1/4)."
+   "onFootWhy": "Een eiland: geen looproute van het vasteland (BFS op de collision map, 20-11-2026). Bereikbaar per boot (boats hieronder, 30 gp) of teleport.",
+   "byBoat": true
+  }
+ ],
+ "boats": [
+  {
+   "from": [
+    3029,
+    3217,
+    0
+   ],
+   "to": [
+    2956,
+    3146,
+    0
+   ],
+   "npcs": [
+    "Captain Tobias",
+    "Seaman Lorris",
+    "Seaman Thresnor"
+   ],
+   "options": [
+    "Musa Point",
+    "Travel"
+   ],
+   "fare": 30,
+   "name": "Port Sarim naar Musa Point"
+  },
+  {
+   "from": [
+    2956,
+    3146,
+    0
+   ],
+   "to": [
+    3029,
+    3217,
+    0
+   ],
+   "npcs": [
+    "Customs officer"
+   ],
+   "options": [
+    "Port Sarim",
+    "Travel"
+   ],
+   "fare": 30,
+   "name": "Musa Point naar Port Sarim"
+  },
+  {
+   "from": [
+    2683,
+    3271,
+    0
+   ],
+   "to": [
+    2772,
+    3234,
+    0
+   ],
+   "npcs": [
+    "Captain Barnaby"
+   ],
+   "options": [
+    "Brimhaven"
+   ],
+   "fare": 30,
+   "name": "Ardougne naar Brimhaven"
+  },
+  {
+   "from": [
+    2915,
+    3225,
+    0
+   ],
+   "to": [
+    2772,
+    3234,
+    0
+   ],
+   "npcs": [
+    "Captain Barnaby"
+   ],
+   "options": [
+    "Brimhaven"
+   ],
+   "fare": 30,
+   "name": "Rimmington naar Brimhaven"
+  },
+  {
+   "from": [
+    2772,
+    3234,
+    0
+   ],
+   "to": [
+    2683,
+    3271,
+    0
+   ],
+   "npcs": [
+    "Captain Barnaby"
+   ],
+   "options": [
+    "Ardougne"
+   ],
+   "fare": 30,
+   "name": "Brimhaven naar Ardougne"
+  },
+  {
+   "from": [
+    2772,
+    3234,
+    0
+   ],
+   "to": [
+    2915,
+    3225,
+    0
+   ],
+   "npcs": [
+    "Captain Barnaby"
+   ],
+   "options": [
+    "Rimmington"
+   ],
+   "fare": 30,
+   "name": "Brimhaven naar Rimmington"
   }
  ]
 }
