@@ -269,3 +269,19 @@ test("in a dialogue it answers on rather than asking a question that leads back 
   assert.equal(chooseOption(["Where can I find this cauldron?", "Ok, I'll go do that then."]), 1);
   assert.equal(chooseOption(["How do I shear sheep, again?", "Remind me how to spin wool.", "Yeah, I think so."]), 2);
 });
+
+test("a buy at the exchange that is not placed says why (no silent buy loop)", () => {
+  const Trade = require("../plugins/bots/adventurers/Trade.PlayerBots");
+  const core = { ItemDefinition: { forId: () => ({ getGrandExchangeValue: () => 1000 }) } };
+  const full = (name, request) => { request.why = "no-slot"; };
+  const outcome = {};
+  assert.equal(Trade.buyAtExchange({}, core, full, 1127, 1, outcome), false);
+  assert.equal(outcome.why, "no-slot");
+  const silent = {};
+  assert.equal(Trade.buyAtExchange({}, core, () => {}, 1127, 1, silent), false);
+  assert.equal(silent.why, "unknown", "an exchange that says nothing still leaves a reason");
+  const placed = {};
+  assert.equal(Trade.buyAtExchange({}, core, (name, request) => { request.placed = true; }, 1127, 1, placed), true);
+  assert.equal(placed.why, undefined);
+  assert.equal(Trade.buyAtExchange({}, core, (name, request) => { request.placed = true; }, 1127, 1), true, "outcome is optional");
+});

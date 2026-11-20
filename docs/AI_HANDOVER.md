@@ -5,6 +5,73 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 20-11-2026 (16:00): stille kooplus bij de GE
+
+Branch: `adventurers/ge-buy-loop` (vanaf `main` `84ecd13`).
+
+### Wat onderzocht is
+
+`bot-logs` push 14:51 UTC. Versies: `e210ce9` 14:18 tot 14:25 (7 min), `84ecd13` 14:26 tot
+14:51 (25 min, 60 avonturiers).
+
+### Wat gevonden is
+
+- **Fase 1 (banklus):** 2 bots 20 min of langer stil op dezelfde tegel (Jorgbot 17, Jorgbot 8),
+  was 15 bots 30 min of langer. 3 regels `bank_nothing`. Voorlopig goed, maar op 25 min data.
+- **De errand-metric overstroomde het log:** 5.148 errand-regels in 25 min (~12.000 per uur).
+  97% waren errands van 1 à 2 s die "aankwamen" waar de bot al stond. Het metrics-log
+  (20.000 regels) dekte daardoor nog maar ongeveer 1,5 uur.
+- Oorzaak: twee **stille lussen bij de GE**, beide onzichtbaar vóór deze metric:
+  - **Kooplus** (3 bots: Patrickbot 14, Jorgbot 16, Jorgbot 18; 1.379 errands): `upgrade()` in
+    de beslisstap stuurt de bot naar de GE (`buy_materials`), het bod wordt niet geplaatst,
+    er komt geen logregel, het verlanglijstje blijft gelijk, en `upgrade()` kiest meteen weer de
+    GE. Het geld van Patrickbot 14 zakte ~11.000 gp in 15 min. Vermoedelijk staan de 8 GE-slots
+    vol met biedingen die niet vollopen (dat verklaart ook het zakkende geld), maar
+    `ge:place-offer` gaf geen reden terug. Niet bewezen.
+  - **Pingpong** (4 bots: Patrickbot 17, Patrickbot 18, Jorgbot 10, Patrickbot 8): `exchange` en
+    `withdraw` om en om, honderden keren. **Niet aangepakt.** Begin in `trade()`
+    (`Adventurers.PlayerBots.js`, `toExchange`) en de `withdraw` die erop volgt.
+- 6 van deze 12 lusbots stonden in `7a8e40b` bevroren bij een bank. Fase 1 heeft ze losgemaakt,
+  waarna ze in een GE-lus vielen.
+
+### Wat aangepast is
+
+Eén probleem: de kooplus, plus het beperken van de log-overstroming die hij veroorzaakte.
+
+- `server/plugins/interface/GrandExchange.plugin.js`: `ge:place-offer` zet `why` als het bod niet
+  geplaatst wordt: `not-exchangeable`, `no-slot` of `refused`. Gedrag van de GE ongewijzigd.
+- `server/plugins/bots/adventurers/Trade.PlayerBots.js`: `buyAtExchange` geeft die reden door
+  via een optioneel `outcome`.
+- `server/plugins/bots/adventurers/Adventurers.PlayerBots.js`:
+  - `boughtNothing()`: een koopbezoek aan de GE dat niets kocht schrijft een activiteitenregel
+    met de reden, event `buyNothing`, metric `buy_nothing` (met stand GE-slots) en zet
+    `noExchangeBuyUntil` op 30 min (`BUY_RETRY_MS`). `buyOnExchange` en `buyManyOnExchange` gaan
+    in die tijd niet naar de GE; winkels mogen nog.
+  - Errands korter dan 3 s (`INSTANT_ERRAND_MS`) worden event `errandInstant` in plaats van een
+    eigen `errand`-regel.
+- `server/tests/bot-adventurers.test.cjs`: test dat `buyAtExchange` de reden doorgeeft.
+- `docs/OBSERVABILITY.md`, `docs/RUNTIME_POLICY.md`, `CHANGELOG.md`.
+
+Validatie: bot-tests 16 van 111 fout (zelfde 16). GE-tests en `Adventurers.PlayerBots.js` laden
+hier niet (ongebouwde core), voor en na gelijk; alleen `node --check`. **Niet in game getest.**
+
+### Openstaande risico's
+
+1. De echte oorzaak van de kooplus (waarom slots vol blijven of biedingen niet vollopen) is nog
+   niet opgelost, alleen begrensd. `buy_nothing.why` en `geWaitingBuys` moeten dat laten zien.
+2. Een bot die een quest-item of gereedschap alleen op de GE kan kopen, wacht nu 30 min na een
+   mislukt bezoek.
+3. De pingpong-lus loopt nog. Met `errandInstant` vult hij het log niet meer, maar hij kost
+   die 4 bots al hun tijd.
+
+### Aanbevolen volgende stap
+
+1. Mergen, `yarn update`, na een uur `bot-logs` ophalen.
+2. `buy_nothing` per `why`; `errandInstant` per bot (hoog = lus); aantal regels per uur.
+3. Dan de pingpong-lus (zie boven).
+
+---
+
 ## Sessie 20-11-2026 (middag): Phase 2, errands meetbaar maken
 
 Branch: `adventurers/errand-metric` (vanaf `main` `e210ce9`).

@@ -228,12 +228,14 @@ function sellAtExchange(player, core, emit, goods) {
 
 /**
  * A buy offer at the Grand Exchange, a little over the guide so it fills soon. Paid from the
- * coins it carries or its bank, as for a player. True when placed.
+ * coins it carries or its bank, as for a player. True when placed. When not, `outcome.why` says
+ * why (the exchange's reason, see "ge:place-offer").
  */
-function buyAtExchange(player, core, emit, itemId, quantity) {
+function buyAtExchange(player, core, emit, itemId, quantity, outcome = {}) {
   const guide = Number(core.ItemDefinition?.forId?.(itemId)?.getGrandExchangeValue?.() ?? 0) || 1;
   const request = { player, sell: false, itemId, quantity, price: Math.ceil(guide * 1.05) };
   emit("ge:place-offer", request);
+  if (request.placed !== true) outcome.why = request.why ?? "unknown";
   return request.placed === true;
 }
 

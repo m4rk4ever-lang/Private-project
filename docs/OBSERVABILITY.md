@@ -53,15 +53,19 @@ naar de eerste en laatste `at` voordat je conclusies trekt.
 | `skills` | Elke 5 min: welke skills getraind, door wie, `untouched` | |
 | `server` | Elke 5 min: aantallen, tick-duur, geheugen, `questsBlocked` | |
 | `bank_nothing` | **Nieuw (20-11-2026).** Bank bij een volle tas kon niets aannemen | `bank`, `where`, `freeSlots`, `bag` |
+| `buy_nothing` | **Nieuw (20-11-2026, na `84ecd13`).** Koopbezoek aan de GE dat niets kocht; 30 min geen nieuw GE-koopbezoek | `items`, `why` (`no-slot`, `not-exchangeable`, `refused`, `coins`, `unknown`), `geFreeSlots`, `geWaiting`, `geWaitingBuys`, `coins` |
 | `errand` | **Nieuw (20-11-2026, na `e210ce9`).** Einde van elke boodschap via `walkTo` | `reason`, `to`, `ended` (`arrived`, `near`, `toll_gate`, `blocked`), `why` (`stuck`, `no-closer`, `too-long`, of `null` bij aankomst), `seconds`, `tilesLeft`, `teleport`, `hop`, `where` |
 
 `errand.ended`: `arrived` = binnen 3 tegels (`ARRIVE_TILES`). `near` = de runner gaf op, maar de
 bot stond binnen 15 tegels (`NEAR_ENOUGH_TILES`) en dat telt als aangekomen; vaak een bank door de
 muur, na minstens 45 seconden stilstaan. Een errand die stopt omdat de bot stierf of uitlogde
 schrijft geen regel. Een trap of ladder onderweg geeft twee regels; de eerste heeft `hop: true`.
+Vanaf de versie na `84ecd13`: een errand korter dan 3 seconden (`INSTANT_ERRAND_MS`, de bot stond
+er al) krijgt geen eigen regel maar telt als event `errandInstant` in `bot.events`. Een hoog getal
+daar is een lus. In `84ecd13` zelf schreven zulke lussen 12.000 regels per uur.
 
 Events in `bot.events`: `stuck`, `walkBlocked`, `errandIdle`, `idle`, `questFailed`, `fledLowHp`,
-`died`, `teleportedOut`, `targetReached`, en nieuw `bankNothing`.
+`died`, `teleportedOut`, `targetReached`, en nieuw `bankNothing`, `buyNothing` en `errandInstant`.
 
 ## Kerncijfers
 
