@@ -949,15 +949,24 @@
    "mudskipper",
    "wizards_tower",
    388
+  ],
+  [
+   "fishing_guild_road",
+   "gnome_stronghold_gate",
+   251
+  ],
+  [
+   "gnome_stronghold_gate",
+   "gnome_agility",
+   81
+  ],
+  [
+   "paterdomus",
+   "canifis",
+   228
   ]
  ],
  "lockedAreas": [
-  {
-   "name": "Gnome Stronghold",
-   "area": [2370, 3375, 2500, 3520],
-   "onFoot": false,
-   "onFootWhy": "Te voet niet bewezen: 16 van 16 loopjes naar de Gnome Stronghold (agility) liepen vast, vooral rond 2693,3426 (logs 17:08-20:28 UTC, 20-11-2026). De hubs gnome_stronghold_gate en gnome_agility hebben geen links. Alleen per teleport (slayer ring: Stronghold Slayer Cave), tot de route ingame is gecheckt (plan_route)."
-  },
   {
    "name": "Morytania",
    "area": [
@@ -966,9 +975,7 @@
     3920,
     3610
    ],
-   "quest": "Priest in Peril",
-   "onFoot": false,
-   "onFootWhy": "Te voet niet bewezen: 117 loopjes naar Mazchna, Slayer Tower en Mort'ton, 1 aangekomen, 201 min verloren (17:08-20:27 UTC, 20-11-2026). Ze strandden bij de tolpoort van Al Kharid en ten oosten van Varrock. Alleen met een teleport, tot de route via de Paterdomus-tempel in het spel is gecheckt (plan_route); dan deze twee regels weg."
+   "quest": "Priest in Peril"
   },
   {
    "name": "Kharidian Desert (past the Shantay Pass)",

@@ -39,3 +39,12 @@ test("the real hubs lead from Lumbridge to the Gnome Stronghold course, Seers, Y
     assert.ok(Math.max(Math.abs(here.x - gx), Math.abs(here.y - gy)) <= Hubs.DIRECT_TILES, `${goal}: ends at ${seen.at(-1)}`);
   }
 });
+
+test("the Gnome Stronghold and Canifis are joined to Lumbridge's network (links counted on the collision map, 20-11-2026)", () => {
+  const Hubs = require("../plugins/bots/behaviours/navigation/TravelHubs.PlayerBots");
+  const joined = Hubs.connectedTo("lumbridge");
+  for (const key of ["gnome_stronghold_gate", "gnome_agility", "canifis"]) assert.ok(joined.has(key), key);
+  // Canifis on foot only after Priest in Peril.
+  assert.equal(Hubs.onFoot({ x: 3494, y: 3485 }, null, () => false), false);
+  assert.equal(Hubs.onFoot({ x: 3494, y: 3485 }, null, () => true), true);
+});

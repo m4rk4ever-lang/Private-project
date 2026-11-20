@@ -132,6 +132,8 @@ const TABLETS = ["VARROCK_TELEPORT", "LUMBRIDGE_TELEPORT", "FALADOR_TELEPORT", "
  */
 const JEWELLERY = ["GAMES_NECKLACE_8_", "RING_OF_DUELING_8_", "AMULET_OF_GLORY_4_"];
 /** Slayer rings, the one it buys first; any charge takes it to a master's teleport spot. */
+/** A walk to a Slayer master longer than this: with the Slayer ring's teleport, when it can get one. */
+const SLAYER_RING_TILES = 300;
 const SLAYER_RINGS = ["SLAYER_RING_8_", "SLAYER_RING_7_", "SLAYER_RING_6_", "SLAYER_RING_5_", "SLAYER_RING_4_", "SLAYER_RING_3_", "SLAYER_RING_2_", "SLAYER_RING_1_", "SLAYER_RING_ETERNAL_"];
 const TABLET_BUDGET = 5000;
 /** Arrows, or casts' worth of runes, it wants before it fights that way. */
@@ -4166,18 +4168,24 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const best = options.filter((option) => option.combat === options[0]?.combat);
       const master = Slayer.nearest(best.length > 0 ? best : Slayer.MASTERS, (place) => walkTiles(here, place, player));
       if (!master) return cannot(entry, "place_unreachable", { slayer: "master" });
-      // Not on foot (the Stronghold: 0 of 16 walks arrived): its Slayer ring in the bag first,
-      // from the bank or the exchange; the walk then teleports (Errands' bestTeleport).
-      if (!walkable(master)) {
-        const ring = slayerRingTo(player, master);
-        const ids = SLAYER_RINGS.map((name) => Shopping.idOf(core, name)).filter(Number.isInteger);
-        if (!ids.some((id) => player.getInventory().getAmount(id) > 0)) {
-          const inBank = ids.find((id) => banked(player, id) > 0);
-          if (inBank !== undefined) return fetchTools(entry, plan, [inBank]) || cannot(entry, "place_unreachable", { slayer: master.name, way: "slayer_ring_bank" });
-          const buy = Shopping.idOf(core, SLAYER_RINGS[0]);
+      // A long way (Nieve from the Grand Exchange: ~730 tiles) or not on foot: its Slayer ring in
+      // the bag first, from the bank or the exchange, and the walk teleports (Errands' bestTeleport
+      // takes it). A preference, not a must: without one it walks, when it can.
+      const ring = slayerRingTo(player, master);
+      const far = !walkable(master) || walkTiles(here, master, player) > SLAYER_RING_TILES;
+      const ids = SLAYER_RINGS.map((name) => Shopping.idOf(core, name)).filter(Number.isInteger);
+      if (ring && far && !ids.some((id) => player.getInventory().getAmount(id) > 0) && (entry.slayerRingTriedAt ?? 0) < now() - 30 * 60_000) {
+        entry.slayerRingTriedAt = now();
+        const inBank = ids.find((id) => banked(player, id) > 0);
+        if (inBank !== undefined && fetchTools(entry, plan, [inBank])) return true;
+        const buy = Shopping.idOf(core, SLAYER_RINGS[0]);
+        if (inBank === undefined && Number.isInteger(buy) && buyOnExchange(entry, buy, SLAYER_RINGS[0], 1)) {
           note(player, `Koopt een Slayer ring om naar ${master.name} te teleporteren (${ring.label}).`, "activity");
-          return buyOnExchange(entry, buy, SLAYER_RINGS[0], 1) || cannot(entry, "place_unreachable", { slayer: master.name, way: "slayer_ring_buy" });
+          return true;
         }
+      }
+      if (!walkable(master) && !ids.some((id) => player.getInventory().getAmount(id) > 0)) {
+        return cannot(entry, "place_unreachable", { slayer: master.name, way: "slayer_ring" });
       }
       return walkTo(entry, master, {
         reason: "slayer",
