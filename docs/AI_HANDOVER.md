@@ -5,6 +5,49 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 20-11-2026 (18:00): algemene lusbewaking (Fase 2b)
+
+Branch: `adventurers/loop-guard` (op `docs/controle-1730`, vanaf `main` `5c40d0c`).
+
+### Waarom
+
+Drie lussen na elkaar (bank, GE-koop, klus-uitrusting), elk pas zichtbaar na de vorige fix, elk
+lokaal opgelost. In `e59bc71` nog twee (Jorgbot 4, Patrickbot 1) zonder enige logregel. Afgesproken
+met de eigenaar: eerst een algemene bewaking, dan Fase 3.
+
+### Wat aangepast is
+
+- Nieuw: `server/plugins/bots/adventurers/Loops.PlayerBots.js`. Zuivere module zonder core:
+  `record()` per gestarte boodschap, `blocked()` ervoor. Lus = dezelfde reden en plek 8 keer
+  (`LOOP_REPEATS`) binnen 5 min (`LOOP_WINDOW_MS`) na de laatste XP. Dan 15 min
+  (`LOOP_BLOCK_MS`) geweigerd. `quest` en `grave` vallen erbuiten (eigen limieten).
+- `Adventurers.PlayerBots.js`:
+  - `walkTo` weigert een geblokkeerde boodschap (`false`, wat alle aanroepers al afhandelen) en
+    roept na de start `noteLoop` aan.
+  - `noteLoop`: activiteitenregel, event `loop`, metric `loop` met de laatste 10 boodschappen,
+    fase, plan, bewaarde klus, doel, GE-stand en `trade` (waarom `trade()` ging).
+  - `trade()` bewaart `entry.lastTrade` (`waiting`, `fund`, `worth`, `full`, `cluttered`, `goods`).
+- `server/tests/bot-loops.test.cjs`: 3 tests (lus gemeld en geblokkeerd, XP ertussen is geen lus,
+  verspreid of quest is geen lus).
+- `docs/OBSERVABILITY.md`, `docs/RUNTIME_POLICY.md`, `docs/ADVENTURER_ROADMAP.md`, `CHANGELOG.md`.
+
+Validatie: bot-tests 16 van 114 fout (zelfde 16), de 3 nieuwe slagen. `Adventurers.PlayerBots.js`
+alleen `node --check`. **Niet in game getest.**
+
+### Risico's
+
+1. Een echte klus zonder XP die 8 keer in 5 min dezelfde boodschap nodig heeft, wordt 15 min
+   tegengehouden. Geen voorbeeld bekend; zichtbaar als `loop`-metric.
+2. Een geblokkeerde volle-tas-banktrip valt terug op 60 s wachten (bestaand pad).
+3. Lussen zonder boodschap (een klus die direct opnieuw start) ziet deze bewaking niet.
+
+### Volgende stap
+
+Na deploy: `loop`-regels per bot en reden; `trade` in de regels van Jorgbot 4 en Patrickbot 1 moet
+de oorzaak van hun GE-lus tonen. Fix die als het één regel is, anders door naar Fase 3.
+
+---
+
 ## Controle 20-11-2026 17:30: eerste data van `e59bc71`
 
 Basis: `bot-logs` push 16:26 UTC. `e59bc71` 16:01 tot 16:26 (**24,5 min**, 60 avonturiers).

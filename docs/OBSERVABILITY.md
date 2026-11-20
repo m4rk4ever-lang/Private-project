@@ -53,6 +53,7 @@ naar de eerste en laatste `at` voordat je conclusies trekt.
 | `skills` | Elke 5 min: welke skills getraind, door wie, `untouched` | |
 | `server` | Elke 5 min: aantallen, tick-duur, geheugen, `questsBlocked` | |
 | `bank_nothing` | **Nieuw (20-11-2026).** Bank bij een volle tas kon niets aannemen | `bank`, `where`, `freeSlots`, `bag` |
+| `loop` | **Nieuw (20-11-2026, na `e59bc71`).** Dezelfde boodschap (reden en plek) 8 keer in 5 min zonder XP; die boodschap 15 min geweigerd | `reason`, `to`, `repeats`, `seconds`, `recent` (laatste 10 boodschappen), `phase`, `plan`, `savedTask`, `goal`, `trade` (waarom `trade()` ging: `waiting`, `fund`, `worth`, `full`, `cluttered`, `goods`), `ge` (`finished`, `waiting`, `freeSlots`), `coins`, `freeSlots` |
 | `buy_nothing` | **Nieuw (20-11-2026, na `84ecd13`).** Koopbezoek aan de GE dat niets kocht; 30 min geen nieuw GE-koopbezoek | `items`, `why` (`no-slot`, `not-exchangeable`, `refused`, `coins`, `unknown`), `geFreeSlots`, `geWaiting`, `geWaitingBuys`, `coins` |
 | `errand` | **Nieuw (20-11-2026, na `e210ce9`).** Einde van elke boodschap via `walkTo` | `reason`, `to`, `ended` (`arrived`, `near`, `toll_gate`, `blocked`), `why` (`stuck`, `no-closer`, `too-long`, of `null` bij aankomst), `seconds`, `tilesLeft`, `teleport`, `hop`, `where` |
 
@@ -65,7 +66,7 @@ er al) krijgt geen eigen regel maar telt als event `errandInstant` in `bot.event
 daar is een lus. In `84ecd13` zelf schreven zulke lussen 12.000 regels per uur.
 
 Events in `bot.events`: `stuck`, `walkBlocked`, `errandIdle`, `idle`, `questFailed`, `fledLowHp`,
-`died`, `teleportedOut`, `targetReached`, en nieuw `bankNothing`, `buyNothing` en `errandInstant`.
+`died`, `teleportedOut`, `targetReached`, en nieuw `bankNothing`, `buyNothing`, `errandInstant` en `loop`.
 
 ## Kerncijfers
 
