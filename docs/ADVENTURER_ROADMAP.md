@@ -160,7 +160,23 @@ candle), Fase 5 (unlock-waarde).
 - Quest-failures uit `adventurer-quest-feedback.jsonl` per reden.
 - Memory & Clan Intelligence: gemeten XP/uur, deaths en reistijden gebruiken in keuzes.
 - Human Override: ban/prefer-lijsten in JSON.
-- Transport: fairy rings, spirit trees, gliders als routeopties.
+- **Transport als routeopties (§15, §16), plan 20-11-2026 op verzoek van de eigenaar.** Eén logica
+  voor alle plekken, niet per bestemming: een transport is een verbinding in de routeplanner
+  (`TravelHubs`) met zijn eisen (quest, item, level, coins, "eerder bezocht"), en dezelfde graaf
+  beslist over `onFoot`, de errands en `canExecute`. Volgorde:
+  1. Boten die de game al heeft (`plugins/agent/data/transports.json`: Veos naar Kourend, Musa
+     Point, Port Sarim, ...) als verbindingen in `TravelHubs`, met de eisen uit hun data. De eerste
+     Veos-reis zet de game's eigen "Zeah bezocht"-varbit (`visitedKourend`).
+  2. Sieraden-bestemmingen achter "eerder bezocht" (`kourend: true` in `Teleports.Jewellery.js`:
+     games necklace naar Wintertodt Camp, skills necklace naar de Kourend-guilds) toestaan in de
+     errands en `canExecute` zodra die varbit staat, in plaats van ze altijd over te slaan.
+  3. Teleports die een quest of item ontgrendelt: Kharedst's memoirs (Client of Kourend, pagina's
+     per stad, charges), Xeric's talisman (lizardman-drop, geladen met fangs), Kourend-spreuken.
+  4. Fairy rings (Fairy Tale II gestart), spirit trees, gnome gliders, charter ships.
+  5. Dungeons en tunnels: een trap of ladder alleen als hij vanuit de huidige tunnel bereikbaar
+     is (Markbot 18 liep twee uur naar de Edgeville-ladder vanuit een andere tunnel).
+  Klaar als: Wintertodt niet meer `place_unreachable` voor bots die er kunnen komen, en geen
+  `walk_blocked` naar een trap in een andere tunnel.
 - Minigames (op verzoek van de eigenaar, geen prioriteit nu): Wintertodt (nu altijd
   `place_unreachable`: Kourend per boot), Pest Control, Barbarian Assault, Guardians of the Rift
   en andere die als plugin bestaan. Eerst zichtbaar in de logging (welke minigames de planner zou

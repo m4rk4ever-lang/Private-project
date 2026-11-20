@@ -1014,6 +1014,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   }
 
   const BLOCKED_MS = 15 * 60_000;
+  /** Blocked three times from the same spot without XP within this: it is stranded, home it goes. */
+  const STRANDED_WINDOW_MS = 60 * 60_000;
   const placeKey = (to) => `${to.x},${to.y},${to.z ?? 0}`;
   function blockedPlace(entry, to) {
     return (entry?.blockedPlaces?.get(placeKey(to)) ?? 0) > now();
@@ -1295,7 +1297,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
 
   function unstrand(entry, player) {
     const at = player.getLocation();
-    const recent = (entry.blockedFrom ?? []).filter((spot) => now() - spot.at < 15 * 60_000
+    // Blocked walks from about here since its last XP, within STRANDED_WINDOW_MS. It was 15
+    // minutes, shorter than the 15-minute block on the place plus the wait: Markbot 18 tried the
+    // bank every 16 minutes from a tunnel for two hours and never counted to three (20-11-2026).
+    const recent = (entry.blockedFrom ?? []).filter((spot) => now() - spot.at < STRANDED_WINDOW_MS && spot.at >= (entry.xpAt ?? 0)
       && spot.z === at.getZ() && Math.max(Math.abs(spot.x - at.getX()), Math.abs(spot.y - at.getY())) <= 10);
     recent.push({ x: at.getX(), y: at.getY(), z: at.getZ(), at: now() });
     entry.blockedFrom = recent;

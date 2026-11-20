@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Een avonturier die in een tunnel vastzat en elke kwartier opnieuw tevergeefs naar de bank probeerde te lopen, bleef daar uren staan. Na drie mislukte pogingen binnen een uur zonder XP teleporteert hij nu naar huis.
 - Avonturiers konden niet naar de Giant Mole, omdat ze geen brandende kaars konden kopen. Nu kopen ze een gewone candle en steken die aan met hun tinderbox, zoals een speler doet.
 - Een avonturier die voor een quest combat wilde trainen maar dat niet kon starten, koos binnen dezelfde beslissing toch weer combat. Nu kiest hij meteen iets anders.
 - Avonturiers met een tas vol spullen die niets opbrengen liepen steeds opnieuw naar de Grand Exchange, omdat ze die spullen daar niet op de bank zetten. Dat doen ze nu wel, zoals bij elke andere bank.

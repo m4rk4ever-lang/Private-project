@@ -78,7 +78,7 @@ te leiden zonder nieuwe instrumentatie.
 | --- | --- | --- |
 | Werkaandeel | `time.working` / som van `time` | 15,1% |
 | Errand-aandeel | `time.errand` / som van `time` | 57,6% (44,3% zonder de bevroren bots) |
-| Bevroren bots | Bot met 0 XP en dezelfde `where` in 6 of meer opeenvolgende `bot`-regels (30 min) | 15 van 60 |
+| Bevroren bots | Bot met 0 XP en binnen 15 tegels in 6 of meer opeenvolgende `bot`-regels (30 min) | 15 van 60 |
 | Stuck per uur | `events.stuck` per bot per uur | zie analyse |
 | Doden zonder eten | `death.reason` | 24 van 24 |
 
@@ -98,12 +98,13 @@ for r in bots:
     for k, m in (r.get("time") or {}).items(): time[k] += m
 total = sum(time.values())
 print({k: round(m / total * 100, 1) for k, m in time.most_common()})
-# Bevroren: zelfde tegel, geen XP, 30 minuten of langer
+# Bevroren: geen XP en binnen 15 tegels van waar de reeks begon, 30 minuten of langer (een bot
+# die in een tunnel heen en weer schuift telt ook: Markbot 18, 20-11-2026)
 streak, frozen = {}, set()
 for r in bots:
-    key = (tuple(r["where"]), bool(r.get("xpGained")))
     s = streak.get(r["bot"])
-    streak[r["bot"]] = (key, s[1] + 1) if s and s[0] == key and not key[1] else (key, 1)
+    near = s and max(abs(r["where"][0] - s[0][0]), abs(r["where"][1] - s[0][1])) <= 15 and r["where"][2] == s[0][2]
+    streak[r["bot"]] = (s[0], s[1] + 1) if s and near and not r.get("xpGained") else (r["where"], 1)
     if streak[r["bot"]][1] >= 6: frozen.add(r["bot"])
 print("bevroren", sorted(frozen))
 print("stuck", C.Counter((r.get("activity"), r.get("reason")) for r in rows if r["kind"] == "stuck").most_common(10))
