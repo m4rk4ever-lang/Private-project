@@ -14,6 +14,11 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Avonturiers vonden bij Cook's Assistant de meelbak in de molen van Lumbridge niet en gaven de quest op. Ze herkennen nu ook objecten die van uiterlijk wisselen (vol of leeg, open of dicht).
+- Avonturiers liepen steeds te voet naar Morytania (Mazchna, Slayer Tower, Mort'ton) en kwamen bijna nooit aan: 1 van de 117 keer. Ze verloren daar ruim 3 uur aan. Morytania geldt nu als alleen bereikbaar met een teleport, tot de route via de tempel van Paterdomus in het spel is gecontroleerd.
+- Avonturiers vochten met een slechter wapen terwijl er een beter in de bank lag. Bij de bank en de GE halen ze nu betere uitrusting voor hun vechtstijl uit de bank en trekken die aan, als hun levels en quests dat toelaten.
+- Een avonturier die met een boog trainde en een scimitar in de tas had, wisselde steeds tussen die twee. Hij draagt nu de uitrusting van de stijl waarmee hij traint.
+- `::volg` en de logs noemden een bot op de Falador-daken "bij giant mole hole". Agility-banen tellen nu mee als plek, dus er staat "Falador Rooftop".
 - Een avonturier op het Falador-dak kon tijdens het trainen een loopje starten (eten halen, bank) en liep dan op dakhoogte door de lucht boven de stad. Daar bleef hij tot een uur hangen. Vanaf een dakbaan starten ze nu geen loopje meer, en wie langer dan vijf minuten op een verdieping staat zonder naar beneden te komen, teleporteert naar huis.
 - Avonturiers liepen steeds naar Morytania (Mazchna, Slayer Tower, Mort'ton, Canifis Rooftop) en kwamen er nooit, omdat geen route daar naartoe leidt. Een boodschap naar een afgesloten gebied wordt nu meteen geweigerd, tenzij ze een teleport hebben die daar landt (zoals een Barrows-tablet), en ze kiezen die klus een half uur niet opnieuw.
 - Een avonturier die clay of iets anders verzamelde voor een quest, verkocht het bij de GE en ging opnieuw verzamelen. Nu houdt hij het, ziet hij ook onderweg dat hij genoeg heeft, en weet hij na een herstart nog voor welke quest het was.

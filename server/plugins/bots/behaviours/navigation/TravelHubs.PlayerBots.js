@@ -120,6 +120,9 @@ function onFoot(place, source = null, questDone = null, hasItem = null) {
   for (const locked of (source ?? data).lockedAreas ?? []) {
     const [minX, minY, maxX, maxY] = locked.area;
     if (place.x < minX || place.x > maxX || place.y < minY || place.y > maxY) continue;
+    // Not on foot at all (yet): a walk in that never arrived (Morytania, 20-11-2026: 1 of 117).
+    // Teleports still go (Adventurers' lockedAway).
+    if (locked.onFoot === false) return false;
     if (locked.quest && !questDone?.(locked.quest)) return false;
     if (locked.item && !hasItem?.(locked.item)) return false;
   }

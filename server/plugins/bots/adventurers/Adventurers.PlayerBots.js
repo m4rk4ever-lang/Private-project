@@ -4458,6 +4458,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function atExchange(player) {
     const entry = adventurers.get(player.getUsername?.());
     fillEmptySlots(player, { fromBank: true });
+    wearUpgradesFromBank(entry, player);
     const bag = sortBag(player);
     dropJunk(player, bag.junk);
     // The exchange has its bank: what it keeps for later goes in there, not up for sale.
@@ -4516,6 +4517,35 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     });
   }
 
+  /**
+   * At a bank: better gear of its style from the bank (Trade.bankUpgrades) taken out and put on.
+   * High-level bots fought with a dragon scimitar and a rune square shield while a better weapon
+   * lay in the bank (20-11-2026): wearBest looked in the bag only. The piece it took off goes the
+   * way of other goods (banked, or sold at the exchange).
+   */
+  function wearUpgradesFromBank(entry, player) {
+    if (!entry) return [];
+    const rules = { levelOf: (skill) => levelOf(player, skill), questDone: questDone(player) };
+    const style = planStyle(entry) ?? planStyle(entry, entry.savedTask) ?? "melee";
+    const bankIds = new Set();
+    for (const bank of player.getBanks?.() ?? []) for (const item of bank?.getItems?.() ?? []) if (item?.getId?.() > 0) bankIds.add(item.getId());
+    const upgrades = Trade.bankUpgrades(player, core, rules, style, bankIds, { skipWeapon: toolInHand(entry) });
+    if (upgrades.length === 0) return [];
+    for (const id of upgrades) withdraw(player, id, 1);
+    const worn = Trade.wearBest(player, core, rules, style, { skipWeapon: toolInHand(entry) });
+    if (worn.length > 0) {
+      countEvent(entry, "gearFromBank");
+      note(player, `Haalt betere uitrusting uit de bank en trekt die aan: ${worn.map((name) => name.toLowerCase().replace(/_/g, " ")).join(", ")}.`, "activity");
+    }
+    return worn;
+  }
+
+  /** Woodcutting or mining with its axe or pickaxe in hand (also on a bank trip mid-job): the weapon stays off. */
+  function toolInHand(entry) {
+    const gathering = (plan) => ["woodcutting", "mining"].includes(plan?.mode);
+    return (entry.phase === "training" || entry.phase === "errand") && (gathering(entry.plan) || gathering(entry.savedTask));
+  }
+
   function fillEmptySlots(player, { fromBank = false } = {}) {
     const equipment = player.getEquipment().getItems() ?? [];
     const skip = new Set([...Object.values(Shopping.gear.tools ?? {}).flat(), ...(Shopping.gear.styles?.ranged?.weapon ?? []),
@@ -4555,9 +4585,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // (that swapped battleaxe and rune axe back and forth all stretch).
     // Also on the way to the bank and back in the middle of that job (phase "errand"): the
     // battleaxe went on at every bank trip and the axe back on at the trees.
-    const gathering = (plan) => ["woodcutting", "mining"].includes(plan?.mode);
-    const toolInHand = (entry.phase === "training" || entry.phase === "errand") && (gathering(entry.plan) || gathering(entry.savedTask));
-    for (const name of Trade.wearBest(player, core, rules, "melee", { skipWeapon: toolInHand })) {
+    // The gear of its job's style (a bow for ranged training): with melee here the scimitar in its
+    // bag went on at every look and the training's bow back on after (planStyle, 20-11-2026).
+    const style = planStyle(entry) ?? "melee";
+    for (const name of Trade.wearBest(player, core, rules, style, { skipWeapon: toolInHand(entry) })) {
       note(player, `Draagt nu ${name.toLowerCase().replace(/_/g, " ")}.`, "activity");
     }
     fillEmptySlots(player);
@@ -4606,6 +4637,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       arrive: (banker) => {
         // What it may wear from its bank goes on first, so it is not banked with the rest.
         fillEmptySlots(banker, { fromBank: true });
+        wearUpgradesFromBank(entry, banker);
         // The materials of its job (oak logs to fletch) stay in the bag here too.
         const keepHere = Trade.keepIds(banker, core, { isFood });
         for (const id of workingMaterials(entry)) keepHere.add(id);
@@ -4886,7 +4918,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const at = player.getLocation();
     const here = point ? { x: point.x, y: point.y } : { x: at.getX(), y: at.getY() };
     let best = null;
-    for (const place of [...LANDMARKS, ...travelData.destinations, ...travelData.hangouts, ...travelData.minigames]) {
+    // The agility courses too: a bot on the Falador roof's south-west ledges (3013,3335) was "bij
+    // giant mole hole" in ::volg, the nearest place known, though it ran the course (20-11-2026).
+    const courses = (data.agilityCourses ?? []).map((course) => ({ id: course.name ?? course.course, x: course.x, y: course.y }));
+    for (const place of [...LANDMARKS, ...travelData.destinations, ...travelData.hangouts, ...travelData.minigames, ...courses]) {
       const distance = Math.max(Math.abs(place.x - here.x), Math.abs(place.y - here.y));
       if (!best || distance < best.distance) best = { id: place.id, distance };
     }

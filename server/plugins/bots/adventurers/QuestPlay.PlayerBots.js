@@ -202,7 +202,7 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     for (let dx = -3; dx <= 3; dx += 1) {
       for (let dy = -3; dy <= 3; dy += 1) {
         for (const candidate of core.MapObjects?.mapObjects?.get?.(core.MapObjects.getHash(x + dx, y + dy, z)) ?? []) {
-          if (!step.ids.includes(candidate.getId())) continue;
+          if (!matchesIds(core, candidate.getId(), step.ids)) continue;
           const away = Math.max(Math.abs(dx), Math.abs(dy));
           if (away < best) { best = away; object = candidate; }
         }
@@ -842,4 +842,19 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
   return { start, tick, talkTick, has, ready, questOf, describeFailure };
 }
 
-module.exports = { createQuestPlay, chooseOption, nextHop, placeOf, stepDone, data };
+/**
+ * Whether a map object is one of the step's ids: itself, or a multi-loc whose forms include one.
+ * The Quest Helper names the form the player sees (the Lumbridge mill's full flour bin, 1782);
+ * the map holds the base object, so "object not found at 3166,3306" ended Cook's Assistant 12
+ * times (20-11-2026). The server's own click matching does the same (ObjectActionPacketListener).
+ */
+function matchesIds(core, id, ids) {
+  if (ids.includes(id)) return true;
+  try {
+    return (core.CacheDefinitions?.getObject?.(id)?.transforms ?? []).some((form) => ids.includes(form));
+  } catch {
+    return false;
+  }
+}
+
+module.exports = { matchesIds, createQuestPlay, chooseOption, nextHop, placeOf, stepDone, data };

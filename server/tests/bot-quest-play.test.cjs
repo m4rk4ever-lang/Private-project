@@ -31,3 +31,12 @@ test("every playthrough names its NPCs, spots and stages in order", () => {
     assert.equal(quest.steps.at(-1).until, "complete", `${name} ends complete`);
   }
 });
+
+test("a quest object is found by the form the helper names, also on a multi-loc's base (the mill's flour bin)", () => {
+  const { matchesIds } = require("../plugins/bots/adventurers/QuestPlay.PlayerBots");
+  const core = { CacheDefinitions: { getObject: (id) => (id === 1781 ? { transforms: [1781, 1782] } : { transforms: null }) } };
+  assert.equal(matchesIds(core, 1782, [1782]), true);
+  assert.equal(matchesIds(core, 1781, [1782]), true);
+  assert.equal(matchesIds(core, 999, [1782]), false);
+  assert.equal(matchesIds({}, 1781, [1782]), false);
+});
