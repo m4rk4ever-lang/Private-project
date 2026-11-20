@@ -5,6 +5,45 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 20-11-2026 (20:15): Markbot 18 vast in een tunnel; transportplan
+
+Branch: `adventurers/unstrand-window` (vanaf `main` `f4c67e7`).
+
+### Gevonden (melding eigenaar, bevestigd in `bot-logs` 19:08 UTC)
+
+Markbot 18 stond sinds minstens 17:08 UTC (twee uur) onder de grond rond (3156, 9715, 0), 0 XP,
+fase `waiting`, 4 vrije vakjes. Elke ~16 min een `walk_blocked` met `reason: bank` naar
+"Edgeville" (3096, 9867, 0): de ladder van de Edgeville dungeon (`levelHop` kiest de trap die in
+een rechte lijn het dichtst bij ligt, ook in een andere tunnel). Daarna 15 min `blockedPlaces`, 60 s
+wachten per keer, opnieuw.
+
+Waarom niets ingreep:
+- `unstrand` telde alleen blokkades binnen 15 min; ze kwamen om de 16 min.
+- De lusbewaking telt gestarte boodschappen; deze werd steeds geweigerd (`place_blocked`).
+- Het recept "bevroren" eiste dezelfde tegel; hij schoof een paar tegels.
+
+### Aangepast
+
+- `Adventurers.PlayerBots.js`: `unstrand` telt blokkades van ongeveer dezelfde plek binnen
+  `STRANDED_WINDOW_MS` (60 min) en alleen sinds de laatste XP. Dan home teleport, zoals voorheen.
+- `docs/OBSERVABILITY.md`: recept "bevroren" telt 0 XP binnen 15 tegels.
+- `docs/ADVENTURER_ROADMAP.md`: transportplan (één logica voor alle plekken via `TravelHubs`;
+  Veos, sieraden na "Zeah bezocht", memoirs, talisman, fairy rings, en trappen per tunnel).
+- `CHANGELOG.md`.
+
+Validatie: alleen `node --check` (Adventurers laadt hier niet). **Niet in game getest.**
+
+### Risico's en open
+
+1. De echte oorzaak (een trap in een andere tunnel) is niet opgelost; alleen het vastzitten.
+   Staat als stap 5 in het transportplan.
+2. Een bot die echt verder komt zonder XP (lang lopen) kan na drie blokkades in een uur naar huis.
+3. Het nieuwe recept "bevroren" vond ook Jorgbot 5: tot ~18:40 UTC 30+ min `walking` naar
+   clay_rocks rond (3391-3414, 3155-3175) bij Al Kharid, 10× `toll_gate`. Daarna weer actief
+   (quests). Navigatie, niet urgent; mee in Fase 2.
+
+---
+
 ## Controle 20-11-2026 20:01: `canExecute` v1 (`2ba23ea`)
 
 Basis: `bot-logs` push 19:01 UTC. `2ba23ea` 18:46 tot 19:01 (**14,5 min**, 60 avonturiers).
