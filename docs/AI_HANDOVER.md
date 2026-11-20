@@ -5,6 +5,14 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 20-11-2026 (21:45): quest-hold-lijst; correctie Eeshwar (branch `adventurers/quest-hold`)
+
+- **Correctie op de sessie van 21:25:** Eeshwar zat **niet** vast. De push van 20:28 UTC toont hem om 20:14, 20:19 en 20:24 op de baan (3042,3363,3 / 3046,3360,3 / 3028,3354,3) met 21-28k agility-XP per 5 min, en level 58-60. Het screenshot was midden in een ronde. "Bij: giant mole hole" in `::volg` was misleidend (vanaf de baan hoort "falador park"); oorzaak niet gevonden, open punt. PR #22 blijft als preventieve fix: bij de controle letten op `on_roof`-weigeringen midden in agility.
+- **Les:** eerst de volgende log-push afwachten, dan pas een oorzaak benoemen (workflow: Observe → Analyse).
+- **Quest-hold (§28):** `adventurers.json` → `questHold.quests[]` met `name`, `since`, `reason`. `questAside` geeft `true` voor een gehouden quest (planner `available`), en `startQuest` weigert hem met `quest_on_hold` (opgeslagen taak na herstart, `afterRoof`) behalve bij `forced` (`::advquest`, sweep). Serverregel krijgt `questsHeld`.
+- **Eerste: A Porcine of Interest.** 36 mislukte pogingen in de feedback-log; de automatische 3-uursblokkade ging steeds opnieuw in (laatste 20:21 UTC). Vrijgeven: Sourhog-grot (blokkades en touw) in transports.json, dan uit de lijst.
+- **Validatie:** `tests/bot-quest-hold.test.cjs` (3 tests: vorm, Porcine erin, niet tegelijk granted). Suite 134 tests, 16 vaste fails.
+
 ## Sessie 20-11-2026 (21:35): `quest_end`-metric (branch `adventurers/quest-end`)
 
 - **Waarom:** 152 quest-starts, 0 `quest_done` in 3 uur, en geen regel zei hoe ver elke poging kwam of hoe hij eindigde.

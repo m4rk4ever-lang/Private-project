@@ -50,6 +50,7 @@ naar de eerste en laatste `at` voordat je conclusies trekt.
 | `toll_gate`, `level_hop` | Tolpoort Al Kharid, trap of ladder op een route | |
 | `quest_done`, `quest_fetch` | Quest voltooid, quest-item gehaald | `dialogue`, `got`, `have` |
 | `quest_end` | Einde van elke quest-poging, hoe ook | `quest`, `outcome` (done, failed, gather, roof, died, override), `step`, `helperStep`, `stage`, `tries`, `reason`, `minutes`, `attempt` |
+| `server` (aanvulling) | Serverregel elke 5 min | `questsBlocked` (automatisch, 3 uur), `questsHeld` (met de hand, `questHold` in adventurers.json) |
 | `barrows_run` | Eén Barrows-run | kosten en lootwaarde |
 | `skills` | Elke 5 min: welke skills getraind, door wie, `untouched` | |
 | `server` | Elke 5 min: aantallen, tick-duur, geheugen, `questsBlocked` | |
