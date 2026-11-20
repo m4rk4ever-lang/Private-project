@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Avonturiers liepen steeds naar Morytania (Mazchna, Slayer Tower, Mort'ton, Canifis Rooftop) en kwamen er nooit, omdat geen route daar naartoe leidt. Een boodschap naar een afgesloten gebied wordt nu meteen geweigerd, tenzij ze een teleport hebben die daar landt (zoals een Barrows-tablet), en ze kiezen die klus een half uur niet opnieuw.
 - Een avonturier die clay of iets anders verzamelde voor een quest, verkocht het bij de GE en ging opnieuw verzamelen. Nu houdt hij het, ziet hij ook onderweg dat hij genoeg heeft, en weet hij na een herstart nog voor welke quest het was.
 - Avonturiers met runes voor een teleport liepen toch via een shortcut (zoals de underwall tunnel bij de GE) naar hun doel. Nu teleporteren ze eerst als dat een flink stuk lopen scheelt.
 - Avonturiers op de daken van Seers' Village en Falador bleven staan na een sprong, net te ver van het volgende obstakel. Op een dak klikken ze het volgende obstakel nu aan zoals een speler, ook van een paar tegels verder, en de baan loopt ze erheen.

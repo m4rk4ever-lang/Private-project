@@ -81,6 +81,8 @@ const { errandsFor, inWilderness, bestTeleport } = require("../brain/Errands.Pla
 const { createLoopGuard } = require("./Loops.PlayerBots");
 const Requirements = require("./Requirements.PlayerBots");
 const Loadout = require("./Loadout.PlayerBots");
+/** Locked areas (Morytania, the desert): the walk guard reads them (lockedAway). */
+const travelHubsData = require("../data/travel-hubs.json");
 /** Within this many tiles of its job's place it is there, and its stretch runs. */
 const ARRIVED_TILES = 25;
 /** A walk that never gets there (a blocked way) stops pausing the stretch after this. */
@@ -1374,6 +1376,24 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       trade: fresh ? entry.lastTrade : null, ge, coins: Shopping.coinsOf(player), freeSlots: player.getInventory().getFreeSlots() });
   }
 
+  /**
+   * Whether `to` lies in a locked area (travel-hubs.json lockedAreas) it cannot walk to now
+   * (TravelHubs.onFoot: the quest or item, and a hub there joined to Lumbridge), and no teleport
+   * it carries lands within 30 tiles of it.
+   */
+  function lockedAway(player, to) {
+    if ((to.z ?? 0) !== 0 || to.y >= UNDERGROUND_Y) return false;
+    const locked = (travelHubsData.lockedAreas ?? []).some(({ area: [minX, minY, maxX, maxY] }) => to.x >= minX && to.x <= maxX && to.y >= minY && to.y <= maxY);
+    if (!locked) return false;
+    if (TravelHubs.onFoot(to, null, questDone(player), (item) => Shopping.owns(player, Shopping.idOf(core, item)))) return false;
+    try {
+      const teleport = bestTeleport(core, player, to, { questDone: questDone(player) });
+      return !(teleport && teleport.after <= 30);
+    } catch {
+      return true;
+    }
+  }
+
   /** Whether one of its teleports (spell, tablet, jewellery) saves a long walk to `to` now. */
   function teleportsNear(player, to) {
     try {
@@ -1423,6 +1443,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (errands.busy(entry.player)) return refuse("busy");
     if (replan && !urgent && (entry.noErrandUntil ?? 0) > now()) return refuse("errands_resting");
     if (blockedPlace(entry, to)) return refuse("place_blocked");
+    // A place behind a lock (Morytania past the Salve, the desert past the Shantay Pass) that it
+    // cannot walk to: refused here, whoever asked, unless a teleport it carries lands there (the
+    // Barrows tablet). 98 walks into Morytania were blocked in 3 hours (Mazchna, Slayer Tower,
+    // Mort'ton, Canifis Rooftop): Priest in Peril is granted, but no walk leads in (20-11-2026).
+    if (lockedAway(entry.player, to)) return refuse("locked_area");
     // The same errand over and over without XP was a loop (Loops.PlayerBots.js): not now.
     if (loopGuard.blocked(entry, reason, placeKey(to))) return refuse("loop_blocked");
     // The errand walks it through its brain's navigation (doors, stairs, long routes). A new
@@ -2680,7 +2705,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const started = plan.kind === "quest" ? startQuest(entry, plan)
         : plan.kind === "boss" ? startBoss(entry, plan, nowMs)
         : startTraining(entry, plan, nowMs);
-      const failure = started ? null : entry.startFailure ?? (entry.refusal ? { why: entry.refusal.why === "not_buyable" ? "not_buyable" : "errand_refused", detail: entry.refusal } : null);
+      // A refused walk into a locked area is a missing requirement (remembered), not a hitch.
+      const refusedWhy = entry.refusal?.why === "not_buyable" ? "not_buyable" : entry.refusal?.why === "locked_area" ? "place_unreachable" : "errand_refused";
+      const failure = started ? null : entry.startFailure ?? (entry.refusal ? { why: refusedWhy, detail: entry.refusal } : null);
       // A missing requirement keeps this option out for a while (no pick, fail, same pick again).
       if (failure) Requirements.remember(entry.cannot, plan, failure, now(), { restingUntil: entry.noErrandUntil ?? 0 });
       decisionMetric(entry, plan, why, { attempt, started, exclude, failure, blocked: attempt === 0 ? checked.blocked : undefined });

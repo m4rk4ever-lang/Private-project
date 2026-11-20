@@ -25,6 +25,45 @@ Zie ook de sessie van 21:15 (afgesloten gebieden, quests 0 van 152 voltooid).
 
 ---
 
+## Sessie 20-11-2026 (21:15): afgesloten gebieden centraal in `walkTo`; quests voltooien niet
+
+Branch: `adventurers/locked-areas` (vanaf `main` `450f871`).
+
+### Gevonden
+
+- 98 `walk_blocked` naar Morytania in 3 uur (Mazchna 38, Slayer Tower 29, Mort'ton 13, Canifis
+  Rooftop 12, Canifis 6), 34 bots. Priest in Peril staat in `grantedQuests` (alle bots "voltooid",
+  zonder spelen), maar `travel-hubs.json` heeft in Morytania alleen de hub `canifis` zonder één link:
+  te voet onbereikbaar. Paden die dat niet checkten: de Slayer-meesterkeuze valt terug op álle
+  meesters als geen bereikbaar is; de agility-baankeuze checkt quests, geen bereikbaarheid;
+  combat-plekken.
+- **Quests: 152 gestart, 0 `quest_done` in 3 uur** (17:05 tot 20:08 UTC). Feedback vandaag 267:
+  "blocked for every adventurer for 3 h" 66, "too many tries" 50, "talked, but the step did not
+  advance" 42, "object used, but the step did not advance" 25, "step without a place" 25, "object
+  not found at 3166,3306,0 (ids 1782)" 20, "quest helper gave no step for a minute" 15, "npc not
+  found: Veos" 7. Meest: Cook's Assistant 33, The Restless Ghost 24, The Knight's Sword 22, A Porcine
+  of Interest 21, Imp Catcher 20.
+
+### Aangepast
+
+- `walkTo`: `lockedAway` weigert een plek in een `lockedArea` die niet `onFoot` is (quest/item en
+  een hub die aan Lumbridge vastzit), tenzij een teleport die de bot draagt binnen 30 tegels landt
+  (Barrows-tablet). Weigering `locked_area` → `decision.failure` `place_unreachable` (onthouden
+  30 min). Eén check voor alle aanroepers.
+- `CHANGELOG.md`.
+
+Validatie: bot-tests 16 van 127 fout (zelfde 16). Alleen `node --check`. Niet in game getest.
+
+### Open
+
+- Morytania echt bereikbaar maken: hubs en links door Paterdomus (transportplan).
+- `grantedQuests` verbergt echte eisen: een bot "heeft" Priest in Peril maar niet de toegang.
+- **Quest-pijplijn**: geen enkele voltooiing. Voorstel aan de eigenaar: eerst een `quest_end`-metric
+  (uitkomst per run: voltooid, opgegeven, reden, stap) en dan de top-redenen; Fase 5 (meer
+  quest-keuzes) pas mergen als quests weer voltooien.
+
+---
+
 ## Sessie 20-11-2026 (21:00): grote update (Fase 4b stap 2, `canExecute` v2, transport stap 1) en twee lussen
 
 Branch: `adventurers/big-update` (vanaf `main` `5392a52`). Op verzoek van de eigenaar drie
