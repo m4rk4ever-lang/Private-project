@@ -879,10 +879,12 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // Law runes and the elements of the teleport spells stay with it (it teleports from its bag).
     const travel = new Set(["LAW_RUNE", "AIR_RUNE", "EARTH_RUNE", "WATER_RUNE", "FIRE_RUNE"].map((name) => Shopping.idOf(core, name)).filter(Number.isInteger));
     const teleports = banker.getInventory().getAmount(Shopping.idOf(core, "LAW_RUNE")) > 0;
+    // The supplies of a job it is about to resume (its saved task) or a boss stay too.
+    const kit = new Set([...workingMaterials(entry), ...bossKit(entry)]);
     for (const style of ["ranged", "magic"]) {
       if (style === using) continue;
       for (const id of styleSupplyIds(style)) {
-        if (teleports && travel.has(id)) continue;
+        if ((teleports && travel.has(id)) || kit.has(id)) continue;
         const amount = banker.getInventory().getAmount(id);
         if (amount > 0) goods.push({ itemId: id, amount });
       }
@@ -3908,7 +3910,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const bag = sortBag(player);
     dropJunk(player, bag.junk);
     // The exchange has its bank: what it keeps for later goes in there, not up for sale.
-    const kit = entry ? bossKit(entry) : new Set();
+    const kit = entry ? new Set([...bossKit(entry), ...workingMaterials(entry)]) : new Set();
     const stored = [...deposit(player, bag.keep.filter((good) => !kit.has(good.itemId))), ...(entry ? [...bankUnusedSupplies(entry, player), ...bankUnusedTools(entry, player)] : [])];
     if (stored.length > 0) note(player, `Bewaart op de bank: ${stored.map((good) => itemName(good.itemId)).join(", ")}.`, "activity");
     const pulled = withdrawToSell(player);
@@ -4084,6 +4086,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const id = Shopping.idOf(core, name);
       if (Number.isInteger(id)) ids.add(id);
     }
+    // The Barrows are fought with magic (all but Ahrim): its magic set and runes are kit too. They
+    // went into the bank and out again (Patrickbot 18: 106 times in 29 minutes, v ad1c718).
+    if (boss?.kind === "barrows" || entry.phase === "barrows") for (const id of styleSupplyIds("magic")) ids.add(id);
     return ids;
   }
 
@@ -4091,6 +4096,12 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const ids = new Set();
     for (const plan of [entry.resume, entry.plan, entry.savedTask]) {
       const mode = String(plan?.mode ?? "");
+      // The bow and arrows or the runes of a ranged or magic job: it fetched them from the bank
+      // for this job, so they are not goods to bank or sell. They went into the bank at the
+      // exchange and straight out again, hundreds of times (Markbot 10: 439 in 29 minutes,
+      // v ad1c718, 20-11-2026).
+      const style = plan ? planStyle(entry, plan) : null;
+      if (style === "ranged" || style === "magic") for (const id of styleSupplyIds(style)) ids.add(id);
       if (!mode.startsWith("buy_") || !plan.skill) continue;
       const buy = buyPlan(entry.player, plan.skill);
       for (const id of buy?.materials ?? []) ids.add(id);

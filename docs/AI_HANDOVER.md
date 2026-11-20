@@ -5,6 +5,53 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 20-11-2026 (17:00): uitrusting heen en weer naar de bank
+
+Branch: `adventurers/kit-bank-loop` (op `docs/controle-1650`, vanaf `main` `ad1c718`).
+
+### Oorzaak (in code bevestigd)
+
+1. `startTraining` voor `combat_ranged` / `combat_magic`: geen boog en pijlen of runes bij zich, dus
+   naar de dichtstbijzijnde bank (bij de GE is dat de GE) en ze ophalen; de klus wordt `savedTask`.
+2. De volgende beslissing begint met `trade()`. Die telt boog, pijlen en runes als goederen
+   (meer dan `keepValue` 200 gp), want `workingMaterials` beschermde alleen buy-to-train-materialen.
+   Dus naar de GE (`exchange`).
+3. `atExchange` zet `bag.keep` op de bank (alleen de boss-kit was uitgezonderd).
+4. `resumeTask` → `startTraining` → stap 1.
+
+Bij Patrickbot 18 hetzelfde met de Barrows-magic-set: `bossKit` bevatte alleen potions, spade
+en tablets.
+
+### Wat aangepast is
+
+`server/plugins/bots/adventurers/Adventurers.PlayerBots.js`:
+- `workingMaterials`: ook de spullen (`styleSupplyIds`) van de vechtstijl van `resume`, `plan` of
+  `savedTask` als die ranged of magic is. Werkt daardoor in `trade()`, het bankpad en
+  `keepAtExchange`.
+- `bossKit`: bij de Barrows ook de magic-set en runes.
+- `atExchange` en `bankUnusedSupplies` laten `workingMaterials` en `bossKit` in de tas.
+- `CHANGELOG.md`: regel onder "Opgelost".
+
+Validatie: bot-tests 16 van 111 fout (zelfde 16). Alleen `node --check` voor deze code (laadt hier
+niet). **Niet in game getest.** Barrows-set gecontroleerd: kodai wand en ancestral staan in
+`styles.magic` van `plugins/bots/data/adventurer-gear.json`.
+
+### Risico's
+
+1. Een oude `savedTask` met ranged of magic houdt pijlen of runes in de tas tijdens een andere klus
+   (een paar vakjes). Bewust: liever dat dan de lus.
+2. Jorgbot 4 (710 × `errandInstant`) had geen activiteitenregels. Zijn lus kan een andere oorzaak
+   hebben (`exchange` zonder iets te doen, doel "1.155 gp voor amulet of defence", 19 vrije vakjes).
+   Na deploy controleren.
+3. `errandInstant` zegt niet welke boodschap. Overweeg de reden mee te tellen als de lus terugkomt.
+
+### Volgende stap
+
+Na deploy: `errandInstant` per bot (verwacht: Markbot 10, Jorgbot 9, Markbot 6, Patrickbot 18 laag)
+en activiteitenlog-regels per uur (was ~11.500). Daarna Jorgbot 4.
+
+---
+
 ## Controle 20-11-2026 16:50: eerste data van `ad1c718`
 
 Basis: `bot-logs` push 15:50 UTC. `ad1c718` 15:21 tot 15:50 (**29 min**, 60 avonturiers).
