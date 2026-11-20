@@ -161,6 +161,19 @@ test("better gear in the bank is found for wearing: the best its levels allow, n
   }
 });
 
+test("between jobs the gear follows the weapon it wears: a staff keeps magic, not melee armour", () => {
+  const Trade = require("../plugins/bots/adventurers/Trade.PlayerBots");
+  const Shopping = require("../plugins/bots/adventurers/Shopping.PlayerBots");
+  const staff = (Shopping.gear.styles.magic.weapon ?? []).map((entry) => entry.item).find(Boolean);
+  const bow = (Shopping.gear.styles.ranged.weapon ?? []).map((entry) => entry.item).find(Boolean);
+  const ids = { [staff]: 9001, [bow]: 9002, RUNE_SCIMITAR: 1333 };
+  const core = { ItemIdentifiers: ids };
+  const wearing = (name) => ({ getEquipment: () => ({ getItems: () => [{ getId: () => ids[name] }] }) });
+  assert.equal(Trade.wornStyle(wearing(staff), core), "magic");
+  assert.equal(Trade.wornStyle(wearing(bow), core), "ranged");
+  assert.equal(Trade.wornStyle(wearing("RUNE_SCIMITAR"), core), "melee");
+});
+
 test("one of each kept piece of gear or tool stays; spare copies are goods, not a full bag for ever", () => {
   const Trade = require("../plugins/bots/adventurers/Trade.PlayerBots");
   // As Markbot 14 and Jorgbot 18 stood at a bank for hours: a bag of identical kept things.

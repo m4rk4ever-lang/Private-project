@@ -82,4 +82,35 @@ function travelKit({ mode, magic = 1, hasJewellery = false, tablets = [] } = {})
   return { jewellery: 0, runes: [], tablets: [], text: "geen" };
 }
 
-module.exports = { offLoadout, foodFor, travelKit, GATHERING, GATHERING_FOOD, NEAR_BANK_TILES, TRAVEL_RUNES, KIT_RUNES };
+/**
+ * The teleport jewellery to buy now: one of each kind it lacks, in list order (cheapest first),
+ * only with `minCoins` or more, each piece at most `pieceShare` of its coins, all together at most
+ * `visitShare` of them, and none it cannot pay from the bag. The owner: buy teleports when the
+ * money is there, without spending it all (20-11-2026).
+ * @param {string[]} names  item names, in order
+ * @param {object} o  { coins, bagCoins, have: Set of kinds, kindOf(name), priceOf(name), buyable(name), minCoins, pieceShare, visitShare }
+ */
+function travelBuys(names, { coins, bagCoins = coins, have = new Set(), kindOf, priceOf, buyable = () => true,
+  minCoins = 50_000, pieceShare = 0.02, visitShare = 0.03 } = {}) {
+  if (!(coins >= minCoins)) return [];
+  let budget = coins * visitShare;
+  let bag = bagCoins;
+  const out = [];
+  const kinds = new Set(have);
+  // An entry is a name (one piece) or { name, amount } (a stack of tablets, priced as a whole).
+  for (const want of names) {
+    const name = typeof want === "string" ? want : want.name;
+    const amount = typeof want === "string" ? 1 : want.amount ?? 1;
+    const kind = kindOf(name);
+    if (!kind || kinds.has(kind) || !buyable(name)) continue;
+    const price = priceOf(name) * amount;
+    if (!(price > 0) || price > coins * pieceShare || price > budget || price > bag) continue;
+    out.push(typeof want === "string" ? name : { name, amount });
+    kinds.add(kind);
+    budget -= price;
+    bag -= price;
+  }
+  return out;
+}
+
+module.exports = { offLoadout, foodFor, travelKit, travelBuys, GATHERING, GATHERING_FOOD, NEAR_BANK_TILES, TRAVEL_RUNES, KIT_RUNES };

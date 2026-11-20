@@ -93,6 +93,28 @@ function jewelleryDestinations(source = null) {
   return jewellery;
 }
 
+/**
+ * The ring of wealth's errand teleports (RingOfWealth.plugin.js; not in Teleports.Jewellery's
+ * list): the Grand Exchange and Falador Park, by the Rub submenu's position in that plugin's
+ * ACTIONS (1 Grand Exchange, 2 Miscellania, 3 Falador Park, 4 Dondakan). The Grand Exchange was
+ * the most walked-to place (88 of 385 walks of 2 minutes or more without a teleport, 20-11-2026).
+ */
+const RING_OF_WEALTH_KEYS = ["RING_OF_WEALTH_1_", "RING_OF_WEALTH_2_", "RING_OF_WEALTH_3_", "RING_OF_WEALTH_4_", "RING_OF_WEALTH_5_",
+  "RING_OF_WEALTH_I1_", "RING_OF_WEALTH_I2_", "RING_OF_WEALTH_I3_", "RING_OF_WEALTH_I4_", "RING_OF_WEALTH_I5_"];
+const RING_OF_WEALTH_INDEX = { "Grand Exchange": 1, "Falador Park": 3 };
+function ringOfWealthDestinations(source = null) {
+  let all = source ?? [];
+  if (!source) {
+    try {
+      all = require("../../items/Teleports.Jewellery").RING_OF_WEALTH_DESTINATIONS ?? [];
+    } catch {
+      all = [];
+    }
+  }
+  return all.filter((destination) => RING_OF_WEALTH_INDEX[destination.label] && !destination.quest)
+    .map((destination) => ({ ...destination, index: RING_OF_WEALTH_INDEX[destination.label] }));
+}
+
 /** Whether it carries every rune a spell takes. */
 function carriesRunes(player, runes) {
   const inventory = player.getInventory();
@@ -112,7 +134,7 @@ function visitedKourendOf(player) {
   }
 }
 
-function bestTeleport(core, player, to, { jewelleryData = null, questDone = () => false, visitedKourend = visitedKourendOf } = {}) {
+function bestTeleport(core, player, to, { jewelleryData = null, wealthData = null, questDone = () => false, visitedKourend = visitedKourendOf } = {}) {
   const spells = core?.SpellTeleports?.getTeleportDestinations?.() ?? [];
   const here = player.getLocation();
   const walk = distance(here, to);
@@ -135,9 +157,19 @@ function bestTeleport(core, player, to, { jewelleryData = null, questDone = () =
   items.forEach((item, slot) => {
     const id = item?.getId?.() ?? -1;
     if (!(id > 0)) return;
-    for (const [key, spellName] of Object.entries(TABLETS)) {
-      const land = landing.get(spellName);
-      if (land && core.ItemIdentifiers?.[key] === id) consider({ kind: "tablet", slot, name: spellName }, land.getX(), land.getY());
+    // Any tablet: it shares its spell's name and lands where the spell does, of any spellbook
+    // (SpellTeleports.plugin.js spellDestination): Salve Graveyard, Catherby, Ardougne, not only
+    // the five it knew. None into the Wilderness.
+    const tabletName = String(core?.ItemDefinition?.forId?.(id)?.getName?.() ?? "").toLowerCase();
+    const named = landing.get(tabletName) ?? null;
+    const land = named ?? Object.entries(TABLETS).filter(([key]) => core.ItemIdentifiers?.[key] === id).map(([, spellName]) => landing.get(spellName)).find(Boolean);
+    if (land && !inWilderness(land.getX(), land.getY())) {
+      consider({ kind: "tablet", slot, name: named ? tabletName : Object.entries(TABLETS).find(([key]) => core.ItemIdentifiers?.[key] === id)?.[1] }, land.getX(), land.getY());
+    }
+    if (RING_OF_WEALTH_KEYS.some((key) => core?.ItemIdentifiers?.[key] === id)) {
+      for (const destination of ringOfWealthDestinations(wealthData)) {
+        consider({ kind: "jewellery", slot, index: destination.index, name: destination.label }, destination.tile[0], destination.tile[1]);
+      }
     }
     for (const destination of (jewelleryData ? jewelleryDestinations(jewelleryData) : jewelleryDestinations()).get(id) ?? []) {
       if (destination.kourend && !visitedKourend(player)) continue;

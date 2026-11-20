@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Een avonturier die met een staf magic traint, trok na een herstart melee-uitrusting aan (rune platebody, berserker helm) en bleef daarin toveren. Zonder klus houdt hij nu de uitrusting die bij zijn wapen hoort.
 - Avonturiers liepen naar Karamja (Musa Point, Brimhaven) alsof het geen eiland was, en liepen vast. Ze nemen nu de boot: van Port Sarim met Captain Tobias, tussen Ardougne, Brimhaven en Rimmington met Captain Barnaby, en terug met de douane. Een teleport, zoals een amulet of glory, gaat nog steeds voor. Shilo Village (Duradel) telt pas na de quest Shilo Village.
 - Op weg naar Mort'ton of de Barrows probeerden avonturiers vanaf de Digsite rechtdoor over de rivier Salve te lopen. Ze gaan Morytania nu altijd binnen via de tempel van Paterdomus en Canifis, en er is een tussenstop bij Mort'ton.
 - Avonturiers liepen naar Morytania (Mazchna, Slayer Tower, Mort'ton) en naar de Gnome Stronghold (Nieve, de agility-baan) en kwamen er bijna nooit aan: 1 van de 117 en 0 van de 16 keer. De routekaart miste de stukken via de tempel van Paterdomus en via de poort van de Stronghold. Die zijn toegevoegd. Voor een lange tocht naar een Slayer-meester nemen ze nu bij voorkeur een Slayer ring mee om te teleporteren. Lukt dat niet, dan lopen ze.
@@ -161,6 +162,8 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Avonturiers met geld over kopen nu vaker teleport-sieraden op de GE: van elke soort één (games necklace, ring of dueling, skills necklace, amulet of glory, ring of wealth). Pas vanaf 50.000 gp, een stuk kost hooguit 2% van hun geld en per bezoek hooguit 3%. Bij de bank nemen ze van elke soort één mee, ook als hij al deels gebruikt is. De ring of wealth brengt ze direct naar de Grand Exchange.
+- Ze kopen ook teleport-tablets, 5 per soort, uit hetzelfde budget: onder meer Ardougne, Catherby, Fishing Guild en Salve Graveyard (Morytania). Een tablet waarvan ze de spreuk zelf kunnen casten, kopen ze niet. Alle tablets met een bestemming worden gebruikt, niet alleen de vier standaard.
 - Avonturiers die hout hakken, minen of vissen nemen nog maar één reismiddel mee: een geladen sieraad, of de runes voor Varrock Teleport, of één soort tablet. In hun log staat welk.
 - Avonturiers proberen niets meer op de GE te kopen dat daar niet verhandeld wordt. Een brandende kaars voor een quest maken ze zelf: een candle kopen en die aansteken met een tinderbox.
 - Avonturiers kunnen naar Great Kourend, na X Marks the Spot: de eerste keer met de boot van Veos vanuit Port Sarim, daarna met een games necklace naar Wintertodt Camp. Daarmee kunnen ze Wintertodt doen.
