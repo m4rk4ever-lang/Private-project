@@ -70,3 +70,21 @@ test("a name with spaces finds the bot by display name", () => {
   assert.equal(Watch.findPlayer(core, "call  me mark"), bot);
   assert.equal(Watch.findPlayer(core, "nobody"), null);
 });
+
+test("::volg shows goal, activity and reason, the route, and the rates now and then (§30, §31)", () => {
+  const { statusLines } = require("../plugins/bots/runtime/Watch.PlayerBots");
+  const status = { goal: "60 Attack voor dragon scimitar", activity: "combat training (cows)", reason: "achterstand",
+    skill: "attack", phase: "training", route: null, place: "lumbridge", wealth: 12345, xpPerHour: 18000 };
+  const first = statusLines("Markbot 10", status, {}, { nowMs: 0, force: true });
+  assert.deepEqual(first.lines, [
+    "[Markbot 10] Doel: 60 Attack voor dragon scimitar | Bezig: combat training (cows) | Reden: achterstand",
+    "[Markbot 10] 18.000 XP/uur (attack) | Vermogen: 12.345 gp | Bij: lumbridge",
+  ]);
+  const same = statusLines("Markbot 10", status, first.shown, { nowMs: 10_000 });
+  assert.deepEqual(same.lines, [], "nothing changed: nothing said");
+  const errand = statusLines("Markbot 10", { ...status, route: { to: "de Grand Exchange", why: "handelen op de GE" } }, same.shown, { nowMs: 20_000 });
+  assert.deepEqual(errand.lines, ["[Markbot 10] Onderweg naar de Grand Exchange: handelen op de GE."]);
+  const later = statusLines("Markbot 10", { ...status, xpPerHour: null }, errand.shown, { nowMs: 2 * 60_000 });
+  assert.deepEqual(later.lines, ["[Markbot 10] XP/uur nog onbekend (attack) | Vermogen: 12.345 gp | Bij: lumbridge"]);
+  assert.deepEqual(statusLines("Speler", null, {}, { force: true }).lines, [], "not an adventurer: no lines");
+});

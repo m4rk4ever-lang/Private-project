@@ -5,6 +5,42 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 20-11-2026 (18:40): Fase 3 deel 1, `::volg` toont doel en reden
+
+Branch: `adventurers/volg-status` (vanaf `main` `301f1ce`).
+
+### Wat aangepast is
+
+- `server/plugins/bots/adventurers/Adventurers.PlayerBots.js`: `status(event)` vult
+  `event.status` met `goal`, `activity` (modus en activiteit, quest of boss), `reason`
+  (`plan.reason`), `skill`, `phase`, `route` (`errand.to` met de reden in woorden, `ERRAND_WHY`),
+  `place`, `wealth` (`wealthOf().total`) en `xpPerHour` (sinds de laatste metrics-ronde, na
+  minstens 1 min). Geregistreerd als custom event `adventurers:status`. Niets nieuws berekend.
+- `server/plugins/bots/runtime/Watch.PlayerBots.js`: vraagt elke 3 s (in de bestaande ronde van
+  de quests) `adventurers:status`. `statusLines` (zuiver, getest) geeft regels: `Doel / Bezig /
+  Reden` en `Onderweg naar …` alleen bij verandering, XP/uur, vermogen en plek hooguit elke 2 min.
+  Bij de start alles. Watch importeert Adventurers niet (lagen gescheiden, §6).
+- `server/tests/bot-watch.test.cjs`: test voor `statusLines`.
+- `docs/OBSERVABILITY.md`, `docs/ADVENTURER_ROADMAP.md`, `CHANGELOG.md`.
+
+Validatie: bot-tests 16 van 115 fout (zelfde 16); de nieuwe test slaagt. Adventurers-deel alleen
+`node --check`. **Niet in game getest.** In game controleren: `::volg <avonturier>`, en kijken of
+de regels kloppen en de chat niet volloopt.
+
+### Risico's
+
+1. Een bot die vaak van errand wisselt geeft veel `Onderweg`-regels. Als dat stoort: route alleen
+   na een paar seconden tonen.
+2. `xpPerHour` is van de lopende 5-minutenronde: vlak na een ronde nog onbekend.
+3. `activity` voor sommige modi kan onhandig ogen (`combat training (cows)`). Puur weergave.
+
+### Volgende stap
+
+Fase 3 deel 2: `decision`-metric bij elke planner-keuze (gekozen optie, reden, top 3 met gewicht),
+in `chooseNext` / de decide-stap. Eerst lezen hoe `Planner.PlayerBots.js` de opties weegt.
+
+---
+
 ## Controle 20-11-2026 18:26: lusbewaking (`1fe6907`)
 
 Basis: `bot-logs` push 17:26 UTC. `1fe6907` 17:07 tot 17:26 (**19 min**, 60 avonturiers).

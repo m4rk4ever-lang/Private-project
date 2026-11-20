@@ -13,7 +13,7 @@ Hoe een operator ziet wat een avonturier doet, waarom, en waar het misgaat. Gron
 | `server/logs/adventurer-quest-feedback.jsonl` | Vastgelopen quests: stap, helperstap, plek, dialoog, pogingen | Quest-fixes |
 | Branch `bot-logs` | De laatste 20.000 regels van elk log, elke 5 minuten en bij afsluiten gepusht door de server | Lezen vanaf een andere machine |
 | `/api/adventurers` en `client/public/adventurers.html` | Dashboard: clans, levels, gear, journaal, achievements, `questFeedback` | Eigenaar |
-| `::volg <naam>` | Camera op de bot, chat met zijn acties, inventaris, uitrusting, skills, quests en combattab gespiegeld | Eigenaar in game |
+| `::volg <naam>` | Camera op de bot, chat met zijn acties, inventaris, uitrusting, skills, quests en combattab gespiegeld. **Nieuw (20-11-2026):** bij een avonturier ook `Doel / Bezig / Reden` en `Onderweg naar … : …` zodra die veranderen, en elke 2 min XP/uur, vermogen en plek (event `adventurers:status`) | Eigenaar in game |
 | `::botinfo <naam>` | Looptarget en huidig segment van een bot | Debuggen van routes |
 | Serverlog (`LOG_DISABLED_TYPES=npc.face,Combat`) | `bot_errand_failed` (stuck, no-closer, too-long), `bot_errand_replan`, `bot_errand_teleport` | Debuggen van errands |
 
@@ -120,8 +120,8 @@ for (reason, to), (n, s, ended) in sorted(per.items(), key=lambda x: -x[1][1])[:
 
 | § | Vraag | Nu | Gat |
 | --- | --- | --- | --- |
-| 30 | `::volg` toont Current Goal, Subgoal, Activity, State, Location, Route, Inventory, Equipment, Wealth, Skill, XP Rate | Inventory, Equipment, skills, quests en een chatverslag van acties | Doel, subdoel, reden, route, wealth en XP/uur staan wel in de metrics maar niet in `::volg` |
-| 31 | "Wat doet hij en waarom?" | `plan.reason` en `goal` in de metrics en op het dashboard | Niet als één regel "Goal / Activity / Reason" op één plek |
+| 30 | `::volg` toont Current Goal, Subgoal, Activity, State, Location, Route, Inventory, Equipment, Wealth, Skill, XP Rate | Alles, sinds 20-11-2026: doel, bezig (activiteit of fase), reden (subdoel), route, plek, vermogen, skill en XP/uur in de chat; inventaris, uitrusting en skills in de tabs | Subdoel is de reden van het plan, geen aparte stap uit een dependency-keten (§9) |
+| 31 | "Wat doet hij en waarom?" | Eén regel `Doel / Bezig / Reden` in `::volg` | Nog niet op het dashboard |
 | 32 | Reconstructie van keuzes | Journaal en momentopnames bij stuck/idle/walk_blocked | De planner logt niet welke opties hij woog en waarom hij koos |
 | 33 | Read Only / Advisory / Override | Override deels (`::advtrain`, `::advquest`, `grantedQuests`) | Geen Read Only of Advisory modus |
 | 5 | Stil falen voorkomen | Meeste lussen tellen een event | De banklus was stil (opgelost in ADR-0005). Andere stille lussen zijn niet systematisch gezocht |

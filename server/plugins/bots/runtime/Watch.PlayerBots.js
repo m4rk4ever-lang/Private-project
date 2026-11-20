@@ -4,8 +4,9 @@
  * Watching a bot live: `::volg <naam>` puts the camera on a bot and keeps it there while the bot
  * walks, teleports and fights. The watcher is hidden, cannot be attacked and cannot walk; they
  * are moved along whenever the bot gets out of view. Their inventory, equipment and stats tabs
- * show the bot's, kept up to date; their own come back after. `::volg` without a name (or logging out)
- * stops it and puts the watcher back where they stood.
+ * show the bot's, kept up to date; their own come back after. For an adventurer the chat shows its
+ * goal, what it does and why, its route, XP per hour and wealth ("adventurers:status"). `::volg`
+ * without a name (or logging out) stops it and puts the watcher back where they stood.
  *
  * Built like Clan Wars' viewing orb (minigames/clanwars/Viewing.ClanWars.js): hidden appearance,
  * a fixed view distance, cam_target on the followed player and the old camera restored after.
@@ -69,6 +70,51 @@ function questsOf(target) {
 }
 
 let coreRef = null;
+/** The plugin api's emitCustomEvent: asks the adventurers what a bot does ("adventurers:status"). */
+let emitRef = null;
+/** XP per hour, wealth and place in the chat at most this often (they change all the time). */
+const RATE_EVERY_MS = 2 * 60_000;
+
+/**
+ * The chat lines for what the bot does and why (AI_Constitution §30, §31), from the
+ * "adventurers:status" answer. `shown` is what the watcher saw last; lines come only for what
+ * changed, the rates line at most every RATE_EVERY_MS (or with `force`). Returns { lines, shown }.
+ */
+function statusLines(name, status, shown = {}, { nowMs = Date.now(), force = false } = {}) {
+  const lines = [];
+  if (!status) return { lines, shown };
+  const what = [`Doel: ${status.goal ?? "geen"}`, `Bezig: ${status.activity ?? status.phase ?? "niets"}`, `Reden: ${status.reason ?? "-"}`].join(" | ");
+  const next = { ...shown };
+  if (force || what !== shown.what) {
+    lines.push(`[${name}] ${what}`);
+    next.what = what;
+  }
+  const route = status.route ? `Onderweg naar ${status.route.to}: ${status.route.why}.` : null;
+  if (route && (force || route !== shown.route)) lines.push(`[${name}] ${route}`);
+  next.route = route;
+  if (force || nowMs - (shown.ratesAt ?? 0) >= RATE_EVERY_MS) {
+    const wealth = Number.isFinite(status.wealth) ? `${Math.round(status.wealth).toLocaleString("nl-NL")} gp` : "?";
+    const xp = Number.isFinite(status.xpPerHour) ? `${status.xpPerHour.toLocaleString("nl-NL")} XP/uur` : "XP/uur nog onbekend";
+    lines.push(`[${name}] ${xp}${status.skill ? ` (${status.skill})` : ""} | Vermogen: ${wealth} | Bij: ${status.place ?? "?"}`);
+    next.ratesAt = nowMs;
+  }
+  return { lines, shown: next };
+}
+
+/** Goal, activity, reason and route in the watcher's chat when they change (adventurers only). */
+function showStatus(player, state, nowMs = Date.now()) {
+  if (!emitRef) return;
+  const event = { player: state.target, status: null };
+  try {
+    emitRef("adventurers:status", event);
+  } catch {
+    return;
+  }
+  const force = state.statusShown === undefined;
+  const { lines, shown } = statusLines(nameOf(state.target), event.status, state.statusShown ?? {}, { nowMs, force });
+  state.statusShown = shown;
+  for (const line of lines) player.sendMessage(line);
+}
 
 /** Each quest's own variable (varbit or varp), as the quest tab reads it. */
 function questVars() {
@@ -191,6 +237,7 @@ function mirror(player, state) {
   if (now - (state.questsAt ?? 0) > 3000) {
     state.questsAt = now;
     showQuests(player, state);
+    showStatus(player, state, now);
     showJournal(player, state);
     mirrorTabs(player, state);
   }
@@ -294,6 +341,7 @@ function follow(core, { player, parts }) {
 function startWatching(api) {
   const { Task, PlayerRights } = api.core;
   coreRef = api.core;
+  emitRef = api.emitCustomEvent ? (name, payload) => api.emitCustomEvent(name, payload) : null;
   api.registerCommand("volg", (event) => follow(api.core, event), PlayerRights.OWNER,
     "Follow a player or bot with the camera: ::volg <name>; ::volg alone stops");
   api.onPlayerLogout(({ player }) => stop(player, false));
@@ -303,4 +351,4 @@ function startWatching(api) {
   })());
 }
 
-module.exports = { startWatching, findPlayer, watching, tick, start, stop, KEEP_WITHIN };
+module.exports = { startWatching, findPlayer, watching, tick, start, stop, statusLines, KEEP_WITHIN };
