@@ -1368,6 +1368,17 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return true;
   }
 
+  /**
+   * Why a picked job could not start (Phase 4, AI_Constitution §7): a requirement it lacks, in
+   * words a requirement check can use, with the place (x, y and floor z) where one is involved.
+   * The decision metric carries it. Always returns false, so `return cannot(...)` reads as before.
+   */
+  function cannot(entry, why, detail = null) {
+    entry.startFailure = { why, ...(detail ? { detail } : {}) };
+    return false;
+  }
+  const placeOf = (place) => (place ? { x: place.x, y: place.y, z: place.z ?? 0 } : null);
+
   function startTraining(entry, plan, nowMs) {
     const { player } = entry;
     const view = snapshot(player);
@@ -1390,7 +1401,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       // in person, and then starts. Not enough anywhere: not this way of fighting now.
       if (!carriesSupplies(player, style)) {
         const bank = nearestBank(player, entry);
-        if (!fightingStyles(player).includes(style) || !bank) return false;
+        if (!fightingStyles(player).includes(style)) return cannot(entry, "no_style_gear", { style });
+        if (!bank) return cannot(entry, "no_bank_near", { style });
         return walkTo(entry, { ...bank, name: bank.name ?? bank.id }, {
           reason: "withdraw",
           arrive: (banker) => {
@@ -1420,7 +1432,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const course = (data.agilityCourses ?? []).find((option) => level >= option.level
         && (option.quests ?? []).every((name) => questsByName().get(normalize(name))?.isComplete(player) === true)
         && !blockedPlace(entry, option));
-      if (!course || !registry?.byId?.get(`agility_${course.course}`)) return false;
+      if (!course || !registry?.byId?.get(`agility_${course.course}`)) return cannot(entry, "no_agility_course", { level, course: course?.course ?? null });
       startActivity(player, `agility_${course.course}`, { home: course, nowMs });
       walkTo(entry, course, { reason: "agility", replan: false });
       entry.activity = `agility_${course.course}`;
@@ -1439,12 +1451,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const site = definitions.activities.find((entry) => entry.id === id)?.actions?.[0]?.site;
       if (!activity || !site) {
         note(player, `Kan niet gaan jagen: geen jachtplek voor zijn level (${id ?? "geen"}).`, "activity");
-        return false;
+        return cannot(entry, "no_activity", { mode: "hunter", activity: id ?? null });
       }
-      const place = { x: site[0], y: site[1], z: 0 };
+      // The site's own floor when the data gives one (it was always 0).
+      const place = { x: site[0], y: site[1], z: site[2] ?? 0 };
       if (!TravelHubs.onFoot(place)) {
         note(player, "Kan niet gaan jagen: de jachtplek is te voet niet bereikbaar.", "activity");
-        return false;
+        return cannot(entry, "place_unreachable", { activity: id, place: placeOf(place) });
       }
       const bankedTools = toolsInBank(player, "hunter", id);
       if (bankedTools.length > 0) return fetchTools(entry, plan, bankedTools);
@@ -1452,7 +1465,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       if (snare) {
         if (shopFor(entry, snare.itemId, snare.name, 2)) return true;
         note(player, `Kan niet gaan jagen: kon geen ${String(snare.name).toLowerCase().replace(/_/g, " ")} kopen.`, "activity");
-        return false;
+        return cannot(entry, "tool_unbuyable", { tool: snare.name });
       }
       startActivity(player, id, { home: place, nowMs });
       walkTo(entry, { ...place, name: "de Feldip Hills" }, { reason: "training", replan: false });
@@ -1466,7 +1479,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
     if (plan.mode === "wintertodt") {
       // Wintertodt is in Kourend: by boat, not on foot. Not until it can get there.
-      if (!TravelHubs.onFoot(WINTERTODT)) return false;
+      if (!TravelHubs.onFoot(WINTERTODT)) return cannot(entry, "place_unreachable", { activity: "wintertodt", place: placeOf(WINTERTODT) });
       startActivity(player, "wintertodt", { home: WINTERTODT, nowMs });
       walkTo(entry, { ...WINTERTODT, name: "Wintertodt" }, { reason: "wintertodt", replan: false });
       entry.activity = "wintertodt";
@@ -1513,14 +1526,15 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
           // None to be had now (too few coins, no shop near): not off to the rocks or trees with
           // bare hands; another job, and the coins first.
           note(player, `Heeft geen ${plan.mode === "mining" ? "pickaxe" : "axe"} en kan er nu geen kopen; doet eerst iets anders.`, "activity");
-          return false;
+          return cannot(entry, "tool_unbuyable", { tool: plan.mode === "mining" ? "pickaxe" : "axe" });
         }
       }
       // Fishing needs its net, rod or harpoon: bought first (a walk to the shop), or no fishing now.
       const tool = Shopping.missingTools(player, core, id)[0];
-      if (tool) return shopFor(entry, tool.itemId, tool.name, tool.name === "FEATHER" || tool.name === "FISHING_BAIT" ? 200 : 1);
+      if (tool) return shopFor(entry, tool.itemId, tool.name, tool.name === "FEATHER" || tool.name === "FISHING_BAIT" ? 200 : 1)
+        || cannot(entry, "tool_unbuyable", { tool: tool.name });
       const activity = id ? registry?.byId?.get(id) ?? null : null;
-      if (!activity) return false;
+      if (!activity) return cannot(entry, "no_activity", { mode: plan.mode, activity: id ?? null, level });
       // Its own choice of spot (Sites.PlayerBots.js): the nearest fitting one, not the world
       // bots' travel with its hubs and spreading.
       const place = Sites.pickSite(player, activity, {
@@ -1534,7 +1548,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
           || Sites.sitesFor(activity, 99, { meets: () => true, destinations: destinationsFor(id, null) }).length > 0)) {
         world.log?.("adventurer_no_site", { name: entry.name, activity: id, mode: plan.mode });
         metric({ kind: "no_site", bot: entry.name, activity: id, mode: plan.mode, reason: plan.reason ?? null });
-        return false;
+        return cannot(entry, "no_site", { activity: id });
       }
       Sites.settleAt(stateOf(player), place);
       if (place) world.log?.("adventurer_site", { name: entry.name, activity: id, site: place.id });
@@ -1559,9 +1573,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function startBuyTraining(entry, plan, nowMs) {
     const { player } = entry;
     const buy = buyPlan(player, plan.skill);
-    if (!buy) return false;
+    if (!buy) return cannot(entry, "no_buy_plan", { skill: plan.skill });
     // Lately too poor for a lot at the exchange: only with its own stock, not a walk to buy.
-    if (nowMs < (entry.noBuyUntil ?? 0) && !hasStock(player, buy)) return false;
+    if (nowMs < (entry.noBuyUntil ?? 0) && !hasStock(player, buy)) return cannot(entry, "too_poor", { skill: plan.skill });
     const toolId = buy.recipe.tool ? Shopping.idOf(core, buy.recipe.tool) : null;
     if (Number.isInteger(toolId) && !Shopping.owns(player, toolId)) {
       // Its knife or hammer at the bank: fetched there, not bought again.
@@ -1824,12 +1838,12 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const { player } = entry;
     const { boss } = plan;
     // The Barrows only with Protect from Melee (43): the brothers hit too hard without it.
-    if (boss.kind === "barrows" && levelOf(player, "PRAYER") < 43) return false;
-    if (boss.kind !== "barrows" && !registry?.byId?.get(boss.id)) return false;
+    if (boss.kind === "barrows" && levelOf(player, "PRAYER") < 43) return cannot(entry, "skill_level", { skill: "PRAYER", level: 43, have: levelOf(player, "PRAYER") });
+    if (boss.kind !== "barrows" && !registry?.byId?.get(boss.id)) return cannot(entry, "no_activity", { boss: boss.id });
     // Behind a way in (a spade and a mole hill): that first.
     const entering = enterBoss(entry, plan, nowMs);
     if (entering === true) return true;
-    if (entering === null) return false;
+    if (entering === null) return cannot(entry, "place_unreachable", { boss: boss.id, place: placeOf(boss) });
     // Prayer potions along for a boss it prays against (Protect from Melee and up): its own from
     // the bank, else bought, then back to this boss. Once in half an hour at most, so a bot too
     // poor for them does not walk to the exchange before every fight.
@@ -1891,7 +1905,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function startQuest(entry, plan) {
     if (!questPlay.start(entry, plan.quest.name, now())) {
       note(entry.player, `${plan.quest.name} heeft nog geen bot-playthrough; overgeslagen.`, "quest");
-      return false;
+      return cannot(entry, "no_quest_playthrough", { quest: plan.quest.name });
     }
     entry.phase = "quest";
     entry.plan = plan;
@@ -2349,6 +2363,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     view.earn = entry.earn ?? {};
     for (let attempt = 0; attempt < 4; attempt += 1) {
       let why = null;
+      entry.startFailure = null;
       const plan = chooseNext(view, questList(), {
         available: view.available, questChance: data.questChance, moneyChance: data.moneyChance ?? 0.1, bosses: (data.bosses ?? []).filter((boss) => boss.onFoot !== false), bossChance: attempt === 0 ? data.bossChance : 0, random,
         focus: data.focus?.[entry.name] ?? {}, busyModes, exclude, goal: goalOf(entry), explain: (decision) => { why = decision; },
@@ -2377,6 +2392,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     metric({ kind: "decision", bot: entry.name, attempt, started: Boolean(started), path: why?.path ?? null,
       chosen: { kind: plan.kind, mode: plan.mode ?? null, skill: plan.skill ?? null, quest: plan.quest?.name ?? null,
         boss: plan.boss?.id ?? plan.boss?.name ?? null, reason: plan.reason ?? null },
+      // Why it did not start: a requirement (cannot), or "unknown" where no reason is given yet.
+      failure: started ? null : entry.startFailure ?? { why: "unknown" },
       chance: why?.chance ?? null, alternatives: why?.alternatives ?? null, candidates: why?.candidates ?? null,
       quest: why?.quest ?? null, missing: why?.missing ?? null, excluded: [...exclude],
       goal: Goals.describe(entry.player.getAttribute(GOAL_ATTRIBUTE) ?? null) ?? null });
@@ -3649,7 +3666,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         (place) => TravelHubs.onFoot(place, null, (name) => questsByName().get(normalize(name))?.isComplete(player) === true, (item) => Shopping.owns(player, Shopping.idOf(core, item))));
       const best = options.filter((option) => option.combat === options[0]?.combat);
       const master = Slayer.nearest(best.length > 0 ? best : Slayer.MASTERS, (place) => walkTiles(here, place, player));
-      if (!master) return false;
+      if (!master) return cannot(entry, "place_unreachable", { slayer: "master" });
       return walkTo(entry, master, {
         reason: "slayer",
         arrive: (slayer) => {
@@ -3686,7 +3703,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (!spot) {
       note(player, `Kan zijn Slayer-taak (${String(task.name).toLowerCase()}) hier nog niet doen; laat Slayer even liggen.`, "activity");
       entry.slayerPausedUntil = now() + 60 * 60_000;
-      return false;
+      return cannot(entry, "place_unreachable", { slayer: String(task.name).toLowerCase() });
     }
     // Monsters that need something worn (earmuffs, a nose peg, a facemask): it brings one it owns,
     // buys one where a shop sells it, or leaves the task for now.
@@ -3704,7 +3721,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
           && shopFor(entry, buyable, itemName(buyable), 1)) return true;
       note(player, `Heeft ${options.join(" of ").toLowerCase()} nodig voor deze Slayer-taak; laat Slayer even liggen.`, "activity");
       entry.slayerPausedUntil = now() + 60 * 60_000;
-      return false;
+      return cannot(entry, "item_missing", { items: options });
     }
     const run = runtimeEntry(player);
     if (run?.state) {
