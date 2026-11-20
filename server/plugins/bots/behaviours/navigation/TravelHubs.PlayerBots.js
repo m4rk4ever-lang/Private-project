@@ -42,7 +42,12 @@ let graph = null;
 function nextLeg(here, goal, avoid = null, source = null) {
   const { hubs, links } = source ? build(source) : (graph ??= build());
   const z = here.z ?? 0;
-  if ((goal.z ?? 0) !== z || chebyshev(here, goal) <= DIRECT_TILES) return null;
+  // Into an area that is entered only by certain hubs (Morytania past the Salve: Canifis,
+  // Mort'ton) from outside it: by hubs, however near (Paterdomus to Mort'ton is 195 tiles straight
+  // but the river is between).
+  const entry = enteredVia(goal, source);
+  const fromOutside = entry && !inArea(here, entry.area);
+  if ((goal.z ?? 0) !== z || (!fromOutside && chebyshev(here, goal) <= DIRECT_TILES)) return null;
   const usable = [...hubs.values()].filter((hub) => hub.z === z && !avoid?.has?.(hub.key));
   const dist = new Map();
   const first = new Map();
@@ -74,7 +79,8 @@ function nextLeg(here, goal, avoid = null, source = null) {
     done.add(key);
     const hub = hubs.get(key);
     const toGoal = chebyshev(hub, goal);
-    if (toGoal <= DIRECT_TILES) {
+    // The last leg into such an area starts at one of its hubs (not Digsite across the Salve).
+    if (toGoal <= DIRECT_TILES && (!entry || entry.enterVia.includes(key))) {
       const total = dist.get(key) + toGoal * UNCHECKED_COST;
       if (total < best.cost) best = { cost: total, first: first.get(key) };
     }
@@ -88,6 +94,17 @@ function nextLeg(here, goal, avoid = null, source = null) {
     }
   }
   return best.first;
+}
+
+/** Whether `place` lies in a locked area's [minX, minY, maxX, maxY]. */
+function inArea(place, [minX, minY, maxX, maxY]) {
+  return place.x >= minX && place.x <= maxX && place.y >= minY && place.y <= maxY;
+}
+
+/** The locked area `place` lies in that names the hubs it is entered by ("enterVia"), or null. */
+function enteredVia(place, source = null) {
+  return ((source ?? data).lockedAreas ?? []).find((locked) => Array.isArray(locked.enterVia) && locked.enterVia.length > 0
+    && (place.z ?? 0) === 0 && inArea(place, locked.area)) ?? null;
 }
 
 /** Hub keys connected by links to `from` (Lumbridge, where every account starts). */
@@ -127,7 +144,10 @@ function onFoot(place, source = null, questDone = null, hasItem = null) {
     if (locked.item && !hasItem?.(locked.item)) return false;
   }
   const joined = connectedTo("lumbridge", source);
+  // An area entered only by its own hubs: one of those within a plannable walk.
+  const entry = enteredVia(place, source);
   for (const key of joined) {
+    if (entry && !entry.enterVia.includes(key)) continue;
     const hub = hubs.get(key);
     if (hub && hub.z === (place.z ?? 0) && chebyshev(hub, place) <= DIRECT_TILES) return true;
   }

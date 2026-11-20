@@ -48,3 +48,25 @@ test("the Gnome Stronghold and Canifis are joined to Lumbridge's network (links 
   assert.equal(Hubs.onFoot({ x: 3494, y: 3485 }, null, () => false), false);
   assert.equal(Hubs.onFoot({ x: 3494, y: 3485 }, null, () => true), true);
 });
+
+test("into Morytania only by its own hubs: not straight across the Salve from Digsite (collision-map audit, 20-11-2026)", () => {
+  const Hubs = require("../plugins/bots/behaviours/navigation/TravelHubs.PlayerBots");
+  const mortTon = { x: 3506, y: 3304, z: 0 };
+  // From Digsite (146 tiles straight, across the river) it does not walk at it: the hubs lead on.
+  const first = Hubs.nextLeg({ x: 3360, y: 3410, z: 0 }, mortTon);
+  assert.ok(first, "a hub, not a straight walk");
+  assert.notEqual(first.key, "digsite");
+  // Inside Morytania a short walk goes straight.
+  assert.equal(Hubs.nextLeg({ x: 3494, y: 3485, z: 0 }, { x: 3428, y: 3537, z: 0 }), null);
+  assert.equal(Hubs.onFoot(mortTon, null, () => true), true);
+  assert.equal(Hubs.onFoot(mortTon, null, () => false), false);
+});
+
+test("Karamja is an island: not on foot (Duradel in Shilo Village, Musa Point)", () => {
+  const Hubs = require("../plugins/bots/behaviours/navigation/TravelHubs.PlayerBots");
+  assert.equal(Hubs.onFoot({ x: 2869, y: 2982, z: 0 }, null, () => true), false);
+  assert.equal(Hubs.onFoot({ x: 2918, y: 3176, z: 0 }, null, () => true), false);
+  // The mainland beside it stays: Rimmington, Port Sarim.
+  assert.equal(Hubs.onFoot({ x: 2957, y: 3215, z: 0 }, null, () => true), true);
+  assert.equal(Hubs.onFoot({ x: 3041, y: 3193, z: 0 }, null, () => true), true);
+});

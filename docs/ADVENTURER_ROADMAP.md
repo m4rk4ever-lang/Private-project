@@ -181,6 +181,7 @@ candle), Fase 5 (unlock-waarde).
   bezoek, Wintertodt via `kourendWay`). Geen Kourend-hubs: binnen Kourend lopen naar verre plekken
   kan nog stranden.
   **Linklengtes zonder server:** BFS op de collision map van Shortest Path (`src/main/resources/collision-map.zip`, 64×64-regio's, per tegel bits noord/oost open; diagonaal alleen als beide zijden open), met de deuren/ladders uit `transports.json` zonder item- of level-eis. 18 gemeten links geven mediaan 1,38 × de BFS-lengte; nieuwe links krijgen BFS × 1,38. Liefst daarna nog met `plan_route` ingame.
+  **Audit 20-11-2026 (BFS, alle 162 links en 134 bestemmingen):** alle links zijn te lopen (Tree Gnome Village-links 2,2-2,7× de BFS: het doolhof). Gevonden en opgelost: Karamja te voet bereikbaar gerekend (eiland, nu `onFoot: false`); Morytania via Digsite over de Salve (nu `enterVia: canifis, mort_ton`, hub `mort_ton`, link canifis-mort_ton 551). Open: Feldip Hills en Corsair Cove vanaf Yanille geen route zonder quest-transport (logs: Feldip toch 16× aangekomen); Barbarian Assault 342 vanaf gnome_agility; Kourend, Zanaris, Prifddinas, TzHaar, woestijn voorbij de pass: geen hub (verwacht).
   **Meting 20-11-2026 (17:08-20:28 UTC, versies 1fe6907 t/m 450f871), volgorde voor stap 2-5:**
   | Wat | Mislukte loopjes | Stap / status |
   | --- | --- | --- |

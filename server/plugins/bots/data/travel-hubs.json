@@ -1,5 +1,5 @@
 {
- "_comment": "Stepping stones for long walks (behaviours/navigation/TravelHubs.PlayerBots.js): hubs are towns and crossroads [x, y]; links [a, b, tiles] are walks between two hubs that the route planner found in game (tiles: the walk's length). A walk too long to plan in one go goes hub to hub along these links. Add a hub with its links (checked with the agent MCP's plan_route) to open up a part of the map. lockedAreas: parts of the map behind a quest [minX, minY, maxX, maxY]; a bot goes there only with that quest done, or carrying that item (item: a Shantay pass for the desert).",
+ "_comment": "Stepping stones for long walks (behaviours/navigation/TravelHubs.PlayerBots.js): hubs are towns and crossroads [x, y]; links [a, b, tiles] are walks between two hubs that the route planner found in game (tiles: the walk's length). A walk too long to plan in one go goes hub to hub along these links. Add a hub with its links (checked with the agent MCP's plan_route) to open up a part of the map. lockedAreas: parts of the map behind a quest [minX, minY, maxX, maxY]; a bot goes there only with that quest done, or carrying that item (item: a Shantay pass for the desert). enterVia: the hubs inside the area a walk goes in from (Morytania: past the Salve only through Paterdomus to Canifis); the last leg into the area starts at one of them. onFoot: false: not on foot at all (an island), only by teleport.",
  "hubs": {
   "lumbridge": [
    3222,
@@ -152,6 +152,10 @@
   "mudskipper": [
    2995,
    3125
+  ],
+  "mort_ton": [
+   3489,
+   3290
   ]
  },
  "links": [
@@ -964,6 +968,11 @@
    "paterdomus",
    "canifis",
    228
+  ],
+  [
+   "canifis",
+   "mort_ton",
+   551
   ]
  ],
  "lockedAreas": [
@@ -975,7 +984,11 @@
     3920,
     3610
    ],
-   "quest": "Priest in Peril"
+   "quest": "Priest in Peril",
+   "enterVia": [
+    "canifis",
+    "mort_ton"
+   ]
   },
   {
    "name": "Kharidian Desert (past the Shantay Pass)",
@@ -986,6 +999,17 @@
     3114
    ],
    "item": "SHANTAY_PASS"
+  },
+  {
+   "name": "Karamja",
+   "area": [
+    2735,
+    2870,
+    2940,
+    3235
+   ],
+   "onFoot": false,
+   "onFootWhy": "Een eiland: geen looproute van het vasteland (BFS op de collision map, 20-11-2026). 21 vastgelopen loopjes naar Musa Point; Duradel in Shilo Village gold als te voet bereikbaar. Alleen per teleport (glory naar Karamja) tot de boten in de routeplanner zitten (transportplan stap 1/4)."
   }
  ]
 }

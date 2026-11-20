@@ -14,6 +14,8 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Avonturiers liepen naar Karamja (Musa Point, Duradel in Shilo Village) alsof het geen eiland was, en liepen vast. Karamja geldt nu als alleen bereikbaar met een teleport, zoals een amulet of glory.
+- Op weg naar Mort'ton of de Barrows probeerden avonturiers vanaf de Digsite rechtdoor over de rivier Salve te lopen. Ze gaan Morytania nu altijd binnen via de tempel van Paterdomus en Canifis, en er is een tussenstop bij Mort'ton.
 - Avonturiers liepen naar Morytania (Mazchna, Slayer Tower, Mort'ton) en naar de Gnome Stronghold (Nieve, de agility-baan) en kwamen er bijna nooit aan: 1 van de 117 en 0 van de 16 keer. De routekaart miste de stukken via de tempel van Paterdomus en via de poort van de Stronghold. Die zijn toegevoegd. Voor een lange tocht naar een Slayer-meester nemen ze nu bij voorkeur een Slayer ring mee om te teleporteren. Lukt dat niet, dan lopen ze.
 - Avonturiers vonden bij Cook's Assistant de meelbak in de molen van Lumbridge niet en gaven de quest op. Ze herkennen nu ook objecten die van uiterlijk wisselen (vol of leeg, open of dicht).
 - Avonturiers vochten met een slechter wapen terwijl er een beter in de bank lag. Bij de bank en de GE halen ze nu betere uitrusting voor hun vechtstijl uit de bank en trekken die aan, als hun levels en quests dat toelaten.
