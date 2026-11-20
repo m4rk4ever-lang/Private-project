@@ -5,6 +5,36 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Controle 20-11-2026 20:01: `canExecute` v1 (`2ba23ea`)
+
+Basis: `bot-logs` push 19:01 UTC. `2ba23ea` 18:46 tot 19:01 (**14,5 min**, 60 avonturiers).
+Tijdsbesteding voorlopig (net na een herstart: `new` 7,8%).
+
+| Vraag | Uitkomst (14,5 min) | Was (`696c6cd`, 24 min) |
+| --- | --- | --- |
+| Keuzes niet gestart | 7 van 55 (**13%**) | 39% |
+| Reden `unknown` | **0** | 54% van de mislukte |
+| Overgebleven redenen | `errand_refused` 4 (allemaal `errands_resting`: 10 min rust na een mislukte boodschap), `tool_unbuyable` 3 (hunter 2, slayer 1) | |
+| Vooraf uitgesloten (`blocked`) | Wintertodt 29 (`place_unreachable`), fishing 6, Giant Mole 6, woodcutting 1, mining 1, hunter 1 (alle `tool_unbuyable`) | |
+| Uitgesloten per beslissing | gem. 1,3, max 5 (35 van 48 beslissingen) | |
+| Tick-duur `server` | gem. 22,8 ms, max 242 | gem. 28,9 ms, max 178 |
+| `loop` / `errandInstant` | 0 / 196 | 1 / 401 (24 min) |
+| Tijd | errand 35,7%, working 17,7%, idle 10,4% | errand 30,4%, working 14,8%, idle 12,1% |
+
+Conclusies:
+- `canExecute` v1 doet wat het moet: 3× minder mislukte keuzes, geen `unknown` meer. Wintertodt
+  wordt bij bijna elke bot met Firemaking 50+ uitgesloten (Kourend, per boot): klopt.
+- Giant Mole uitgesloten op `tool_unbuyable`: waarschijnlijk de lichtbron (`via.light`), niet de
+  spade. Past bij de eerdere `buy_nothing` voor een lit candle (niet verhandelbaar).
+- Niet te veel uitgesloten: gemiddeld 1,3 opties per beslissing.
+- Geen merkbare extra rekentijd.
+- `hunter` faalde nog 2× op gereedschap ondanks de check: de check vooraf en de echte aankoop
+  verschillen nog. Het geheugen houdt hem daarna 30 min buiten.
+
+PR #13 (loadout, Fase 4b) staat klaar om te mergen.
+
+---
+
 ## Sessie 20-11-2026 (19:45): Fase 4 stap 2, `canExecute` v1
 
 Branch: `adventurers/can-execute-v1` (vanaf `main` `696c6cd`, met `docs/controle-1933`).
