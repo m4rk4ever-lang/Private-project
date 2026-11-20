@@ -140,6 +140,12 @@ candle), Fase 5 (unlock-waarde).
 - Eerst meten: vrije vakjes bij de start van een gathering-klus en ladingen per banktrip.
 - Klaar als: bij gathering gemiddeld 3 of minder vakjes vast met spullen buiten de loadout, en
   meer grondstoffen per banktrip.
+- **Stap 1 gebouwd 20-11-2026** (`Loadout.PlayerBots.js`): eten bij gathering naar de plek: 0 waar
+  het veilig is voor het combat level, 2 bij gevaar met de bank binnen 30 tegels, 5 bij gevaar en
+  een verre bank. Gevaar = Wilderness, een agressieve NPC binnen zijn aggressiebereik die deze bot
+  aanvalt (`NPC.isAggressiveTo`), of een plek waar avonturiers de laatste 2 uur vluchtten of
+  stierven (gedeeld). Spullen zonder nut voor de klus gaan bij het bankbezoek dat er toch al is.
+  Reisspullen (2,8 vakjes) blijven nog: de errands teleporteren ermee.
 
 ### Fase 5: Progression op unlock-waarde (§10, §11)
 
@@ -155,4 +161,9 @@ candle), Fase 5 (unlock-waarde).
 - Memory & Clan Intelligence: gemeten XP/uur, deaths en reistijden gebruiken in keuzes.
 - Human Override: ban/prefer-lijsten in JSON.
 - Transport: fairy rings, spirit trees, gliders als routeopties.
+- Minigames (op verzoek van de eigenaar, geen prioriteit nu): Wintertodt (nu altijd
+  `place_unreachable`: Kourend per boot), Pest Control, Barbarian Assault, Guardians of the Rift
+  en andere die als plugin bestaan. Eerst zichtbaar in de logging (welke minigames de planner zou
+  kiezen en waarom ze niet kunnen), dan als activiteit na transport (boten). Telt in Fase 5 mee
+  als unlock (Void via Pest Control).
 - Operator Modes.

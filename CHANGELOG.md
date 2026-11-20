@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Avonturiers konden niet naar de Giant Mole, omdat ze geen brandende kaars konden kopen. Nu kopen ze een gewone candle en steken die aan met hun tinderbox, zoals een speler doet.
 - Een avonturier die voor een quest combat wilde trainen maar dat niet kon starten, koos binnen dezelfde beslissing toch weer combat. Nu kiest hij meteen iets anders.
 - Avonturiers met een tas vol spullen die niets opbrengen liepen steeds opnieuw naar de Grand Exchange, omdat ze die spullen daar niet op de bank zetten. Dat doen ze nu wel, zoals bij elke andere bank.
 - Avonturiers die steeds opnieuw dezelfde boodschap doen zonder iets op te schieten (acht keer in vijf minuten naar dezelfde plek, zonder XP), stoppen daar nu een kwartier mee en kiezen iets anders. In hun log staat dat ze vastzaten, en de metrics laten zien welke boodschappen het waren en waarom ze die kozen.
@@ -143,6 +144,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Avonturiers die hout hakken, minen of vissen nemen alleen eten mee als de plek gevaarlijk is voor hun combat level (agressieve monsters die hen aanvallen, de Wilderness, of avonturiers die daar kortgeleden gewond raakten), en minder als de bank dichtbij is. Spullen die ze daarbij niet gebruiken (een emmer, een pot, reservewapens) blijven bij de bank. In hun log staat waarom ze wel of geen eten meenemen. Zo past er meer in hun tas en hoeven ze minder vaak naar de bank.
 - Avonturiers kiezen geen klus meer waarvan al vaststaat dat die niet kan: zonder gereedschap dat ze hebben of kunnen kopen (geen hunter zonder bird snare), of op een plek waar ze niet kunnen komen. Mislukt een klus toch door een ontbrekende eis, dan kiezen ze die een half uur niet opnieuw.
 - Avonturiers kiezen hun geldklussen doelmatiger: een klus die eerder niets of verlies opleverde, geldt niet meer als geldklus, en iets nieuws proberen ("eens proberen") gebeurt nog maar af en toe. Een verwerkklus met gekochte materialen (zoals Herblore) telt niet meer als sparen voor een doel.
 - Avonturiers trainen een skill die al op 99 staat bijna nooit meer (alleen combat en Slayer nog wel, voor de loot).

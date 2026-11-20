@@ -77,9 +77,10 @@ if (!data.expandedClans) {
 const { runPaced } = require("../runtime/SpawnPacing.PlayerBots");
 const npcSpawns = require("../../../data/definitions/npc-spawns.json");
 const { markHonest, markAdventurer } = require("../brain/Honest.PlayerBots");
-const { errandsFor } = require("../brain/Errands.PlayerBots");
+const { errandsFor, inWilderness } = require("../brain/Errands.PlayerBots");
 const { createLoopGuard } = require("./Loops.PlayerBots");
 const Requirements = require("./Requirements.PlayerBots");
+const Loadout = require("./Loadout.PlayerBots");
 /** Within this many tiles of its job's place it is there, and its stretch runs. */
 const ARRIVED_TILES = 25;
 /** A walk that never gets there (a blocked way) stops pausing the stretch after this. */
@@ -863,6 +864,98 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   }
 
   /**
+   * At a bank: what a gathering job does not carry goes in (Loadout.PlayerBots.js, Phase 4b):
+   * food beyond a couple of pieces and things of no use to it (a bucket, a pot, spare weapons).
+   * Its tools, coins, runes and teleports, quest items (untradeable), job materials and kit stay.
+   * Only at a bank visit it makes anyway.
+   */
+  /**
+   * Places where adventurers got hurt lately (a flight on low HP, a death), shared by all of them
+   * (AI_Constitution §24, §25: learn from runtime and from each other): "x>>3,y>>3,z" -> until.
+   */
+  const hurtAt = new Map();
+  const HURT_MEMORY_MS = 2 * 60 * 60_000;
+  const cellOf = (x, y, z) => `${x >> 3},${y >> 3},${z ?? 0}`;
+  function noteHurt(location) {
+    if (!location) return;
+    hurtAt.set(cellOf(location.getX(), location.getY(), location.getZ()), now() + HURT_MEMORY_MS);
+  }
+
+  /**
+   * Whether a place is dangerous for this adventurer now: null when safe, else { why, text }.
+   * The game's own rules: the Wilderness, or an aggressive NPC within its aggression range of
+   * the place that would attack this combat level (NPC.isAggressiveTo); and what adventurers
+   * met there lately (hurtAt).
+   */
+  function placeDanger(player, place) {
+    const z = place.z ?? 0;
+    if (inWilderness(place.x, place.y)) return { why: "wilderness", text: "in de Wilderness" };
+    for (let dx = -1; dx <= 1; dx += 1) {
+      for (let dy = -1; dy <= 1; dy += 1) {
+        if ((hurtAt.get(`${(place.x >> 3) + dx},${(place.y >> 3) + dy},${z}`) ?? 0) > now()) {
+          return { why: "hurt_here", text: "hier raakten avonturiers kortgeleden gewond" };
+        }
+      }
+    }
+    try {
+      const at = { getX: () => place.x, getY: () => place.y, getZ: () => z };
+      for (const npc of core.World.getNpcsNear(at, 16, null)) {
+        const definition = npc.getCurrentDefinition?.() ?? npc.getDefinition?.();
+        if (!definition?.isAggressive?.() || !npc.isAggressiveTo?.(player)) continue;
+        const range = definition.getAggressionRange?.(1) ?? 4;
+        const spot = npc.getLocation();
+        if (Math.max(Math.abs(spot.getX() - place.x), Math.abs(spot.getY() - place.y)) > range + 2) continue;
+        return { why: "aggressive", text: `${String(definition.getName?.() ?? "agressieve monsters").toLowerCase()} (level ${definition.getCombatLevel?.() ?? "?"}) vallen hem hier aan` };
+      }
+    } catch {
+      // No world to look in (tests): no danger found by NPCs.
+    }
+    return null;
+  }
+
+  /** Straight tiles from a place to the nearest named bank. */
+  function bankTilesFrom(place) {
+    let best = Infinity;
+    for (const bank of data.banks ?? []) {
+      if ((bank.z ?? 0) !== (place.z ?? 0)) continue;
+      best = Math.min(best, Math.max(Math.abs(bank.x - place.x), Math.abs(bank.y - place.y)));
+    }
+    return best;
+  }
+
+  /** The food a gathering job carries at its place, and why (Loadout.foodFor), said once per change. */
+  function gatheringFood(entry, player, place) {
+    const decision = Loadout.foodFor({ danger: place ? placeDanger(player, place) : undefined,
+      bankTiles: place ? bankTilesFrom(place) : Infinity, combat: player.getSkillManager?.()?.getCombatLevel?.() ?? null });
+    const key = `${decision.food}:${decision.reason}`;
+    if (place && entry.foodNote !== key) {
+      entry.foodNote = key;
+      note(player, decision.food === 0 ? `Neemt geen eten mee: ${decision.reason}.` : `Neemt ${decision.food} stuks eten mee: ${decision.reason}.`, "activity");
+    }
+    return decision.food;
+  }
+
+  function bankOffLoadout(entry, banker, plan = entry.plan ?? entry.savedTask) {
+    const mode = plan?.mode;
+    if (!Loadout.GATHERING.has(mode)) return [];
+    // Its job's place: where it works (its home) when this is its job now, else not known yet.
+    const home = plan === entry.plan ? stateOf(banker)?.home ?? null : null;
+    const activityId = plan === entry.plan ? entry.activity ?? plan.activity : plan.planActivity ?? plan.activity ?? null;
+    const tools = toolsFor(mode, activityId);
+    const keep = new Set([...workingMaterials(entry), ...bossKit(entry), Trade.COINS,
+      ...[...(tools.any ?? []), ...(tools.all ?? [])].map((name) => Shopping.idOf(core, name)).filter(Number.isInteger)]);
+    const kindOf = (id) => {
+      if (keep.has(id) || Trade.isSupply(core, id) || !Value.tradeable(core, id)) return "keep";
+      return isFood(id) ? "food" : "other";
+    };
+    const items = (banker.getInventory().getItems() ?? []).filter((item) => item && item.getId() > 0)
+      .map((item) => ({ itemId: item.getId(), amount: item.getAmount() }));
+    const stored = deposit(banker, Loadout.offLoadout(items, { mode, kindOf, foodKeep: gatheringFood(entry, banker, home) }));
+    if (stored.length > 0) countEvent(entry, "loadoutBanked");
+    return stored;
+  }
+
+  /**
    * At a bank: the arrows, bows and runes of the ways of fighting the job does not use go in
    * (a woodcutter does not carry 300 arrows about). Those of its own style stay with it.
    */
@@ -1508,7 +1601,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         if (bank && walkTo(entry, { ...bank, name: bank.name ?? bank.id }, {
           reason: "bank",
           arrive: (banker) => {
-            const stored = [...bankUnusedTools(entry, banker, { ...plan, activity: plan.activity ?? id }), ...bankUnusedSupplies(entry, banker, plan), ...deposit(banker, sortBag(banker).keep)];
+            const stored = [...bankUnusedTools(entry, banker, { ...plan, activity: plan.activity ?? id }), ...bankUnusedSupplies(entry, banker, plan), ...deposit(banker, sortBag(banker).keep),
+              ...bankOffLoadout(entry, banker, { ...plan, planActivity: plan.activity ?? id })];
             if (stored.length > 0) note(banker, `Maakt zijn tas leeg voor ${plan.mode}: ${stored.map((good) => itemName(good.itemId)).join(", ")}.`, "activity");
             else entry.clearBagAt = now() + 20 * 60_000;
             entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, planActivity: plan.activity ?? null, remainingMs: 0, savedAt: now() };
@@ -1679,6 +1773,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     for (const name of [via.tool, via.light].filter(Boolean)) {
       const id = Shopping.idOf(core, name);
       if (!Number.isInteger(id) || player.getInventory().getAmount(id) > 0) continue;
+      // A light it lights itself, as a player does: a candle (shop or exchange) and its tinderbox.
+      // The lit candle is not on the exchange (buy_nothing, not-exchangeable, 20-11-2026).
+      if (name === via.light && via.lightFrom && banked(player, id) <= 0) {
+        const lit = lightUp(entry, via, resume);
+        if (lit === "lit") continue;
+        return lit;
+      }
       if (banked(player, id) > 0) {
         const bank = nearestBank(player, entry);
         if (bank && walkTo(entry, { ...bank, name: bank.name ?? bank.id }, { reason: "withdraw", arrive: (banker) => { withdraw(banker, id, 1); resume(); } })) return true;
@@ -1717,6 +1818,47 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         return true;
       }
     }
+    return null;
+  }
+
+  /**
+   * A light source from its unlit form (via.lightFrom, a candle) and a tinderbox, lit by using the
+   * tinderbox on it through the game's own handler (LightSources.plugin.js). "lit" when it now
+   * carries the lit one; true while it fetches or buys what it lacks (then `resume`); null when
+   * it cannot get them.
+   */
+  function lightUp(entry, via, resume) {
+    const { player } = entry;
+    const inventory = player.getInventory();
+    const litId = Shopping.idOf(core, via.light);
+    const unlitId = Shopping.idOf(core, via.lightFrom);
+    const tinderId = Shopping.idOf(core, "TINDERBOX");
+    if (![litId, unlitId, tinderId].every(Number.isInteger)) return null;
+    for (const id of [unlitId, tinderId]) {
+      if (inventory.getAmount(id) > 0) continue;
+      if (banked(player, id) > 0) {
+        const bank = nearestBank(player, entry);
+        if (bank && walkTo(entry, { ...bank, name: bank.name ?? bank.id }, { reason: "withdraw", arrive: (banker) => { withdraw(banker, id, 1); resume(); } })) return true;
+        return null;
+      }
+      const label = itemName(id).toLowerCase();
+      if ((Shopping.shopsSelling(id).length > 0 && shopFor(entry, id, label, 1)) || buyOnExchange(entry, id, label, 1)) {
+        resume();
+        return true;
+      }
+      note(player, `Kan geen licht maken voor ${via.name}: geen ${label} te krijgen.`, "boss");
+      return null;
+    }
+    const items = inventory.getItems() ?? [];
+    const used = items.findIndex((item) => item && item.getId() === tinderId);
+    const on = items.findIndex((item) => item && item.getId() === unlitId);
+    world.emitItemOnItem?.({ player, usedItem: items[used], usedItemId: tinderId, usedItemSlot: used,
+      usedWithItem: items[on], usedWithItemId: unlitId, usedWithItemSlot: on, handled: false });
+    if (inventory.getAmount(litId) > 0) {
+      note(player, `Steekt een ${itemName(unlitId).toLowerCase()} aan met zijn tinderbox.`, "boss");
+      return "lit";
+    }
+    note(player, `Kon de ${itemName(unlitId).toLowerCase()} niet aansteken.`, "boss");
     return null;
   }
 
@@ -2425,7 +2567,12 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         && !blockedPlace(entry, place),
       remembered: (key) => Requirements.recall(entry.cannot, key, now()),
       toolsFor: (option) => {
-        if (option.boss) return { any: [], all: [option.boss.via?.tool, option.boss.via?.light].filter(Boolean) };
+        if (option.boss) {
+          const via = option.boss.via ?? {};
+          // A light it can make (a candle and a tinderbox) counts as one it can get.
+          const light = via.light && via.lightFrom && !ctx.has(via.light) ? [via.lightFrom, "TINDERBOX"] : [via.light];
+          return { any: [], all: [via.tool, ...light].filter(Boolean) };
+        }
         if (option.mode === "woodcutting" || option.mode === "mining") return { any: toolsFor(option.mode).any, all: [] };
         if (option.mode === "hunter") return toolsFor("hunter", bestActivity("hunter", levelOf(player, "HUNTER"), definitions));
         if (option.mode === "fishing") return toolsFor("fishing", reachableActivity(player, "fishing", levelOf(player, "FISHING")));
@@ -2828,6 +2975,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
           && hp < maxHp * DANGER_HP_SHARE && !carriesFood(entry.player) && !errands.busy(entry.player)) {
         note(entry.player, `Nog maar ${hp}/${maxHp} HP en geen eten: stopt met ${String(entry.activity ?? "deze klus").replace(/_/g, " ")} voor het te laat is.`, "activity");
         countEvent(entry, "fledLowHp");
+        noteHurt(entry.player.getLocation());
         entry.jobEnd = "low hp, no food";
         entry.dangerUntil = nowMs + 10 * 60_000;
         entry.savedTask = null;
@@ -3296,6 +3444,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const player = entry.player;
     const hitpoints = player.getSkillManager().getMaxLevel(core.Skill.HITPOINTS);
     if (hitpoints >= TRAVEL_FOOD_UNTIL_HP || foodSlots(player).length > 0 || nowMs < (entry.foodTriedAt ?? 0)) return false;
+    // A gathering job takes food by its place (Loadout): the same decision, or it fetched food the
+    // next bank visit put back.
+    if (Loadout.GATHERING.has(plan.mode) && entry.foodNote?.startsWith("0:")) return false;
     entry.foodTriedAt = nowMs + 20 * 60_000;
     const resume = () => { entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, planActivity: plan.activity ?? null, remainingMs: 0, savedAt: now() }; };
     const inBank = (Shopping.gear.food ?? []).map((entry) => Shopping.idOf(core, entry.item))
@@ -3531,6 +3682,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (!entry) return;
     countEvent(entry, "died");
     const at = player.getLocation();
+    noteHurt(at);
     metric({ kind: "death", bot: entry.name, phase: entry.phase, mode: entry.plan?.mode ?? null, activity: entry.activity ?? null,
       quest: entry.questRun?.name ?? null, where: [at.getX(), at.getY(), at.getZ()], hadFood: carriesFood(player),
       combat: player.getSkillManager().getCombatLevel(),
@@ -4059,7 +4211,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const priced = new Set(Trade.goodsToSell(player, core, keepHere, { isFood }).map((good) => good.itemId));
     const unpriced = Trade.goodsToSell(player, core, keepHere, { isFood, worthless: true }).filter((good) => !priced.has(good.itemId));
     const stored = [...deposit(player, bag.keep.filter((good) => !kit.has(good.itemId))), ...deposit(player, unpriced),
-      ...(entry ? [...bankUnusedSupplies(entry, player), ...bankUnusedTools(entry, player)] : [])];
+      ...(entry ? [...bankUnusedSupplies(entry, player), ...bankUnusedTools(entry, player), ...bankOffLoadout(entry, player)] : [])];
     if (stored.length > 0) note(player, `Bewaart op de bank: ${stored.map((good) => itemName(good.itemId)).join(", ")}.`, "activity");
     const pulled = withdrawToSell(player);
     const goods = Trade.goodsToSell(player, core, keepAtExchange(player), { isFood });
@@ -4199,7 +4351,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         for (const id of workingMaterials(entry)) keepHere.add(id);
         for (const id of bossKit(entry)) keepHere.add(id);
         const stored = [...deposit(banker, Trade.goodsToSell(banker, core, keepHere, { isFood, worthless: true })),
-          ...bankUnusedSupplies(entry, banker), ...bankUnusedTools(entry, banker)];
+          ...bankUnusedSupplies(entry, banker), ...bankUnusedTools(entry, banker), ...bankOffLoadout(entry, banker)];
         if (stored.length > 0) note(banker, `Zet op de bank in ${bank.name ?? bank.id}: ${stored.slice(0, 5).map((good) => itemName(good.itemId)).join(", ")}${stored.length > 5 ? ` en ${stored.length - 5} meer` : ""}. Bruikbaars bewaart hij; de rest verkoopt hij later op de GE.`, "activity");
         // Its means of travel back in the bag (it teleports only from there): law runes with the
         // elements when it has the Magic for the spells, its tablets and charged jewellery.

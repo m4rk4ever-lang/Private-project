@@ -67,7 +67,7 @@ er al) krijgt geen eigen regel maar telt als event `errandInstant` in `bot.event
 daar is een lus. In `84ecd13` zelf schreven zulke lussen 12.000 regels per uur.
 
 Events in `bot.events`: `stuck`, `walkBlocked`, `errandIdle`, `idle`, `questFailed`, `fledLowHp`,
-`died`, `teleportedOut`, `targetReached`, en nieuw `bankNothing`, `buyNothing`, `errandInstant` en `loop`.
+`died`, `teleportedOut`, `targetReached`, en nieuw `bankNothing`, `buyNothing`, `errandInstant`, `loop` en `loadoutBanked` (een bankbezoek zette spullen buiten de loadout weg).
 
 ## Kerncijfers
 
@@ -119,6 +119,10 @@ for (reason, to), (n, s, ended) in sorted(per.items(), key=lambda x: -x[1][1])[:
 dec = [r for r in rows if r["kind"] == "decision"]
 print("path", C.Counter((r["path"], r["started"]) for r in dec).most_common())
 print("niet gestart", C.Counter(r["chosen"]["mode"] or r["chosen"]["kind"] for r in dec if not r["started"]).most_common(10))
+# Tas bij gathering (Fase 4b): bezette vakjes buiten grondstoffen, en vrije vakjes
+g = [r for r in bots if r.get("mode") in ("woodcutting", "mining", "fishing") and r.get("phase") == "training"]
+print("gathering vrij gem", round(sum(r["freeSlots"] for r in g) / max(1, len(g)), 1),
+      "loadoutBanked", sum(r["events"].get("loadoutBanked", 0) for r in bots))
 print("vooraf uitgesloten", C.Counter((k, v["why"]) for r in dec for k, v in (r.get("blocked") or {}).items()).most_common(10))
 print("waarom niet", C.Counter(((r.get("failure") or {}).get("why"), r["chosen"]["mode"]) for r in dec if not r["started"]).most_common(10))
 ```

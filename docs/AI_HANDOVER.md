@@ -5,6 +5,100 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Controle 20-11-2026 20:01: `canExecute` v1 (`2ba23ea`)
+
+Basis: `bot-logs` push 19:01 UTC. `2ba23ea` 18:46 tot 19:01 (**14,5 min**, 60 avonturiers).
+Tijdsbesteding voorlopig (net na een herstart: `new` 7,8%).
+
+| Vraag | Uitkomst (14,5 min) | Was (`696c6cd`, 24 min) |
+| --- | --- | --- |
+| Keuzes niet gestart | 7 van 55 (**13%**) | 39% |
+| Reden `unknown` | **0** | 54% van de mislukte |
+| Overgebleven redenen | `errand_refused` 4 (allemaal `errands_resting`: 10 min rust na een mislukte boodschap), `tool_unbuyable` 3 (hunter 2, slayer 1) | |
+| Vooraf uitgesloten (`blocked`) | Wintertodt 29 (`place_unreachable`), fishing 6, Giant Mole 6, woodcutting 1, mining 1, hunter 1 (alle `tool_unbuyable`) | |
+| Uitgesloten per beslissing | gem. 1,3, max 5 (35 van 48 beslissingen) | |
+| Tick-duur `server` | gem. 22,8 ms, max 242 | gem. 28,9 ms, max 178 |
+| `loop` / `errandInstant` | 0 / 196 | 1 / 401 (24 min) |
+| Tijd | errand 35,7%, working 17,7%, idle 10,4% | errand 30,4%, working 14,8%, idle 12,1% |
+
+Conclusies:
+- `canExecute` v1 doet wat het moet: 3× minder mislukte keuzes, geen `unknown` meer. Wintertodt
+  wordt bij bijna elke bot met Firemaking 50+ uitgesloten (Kourend, per boot): klopt.
+- Giant Mole uitgesloten op `tool_unbuyable`: waarschijnlijk de lichtbron (`via.light`), niet de
+  spade. Past bij de eerdere `buy_nothing` voor een lit candle (niet verhandelbaar).
+- Niet te veel uitgesloten: gemiddeld 1,3 opties per beslissing.
+- Geen merkbare extra rekentijd.
+- `hunter` faalde nog 2× op gereedschap ondanks de check: de check vooraf en de echte aankoop
+  verschillen nog. Het geheugen houdt hem daarna 30 min buiten.
+
+PR #13 (loadout, Fase 4b) staat klaar om te mergen.
+
+**Giant Mole, aanvulling eigenaar:** een lit candle is niet op de GE, maar een gewone candle wel
+(en in winkels); aansteken met een tinderbox. Gebouwd in dezelfde PR: `via.lightFrom: "CANDLE"`
+in `adventurers.json`; `lightUp` in `enterBoss` haalt candle en tinderbox (bank, winkel of GE) en
+gebruikt de tinderbox op de candle via `world.emitItemOnItem` (de game's `LightSources.plugin.js`,
+Firemaking 1). `canExecute` telt candle + tinderbox als verkrijgbare lichtbron. Niet in game
+getest; bevestigen aan `boss`-regels "Steekt een candle aan" en geen `blocked` meer voor
+`boss:boss_giant_mole` op `tool_unbuyable`.
+
+---
+
+## Sessie 20-11-2026 (19:55): Fase 4b stap 1, loadout bij gathering
+
+Branch: `adventurers/loadout` (vanaf `main` `f167bd3`). **Niet gemerged vóór de controle van
+20:01**, zodat `canExecute` v1 en deze wijziging in aparte versies te meten zijn.
+
+### Bewijs
+
+Op verzoek van de eigenaar ("bij gathering zit de halve inventory nog vol"). Metrics 20-11-2026,
+278 `bot`-regels tijdens woodcutting, mining en fishing: ~10 van 28 vakjes buiten de klus
+(eten 3,7, reis 2,8, overig 1,7, munten 0,9, gereedschap 0,8); 160 van 206 klussen eindigden
+op "full bag".
+
+### Wat aangepast is
+
+- Nieuw: `server/plugins/bots/adventurers/Loadout.PlayerBots.js`. `offLoadout(items, { mode,
+  kindOf })`: alleen voor gathering; `keep` blijft, `food` tot 2 stuks, de rest naar de bank.
+- Eten per plek (aangepast na vraag van de eigenaar: "niet altijd logisch, bank om de hoek, safe
+  zone voor je combat level"): `Loadout.foodFor({ danger, bankTiles, combat })` geeft 0 / 2 / 5
+  met een reden. `placeDanger(player, place)` in Adventurers: Wilderness (`Errands.inWilderness`),
+  een agressieve NPC binnen `getAggressionRange(1) + 2` tegels van de plek waarvoor
+  `npc.isAggressiveTo(player)` geldt (de game's eigen regel: combat ≤ 2 × NPC-level), of een cel
+  (8×8, met buren) uit `hurtAt` (vlucht of dood, gedeeld door alle avonturiers, 2 uur).
+  `bankTilesFrom(place)`: rechte afstand tot de dichtstbijzijnde bank op dezelfde verdieping.
+  Plek = `stateOf(player).home` als de klus de huidige is; onbekend → 2 (oude standaard), zonder
+  logregel. Activiteitenregel bij elke verandering: "Neemt geen eten mee: veilige plek voor combat
+  45, bank op 12 tegels." `getTravelFood` haalt geen eten voor gathering op een veilige plek
+  (anders haalde hij het op en zette de volgende bank het terug).
+- `brain/Errands.PlayerBots.js`: `inWilderness` geëxporteerd.
+- `Adventurers.PlayerBots.js`: `bankOffLoadout(entry, banker, plan)` met `kindOf`: gereedschap van
+  de klus (`toolsFor` met de activiteit), munten, `Trade.isSupply` (runes, tablets, sieraden,
+  munitie), niet-verhandelbaar (quest-items), `workingMaterials`, `bossKit` = `keep`; `isFood` =
+  `food`; de rest weg. Aangeroepen op de drie bankmomenten die er al zijn: het bankpad van
+  `trade()`, `atExchange` en het leeghalen van de tas in `startTraining`. Event `loadoutBanked`.
+- `server/tests/bot-loadout.test.cjs`: 2 tests.
+- `docs/OBSERVABILITY.md` (event, recept), `docs/ADVENTURER_ROADMAP.md`, `CHANGELOG.md`.
+
+Validatie: bot-tests 16 van 122 fout (zelfde 16); de 2 nieuwe slagen. Adventurers-deel alleen
+`node --check`. **Niet in game getest.**
+
+### Risico's
+
+1. Quest-items die verhandelbaar zijn (bucket, pot) gaan de bank in; `acquireForQuest` haalt ze
+   terug, wat een extra banktrip kost als een quest ze nodig heeft.
+2. Gevaar wordt gezien aan de NPC's die er nú staan en aan recente vluchten of doden; een
+   monster dat net respawnt kan gemist worden. `fledLowHp` geldt alleen voor gevaarlijke klussen,
+   dus gewond raken bij gathering wordt pas onthouden bij een dood. Te zien aan `death` bij
+   gathering.
+3. Reisspullen niet aangepakt (2,8 vakjes).
+
+### Volgende stap
+
+Na de controle van 20:01 mergen en deployen. Dan meten met het recept "Tas bij gathering": vrije
+vakjes (was ~15,6 midden in een klus) en ladingen per banktrip.
+
+---
+
 ## Sessie 20-11-2026 (19:45): Fase 4 stap 2, `canExecute` v1
 
 Branch: `adventurers/can-execute-v1` (vanaf `main` `696c6cd`, met `docs/controle-1933`).

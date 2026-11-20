@@ -321,4 +321,4 @@ function errandsFor(api) {
   return shared;
 }
 
-module.exports = { createErrands, errandsFor, bestTeleport, ARRIVE_TILES, ERRAND_SPELLS };
+module.exports = { createErrands, errandsFor, bestTeleport, inWilderness, ARRIVE_TILES, ERRAND_SPELLS };
