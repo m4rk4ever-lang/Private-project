@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Avonturiers vonden bij Cook's Assistant de meelbak in de molen van Lumbridge niet en gaven de quest op. Ze herkennen nu ook objecten die van uiterlijk wisselen (vol of leeg, open of dicht).
 - Avonturiers liepen steeds te voet naar Morytania (Mazchna, Slayer Tower, Mort'ton) en kwamen bijna nooit aan: 1 van de 117 keer. Ze verloren daar ruim 3 uur aan. Morytania geldt nu als alleen bereikbaar met een teleport, tot de route via de tempel van Paterdomus in het spel is gecontroleerd.
 - Avonturiers vochten met een slechter wapen terwijl er een beter in de bank lag. Bij de bank en de GE halen ze nu betere uitrusting voor hun vechtstijl uit de bank en trekken die aan, als hun levels en quests dat toelaten.
 - Een avonturier die met een boog trainde en een scimitar in de tas had, wisselde steeds tussen die twee. Hij draagt nu de uitrusting van de stijl waarmee hij traint.

@@ -5,6 +5,19 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 20-11-2026 (22:15): punten 1-8 van de eigenaar (branch `adventurers/roadmap-batch`, PR na deze sessie)
+
+Eén branch, één commit per punt. Basis: logs tot 20:28 UTC (v 450f871) en de feedback-log sinds 17:00.
+
+- **8 `::volg` "Bij:":** `describeLocation` kende geen agility-banen; vanaf Faladors richels (3013,3335) was giant_mole_hole het dichtst. Banen uit `agilityCourses` tellen nu mee (ook in `place.near` van metrics).
+- **5+6 gear en stijl:** `Trade.bankUpgrades` (puur, getest) + `wearUpgradesFromBank` bij bank- en GE-bezoek (event `gearFromBank`). `trade()` draagt `planStyle(entry) ?? "melee"` in plaats van altijd melee.
+- **3 Sourhog-grot:** niet gebouwd. Niet in Shortest Path (ook niet upstream 8bd3cc6); Blockage 40331 (y 9704, dialoog-Yes) en touw 40330 zijn quest-logica. Porcine blijft in `questHold` (PR #24).
+- **4 Morytania:** `travel-hubs.json` lockedAreas Morytania `onFoot: false` (+ `onFootWhy`); `TravelHubs.onFoot` respecteert het. Data: 117 loopjes, 1 aangekomen, 201 min (vast bij tolpoort 3267,3228 en ten oosten van Varrock). Alleen per teleport tot de tempelroute met `plan_route` is gecheckt. `bot-slayer`-test aangepast.
+- **7 transportplan:** gemeten en volgorde in de roadmap. Stap 3-5 niet gebouwd: vereisen een test op de server.
+- **2 Fase 5:** `main` in `adventurers/fase-5` gemerged (PR #19 bijgewerkt, 135 tests, 16 vaste fails). Merge wacht op voltooide quests.
+- **1 quests:** top-oorzaak met harde data: Cook's Assistant "object not found at 3166,3306 (ids 1782)" ×12. `QuestPlay.matchesIds` telt de vormen van een multi-loc mee (zoals `ObjectActionPacketListener`). Volgende in de feedback: Restless Ghost "object used, not advanced" ×10, Imp Catcher "step without a place" ×9, Knight's Sword ×8, X Marks the Spot "npc not found: Veos" ×6.
+- **Validatie:** suite 133 tests (op deze branch), 16 vaste fails. Niets ingame getest.
+
 ## Sessie 20-11-2026 (21:35): `quest_end`-metric (branch `adventurers/quest-end`)
 
 - **Waarom:** 152 quest-starts, 0 `quest_done` in 3 uur, en geen regel zei hoe ver elke poging kwam of hoe hij eindigde.
