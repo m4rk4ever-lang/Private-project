@@ -484,6 +484,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       });
     }
     const label = name ?? itemName(ids[0]);
+    // A light it makes itself (a lit candle for a quest is not sold lit): the unlit one and a
+    // tinderbox, at the Firemaking level the game asks.
+    for (const id of ids) {
+      const light = unlitFor(id);
+      if (!light || levelOf(player, "FIREMAKING") < light.level) continue;
+      const lit = lightItem(entry, id, light.unlitId, { label: entry.questRun?.name ?? "zijn quest", log: "quest", replan: false });
+      if (lit === "lit" || lit === true) return true;
+    }
     for (const id of ids) {
       if (Shopping.shopsSelling(id).length > 0 && shopFor(entry, id, label, amount, { replan: false })) return true;
       if (buyOnExchange(entry, id, label, amount, { replan: false })) return true;
@@ -1855,25 +1863,32 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * it cannot get them.
    */
   function lightUp(entry, via, resume) {
+    return lightItem(entry, Shopping.idOf(core, via.light), Shopping.idOf(core, via.lightFrom), { label: via.name, resume, log: "boss" });
+  }
+
+  /**
+   * Any light it lights itself (a lit candle from a candle, a torch, a lantern): the unlit one and
+   * a tinderbox (bank, shop or exchange), then the tinderbox used on it. Same returns as lightUp.
+   */
+  function lightItem(entry, litId, unlitId, { label = "zijn klus", resume = () => {}, log = "activity", replan = true } = {}) {
     const { player } = entry;
     const inventory = player.getInventory();
-    const litId = Shopping.idOf(core, via.light);
-    const unlitId = Shopping.idOf(core, via.lightFrom);
     const tinderId = Shopping.idOf(core, "TINDERBOX");
     if (![litId, unlitId, tinderId].every(Number.isInteger)) return null;
     for (const id of [unlitId, tinderId]) {
       if (inventory.getAmount(id) > 0) continue;
       if (banked(player, id) > 0) {
         const bank = nearestBank(player, entry);
-        if (bank && walkTo(entry, { ...bank, name: bank.name ?? bank.id }, { reason: "withdraw", arrive: (banker) => { withdraw(banker, id, 1); resume(); } })) return true;
+        // Inside a quest its walks hand back to the quest (replan false), as acquireForQuest's do.
+        if (bank && walkTo(entry, { ...bank, name: bank.name ?? bank.id }, { reason: replan ? "withdraw" : "quest", replan, arrive: (banker) => { withdraw(banker, id, 1); resume(); } })) return true;
         return null;
       }
-      const label = itemName(id).toLowerCase();
-      if ((Shopping.shopsSelling(id).length > 0 && shopFor(entry, id, label, 1)) || buyOnExchange(entry, id, label, 1)) {
+      const what = itemName(id).toLowerCase();
+      if ((Shopping.shopsSelling(id).length > 0 && shopFor(entry, id, what, 1, { replan })) || buyOnExchange(entry, id, what, 1, { replan })) {
         resume();
         return true;
       }
-      note(player, `Kan geen licht maken voor ${via.name}: geen ${label} te krijgen.`, "boss");
+      note(player, `Kan geen licht maken voor ${label}: geen ${what} te krijgen.`, log);
       return null;
     }
     const items = inventory.getItems() ?? [];
@@ -1882,10 +1897,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     world.emitItemOnItem?.({ player, usedItem: items[used], usedItemId: tinderId, usedItemSlot: used,
       usedWithItem: items[on], usedWithItemId: unlitId, usedWithItemSlot: on, handled: false });
     if (inventory.getAmount(litId) > 0) {
-      note(player, `Steekt een ${itemName(unlitId).toLowerCase()} aan met zijn tinderbox.`, "boss");
+      note(player, `Steekt een ${itemName(unlitId).toLowerCase()} aan met zijn tinderbox (voor ${label}).`, log);
       return "lit";
     }
-    note(player, `Kon de ${itemName(unlitId).toLowerCase()} niet aansteken.`, "boss");
+    note(player, `Kon de ${itemName(unlitId).toLowerCase()} niet aansteken.`, log);
     return null;
   }
 
@@ -2600,7 +2615,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         const emptyShop = shop && (entry.emptyShops?.get(`${shop.shopId}:${id}`) ?? 0) > now();
         if (shop && !emptyShop && shop.distance <= (data.shopRadius ?? 80) && Shopping.coinsOf(player) >= Shopping.estimatedPrice(core, id, 1)) return true;
         const guide = Number(core.ItemDefinition?.forId?.(id)?.getGrandExchangeValue?.() ?? 0);
-        return (entry.noExchangeBuyUntil ?? 0) <= now() && guide > 0 && coins() >= Math.ceil(guide * 1.05) + 50
+        return (entry.noExchangeBuyUntil ?? 0) <= now() && guide > 0 && onExchange(id) && coins() >= Math.ceil(guide * 1.05) + 50
           && !blockedPlace(entry, data.grandExchange);
       },
       reachable: (place) => TravelHubs.onFoot(place, null, questDone(player), (item) => Shopping.owns(player, idOf(item)))
@@ -3321,6 +3336,28 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * it set off. Only shops within data.shopRadius tiles: a longer walk is not worth one item.
    */
   /**
+   * Whether the Grand Exchange trades it: the exchange's own rule (GrandExchange.plugin.js
+   * exchangeable: the unnoted item is tradeable). Asked before a trip, not found out there: a lit
+   * candle, a ghostspeak amulet and a combat bracelet were bought for and refused at the exchange
+   * (buy_nothing, not-exchangeable, 20-11-2026).
+   */
+  function onExchange(itemId) {
+    try {
+      const definition = core.ItemDefinition.forId(itemId);
+      return core.ItemDefinition.forId(definition.unNote?.() ?? itemId)?.isTradeable?.() !== false;
+    } catch {
+      return true;
+    }
+  }
+
+  /** The unlit item a tinderbox lights into `litId` (LightSources.plugin.js), or null. */
+  function unlitFor(litId) {
+    const request = { litId };
+    emit("light-sources:unlit-for", request);
+    return Number.isInteger(request.unlitId) ? { unlitId: request.unlitId, level: request.level ?? 1 } : null;
+  }
+
+  /**
    * A trip to buy at the exchange that bought nothing. It went round this silently, a trip every
    * second or two at the exchange itself (3 of 60 adventurers, v 84ecd13, 20-11-2026: 1,379
    * errands in 25 minutes, no log line). Now it says why, counts it and does not buy at the
@@ -3343,6 +3380,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const { player } = entry;
     const notBuyable = (why) => { entry.refusal = { why: "not_buyable", detail: { item: String(name), because: why } }; return false; };
     if ((entry.noExchangeBuyUntil ?? 0) > now()) return notBuyable("exchange_resting");
+    if (!onExchange(itemId)) return notBuyable("not_exchangeable");
     const guide = Number(core.ItemDefinition?.forId?.(itemId)?.getGrandExchangeValue?.() ?? 0);
     // Its coins in the bag and in its bank: the exchange has a bank, it takes out what it needs.
     const cost = Math.ceil(guide * 1.05) * amount;
@@ -4521,7 +4559,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function buyManyOnExchange(entry, wants) {
     const { player } = entry;
     const priced = wants.map((want) => ({ ...want, guide: Number(core.ItemDefinition?.forId?.(want.itemId)?.getGrandExchangeValue?.() ?? 0) }))
-      .filter((want) => want.guide > 0);
+      .filter((want) => want.guide > 0 && onExchange(want.itemId));
     if (priced.length === 0 || Shopping.coinsOf(player) + banked(player, Trade.COINS) < Math.ceil(priced[0].guide * 1.05) + 50) return false;
     if (blockedPlace(entry, data.grandExchange) || (entry.noExchangeBuyUntil ?? 0) > now()) return false;
     const plan = entry.plan;

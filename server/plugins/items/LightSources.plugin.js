@@ -189,6 +189,21 @@ function extinguishAll(player) {
   return count;
 }
 
+/**
+ * "light-sources:unlit-for" { litId }: the unlit item a tinderbox turns into it, for content that
+ * makes a light itself (an adventurer that needs a lit candle buys a candle and lights it: the lit
+ * one is not on the exchange). Sets `unlitId` and `level` (Firemaking), or leaves them unset.
+ */
+function unlitFor(request) {
+  if (!request || !Number.isInteger(request.litId) || !lights) return;
+  for (const [unlitId, entry] of lights) {
+    if (entry.lit !== request.litId) continue;
+    request.unlitId = unlitId;
+    request.level = entry.level;
+    return;
+  }
+}
+
 module.exports = {
   name: "LightSources",
   description: "Lets a tinderbox light unlit torches, candles and lanterns at the right Firemaking level, and lets lit torches and mining helmets be put out again.",
@@ -201,7 +216,8 @@ module.exports = {
     api.onItemOnObject(lightOnObject, { noted: false });
     api.onItemAction("Mining helmet", { Extinguish: extinguishHelmet });
     api.onItemAction("Lit torch", { Extinguish: extinguishTorch });
+    api.onCustomEvent("light-sources:unlit-for", unlitFor);
   },
   extinguishAll,
-  _test: { build, lightOnObject, putOutForms },
+  _test: { build, lightOnObject, putOutForms, unlitFor },
 };
