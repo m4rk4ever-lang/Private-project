@@ -36,6 +36,7 @@ Indeling per versie:
 - Avonturiers met een tas vol dubbele spullen (acht dezelfde staffs, tientallen gesmede axes) bleven uren bij een bank staan zonder iets te doen. Ze houden nu één exemplaar van elk stuk uitrusting en gereedschap; de rest gaat naar de bank of de GE. Kan de bank toch niets aannemen, dan staat dat in hun log en gaan ze verder met een klus.
 
 ### Toegevoegd
+- Quests kunnen nu met de hand in de wacht worden gezet, met een reden erbij. Avonturiers kiezen ze dan niet meer tot het probleem is opgelost. A Porcine of Interest staat als eerste in de wacht: bots raakten opgesloten in de Sourhog-grot.
 - De logs houden nu per quest-poging bij hoe die afliep: voltooid, mislukt, onderbroken (verzamelen, dak, dood) of handmatig gestopt, met de stap, de reden en de duur. Zo is per quest te zien hoe vaak het lukt en waar het vastloopt.
 - Als een avonturier een klus kiest die niet kan starten, staat in de metrics nu waarom: geen gereedschap te koop, plek niet bereikbaar (met de coördinaten en de verdieping), een te laag level, geen quest-route, enzovoort.
 - In de metrics van avonturiers staat nu bij elke keuze wat ze kozen en waarom: of het een quest, een boss, geld verdienen of een gewogen keuze was, welke drie opties het zwaarst wogen en wat er niet kon. Zo is achteraf te zien waarom een avonturier iets ging doen.

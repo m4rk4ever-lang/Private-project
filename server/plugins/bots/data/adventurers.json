@@ -1,4 +1,10 @@
 {
+  "questHold": {
+    "$comment": "Handmatige hold (AI_Constitution §28): deze quests kiezen avonturiers niet, tot de oorzaak is opgelost. Per quest de reden en sinds wanneer. ::advquest en ::advquestall (eigenaarstests) spelen ze wel. Haal een quest hier weg om hem weer vrij te geven.",
+    "quests": [
+      { "name": "A Porcine of Interest", "since": "20-11-2026", "reason": "Sluit bots op in de Sourhog-grot (3156,9715): de blokkades en het touw naar buiten staan niet in transports.json. 36 mislukte pogingen in de feedback-log, de 3-uursblokkade gaat steeds opnieuw in." }
+    ]
+  },
   "grantedQuests": {
     "$comment": "Tijdelijk: deze quests (die een skill, minigame of gebied openen) staan voor avonturiers op voltooid, zonder beloningen (geen XP, items of questpunten), tot ze speelbaar zijn uitgewerkt. Haal een quest hier weg om hem weer zelf te laten spelen.",
     "quests": ["Druidic Ritual", "Rune Mysteries", "Priest in Peril", "Nature Spirit", "Lost City", "Fairytale I - Growing Pains", "Fairytale II - Cure a Queen", "Tree Gnome Village", "The Grand Tree", "Plague City", "Bone Voyage", "Monkey Madness I", "Swan Song", "Desert Treasure I", "Desert Treasure II - The Fallen Empire", "The Fremennik Trials", "Song of the Elves", "Dragon Slayer I", "Lunar Diplomacy", "Ghosts Ahoy", "Children of the Sun"]
