@@ -139,7 +139,9 @@ function chooseNext(adventurer, quests, {
   for (const quest of random() < questGapChance ? open : []) {
     if (isReady(quest, adventurer)) continue;
     const gap = missing(quest, adventurer);
-    if (gap.combat) {
+    // A combat gap only when combat may be picked now: it was excluded after it could not start,
+    // and was picked again in the same decision (Eeshwar, Witch's House, decision metric, ce581ab).
+    if (gap.combat && !exclude.has(COMBAT)) {
       return decided({ kind: "train", mode: COMBAT, skill: "COMBAT", reason: `${quest.name} (combat ${gap.combat})`, target: { skill: "COMBAT", level: gap.combat } },
         "quest_gap", { quest: quest.name, missing: gap });
     }

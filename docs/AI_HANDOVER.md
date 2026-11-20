@@ -5,6 +5,38 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Controle 20-11-2026 18:56: `ce581ab` (`::volg`-status, `decision`, rommelige tas)
+
+Basis: `bot-logs` push 17:51 UTC. `ce581ab` 17:37 tot 17:51 (**14 min**, 60 avonturiers). Kort:
+tijdsbesteding en bevroren bots zijn voorlopig.
+
+| Vraag | Uitkomst (14 min) |
+| --- | --- |
+| `decision`-volume | 57 regels, ~240 per uur (geschat was 800 à 1.000). Geen probleem. |
+| Metrics / activiteit | ~3.250 / ~6.800 per uur. Metrics-log dekt ~6 uur. |
+| `loop` | 0. Jorgbot 4 en Patrickbot 1 niet meer in een lus (rommelige-tas-fix werkt). |
+| `errandInstant` | 201 (~840 per uur; was ~1.280). Hoogste Patrickbot 14: 52. |
+| Tijd (voorlopig) | errand 31,5%, walking 25,1%, working 17,5%, idle 9,6%, new 6,8% (herstart). |
+| `buy_nothing` | 0. |
+
+**Nulmeting Fase 5 (waar keuzes voor dienen),** 45 gestarte keuzes:
+- `quest` 13 (29%), `quest_gap` 6 (13%), `weighted` met "doel: …" 2 (4%): samen **~47% dient
+  een unlock of doel**.
+- `weighted` voor "achterstand" (15) of "afwisseling" (8): **~51% is balanceren**, geen doel.
+- Bij `weighted` kreeg de gekozen optie mediaan 12% kans; maar 8 van 25 keer de zwaarste.
+
+**Bewijs Fase 4 (`CanExecute`):** 12 van 57 keuzes (21%) konden niet starten. `combat_training`
+het vaakst (4), daarna `hunter` (2), `buy_fletching`, `woodcutting`, `combat_ranged`,
+`buy_smithing`, `buy_cooking`, `slayer` (elk 1). De planner kiest dus regelmatig iets waarvan de
+eisen niet vooraf gecheckt zijn; waarom het niet startte staat nog niet in de metric.
+
+**Kleine planner-bug gevonden:** de `quest_gap`-weg kijkt niet naar `exclude`. Eeshwar kreeg in
+één beslissing twee keer `combat_training` voor Witch's House (combat 35), ook nadat die bij
+poging 1 al was uitgesloten. Kost een poging, geen lus. **Gefixt 19:00:** `chooseNext` slaat de
+combat-gap over als `exclude` `combat_training` bevat (test in `bot-adventurers.test.cjs`).
+
+---
+
 ## Sessie 20-11-2026 (18:50): Fase 3 deel 2, `decision`-metric
 
 Branch: `adventurers/decision-metric` (vanaf `main` `3d92588`).
