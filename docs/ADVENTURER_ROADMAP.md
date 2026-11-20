@@ -79,6 +79,20 @@ vorige versie zijn bekeken.
   doen: een paar uur data van de nieuwe versie bekijken, dan de grootste oorzaak oplossen.
 - Klaar als: errand-aandeel onder 30% bij gelijk aantal avonturiers.
 
+### Fase 2b: Algemene lusbewaking (§18), afgesproken 20-11-2026
+
+- Bewijs: op 20-11-2026 drie lussen na elkaar, elk pas zichtbaar na de vorige fix: banklus
+  (ADR-0005), kooplus bij de GE (`buy_nothing`), uitrusting heen en weer naar de bank
+  (`errandInstant`). Elke fix was lokaal; de beslisstap kijkt niet of een actie iets opleverde.
+- Eén bewaking in de beslisstap: dezelfde boodschap of beslissing een aantal keer zonder XP, geld
+  of voortgang → event, metric met de reeks, en een andere keuze.
+- Klaar als: geen bot met een hoog `errandInstant` of een herhalende reeks zonder voortgang in de
+  logs, ook bij nieuwe oorzaken.
+
+Afgesproken volgorde daarna: Fase 3 (`::volg` Goal / Activity / Reason), Fase 4 (`CanExecute`,
+met als eerste bewijs niet-verhandelbare quest-items die op de GE gekocht worden, zoals lit
+candle), Fase 5 (unlock-waarde).
+
 ### Fase 3: Observability van keuzes (§30, §31)
 
 - `::volg` uitbreiden met doel, subdoel (plan.reason), huidige activiteit, fase, route (errand.to)
