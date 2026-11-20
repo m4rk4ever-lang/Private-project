@@ -1773,6 +1773,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     for (const name of [via.tool, via.light].filter(Boolean)) {
       const id = Shopping.idOf(core, name);
       if (!Number.isInteger(id) || player.getInventory().getAmount(id) > 0) continue;
+      // A light it lights itself, as a player does: a candle (shop or exchange) and its tinderbox.
+      // The lit candle is not on the exchange (buy_nothing, not-exchangeable, 20-11-2026).
+      if (name === via.light && via.lightFrom && banked(player, id) <= 0) {
+        const lit = lightUp(entry, via, resume);
+        if (lit === "lit") continue;
+        return lit;
+      }
       if (banked(player, id) > 0) {
         const bank = nearestBank(player, entry);
         if (bank && walkTo(entry, { ...bank, name: bank.name ?? bank.id }, { reason: "withdraw", arrive: (banker) => { withdraw(banker, id, 1); resume(); } })) return true;
@@ -1811,6 +1818,47 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         return true;
       }
     }
+    return null;
+  }
+
+  /**
+   * A light source from its unlit form (via.lightFrom, a candle) and a tinderbox, lit by using the
+   * tinderbox on it through the game's own handler (LightSources.plugin.js). "lit" when it now
+   * carries the lit one; true while it fetches or buys what it lacks (then `resume`); null when
+   * it cannot get them.
+   */
+  function lightUp(entry, via, resume) {
+    const { player } = entry;
+    const inventory = player.getInventory();
+    const litId = Shopping.idOf(core, via.light);
+    const unlitId = Shopping.idOf(core, via.lightFrom);
+    const tinderId = Shopping.idOf(core, "TINDERBOX");
+    if (![litId, unlitId, tinderId].every(Number.isInteger)) return null;
+    for (const id of [unlitId, tinderId]) {
+      if (inventory.getAmount(id) > 0) continue;
+      if (banked(player, id) > 0) {
+        const bank = nearestBank(player, entry);
+        if (bank && walkTo(entry, { ...bank, name: bank.name ?? bank.id }, { reason: "withdraw", arrive: (banker) => { withdraw(banker, id, 1); resume(); } })) return true;
+        return null;
+      }
+      const label = itemName(id).toLowerCase();
+      if ((Shopping.shopsSelling(id).length > 0 && shopFor(entry, id, label, 1)) || buyOnExchange(entry, id, label, 1)) {
+        resume();
+        return true;
+      }
+      note(player, `Kan geen licht maken voor ${via.name}: geen ${label} te krijgen.`, "boss");
+      return null;
+    }
+    const items = inventory.getItems() ?? [];
+    const used = items.findIndex((item) => item && item.getId() === tinderId);
+    const on = items.findIndex((item) => item && item.getId() === unlitId);
+    world.emitItemOnItem?.({ player, usedItem: items[used], usedItemId: tinderId, usedItemSlot: used,
+      usedWithItem: items[on], usedWithItemId: unlitId, usedWithItemSlot: on, handled: false });
+    if (inventory.getAmount(litId) > 0) {
+      note(player, `Steekt een ${itemName(unlitId).toLowerCase()} aan met zijn tinderbox.`, "boss");
+      return "lit";
+    }
+    note(player, `Kon de ${itemName(unlitId).toLowerCase()} niet aansteken.`, "boss");
     return null;
   }
 
@@ -2519,7 +2567,12 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         && !blockedPlace(entry, place),
       remembered: (key) => Requirements.recall(entry.cannot, key, now()),
       toolsFor: (option) => {
-        if (option.boss) return { any: [], all: [option.boss.via?.tool, option.boss.via?.light].filter(Boolean) };
+        if (option.boss) {
+          const via = option.boss.via ?? {};
+          // A light it can make (a candle and a tinderbox) counts as one it can get.
+          const light = via.light && via.lightFrom && !ctx.has(via.light) ? [via.lightFrom, "TINDERBOX"] : [via.light];
+          return { any: [], all: [via.tool, ...light].filter(Boolean) };
+        }
         if (option.mode === "woodcutting" || option.mode === "mining") return { any: toolsFor(option.mode).any, all: [] };
         if (option.mode === "hunter") return toolsFor("hunter", bestActivity("hunter", levelOf(player, "HUNTER"), definitions));
         if (option.mode === "fishing") return toolsFor("fishing", reachableActivity(player, "fishing", levelOf(player, "FISHING")));

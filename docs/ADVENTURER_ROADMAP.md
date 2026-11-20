@@ -161,4 +161,9 @@ candle), Fase 5 (unlock-waarde).
 - Memory & Clan Intelligence: gemeten XP/uur, deaths en reistijden gebruiken in keuzes.
 - Human Override: ban/prefer-lijsten in JSON.
 - Transport: fairy rings, spirit trees, gliders als routeopties.
+- Minigames (op verzoek van de eigenaar, geen prioriteit nu): Wintertodt (nu altijd
+  `place_unreachable`: Kourend per boot), Pest Control, Barbarian Assault, Guardians of the Rift
+  en andere die als plugin bestaan. Eerst zichtbaar in de logging (welke minigames de planner zou
+  kiezen en waarom ze niet kunnen), dan als activiteit na transport (boten). Telt in Fase 5 mee
+  als unlock (Void via Pest Control).
 - Operator Modes.

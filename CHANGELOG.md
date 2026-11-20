@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Avonturiers konden niet naar de Giant Mole, omdat ze geen brandende kaars konden kopen. Nu kopen ze een gewone candle en steken die aan met hun tinderbox, zoals een speler doet.
 - Een avonturier die voor een quest combat wilde trainen maar dat niet kon starten, koos binnen dezelfde beslissing toch weer combat. Nu kiest hij meteen iets anders.
 - Avonturiers met een tas vol spullen die niets opbrengen liepen steeds opnieuw naar de Grand Exchange, omdat ze die spullen daar niet op de bank zetten. Dat doen ze nu wel, zoals bij elke andere bank.
 - Avonturiers die steeds opnieuw dezelfde boodschap doen zonder iets op te schieten (acht keer in vijf minuten naar dezelfde plek, zonder XP), stoppen daar nu een kwartier mee en kiezen iets anders. In hun log staat dat ze vastzaten, en de metrics laten zien welke boodschappen het waren en waarom ze die kozen.
