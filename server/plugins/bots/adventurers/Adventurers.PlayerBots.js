@@ -3005,8 +3005,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         }
       }
       if (entry.needFood && carriesFood(entry.player)) entry.needFood = false;
-      // Gathered what its quest needed (entry.gatherFor): back to that quest.
-      if (entry.gather && entry.phase === "training") {
+      // Gathered what its quest needed (entry.gatherFor): back to that quest. Also when it is on
+      // an errand (at the exchange it had enough, and the errand was the next thing it did).
+      if (entry.gather && entry.phase !== "quest" && !errands.busy(entry.player)) {
         const have = entry.player.getInventory().getAmount(entry.gather.itemId) + banked(entry.player, entry.gather.itemId);
         if (have >= entry.gather.amount || nowMs >= entry.until) {
           const quest = entry.gather.quest;
@@ -4491,6 +4492,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
 
   function workingMaterials(entry) {
     const ids = new Set();
+    // What it gathers for a quest (clay for Doric's Quest) is the quest's, not goods: Markbot 3
+    // mined clay, banked it and sold it at the exchange, and mined again (20-11-2026).
+    if (Number.isInteger(entry.gather?.itemId)) ids.add(entry.gather.itemId);
     for (const plan of [entry.resume, entry.plan, entry.savedTask]) {
       const mode = String(plan?.mode ?? "");
       // The bow and arrows or the runes of a ranged or magic job: it fetched them from the bank
@@ -4667,6 +4671,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function resumeTask(entry, nowMs) {
     const task = entry.savedTask;
     entry.savedTask = null;
+    // A job that gathered for a quest goes back to that quest when it has enough, after a restart too.
+    if (task?.gather && !entry.gather) entry.gather = { ...task.gather };
     const plan = Tasks.planOf(task, (data.bosses ?? []).filter((boss) => boss.onFoot !== false));
     if (!plan) return false;
     // Already at the level the job was for (combat 10 at combat 25): something new instead.
