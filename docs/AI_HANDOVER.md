@@ -5,6 +5,12 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 20-11-2026 (21:35): `quest_end`-metric (branch `adventurers/quest-end`)
+
+- **Waarom:** 152 quest-starts, 0 `quest_done` in 3 uur, en geen regel zei hoe ver elke poging kwam of hoe hij eindigde.
+- **Wat:** nieuwe pure module `QuestEnd.PlayerBots.js` (`questEnd(run, outcome, extra)`), aangeroepen via `endQuestRun` in Adventurers op alle zes eindpunten: `done`, `failed` (met de reden en stage uit `describeFailure`), `gather` (item zelf verzamelen), `roof` (eerst de dakbaan af), `died`, `override` (`::advtrain`). `entry.questStarts` telt de poging per bot per quest (`attempt`). `quest_done` blijft bestaan.
+- **Validatie:** `tests/bot-quest-end.test.cjs` (4 tests). Suite 131 tests, 16 vaste fails.
+- **Volgende:** na een uur draaien het recept "Quests" in OBSERVABILITY: slagingskans per quest en de top van mislukte stappen. Daarna de data-gedreven quest-hold-lijst (A Porcine of Interest eerst) en de grootste reden aanpakken.
 ## Sessie 20-11-2026 (21:25): Eeshwar zweeft boven Falador (branch `adventurers/roof-drift`)
 
 - **Observatie:** screenshot 21:19. `::volg` zegt "Bij: giant mole hole" (2984,3314), minimap zwart met daken: verdieping 3, ~40 tegels west van de baan, naast het White Knights-kasteel. Logs (tot 21:13) tonen nog XP tot level 57; de afdrijving viel erna.

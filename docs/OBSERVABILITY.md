@@ -49,6 +49,7 @@ naar de eerste en laatste `at` voordat je conclusies trekt.
 | `teleport` | Teleport onderweg | `how`, `name`, `to`, `reason` |
 | `toll_gate`, `level_hop` | Tolpoort Al Kharid, trap of ladder op een route | |
 | `quest_done`, `quest_fetch` | Quest voltooid, quest-item gehaald | `dialogue`, `got`, `have` |
+| `quest_end` | Einde van elke quest-poging, hoe ook | `quest`, `outcome` (done, failed, gather, roof, died, override), `step`, `helperStep`, `stage`, `tries`, `reason`, `minutes`, `attempt` |
 | `barrows_run` | Eén Barrows-run | kosten en lootwaarde |
 | `skills` | Elke 5 min: welke skills getraind, door wie, `untouched` | |
 | `server` | Elke 5 min: aantallen, tick-duur, geheugen, `questsBlocked` | |
@@ -127,6 +128,14 @@ print("gathering vrij gem", round(sum(r["freeSlots"] for r in g) / max(1, len(g)
       "loadoutBanked", sum(r["events"].get("loadoutBanked", 0) for r in bots))
 print("vooraf uitgesloten", C.Counter((k, v["why"]) for r in dec for k, v in (r.get("blocked") or {}).items()).most_common(10))
 print("waarom niet", C.Counter(((r.get("failure") or {}).get("why"), r["chosen"]["mode"]) for r in dec if not r["started"]).most_common(10))
+# Quests (vanaf de versie met quest_end): slagingskans per quest, en waar mislukte pogingen stopten
+qe = [r for r in rows if r["kind"] == "quest_end"]
+print("quest uitkomst", C.Counter(r["outcome"] for r in qe))
+per = C.defaultdict(C.Counter)
+for r in qe: per[r["quest"]][r["outcome"]] += 1
+for q, c in sorted(per.items(), key=lambda x: -sum(x[1].values()))[:15]:
+    print(f"{q:32} n={sum(c.values()):3} done={c['done']:3} {round(c['done'] / sum(c.values()) * 100)}% {dict(c)}")
+print("mislukt op", C.Counter((r["quest"], r["helperStep"] or r["step"], (r["reason"] or "")[:40]) for r in qe if r["outcome"] == "failed").most_common(10))
 ```
 
 ## Gaten ten opzichte van de constitution

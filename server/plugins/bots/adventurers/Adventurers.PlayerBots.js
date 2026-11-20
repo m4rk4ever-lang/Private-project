@@ -80,6 +80,7 @@ const { markHonest, markAdventurer } = require("../brain/Honest.PlayerBots");
 const { errandsFor, inWilderness, bestTeleport } = require("../brain/Errands.PlayerBots");
 const { createLoopGuard } = require("./Loops.PlayerBots");
 const Requirements = require("./Requirements.PlayerBots");
+const { questEnd } = require("./QuestEnd.PlayerBots");
 const Loadout = require("./Loadout.PlayerBots");
 /** Locked areas (Morytania, the desert): the walk guard reads them (lockedAway). */
 const travelHubsData = require("../data/travel-hubs.json");
@@ -536,6 +537,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         entry.questRun = run;
         continue;
       }
+      endQuestRun(entry, run, "gather", `gathering ${itemName(itemId).toLowerCase()}`);
       note(entry.player, `Kan ${itemName(itemId).toLowerCase()} niet kopen; gaat het zelf verzamelen voor ${run.name}.`, "quest");
       return true;
     }
@@ -2227,6 +2229,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       note(entry.player, `${plan.quest.name} heeft nog geen bot-playthrough; overgeslagen.`, "quest");
       return cannot(entry, "no_quest_playthrough", { quest: plan.quest.name });
     }
+    const starts = (entry.questStarts ??= new Map());
+    starts.set(plan.quest.name, (starts.get(plan.quest.name) ?? 0) + 1);
     entry.phase = "quest";
     entry.plan = plan;
     entry.activity = null;
@@ -2268,6 +2272,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // quest again, not "no stairs found" for every quest it tries from up there.
     if (!busy && entry.plan?.quest && roofCourse(entry.player.getLocation())) {
       entry.afterRoof = entry.plan.quest;
+      if (run) endQuestRun(entry, run, "roof", "on a rooftop course");
       entry.questRun = null;
       if (brain) brain.paused = false;
       getOffRoof(entry, nowMs);
@@ -2283,6 +2288,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       metric({ kind: "quest_done", bot: entry.name, quest: run.name, guide: run.helperKey ? "quest-helper" : "playthrough",
         minutes: startedAt ? Math.round((Date.now() - startedAt) / 6000) / 10 : null, steps: run.history?.length ?? null,
         dialogue: run.dialogue ?? [] });
+      endQuestRun(entry, run, "done");
       entry.jobEnd = "quest done";
     } else {
       // Stuck: put aside (longer each time it fails) and written down why, so the cause can be
@@ -2290,7 +2296,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const failures = (entry.questFailures ??= new Map());
       failures.set(run.name, (failures.get(run.name) ?? 0) + 1);
       (entry.questsAside ??= new Map()).set(run.name, nowMs + QUEST_ASIDE_MS * Math.min(8, 2 ** (failures.get(run.name) - 1)));
-      recordQuestFeedback(entry, questPlay.describeFailure({ ...entry, questRun: run }));
+      const failure = questPlay.describeFailure({ ...entry, questRun: run });
+      recordQuestFeedback(entry, failure);
+      endQuestRun(entry, run, "failed", failure?.reason ?? run.reason ?? null, failure?.stage);
       noteQuestFailure(run.name, entry.name);
       countEvent(entry, "questFailed");
       entry.jobEnd = `quest failed: ${run.reason ?? "?"}`;
@@ -2301,6 +2309,20 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     entry.until = 0;
     // In a sweep (::advquestall): on to the next quest no one has tried in it yet.
     if (sweep.active && nowMs < sweep.until) sweepNext(entry);
+  }
+
+  /**
+   * The quest_end metric: one line per attempt, however it ends (QuestEnd.PlayerBots.js), so the
+   * success rate per quest and where each attempt stopped can be counted from the logs.
+   */
+  function endQuestRun(entry, run, outcome, reason = null, stage = undefined) {
+    try {
+      const at = stage !== undefined ? stage : questPlay.describeFailure({ ...entry, questRun: run })?.stage;
+      const line = questEnd(run, outcome, { bot: entry.name, reason, stage: at, attempt: entry.questStarts?.get(run.name) ?? null });
+      if (line) metric(line);
+    } catch {
+      // A metric line, not a must: the quest goes on (or is put aside) either way.
+    }
   }
 
   /** One stuck quest, as a line in the feedback log (and the last few in memory for the page). */
@@ -3918,6 +3940,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         : "verloor het gevecht met eten bij zich",
       prayer: player.getSkillManager().getCurrentLevel(core.Skill.PRAYER) });
     note(player, `Is gestorven bij (${at.getX()}, ${at.getY()})${entry.lastFoe && now() - entry.lastFoe.at < 60_000 ? ` door ${entry.lastFoe.name.toLowerCase()}` : ""}; gaat zijn spullen ophalen.`, "activity");
+    if (entry.questRun) endQuestRun(entry, entry.questRun, "died", entry.lastFoe && now() - entry.lastFoe.at < 60_000 ? `died to ${entry.lastFoe.name}` : "died");
     entry.lastFoe = null;
     entry.graveTries = 0;
     entry.questRun = null;
@@ -5080,6 +5103,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const entry = adventurers.get(name);
     if (!entry?.player?.isRegistered?.() || !mode) return false;
     errands.errands?.delete?.(entry.player);
+    if (entry.questRun) endQuestRun(entry, entry.questRun, "override", `owner test: ${mode}`);
     entry.questRun = null;
     // A boss by its id or name (::advtrain Markbot 18:boss_barrows), for a test run.
     const boss = (data.bosses ?? []).find((entry2) => entry2.id === mode || String(entry2.name).toLowerCase() === String(mode).toLowerCase());
