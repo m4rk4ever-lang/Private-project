@@ -4387,6 +4387,49 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return stacksIn(player.getBanks?.() ?? [], count);
   }
 
+  /** What an errand is for, in words (`::volg`, AI_Constitution §31). */
+  const ERRAND_WHY = Object.freeze({
+    bank: "spullen op de bank zetten", exchange: "handelen op de GE", buy_materials: "kopen op de GE",
+    withdraw: "spullen van de bank halen", station: "naar een oven, fornuis of aambeeld", training: "naar zijn klus",
+    quest: "voor een quest", slayer: "naar zijn Slayer-taak", agility: "naar de agility-baan", grave: "terug naar zijn graf",
+  });
+
+  /**
+   * What it does and why, for whoever watches it (`::volg`, through "adventurers:status"):
+   * AI_Constitution §30 and §31. Goal, what it is busy with, the reason, the route of an errand,
+   * where it is, its wealth and its XP per hour since the last metrics round. Only what it already
+   * knows; nothing is worked out anew.
+   */
+  function status(event) {
+    const player = event?.player;
+    const entry = player ? adventurers.get(player.getUsername?.()) : null;
+    if (!entry) return;
+    const plan = entry.plan ?? null;
+    const words = (text) => (text ? String(text).replace(/_/g, " ") : null);
+    let activity = null;
+    if (entry.phase === "quest" && entry.questRun?.name) activity = `quest ${entry.questRun.name}`;
+    else if (plan?.kind === "boss") activity = `boss ${words(plan.boss?.name ?? plan.boss?.id) ?? ""}`.trim();
+    else if (plan?.mode) activity = entry.activity && words(entry.activity) !== words(plan.mode) ? `${words(plan.mode)} (${words(entry.activity)})` : words(plan.mode);
+    const m = entry.metrics;
+    let xpPerHour = null;
+    if (m?.xp && now() - m.since >= 60_000) {
+      const gained = Object.entries(xpBySkill(player)).reduce((sum, [skill, xp]) => sum + Math.max(0, xp - (m.xp[skill] ?? xp)), 0);
+      xpPerHour = Math.round(gained / ((now() - m.since) / 3_600_000));
+    }
+    const at = player.getLocation();
+    event.status = {
+      goal: Goals.describe(player.getAttribute(GOAL_ATTRIBUTE) ?? null) ?? null,
+      activity,
+      reason: plan?.reason ?? null,
+      skill: words(plan?.skill)?.toLowerCase() ?? null,
+      phase: entry.phase ?? null,
+      route: entry.errand ? { to: entry.errand.to, why: ERRAND_WHY[entry.errand.reason] ?? words(entry.errand.reason) } : null,
+      place: describeLocation(player, { x: at.getX(), y: at.getY() }).near,
+      wealth: wealthOf(player).total,
+      xpPerHour,
+    };
+  }
+
   function wealthOf(player) {
     const bank = (player.getBanks?.() ?? []).reduce((sum, tab) => sum + containerValue(tab), 0);
     const carried = containerValue(player.getInventory?.()) + containerValue(player.getEquipment?.());
@@ -4590,7 +4633,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
   }
 
-  return { adventurers, questFeedback, spawn, tick, onShutdown, onXpReward, shareLogsNow, questSweep, stopSweep, talkTick, forceQuest, forceTraining, onDeath, onLevelUp, onDrops, onNpcDeath, report, next, startGroup, acquire };
+  return { status, adventurers, questFeedback, spawn, tick, onShutdown, onXpReward, shareLogsNow, questSweep, stopSweep, talkTick, forceQuest, forceTraining, onDeath, onLevelUp, onDrops, onNpcDeath, report, next, startGroup, acquire };
 }
 
 let bridgeStarting = 0;
@@ -4672,6 +4715,7 @@ function startAdventurers({ api, runtime, world, registry }) {
   // Where an adventurer's things may come from (its audit, above).
   api.onCustomEvent("ge:offer-collected", ({ player, itemId }) => manager.acquire(player, itemId));
   api.onCustomEvent("skills:produced", ({ player, itemId }) => manager.acquire(player, itemId));
+  api.onCustomEvent("adventurers:status", manager.status);
   api.onGroundItemPickup((event) => manager.acquire(event.player, event.groundItemId));
   // Every open page asks every 5 s; one report serves them all for 2 s.
   let cached = null;

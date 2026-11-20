@@ -21,6 +21,7 @@ Indeling per versie:
 - Avonturiers met een tas vol dubbele spullen (acht dezelfde staffs, tientallen gesmede axes) bleven uren bij een bank staan zonder iets te doen. Ze houden nu één exemplaar van elk stuk uitrusting en gereedschap; de rest gaat naar de bank of de GE. Kan de bank toch niets aannemen, dan staat dat in hun log en gaan ze verder met een klus.
 
 ### Toegevoegd
+- `::volg` laat bij een avonturier nu ook zien wat zijn doel is, waar hij mee bezig is en waarom, en waar hij heen loopt als hij onderweg is. Elke twee minuten volgen zijn XP per uur, zijn vermogen en waar hij is.
 - De metrics van avonturiers hebben per boodschap (bank, GE, winkel, klus) een regel `errand`: hoe lang hij duurde en hoe hij eindigde: echt aangekomen, op minder dan 15 tegels als aangekomen geteld, via de tolpoort, of versperd. Zo is te zien welke banken en routes de meeste tijd kosten.
 - Voor de Barrows controleert een avonturier zijn magic: een magic-wapen (met zijn magic-set van de bank, anders het beste dat hij mag en kan betalen, gekocht) en runes voor zo'n 1000 casts van de beste fire-spreuk die hij kan, eerst van de bank en anders op de GE. Bots casten nu ook Fire Blast, Fire Wave en Fire Surge.
 - Barrows: tot 15 runs achter elkaar; is de voorraad op, dan vult de avonturier aan en gaat hij door tot hij minstens 10 runs of een uur bezig is. Hij vecht met magic tegen de broers, behalve tegen Ahrim (melee), en houdt zijn magic-set bij zich.

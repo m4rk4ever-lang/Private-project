@@ -102,6 +102,8 @@ candle), Fase 5 (unlock-waarde).
 - Een `decision`-metric bij elke planner-keuze: gekozen optie, reden, top 3 alternatieven met
   gewicht.
 - Klaar als: een operator in `::volg` "Goal / Activity / Reason" ziet zoals in §31.
+- **Deel 1 gebouwd 20-11-2026:** `::volg` toont doel, bezig, reden, route, XP/uur, vermogen en
+  plek (`adventurers:status`). Deel 2 (`decision`-metric) volgt.
 
 ### Fase 4: Requirements (§7)
 
