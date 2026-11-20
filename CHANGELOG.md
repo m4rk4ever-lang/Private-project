@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Avonturiers liepen steeds te voet naar Morytania (Mazchna, Slayer Tower, Mort'ton) en kwamen bijna nooit aan: 1 van de 117 keer. Ze verloren daar ruim 3 uur aan. Morytania geldt nu als alleen bereikbaar met een teleport, tot de route via de tempel van Paterdomus in het spel is gecontroleerd.
 - Avonturiers vochten met een slechter wapen terwijl er een beter in de bank lag. Bij de bank en de GE halen ze nu betere uitrusting voor hun vechtstijl uit de bank en trekken die aan, als hun levels en quests dat toelaten.
 - Een avonturier die met een boog trainde en een scimitar in de tas had, wisselde steeds tussen die twee. Hij draagt nu de uitrusting van de stijl waarmee hij traint.
 - `::volg` en de logs noemden een bot op de Falador-daken "bij giant mole hole". Agility-banen tellen nu mee als plek, dus er staat "Falador Rooftop".

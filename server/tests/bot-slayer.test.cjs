@@ -39,7 +39,14 @@ test("an adventurer asks the best Slayer master its levels allow and it can walk
   assert.deepEqual(Slayer.mastersFor({ combat: 3, slayer: 1 }, walkable(false)).map((m) => m.name).sort(), ["Spria", "Turael"]);
   // Mazchna is in Canifis: across the Salve, only after Priest in Peril.
   assert.ok(!Slayer.mastersFor({ combat: 40, slayer: 1 }, walkable(false)).some((m) => m.name === "Mazchna"));
-  assert.equal(Slayer.mastersFor({ combat: 40, slayer: 1 }, walkable(true))[0].combat, 20);
+  // On foot not even then for now: Morytania is teleport-only until the walk in is checked in
+  // game (travel-hubs.json "onFoot": false; 1 of 117 walks arrived, 20-11-2026).
+  assert.ok(!Slayer.mastersFor({ combat: 40, slayer: 1 }, walkable(true)).some((m) => m.name === "Mazchna"));
+  // With that flag gone, Priest in Peril opens it again.
+  const data = JSON.parse(JSON.stringify(require("../plugins/bots/data/travel-hubs.json")));
+  for (const locked of data.lockedAreas) delete locked.onFoot;
+  const opened = (place) => Hubs.onFoot(place, data, () => true);
+  assert.equal(Slayer.mastersFor({ combat: 40, slayer: 1 }, opened)[0].combat, 20);
   // Nieve (the Gnome Stronghold) from combat 85; Vannaka (Edgeville Dungeon) is underground.
   const high = Slayer.mastersFor({ combat: 90, slayer: 1 }, walkable(false));
   assert.equal(high[0].combat, 85);
