@@ -22,6 +22,7 @@
     6,
     15
   ],
+  "unlockChance": 0.5,
   "questChance": 0.2,
   "moneyChance": 0.1,
   "extraPerClan": 15,

@@ -153,6 +153,12 @@ candle), Fase 5 (unlock-waarde).
   de bestaande gewichten, niet in plaats daarvan.
 - Klaar als: de metrics laten zien dat avonturiers unlocks halen (quest_done, goal reached) in
   plaats van alleen XP.
+- **Stap 1 gebouwd 20-11-2026:** `data/unlock-values.json` (unlocks op het pad en skill-unlocks,
+  Quest Cape-aandeel), `Progression.PlayerBots.js` (waarde = eigen unlocks + cape-aandeel + helft
+  van wat het ontsluit; score = waarde / (1 + moeite/10)). De planner kiest een klare quest op
+  waarde en, met `unlockChance` (0,5 in `adventurers.json`), training naar de unlock met de beste
+  score (`decision.path = "unlock"`, met `unlock`, `value`, `effort`). Nulmeting (ce581ab):
+  ~47% van de gestarte keuzes diende een quest of doel, ~51% balanceren.
 
 ### Later, op volgorde van bewijs
 

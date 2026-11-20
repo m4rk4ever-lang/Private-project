@@ -5,6 +5,48 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 20-11-2026 (21:10): Fase 5 stap 1, progression op unlock-waarde
+
+Branch: `adventurers/fase-5` (vanaf `main` `450f871`). **Niet gemerged vóór de controle van 21:15**,
+zodat de grote update (PR #18) en Fase 5 apart te meten zijn.
+
+### Wat aangepast is
+
+- Nieuw: `server/plugins/bots/data/unlock-values.json`. Unlocks op het quest-pad (Dragon Slayer I
+  850, Priest in Peril 800, Lost City 750, X Marks the Spot 700, Druidic Ritual 650, Dwarf Cannon
+  600, Client of Kourend 550, Plague City 500, Below Ice Mountain 300) en skill-unlocks (Agility 10
+  950, Attack 70 750, Prayer 43 700, Magic 45 500, Attack 40 400, Defence 40 400); `questCape`
+  1200 gedeeld over het pad. Waardes zijn een eerste schatting op de schaal van §11.
+- Nieuw: `adventurers/Progression.PlayerBots.js` (zuiver): `questValue`, `candidates` (score =
+  waarde / (1 + moeite/10)), `optionFor` (melee-skills via combat training).
+- `Planner.PlayerBots.js`: met `unlocks` kiest een klare quest op waarde (pad-volgorde bij
+  gelijkspel); met `unlockChance` een training naar de beste unlock (`path: "unlock"`). Zonder
+  `unlocks` ongewijzigd.
+- `Adventurers.PlayerBots.js`: geeft `unlockValues` en `data.unlockChance` (0,5) mee; `decision`
+  krijgt `unlock`, `value`, `effort`.
+- `adventurers.json`: `unlockChance: 0.5`.
+- Tests: `bot-progression.test.cjs` (5). Docs: roadmap, observability (recept), changelog.
+
+Validatie: bot-tests 16 van 131 fout (zelfde 16). Met de echte data: nieuw account → X Marks the
+Spot, Druidic Ritual, Dwarf Cannon, Plague City, Agility 10; na de beginnersquests → Priest in
+Peril bovenaan. **Niet in game getest.**
+
+### Risico's
+
+1. De quest-points-tak telt voor elke quest even zwaar (Dragon Slayer I mist punten): geen
+   onderscheid tussen quests op dat punt.
+2. `unlockChance` 0,5 haalt een deel van de balanceerkeuzes weg: skills die geen unlock dienen
+   worden minder getraind. Te zien in de `skills`-metric (`untouched`).
+3. Waardes zijn niet gemeten maar geschat. Na een paar uur: welke unlocks echt gehaald worden
+   (`quest_done`, levels) en tegen welke tijd.
+
+### Meten na deploy
+
+Recept "Keuzes" in OBSERVABILITY: aandeel gestarte keuzes dat een unlock of quest dient (nulmeting
+~47%), welke unlocks, `quest_done` per uur.
+
+---
+
 ## Sessie 20-11-2026 (21:00): grote update (Fase 4b stap 2, `canExecute` v2, transport stap 1) en twee lussen
 
 Branch: `adventurers/big-update` (vanaf `main` `5392a52`). Op verzoek van de eigenaar drie

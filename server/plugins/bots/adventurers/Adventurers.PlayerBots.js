@@ -81,6 +81,8 @@ const { errandsFor, inWilderness, bestTeleport } = require("../brain/Errands.Pla
 const { createLoopGuard } = require("./Loops.PlayerBots");
 const Requirements = require("./Requirements.PlayerBots");
 const Loadout = require("./Loadout.PlayerBots");
+/** Unlock values for the planner (Phase 5, AI_Constitution §10, §11). */
+const unlockValues = require("../data/unlock-values.json");
 /** Within this many tiles of its job's place it is there, and its stretch runs. */
 const ARRIVED_TILES = 25;
 /** A walk that never gets there (a blocked way) stops pausing the stretch after this. */
@@ -2676,6 +2678,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const plan = chooseNext(view, questList(), {
         available: view.available, questChance: data.questChance, moneyChance: data.moneyChance ?? 0.1, bosses: checked.bosses, bossChance: attempt === 0 ? data.bossChance : 0, random,
         focus: data.focus?.[entry.name] ?? {}, busyModes, exclude, goal: goalOf(entry), explain: (decision) => { why = decision; },
+        unlocks: unlockValues, unlockChance: data.unlockChance ?? 0.5,
       });
       const started = plan.kind === "quest" ? startQuest(entry, plan)
         : plan.kind === "boss" ? startBoss(entry, plan, nowMs)
@@ -2772,6 +2775,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       // canExecute before the pick: what it left out and why (first attempt only).
       ...(blocked && Object.keys(blocked).length > 0 ? { blocked } : {}),
       chance: why?.chance ?? null, alternatives: why?.alternatives ?? null, candidates: why?.candidates ?? null,
+      // Phase 5: the unlock this pick works toward, its value and the effort still in the way.
+      unlock: why?.unlock ?? null, value: why?.value ?? null, effort: why?.effort ?? null,
       quest: why?.quest ?? null, missing: why?.missing ?? null, excluded: [...exclude],
       goal: Goals.describe(entry.player.getAttribute(GOAL_ATTRIBUTE) ?? null) ?? null });
   }

@@ -13,6 +13,9 @@ Indeling per versie:
 
 ## [Nog niet uitgebracht]
 
+### Toegevoegd
+- Avonturiers kiezen vaker iets dat een unlock oplevert in plaats van alleen skills bij te trainen. Van de quests die ze kunnen doen kiezen ze de waardevolste (zoals X Marks the Spot voor Kourend, Priest in Peril voor Morytania en de Barrows), en ze trainen gericht naar levels die iets openen (Agility 10 voor de daken en Graceful, Prayer 43 voor de Barrows). De waardes staan in een bestand dat zonder code aan te passen is.
+
 ### Opgelost
 - Een avonturier die clay of iets anders verzamelde voor een quest, verkocht het bij de GE en ging opnieuw verzamelen. Nu houdt hij het, ziet hij ook onderweg dat hij genoeg heeft, en weet hij na een herstart nog voor welke quest het was.
 - Avonturiers met runes voor een teleport liepen toch via een shortcut (zoals de underwall tunnel bij de GE) naar hun doel. Nu teleporteren ze eerst als dat een flink stuk lopen scheelt.

@@ -1,0 +1,21 @@
+{
+  "_comment": "Unlock values for the planner (AI_Constitution §10, §11; Phase 5, Progression.PlayerBots.js). The question is not which activity gives the most XP but which unlock has the highest future value. `quest`: the unlock comes with that quest (it must be on the quest path in adventurers.json). `skill` + `level`: it comes with that level. `value`: relative, on the scale of §11 (Quest Cape 1200, Fairy Rings 1000, Barrows Gloves 975, Graceful 950, Dragon Scimitar 900). `questCape`: the Quest Cape's value, shared over the quests on the path, so every quest counts a little. Adjust values here, not in code; the decision metric shows which unlock a pick served and its value.",
+  "questCape": 1200,
+  "unlocks": [
+    { "id": "rune_platebody", "name": "rune platebody (Dragon Slayer I)", "quest": "Dragon Slayer I", "value": 850 },
+    { "id": "morytania", "name": "Morytania (Priest in Peril): Barrows, Canifis", "quest": "Priest in Peril", "value": 800 },
+    { "id": "zanaris", "name": "Zanaris en dragon longsword (Lost City)", "quest": "Lost City", "value": 750 },
+    { "id": "kourend", "name": "Great Kourend (X Marks the Spot): Veos, Wintertodt", "quest": "X Marks the Spot", "value": 700 },
+    { "id": "kharedsts_memoirs", "name": "Kharedst's memoirs (Client of Kourend)", "quest": "Client of Kourend", "value": 550 },
+    { "id": "ardougne_teleport", "name": "Ardougne Teleport (Plague City)", "quest": "Plague City", "value": 500 },
+    { "id": "dwarf_cannon", "name": "dwarf multicannon (Dwarf Cannon)", "quest": "Dwarf Cannon", "value": 600 },
+    { "id": "herblore", "name": "Herblore (Druidic Ritual)", "quest": "Druidic Ritual", "value": 650 },
+    { "id": "ice_mountain_dwarves", "name": "Camdozaal (Below Ice Mountain)", "quest": "Below Ice Mountain", "value": 300 },
+    { "id": "barrows", "name": "Barrows (Prayer 43: Protect from Melee)", "skill": "PRAYER", "level": 43, "value": 700 },
+    { "id": "abyssal_whip", "name": "abyssal whip (Attack 70)", "skill": "ATTACK", "level": 70, "value": 750 },
+    { "id": "rune_scimitar", "name": "rune scimitar (Attack 40)", "skill": "ATTACK", "level": 40, "value": 400 },
+    { "id": "rune_armour", "name": "rune armour (Defence 40)", "skill": "DEFENCE", "level": 40, "value": 400 },
+    { "id": "rooftop_agility", "name": "rooftop courses en marks of grace naar Graceful (Agility 10)", "skill": "AGILITY", "level": 10, "value": 950 },
+    { "id": "teleports", "name": "Varrock tot Camelot Teleport (Magic 45)", "skill": "MAGIC", "level": 45, "value": 500 }
+  ]
+}
