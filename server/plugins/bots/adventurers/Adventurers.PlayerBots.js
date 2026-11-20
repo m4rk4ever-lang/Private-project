@@ -77,7 +77,7 @@ if (!data.expandedClans) {
 const { runPaced } = require("../runtime/SpawnPacing.PlayerBots");
 const npcSpawns = require("../../../data/definitions/npc-spawns.json");
 const { markHonest, markAdventurer } = require("../brain/Honest.PlayerBots");
-const { errandsFor, inWilderness } = require("../brain/Errands.PlayerBots");
+const { errandsFor, inWilderness, bestTeleport } = require("../brain/Errands.PlayerBots");
 const { createLoopGuard } = require("./Loops.PlayerBots");
 const Requirements = require("./Requirements.PlayerBots");
 const Loadout = require("./Loadout.PlayerBots");
@@ -145,6 +145,10 @@ const TRAVEL_FOOD = 8;
 const MAGIC_START_BUDGET = 2500;
 const MAGIC_RUNES = ["AIR_RUNE", "MIND_RUNE", "WATER_RUNE", "EARTH_RUNE", "FIRE_RUNE", "CHAOS_RUNE"];
 const WINTERTODT = travelData.minigames.find((game) => game.id === "wintertodt");
+/** Veos at Port Sarim (npc-spawns.json): his ship sails to Great Kourend (Ferries.plugin.js). */
+const VEOS_PORT_SARIM = Object.freeze({ x: 3054, y: 3245, z: 0 });
+/** Great Kourend and Kebos on the surface (ClientOfKourend.Quest.js inKourend). */
+const inKourend = (place) => place && place.x >= 1024 && place.x < 2048 && place.y >= 3200 && place.y < 4096 && (place.z ?? 0) === 0;
 
 function normalize(name) {
   return String(name ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "");
@@ -1370,11 +1374,30 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       trade: fresh ? entry.lastTrade : null, ge, coins: Shopping.coinsOf(player), freeSlots: player.getInventory().getFreeSlots() });
   }
 
+  /** Whether one of its teleports (spell, tablet, jewellery) saves a long walk to `to` now. */
+  function teleportsNear(player, to) {
+    try {
+      const questDone = (key) => {
+        const query = { player, key, complete: false };
+        emit("quest:is-complete", query);
+        return query.complete === true;
+      };
+      // Not for a place under the ground: that one needs its ladder after the teleport too.
+      return (to.z ?? 0) === 0 && to.y < UNDERGROUND_Y && bestTeleport(core, player, to, { questDone }) !== null;
+    } catch {
+      return false;
+    }
+  }
+
   function walkTo(entry, to, { reason, arrive = () => {}, replan = true, say = true, urgent = false, hopped = false } = {}) {
     const run = runtimeEntry(entry.player);
     // On the other side of the ground (the Dwarven Mine below Falador, the Mining Guild): first to
     // the stairs or ladder, down or up as a player goes, then on from where it lands (tickAll).
-    const hop = hopped ? null : levelHop(entry.player, to);
+    // A teleport that lands near the place goes before a shortcut or ladder on the way: Patrickbot 17
+    // carried runes for Falador Teleport but walked from the GE through the underwall tunnel to
+    // Falador Park, the tunnel's few steps being too short a walk for a teleport (20-11-2026).
+    const teleportFirst = !hopped && teleportsNear(entry.player, to);
+    const hop = hopped || teleportFirst ? null : levelHop(entry.player, to);
     if (hop) {
       const options = { reason, arrive, replan, say, urgent };
       return walkTo(entry, { ...hop.from, name: placeName(to) }, {
@@ -1503,6 +1526,72 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   }
 
   /**
+   * The way to a place in Great Kourend (transport plan step 1, roadmap): "there" when it is in
+   * Kourend or can teleport there now (a charged games necklace after a first visit: the errand
+   * takes Wintertodt Camp); true while it gets there (the ship, or a necklace from the bank or
+   * the exchange); a reason string when it cannot.
+   */
+  function kourendWay(entry, plan, place) {
+    const { player } = entry;
+    const at = player.getLocation();
+    if (inKourend({ x: at.getX(), y: at.getY(), z: at.getZ() })) return "there";
+    const resume = () => { entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, planActivity: plan.activity ?? null, remainingMs: 0, savedAt: now() }; };
+    let visited = false;
+    try {
+      visited = require("../../items/Teleports.Jewellery").visitedKourend(player) === true;
+    } catch {
+      visited = false;
+    }
+    if (!visited) return sailVeos(entry, place, resume) ? true : "no_ship";
+    const necklace = (player.getInventory().getItems() ?? []).some((item) => item && /^games necklace\s*\(\d\)/i.test(itemName(item.getId())));
+    if (necklace) return "there";
+    const id = Shopping.idOf(core, "GAMES_NECKLACE_8_");
+    if (!Number.isInteger(id)) return "no_necklace";
+    if (banked(player, id) > 0) {
+      const bank = nearestBank(player, entry);
+      return bank && walkTo(entry, { ...bank, name: bank.name ?? bank.id }, { reason: "withdraw", arrive: (banker) => { withdraw(banker, id, 1); resume(); } }) ? true : "no_necklace";
+    }
+    if ((Shopping.shopsSelling(id).length > 0 && shopFor(entry, id, "games necklace", 1)) || buyOnExchange(entry, id, "games necklace", 1)) {
+      resume();
+      return true;
+    }
+    return "no_necklace";
+  }
+
+  /**
+   * Veos's ship from Port Sarim to Great Kourend, as a player takes it: to Veos, his travel option
+   * for the port nearest `to` (Port Piscarilius or Land's End), the Ferries plugin sails it. The
+   * landing sets the game's "has visited Zeah" (ClientOfKourend.Quest.js), which the jewellery's
+   * Kourend teleports ask for. Then `resume`.
+   */
+  function sailVeos(entry, to, resume = () => {}) {
+    const option = Math.hypot(to.x - 1824, to.y - 3691) <= Math.hypot(to.x - 1504, to.y - 3399) ? "port piscarilius" : "land's end";
+    return walkTo(entry, { ...VEOS_PORT_SARIM, name: "Veos in Port Sarim" }, {
+      reason: "boat",
+      arrive: (sailor) => {
+        const here = sailor.getLocation();
+        let npc = null;
+        try {
+          npc = core.World.getNpcsNear(here, 8, null).find((other) => String(other.getCurrentDefinition?.(sailor)?.getName?.() ?? other.getDefinition?.()?.getName?.() ?? "") === "Veos") ?? null;
+        } catch {
+          npc = null;
+        }
+        const actions = (npc?.getCurrentDefinition?.(sailor)?.getActions?.() ?? npc?.getDefinition?.()?.getActions?.() ?? []).map((action) => String(action ?? "").toLowerCase());
+        const clickType = actions.findIndex((action) => action === option) + 1;
+        if (!npc || !clickType || !core.operateNpc) {
+          note(sailor, "Vond Veos of zijn boot niet in Port Sarim.", "activity");
+          metric({ kind: "boat", bot: entry.name, to: option, ok: false, why: !npc ? "no_veos" : "no_option" });
+          return;
+        }
+        core.operateNpc(sailor, npc.getIndex(), clickType);
+        note(sailor, `Vaart met Veos naar ${option === "land's end" ? "Land's End" : "Port Piscarilius"} (Great Kourend).`, "activity");
+        metric({ kind: "boat", bot: entry.name, to: option, ok: true });
+        resume();
+      },
+    });
+  }
+
+  /**
    * Why a picked job could not start (Phase 4, AI_Constitution §7): a requirement it lacks, in
    * words a requirement check can use, with the place (x, y and floor z) where one is involved.
    * The decision metric carries it. Always returns false, so `return cannot(...)` reads as before.
@@ -1613,7 +1702,12 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
     if (plan.mode === "wintertodt") {
       // Wintertodt is in Kourend: by boat, not on foot. Not until it can get there.
-      if (!TravelHubs.onFoot(WINTERTODT)) return cannot(entry, "place_unreachable", { activity: "wintertodt", place: placeOf(WINTERTODT) });
+      // Kourend is not on foot: the ship once (Veos), then a games necklace's Wintertodt Camp.
+      if (!TravelHubs.onFoot(WINTERTODT)) {
+        const way = kourendWay(entry, plan, WINTERTODT);
+        if (way === true) return true;
+        if (way !== "there") return cannot(entry, "place_unreachable", { activity: "wintertodt", place: placeOf(WINTERTODT), way });
+      }
       startActivity(player, "wintertodt", { home: WINTERTODT, nowMs });
       walkTo(entry, { ...WINTERTODT, name: "Wintertodt" }, { reason: "wintertodt", replan: false });
       entry.activity = "wintertodt";
@@ -2618,7 +2712,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         return (entry.noExchangeBuyUntil ?? 0) <= now() && guide > 0 && onExchange(id) && coins() >= Math.ceil(guide * 1.05) + 50
           && !blockedPlace(entry, data.grandExchange);
       },
-      reachable: (place) => TravelHubs.onFoot(place, null, questDone(player), (item) => Shopping.owns(player, idOf(item)))
+      // Kourend: by Veos's ship from Port Sarim (and later a games necklace), so Port Sarim on foot.
+      reachable: (place) => TravelHubs.onFoot(inKourend(place) ? VEOS_PORT_SARIM : place, null, questDone(player), (item) => Shopping.owns(player, idOf(item)))
         && !blockedPlace(entry, place),
       remembered: (key) => Requirements.recall(entry.cannot, key, now()),
       toolsFor: (option) => {

@@ -186,3 +186,20 @@ test("make: a tool on a material, the best menu entry that starts, until the mat
   leather = 0;
   assert.equal(action.update(ctx()), "success", "all leather used");
 });
+
+test("a Kourend teleport (Wintertodt Camp) is used only after a first visit to Great Kourend", () => {
+  const NECKLACE = 3853;
+  const pieces = [{ key: "games", charged: [[NECKLACE, 8]], destinations: [
+    { label: "Burthorpe", tile: [2898, 3553, 0] },
+    { label: "Wintertodt Camp", tile: [1627, 3941, 0], kourend: true },
+  ] }];
+  const player = {
+    getLocation: () => loc(3222, 3218), getSpellbook: () => "NORMAL", getSkillManager: () => ({ getCurrentLevel: () => 1 }),
+    getInventory: () => ({ getAmount: () => 0, getItems: () => [{ getId: () => NECKLACE }] }),
+  };
+  const wintertodt = { x: 1630, y: 3974 };
+  const core = { Skill: { MAGIC: "MAGIC" } };
+  assert.equal(bestTeleport(core, player, wintertodt, { jewelleryData: pieces, visitedKourend: () => true })?.name, "Wintertodt Camp");
+  const before = bestTeleport(core, player, wintertodt, { jewelleryData: pieces, visitedKourend: () => false });
+  assert.notEqual(before?.name, "Wintertodt Camp", "not before the ship has been taken once");
+});
