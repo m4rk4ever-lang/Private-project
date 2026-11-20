@@ -4400,7 +4400,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (!bossId && entry.phase !== "barrows") return ids;
     const boss = (data.bosses ?? []).find((candidate) => candidate.id === bossId);
     const names = ["PRAYER_POTION_4_", "PRAYER_POTION_3_", "PRAYER_POTION_2_", "PRAYER_POTION_1_", "SUPER_RESTORE_4_", "SUPER_RESTORE_3_",
-      ...(boss?.via ? [boss.via.tool, boss.via.light] : []),
+      // A light it lights itself (a candle and a tinderbox, via.lightFrom) is kit too: Jorgbot 14
+      // bought a candle for the Giant Mole and put it up for sale at the next visit (20-11-2026).
+      ...(boss?.via ? [boss.via.tool, boss.via.light, ...(boss.via.lightFrom ? [boss.via.lightFrom, "TINDERBOX"] : [])] : []),
       ...(boss?.kind === "barrows" || entry.phase === "barrows" ? ["SPADE", "BARROWS_TELEPORT", "VARROCK_TELEPORT"] : [])];
     for (const name of names.filter(Boolean)) {
       const id = Shopping.idOf(core, name);

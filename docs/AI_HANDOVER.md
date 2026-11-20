@@ -28,11 +28,23 @@ zijn `savedTask` (agility seers) stuurde hem direct terug.
 
 Validatie: bot-tests 16 van 124 fout (zelfde 16). Alleen `node --check`. **Niet in game getest.**
 
+Ook in deze PR (fix 1 uit de controle van 20:36): `bossKit` neemt `via.lightFrom` (CANDLE) en
+TINDERBOX mee, zodat een gekochte candle niet meer verkocht wordt.
+
+### Andere daken (zelfde check, `bot-logs` 17:05 tot 19:41 UTC)
+
+70 agility-`stuck`. Op een dak: Seers (2710, 3475, 3) obstakel 5 (24, 3 bots, 7 `stranded`),
+Falador (3050, 3366, 3) obstakel 5 (23, 2 bots, 10 `stranded`; obstakel 4 GAP_15 route
+(3048, 3358, 3) springt 3 noord, obstakel 5 GAP_16 route (3045, 3361, 3)), Varrock-dak
+(3193, 3398, 3) (4 bots met een andere baan als klus). Niet op een dak: Gnome (11 jobs `stuck`
+onderweg) en Canifis (10, onderweg naar Morytania): navigatie.
+
 ### Open
 
-De oorzaak zelf: kan een speler op de server van (2710, 3475, 3) naar (2702, 3470, 3) lopen?
-In game of via de agent-MCP checken (`server/docs/agents/testing.md`). Als niet: collision van
-het dak of de route van obstakel 5 in `SeersRooftop.Agility.js`.
+**De eigenaar loopt als speler wel** van de landing naar het volgende obstakel (Seers, Falador).
+De fout zit dus in de bot: hoe `runCourse` (brain, agility-behaviour) na een obstakel naar de
+`route`-tegel van het volgende loopt op een dak (z 3). Daar beginnen: de beweging tussen
+obstakels op een verdieping, niet de collision of de baan-data.
 
 ---
 
