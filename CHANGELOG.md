@@ -143,6 +143,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Avonturiers kiezen geen klus meer waarvan al vaststaat dat die niet kan: zonder gereedschap dat ze hebben of kunnen kopen (geen hunter zonder bird snare), of op een plek waar ze niet kunnen komen. Mislukt een klus toch door een ontbrekende eis, dan kiezen ze die een half uur niet opnieuw.
 - Avonturiers kiezen hun geldklussen doelmatiger: een klus die eerder niets of verlies opleverde, geldt niet meer als geldklus, en iets nieuws proberen ("eens proberen") gebeurt nog maar af en toe. Een verwerkklus met gekochte materialen (zoals Herblore) telt niet meer als sparen voor een doel.
 - Avonturiers trainen een skill die al op 99 staat bijna nooit meer (alleen combat en Slayer nog wel, voor de loot).
 - Voor woodcutting, mining en fishing kiest een avonturier een plek die niet alleen dichtbij is, maar ook dicht bij een bank ligt, zoals een speler de willows bij een bank kiest boven die midden in het niets.

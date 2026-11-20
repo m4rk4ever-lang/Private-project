@@ -31,7 +31,7 @@ const GAME_VERSION = (() => {
  */
 const definitions = require("../../../data/definitions/bot-activities.json");
 const data = require("../data/adventurers.json");
-const { chooseNext, bestActivity, isReady } = require("./Planner.PlayerBots");
+const { chooseNext, bestActivity, isReady, trainingOptions } = require("./Planner.PlayerBots");
 const { createQuestList } = require("./Quests.PlayerBots");
 const Goals = require("./Goals.PlayerBots");
 const { startActivity } = require("../brain/BrainActivities.PlayerBots");
@@ -79,6 +79,7 @@ const npcSpawns = require("../../../data/definitions/npc-spawns.json");
 const { markHonest, markAdventurer } = require("../brain/Honest.PlayerBots");
 const { errandsFor } = require("../brain/Errands.PlayerBots");
 const { createLoopGuard } = require("./Loops.PlayerBots");
+const Requirements = require("./Requirements.PlayerBots");
 /** Within this many tiles of its job's place it is there, and its stretch runs. */
 const ARRIVED_TILES = 25;
 /** A walk that never gets there (a blocked way) stops pausing the stretch after this. */
@@ -1262,16 +1263,21 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       });
     }
     // On a rooftop course it first runs the course down (getOffRoof); no errand from up there.
-    if (entry.offRoof && entry.player.getLocation().getZ() > 0 && reason !== "agility") return false;
+    // A refused errand says why (`entry.refusal`): a job that could not start because of it then
+    // has a reason in its decision metric instead of "unknown".
+    const refuse = (why) => { entry.refusal = { why, errand: reason, to: placeName(to), place: { x: to.x, y: to.y, z: to.z ?? 0 } }; return false; };
+    if (entry.offRoof && entry.player.getLocation().getZ() > 0 && reason !== "agility") return refuse("on_roof");
     // `urgent`: a full bag to bank goes even while other errands rest after a failed one.
-    if (!run || errands.busy(entry.player) || (replan && !urgent && (entry.noErrandUntil ?? 0) > now())) return false;
-    if (blockedPlace(entry, to)) return false;
+    if (!run) return refuse("no_runtime");
+    if (errands.busy(entry.player)) return refuse("busy");
+    if (replan && !urgent && (entry.noErrandUntil ?? 0) > now()) return refuse("errands_resting");
+    if (blockedPlace(entry, to)) return refuse("place_blocked");
     // The same errand over and over without XP was a loop (Loops.PlayerBots.js): not now.
-    if (loopGuard.blocked(entry, reason, placeKey(to))) return false;
+    if (loopGuard.blocked(entry, reason, placeKey(to))) return refuse("loop_blocked");
     // The errand walks it through its brain's navigation (doors, stairs, long routes). A new
     // adventurer has none until its first job, and its first move is often an errand (the bank):
     // without one it never took a step, gave up after a minute and tried the next bank forever.
-    if (!run.brain && !startActivity(entry.player, "roam", { home: here(entry.player), nowMs: now() })) return false;
+    if (!run.brain && !startActivity(entry.player, "roam", { home: here(entry.player), nowMs: now() })) return refuse("no_brain");
     // A quest's walks hand back to the quest, not to the job's brain (its roaming walked the bot
     // off the castle stairs the moment it got there).
     const hold = () => { if (reason === "quest" && run.brain) run.brain.paused = true; };
@@ -2361,17 +2367,24 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // Fled hurt and hungry lately: no fights or thieving until it carries food again.
     if (nowMs < (entry.dangerUntil ?? 0) && !carriesFood(entry.player)) for (const mode of DANGER_MODES) exclude.add(mode);
     view.earn = entry.earn ?? {};
+    entry.cannot ??= new Map();
+    // What cannot be done now is left out before the pick (canExecute), with its reason.
+    const checked = precheck(entry, view, exclude, (data.bosses ?? []).filter((boss) => boss.onFoot !== false));
     for (let attempt = 0; attempt < 4; attempt += 1) {
       let why = null;
       entry.startFailure = null;
+      entry.refusal = null;
       const plan = chooseNext(view, questList(), {
-        available: view.available, questChance: data.questChance, moneyChance: data.moneyChance ?? 0.1, bosses: (data.bosses ?? []).filter((boss) => boss.onFoot !== false), bossChance: attempt === 0 ? data.bossChance : 0, random,
+        available: view.available, questChance: data.questChance, moneyChance: data.moneyChance ?? 0.1, bosses: checked.bosses, bossChance: attempt === 0 ? data.bossChance : 0, random,
         focus: data.focus?.[entry.name] ?? {}, busyModes, exclude, goal: goalOf(entry), explain: (decision) => { why = decision; },
       });
       const started = plan.kind === "quest" ? startQuest(entry, plan)
         : plan.kind === "boss" ? startBoss(entry, plan, nowMs)
         : startTraining(entry, plan, nowMs);
-      decisionMetric(entry, plan, why, { attempt, started, exclude });
+      const failure = started ? null : entry.startFailure ?? (entry.refusal ? { why: entry.refusal.why === "not_buyable" ? "not_buyable" : "errand_refused", detail: entry.refusal } : null);
+      // A missing requirement keeps this option out for a while (no pick, fail, same pick again).
+      if (failure) Requirements.remember(entry.cannot, plan, failure, now());
+      decisionMetric(entry, plan, why, { attempt, started, exclude, failure, blocked: attempt === 0 ? checked.blocked : undefined });
       if (started) {
         entry.idleReason = null;
         return;
@@ -2384,16 +2397,73 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   }
 
   /**
+   * canExecute before the pick (Requirements.PlayerBots.js, AI_Constitution §7): each training mode
+   * and boss checked for its tools (owned, or a shop near or the exchange has it and it can pay),
+   * its place where it must go (Wintertodt, a boss's way in: on foot with floors and locked areas,
+   * not a blocked place) and a recent failed requirement. What fails goes into `exclude` (modes)
+   * and out of `bosses`; `blocked` says why, for the decision metric.
+   */
+  function precheck(entry, view, exclude, bosses) {
+    const { player } = entry;
+    const here = player.getLocation();
+    const idOf = (name) => Shopping.idOf(core, name);
+    const coins = () => Shopping.coinsOf(player) + banked(player, Trade.COINS);
+    const ctx = {
+      has: (name) => Number.isInteger(idOf(name)) && Shopping.ownsAnywhere(player, idOf(name)),
+      // The same conditions shopFor and buyOnExchange use.
+      obtainable: (name) => {
+        const id = idOf(name);
+        if (!Number.isInteger(id)) return false;
+        const shop = Shopping.nearestShop(id, { x: here.getX(), y: here.getY() });
+        const emptyShop = shop && (entry.emptyShops?.get(`${shop.shopId}:${id}`) ?? 0) > now();
+        if (shop && !emptyShop && shop.distance <= (data.shopRadius ?? 80) && Shopping.coinsOf(player) >= Shopping.estimatedPrice(core, id, 1)) return true;
+        const guide = Number(core.ItemDefinition?.forId?.(id)?.getGrandExchangeValue?.() ?? 0);
+        return (entry.noExchangeBuyUntil ?? 0) <= now() && guide > 0 && coins() >= Math.ceil(guide * 1.05) + 50
+          && !blockedPlace(entry, data.grandExchange);
+      },
+      reachable: (place) => TravelHubs.onFoot(place, null, questDone(player), (item) => Shopping.owns(player, idOf(item)))
+        && !blockedPlace(entry, place),
+      remembered: (key) => Requirements.recall(entry.cannot, key, now()),
+      toolsFor: (option) => {
+        if (option.boss) return { any: [], all: [option.boss.via?.tool, option.boss.via?.light].filter(Boolean) };
+        if (option.mode === "woodcutting" || option.mode === "mining") return { any: toolsFor(option.mode).any, all: [] };
+        if (option.mode === "hunter") return toolsFor("hunter", bestActivity("hunter", levelOf(player, "HUNTER"), definitions));
+        if (option.mode === "fishing") return toolsFor("fishing", reachableActivity(player, "fishing", levelOf(player, "FISHING")));
+        return { any: [], all: [] };
+      },
+      // Only where the place is known before the start: Wintertodt, and a boss's way in. A boss
+      // without one finds its own way (underground, stairs): its start says when it cannot.
+      placeOf: (option) => (option.mode === "wintertodt" ? WINTERTODT : option.boss?.via?.at ?? null),
+    };
+    const blocked = {};
+    for (const option of trainingOptions(view)) {
+      if (exclude.has(option.mode)) continue;
+      const result = Requirements.canExecute(option, ctx);
+      if (result.ok) continue;
+      exclude.add(option.mode);
+      blocked[option.mode] = { why: result.why, ...(result.detail ? { detail: result.detail } : {}) };
+    }
+    const fightable = bosses.filter((boss) => {
+      const result = Requirements.canExecute({ kind: "boss", boss }, ctx);
+      if (!result.ok) blocked[`boss:${boss.id}`] = { why: result.why, ...(result.detail ? { detail: result.detail } : {}) };
+      return result.ok;
+    });
+    return { blocked, bosses: fightable };
+  }
+
+  /**
    * Every pick of the planner, started or not (AI_Constitution §32: which choices were made and
    * why): what it chose, the way through chooseNext (`path`: boss, quest, money, quest_gap,
    * weighted, fallback), the best alternatives with their weight and chance, what was left out.
    */
-  function decisionMetric(entry, plan, why, { attempt = 0, started = false, exclude = new Set() } = {}) {
+  function decisionMetric(entry, plan, why, { attempt = 0, started = false, exclude = new Set(), failure = null, blocked } = {}) {
     metric({ kind: "decision", bot: entry.name, attempt, started: Boolean(started), path: why?.path ?? null,
       chosen: { kind: plan.kind, mode: plan.mode ?? null, skill: plan.skill ?? null, quest: plan.quest?.name ?? null,
         boss: plan.boss?.id ?? plan.boss?.name ?? null, reason: plan.reason ?? null },
       // Why it did not start: a requirement (cannot), or "unknown" where no reason is given yet.
-      failure: started ? null : entry.startFailure ?? { why: "unknown" },
+      failure: started ? null : failure ?? { why: "unknown" },
+      // canExecute before the pick: what it left out and why (first attempt only).
+      ...(blocked && Object.keys(blocked).length > 0 ? { blocked } : {}),
       chance: why?.chance ?? null, alternatives: why?.alternatives ?? null, candidates: why?.candidates ?? null,
       quest: why?.quest ?? null, missing: why?.missing ?? null, excluded: [...exclude],
       goal: Goals.describe(entry.player.getAttribute(GOAL_ATTRIBUTE) ?? null) ?? null });
@@ -3083,12 +3153,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   /** To the Grand Exchange for one thing it needs (a tool no shop near sells), then the job again. */
   function buyOnExchange(entry, itemId, name, amount = 1, { replan = true } = {}) {
     const { player } = entry;
-    if ((entry.noExchangeBuyUntil ?? 0) > now()) return false;
+    const notBuyable = (why) => { entry.refusal = { why: "not_buyable", detail: { item: String(name), because: why } }; return false; };
+    if ((entry.noExchangeBuyUntil ?? 0) > now()) return notBuyable("exchange_resting");
     const guide = Number(core.ItemDefinition?.forId?.(itemId)?.getGrandExchangeValue?.() ?? 0);
     // Its coins in the bag and in its bank: the exchange has a bank, it takes out what it needs.
     const cost = Math.ceil(guide * 1.05) * amount;
-    if (!(guide > 0) || Shopping.coinsOf(player) + banked(player, Trade.COINS) < cost + 50) return false;
-    if (blockedPlace(entry, data.grandExchange)) return false;
+    if (!(guide > 0)) return notBuyable("no_exchange_price");
+    if (Shopping.coinsOf(player) + banked(player, Trade.COINS) < cost + 50) return notBuyable("coins");
+    if (blockedPlace(entry, data.grandExchange)) return notBuyable("exchange_blocked");
     const plan = entry.plan;
     const label = String(name).toLowerCase().replace(/_/g, " ");
     return walkTo(entry, { ...data.grandExchange, name: "de Grand Exchange" }, {

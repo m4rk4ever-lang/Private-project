@@ -5,6 +5,50 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 20-11-2026 (19:45): Fase 4 stap 2, `canExecute` v1
+
+Branch: `adventurers/can-execute-v1` (vanaf `main` `696c6cd`, met `docs/controle-1933`).
+
+### Wat aangepast is
+
+- Nieuw: `server/plugins/bots/adventurers/Requirements.PlayerBots.js` (Knowledge-laag, zonder core).
+  `canExecute(option, ctx)`: eerst een onthouden mislukking, dan gereedschap (`any`: één van,
+  `all`: allemaal; bezit of verkrijgbaar), dan de plek als die vooraf bekend is. `remember` /
+  `recall`: een mislukking met een eis-reden (`REQUIREMENT_REASONS`) houdt die optie 30 min buiten.
+- `Adventurers.PlayerBots.js`:
+  - `precheck(entry, view, exclude, bosses)` vóór `chooseNext`, met `ctx` uit dezelfde checks als
+    de start: `Shopping.ownsAnywhere`, `nearestShop` binnen `shopRadius` en betaalbaar, GE-prijs en
+    munten (zoals `buyOnExchange`), `TravelHubs.onFoot` met `questDone` en items, `blockedPlace`.
+    Plek alleen gecheckt voor Wintertodt en een boss-ingang (`boss.via.at`); een boss zonder
+    ingang zoekt zelf zijn weg (ondergronds), daar beslist de start.
+  - `walkTo` zet `entry.refusal` bij elke weigering (`busy`, `errands_resting`, `place_blocked`,
+    `loop_blocked`, `on_roof`, `no_brain`); `buyOnExchange` bij `not_buyable`. De `decision`-
+    `failure` gebruikt die als er geen `cannot` was.
+  - Na een mislukte poging: `Requirements.remember(entry.cannot, plan, failure)`.
+  - `decision.blocked` (poging 0): wat vooraf is uitgesloten en waarom.
+- `server/tests/bot-requirements.test.cjs`: 3 tests.
+- `docs/OBSERVABILITY.md`, `docs/ARCHITECTURE.md` (Knowledge-laag), `docs/ADVENTURER_ROADMAP.md`,
+  `CHANGELOG.md`.
+
+Validatie: bot-tests 16 van 120 fout (zelfde 16); de 3 nieuwe slagen. Adventurers-deel alleen
+`node --check`. **Niet in game getest.**
+
+### Risico's
+
+1. Vooraf "verkrijgbaar" en de echte aankoop kunnen verschillen (de start koopt het beste
+   gereedschap dat past, de check accepteert elk). Dan faalt de start en onthoudt het geheugen het.
+2. Een uitgesloten modus blijft 30 min uit, ook als het geld er intussen wel is.
+3. `reachableActivity` en `nearestShop` draaien nu bij elke beslissing voor elke modus: iets meer
+   rekenwerk per beslissing. Zichtbaar in de `server`-metric (tick-duur).
+4. `cannot` (Map) wordt niet opgeslagen: na een herstart is het geheugen leeg.
+
+### Volgende stap
+
+Na deploy en ~30 min: aandeel niet gestart (was 39%), `blocked` per reden, resterende `unknown`,
+en tick-duur in de `server`-metric.
+
+---
+
 ## Controle 20-11-2026 19:33: waarom klussen niet starten (`696c6cd`)
 
 Basis: `bot-logs` push 18:31 UTC. `696c6cd` 18:06 tot 18:30 (**24 min**, 60 avonturiers).
