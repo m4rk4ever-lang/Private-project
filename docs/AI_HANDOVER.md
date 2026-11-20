@@ -21,6 +21,18 @@ op "full bag".
 
 - Nieuw: `server/plugins/bots/adventurers/Loadout.PlayerBots.js`. `offLoadout(items, { mode,
   kindOf })`: alleen voor gathering; `keep` blijft, `food` tot 2 stuks, de rest naar de bank.
+- Eten per plek (aangepast na vraag van de eigenaar: "niet altijd logisch, bank om de hoek, safe
+  zone voor je combat level"): `Loadout.foodFor({ danger, bankTiles, combat })` geeft 0 / 2 / 5
+  met een reden. `placeDanger(player, place)` in Adventurers: Wilderness (`Errands.inWilderness`),
+  een agressieve NPC binnen `getAggressionRange(1) + 2` tegels van de plek waarvoor
+  `npc.isAggressiveTo(player)` geldt (de game's eigen regel: combat ≤ 2 × NPC-level), of een cel
+  (8×8, met buren) uit `hurtAt` (vlucht of dood, gedeeld door alle avonturiers, 2 uur).
+  `bankTilesFrom(place)`: rechte afstand tot de dichtstbijzijnde bank op dezelfde verdieping.
+  Plek = `stateOf(player).home` als de klus de huidige is; onbekend → 2 (oude standaard), zonder
+  logregel. Activiteitenregel bij elke verandering: "Neemt geen eten mee: veilige plek voor combat
+  45, bank op 12 tegels." `getTravelFood` haalt geen eten voor gathering op een veilige plek
+  (anders haalde hij het op en zette de volgende bank het terug).
+- `brain/Errands.PlayerBots.js`: `inWilderness` geëxporteerd.
 - `Adventurers.PlayerBots.js`: `bankOffLoadout(entry, banker, plan)` met `kindOf`: gereedschap van
   de klus (`toolsFor` met de activiteit), munten, `Trade.isSupply` (runes, tablets, sieraden,
   munitie), niet-verhandelbaar (quest-items), `workingMaterials`, `bossKit` = `keep`; `isFood` =
@@ -36,8 +48,10 @@ Validatie: bot-tests 16 van 122 fout (zelfde 16); de 2 nieuwe slagen. Adventurer
 
 1. Quest-items die verhandelbaar zijn (bucket, pot) gaan de bank in; `acquireForQuest` haalt ze
    terug, wat een extra banktrip kost als een quest ze nodig heeft.
-2. 2 stuks eten bij gathering in een gevaarlijke omgeving (scorpions bij Al Kharid). Te zien aan
-   `fledLowHp` en `death` bij gathering.
+2. Gevaar wordt gezien aan de NPC's die er nú staan en aan recente vluchten of doden; een
+   monster dat net respawnt kan gemist worden. `fledLowHp` geldt alleen voor gevaarlijke klussen,
+   dus gewond raken bij gathering wordt pas onthouden bij een dood. Te zien aan `death` bij
+   gathering.
 3. Reisspullen niet aangepakt (2,8 vakjes).
 
 ### Volgende stap

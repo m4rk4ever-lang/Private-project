@@ -9,8 +9,9 @@
  * a pot, silk, spare weapons, a spade), coins 0.9, tools 0.8. 160 of 206 of those jobs ended on a
  * full bag: a smaller bag is more bank trips.
  *
- * First step: gathering jobs only, food down to a few pieces, other things out. Travel things
- * (runes, tablets, jewellery) stay: the errands teleport with them.
+ * First step: gathering jobs only. Food by the place (foodFor): none where it is safe for its
+ * combat level, a little where it is not, more when the bank is far. Other things out. Travel
+ * things (runes, tablets, jewellery) stay: the errands teleport with them.
  *
  * Plain logic, no game core: each item's kind comes in through `kindOf(itemId)`:
  *   "keep"  stays (the job's tools, coins, runes and teleports, quest items, kit, materials)
@@ -18,8 +19,26 @@
  *   anything else goes in the bank.
  */
 const GATHERING = new Set(["woodcutting", "mining", "fishing"]);
-/** Food a gathering job keeps: enough to walk away from a scorpion, not a bag of tuna. */
+/** Food a gathering job keeps when its place is not known yet (the old, careful default). */
 const GATHERING_FOOD = 2;
+/** A bank this close to the place: little food is enough, it restocks on the way to bank anyway. */
+const NEAR_BANK_TILES = 30;
+/** Food at a dangerous place: enough to walk away, more when the bank is far. */
+const DANGER_FOOD_NEAR = 2;
+const DANGER_FOOD_FAR = 5;
+
+/**
+ * How much food a gathering job carries, and why in words (the log, ::volg): none at a place that
+ * is safe for its combat level, a little at a dangerous one, more when the bank is far.
+ * `danger`: null (safe), { text } (why it is not), or undefined (place not known: the old default).
+ */
+function foodFor({ danger, bankTiles = Infinity, combat = null } = {}) {
+  const bank = Number.isFinite(bankTiles) ? `bank op ${Math.round(bankTiles)} tegels` : "geen bank in de buurt";
+  if (danger === undefined) return { food: GATHERING_FOOD, reason: "plek nog onbekend" };
+  if (!danger) return { food: 0, reason: `veilige plek${combat ? ` voor combat ${combat}` : ""}, ${bank}` };
+  const near = bankTiles <= NEAR_BANK_TILES;
+  return { food: near ? DANGER_FOOD_NEAR : DANGER_FOOD_FAR, reason: `${danger.text}, ${bank}` };
+}
 
 /** The goods to bank for this job: [{ itemId, amount }]. Empty for jobs without a loadout yet. */
 function offLoadout(items, { mode, kindOf, foodKeep = GATHERING_FOOD } = {}) {
@@ -41,4 +60,4 @@ function offLoadout(items, { mode, kindOf, foodKeep = GATHERING_FOOD } = {}) {
   return [...out].map(([itemId, amount]) => ({ itemId, amount }));
 }
 
-module.exports = { offLoadout, GATHERING, GATHERING_FOOD };
+module.exports = { offLoadout, foodFor, GATHERING, GATHERING_FOOD, NEAR_BANK_TILES };

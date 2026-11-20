@@ -22,3 +22,16 @@ test("jobs without a loadout yet, and a bag with nothing extra, bank nothing", (
   assert.deepEqual(offLoadout([slot(AXE), slot(TUNA)], { mode: "mining", kindOf }), []);
   assert.deepEqual(offLoadout(bag, { mode: "fishing" }), [], "no kinds, no guessing");
 });
+
+test("food by the place: none where it is safe for its level, a little where it is not, more far from a bank", () => {
+  const { foodFor, NEAR_BANK_TILES } = require("../plugins/bots/adventurers/Loadout.PlayerBots");
+  const safe = foodFor({ danger: null, bankTiles: 12, combat: 45 });
+  assert.equal(safe.food, 0);
+  assert.equal(safe.reason, "veilige plek voor combat 45, bank op 12 tegels");
+  const scorpions = { text: "scorpion (level 14) vallen hem hier aan" };
+  assert.equal(foodFor({ danger: scorpions, bankTiles: NEAR_BANK_TILES }).food, 2, "bank near: enough to walk away");
+  const far = foodFor({ danger: scorpions, bankTiles: 200 });
+  assert.equal(far.food, 5);
+  assert.match(far.reason, /scorpion .* bank op 200 tegels/);
+  assert.equal(foodFor({ danger: undefined }).food, 2, "place not known yet: the careful default");
+});

@@ -77,7 +77,7 @@ if (!data.expandedClans) {
 const { runPaced } = require("../runtime/SpawnPacing.PlayerBots");
 const npcSpawns = require("../../../data/definitions/npc-spawns.json");
 const { markHonest, markAdventurer } = require("../brain/Honest.PlayerBots");
-const { errandsFor } = require("../brain/Errands.PlayerBots");
+const { errandsFor, inWilderness } = require("../brain/Errands.PlayerBots");
 const { createLoopGuard } = require("./Loops.PlayerBots");
 const Requirements = require("./Requirements.PlayerBots");
 const Loadout = require("./Loadout.PlayerBots");
@@ -869,9 +869,77 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * Its tools, coins, runes and teleports, quest items (untradeable), job materials and kit stay.
    * Only at a bank visit it makes anyway.
    */
+  /**
+   * Places where adventurers got hurt lately (a flight on low HP, a death), shared by all of them
+   * (AI_Constitution §24, §25: learn from runtime and from each other): "x>>3,y>>3,z" -> until.
+   */
+  const hurtAt = new Map();
+  const HURT_MEMORY_MS = 2 * 60 * 60_000;
+  const cellOf = (x, y, z) => `${x >> 3},${y >> 3},${z ?? 0}`;
+  function noteHurt(location) {
+    if (!location) return;
+    hurtAt.set(cellOf(location.getX(), location.getY(), location.getZ()), now() + HURT_MEMORY_MS);
+  }
+
+  /**
+   * Whether a place is dangerous for this adventurer now: null when safe, else { why, text }.
+   * The game's own rules: the Wilderness, or an aggressive NPC within its aggression range of
+   * the place that would attack this combat level (NPC.isAggressiveTo); and what adventurers
+   * met there lately (hurtAt).
+   */
+  function placeDanger(player, place) {
+    const z = place.z ?? 0;
+    if (inWilderness(place.x, place.y)) return { why: "wilderness", text: "in de Wilderness" };
+    for (let dx = -1; dx <= 1; dx += 1) {
+      for (let dy = -1; dy <= 1; dy += 1) {
+        if ((hurtAt.get(`${(place.x >> 3) + dx},${(place.y >> 3) + dy},${z}`) ?? 0) > now()) {
+          return { why: "hurt_here", text: "hier raakten avonturiers kortgeleden gewond" };
+        }
+      }
+    }
+    try {
+      const at = { getX: () => place.x, getY: () => place.y, getZ: () => z };
+      for (const npc of core.World.getNpcsNear(at, 16, null)) {
+        const definition = npc.getCurrentDefinition?.() ?? npc.getDefinition?.();
+        if (!definition?.isAggressive?.() || !npc.isAggressiveTo?.(player)) continue;
+        const range = definition.getAggressionRange?.(1) ?? 4;
+        const spot = npc.getLocation();
+        if (Math.max(Math.abs(spot.getX() - place.x), Math.abs(spot.getY() - place.y)) > range + 2) continue;
+        return { why: "aggressive", text: `${String(definition.getName?.() ?? "agressieve monsters").toLowerCase()} (level ${definition.getCombatLevel?.() ?? "?"}) vallen hem hier aan` };
+      }
+    } catch {
+      // No world to look in (tests): no danger found by NPCs.
+    }
+    return null;
+  }
+
+  /** Straight tiles from a place to the nearest named bank. */
+  function bankTilesFrom(place) {
+    let best = Infinity;
+    for (const bank of data.banks ?? []) {
+      if ((bank.z ?? 0) !== (place.z ?? 0)) continue;
+      best = Math.min(best, Math.max(Math.abs(bank.x - place.x), Math.abs(bank.y - place.y)));
+    }
+    return best;
+  }
+
+  /** The food a gathering job carries at its place, and why (Loadout.foodFor), said once per change. */
+  function gatheringFood(entry, player, place) {
+    const decision = Loadout.foodFor({ danger: place ? placeDanger(player, place) : undefined,
+      bankTiles: place ? bankTilesFrom(place) : Infinity, combat: player.getSkillManager?.()?.getCombatLevel?.() ?? null });
+    const key = `${decision.food}:${decision.reason}`;
+    if (place && entry.foodNote !== key) {
+      entry.foodNote = key;
+      note(player, decision.food === 0 ? `Neemt geen eten mee: ${decision.reason}.` : `Neemt ${decision.food} stuks eten mee: ${decision.reason}.`, "activity");
+    }
+    return decision.food;
+  }
+
   function bankOffLoadout(entry, banker, plan = entry.plan ?? entry.savedTask) {
     const mode = plan?.mode;
     if (!Loadout.GATHERING.has(mode)) return [];
+    // Its job's place: where it works (its home) when this is its job now, else not known yet.
+    const home = plan === entry.plan ? stateOf(banker)?.home ?? null : null;
     const activityId = plan === entry.plan ? entry.activity ?? plan.activity : plan.planActivity ?? plan.activity ?? null;
     const tools = toolsFor(mode, activityId);
     const keep = new Set([...workingMaterials(entry), ...bossKit(entry), Trade.COINS,
@@ -882,7 +950,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     };
     const items = (banker.getInventory().getItems() ?? []).filter((item) => item && item.getId() > 0)
       .map((item) => ({ itemId: item.getId(), amount: item.getAmount() }));
-    const stored = deposit(banker, Loadout.offLoadout(items, { mode, kindOf }));
+    const stored = deposit(banker, Loadout.offLoadout(items, { mode, kindOf, foodKeep: gatheringFood(entry, banker, home) }));
     if (stored.length > 0) countEvent(entry, "loadoutBanked");
     return stored;
   }
@@ -2854,6 +2922,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
           && hp < maxHp * DANGER_HP_SHARE && !carriesFood(entry.player) && !errands.busy(entry.player)) {
         note(entry.player, `Nog maar ${hp}/${maxHp} HP en geen eten: stopt met ${String(entry.activity ?? "deze klus").replace(/_/g, " ")} voor het te laat is.`, "activity");
         countEvent(entry, "fledLowHp");
+        noteHurt(entry.player.getLocation());
         entry.jobEnd = "low hp, no food";
         entry.dangerUntil = nowMs + 10 * 60_000;
         entry.savedTask = null;
@@ -3322,6 +3391,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const player = entry.player;
     const hitpoints = player.getSkillManager().getMaxLevel(core.Skill.HITPOINTS);
     if (hitpoints >= TRAVEL_FOOD_UNTIL_HP || foodSlots(player).length > 0 || nowMs < (entry.foodTriedAt ?? 0)) return false;
+    // A gathering job takes food by its place (Loadout): the same decision, or it fetched food the
+    // next bank visit put back.
+    if (Loadout.GATHERING.has(plan.mode) && entry.foodNote?.startsWith("0:")) return false;
     entry.foodTriedAt = nowMs + 20 * 60_000;
     const resume = () => { entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, planActivity: plan.activity ?? null, remainingMs: 0, savedAt: now() }; };
     const inBank = (Shopping.gear.food ?? []).map((entry) => Shopping.idOf(core, entry.item))
@@ -3557,6 +3629,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (!entry) return;
     countEvent(entry, "died");
     const at = player.getLocation();
+    noteHurt(at);
     metric({ kind: "death", bot: entry.name, phase: entry.phase, mode: entry.plan?.mode ?? null, activity: entry.activity ?? null,
       quest: entry.questRun?.name ?? null, where: [at.getX(), at.getY(), at.getZ()], hadFood: carriesFood(player),
       combat: player.getSkillManager().getCombatLevel(),
