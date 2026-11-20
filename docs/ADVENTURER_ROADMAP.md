@@ -119,6 +119,12 @@ candle), Fase 5 (unlock-waarde).
   de logs tonen welke eisen het vaakst ontbreken. Locatie en verdieping: `TravelHubs.onFoot`
   (knooppunt op dezelfde z, quest- en item-gebieden), `blockedPlaces` (sleutel x,y,z) en de
   errand-runner (aankomst op dezelfde verdieping, trappen via `levelHop`) worden hergebruikt.
+- **Stap 2 gebouwd 20-11-2026 (`canExecute` v1):** `Requirements.PlayerBots.js`. Vóór elke keuze:
+  gereedschap (bezit, of winkel in de buurt of GE en betaalbaar), plek waar die vooraf bekend is
+  (Wintertodt, de ingang van een boss: `onFoot` met verdieping en afgesloten gebieden, geen
+  geblokkeerde plek) en een onthouden mislukking (30 min). Wat niet kan gaat in `exclude`, met
+  reden in `decision.blocked`. Geweigerde boodschappen en aankopen geven nu een reden in plaats
+  van `unknown`. Nog niet: skills- en quest-eisen per activiteit, items, spellbook.
 
 ### Fase 5: Progression op unlock-waarde (§10, §11)
 

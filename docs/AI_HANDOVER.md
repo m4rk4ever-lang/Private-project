@@ -5,6 +5,78 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 20-11-2026 (19:45): Fase 4 stap 2, `canExecute` v1
+
+Branch: `adventurers/can-execute-v1` (vanaf `main` `696c6cd`, met `docs/controle-1933`).
+
+### Wat aangepast is
+
+- Nieuw: `server/plugins/bots/adventurers/Requirements.PlayerBots.js` (Knowledge-laag, zonder core).
+  `canExecute(option, ctx)`: eerst een onthouden mislukking, dan gereedschap (`any`: één van,
+  `all`: allemaal; bezit of verkrijgbaar), dan de plek als die vooraf bekend is. `remember` /
+  `recall`: een mislukking met een eis-reden (`REQUIREMENT_REASONS`) houdt die optie 30 min buiten.
+- `Adventurers.PlayerBots.js`:
+  - `precheck(entry, view, exclude, bosses)` vóór `chooseNext`, met `ctx` uit dezelfde checks als
+    de start: `Shopping.ownsAnywhere`, `nearestShop` binnen `shopRadius` en betaalbaar, GE-prijs en
+    munten (zoals `buyOnExchange`), `TravelHubs.onFoot` met `questDone` en items, `blockedPlace`.
+    Plek alleen gecheckt voor Wintertodt en een boss-ingang (`boss.via.at`); een boss zonder
+    ingang zoekt zelf zijn weg (ondergronds), daar beslist de start.
+  - `walkTo` zet `entry.refusal` bij elke weigering (`busy`, `errands_resting`, `place_blocked`,
+    `loop_blocked`, `on_roof`, `no_brain`); `buyOnExchange` bij `not_buyable`. De `decision`-
+    `failure` gebruikt die als er geen `cannot` was.
+  - Na een mislukte poging: `Requirements.remember(entry.cannot, plan, failure)`.
+  - `decision.blocked` (poging 0): wat vooraf is uitgesloten en waarom.
+- `server/tests/bot-requirements.test.cjs`: 3 tests.
+- `docs/OBSERVABILITY.md`, `docs/ARCHITECTURE.md` (Knowledge-laag), `docs/ADVENTURER_ROADMAP.md`,
+  `CHANGELOG.md`.
+
+Validatie: bot-tests 16 van 120 fout (zelfde 16); de 3 nieuwe slagen. Adventurers-deel alleen
+`node --check`. **Niet in game getest.**
+
+### Risico's
+
+1. Vooraf "verkrijgbaar" en de echte aankoop kunnen verschillen (de start koopt het beste
+   gereedschap dat past, de check accepteert elk). Dan faalt de start en onthoudt het geheugen het.
+2. Een uitgesloten modus blijft 30 min uit, ook als het geld er intussen wel is.
+3. `reachableActivity` en `nearestShop` draaien nu bij elke beslissing voor elke modus: iets meer
+   rekenwerk per beslissing. Zichtbaar in de `server`-metric (tick-duur).
+4. `cannot` (Map) wordt niet opgeslagen: na een herstart is het geheugen leeg.
+
+### Volgende stap
+
+Na deploy en ~30 min: aandeel niet gestart (was 39%), `blocked` per reden, resterende `unknown`,
+en tick-duur in de `server`-metric.
+
+---
+
+## Controle 20-11-2026 19:33: waarom klussen niet starten (`696c6cd`)
+
+Basis: `bot-logs` push 18:31 UTC. `696c6cd` 18:06 tot 18:30 (**24 min**, 60 avonturiers).
+
+| Vraag | Uitkomst (24 min) |
+| --- | --- |
+| Keuzes die niet startten | 76 van 197 (39%). |
+| Reden bekend | 35 (46%): `tool_unbuyable` 26, `place_unreachable` 8, `too_poor` 1. |
+| Reden `unknown` | 41 (54%): `combat_magic` 13, `slayer` 7, `buy_*` 15, `mining` 3, overig 3. Paden die nog stil falen (vooral een `walkTo` of `shopFor` die `false` geeft). |
+| Gekozen terwijl uitgesloten | 0 (exclude-fix werkt). |
+| `loop` | 1 (Jorgbot 17, `exchange`). |
+| Volume | metrics ~3.700/u, activiteit ~7.200/u. |
+| Tijd | errand 30,4%, walking 26,6%, working 14,8%, idle 12,1%. |
+
+`tool_unbuyable`: bird snare 13× (hunter; Markbot 8, Markbot 9, Eeshwar, Bekoek), harpoon 6×
+(Jorgbot 19, `slayer` en `combat_training`), fly fishing rod, lobster pot, axe, pickaxe
+(Eeshwar, weinig geld).
+
+`place_unreachable` (alle `z: 0`): Giant Mole (1752, 5237) 6×. Die ligt onder Falador en gaat via
+de molshoop met een spade (`boss.via`); `enterBoss` gaf `null`. Wintertodt (1630, 3974) 2×: Kourend,
+per boot, niet te voet. Geen gevallen met een hogere verdieping gezien.
+
+**Conclusie:** de planner kiest steeds opnieuw klussen waarvan hij al kon weten dat ze niet gaan
+(dezelfde bot meerdere keren hunter zonder snare). Voorstel voor `canExecute` v1 staat in het
+verslag aan de eigenaar; nog niets gebouwd.
+
+---
+
 ## Sessie 20-11-2026 (19:05): Fase 4 stap 1, waarom een klus niet start
 
 Branch: `adventurers/can-execute` (vanaf `main` `f7a284a`).
