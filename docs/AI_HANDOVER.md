@@ -5,6 +5,71 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 20-11-2026 (21:00): grote update (Fase 4b stap 2, `canExecute` v2, transport stap 1) en twee lussen
+
+Branch: `adventurers/big-update` (vanaf `main` `5392a52`). Op verzoek van de eigenaar drie
+roadmap-stappen in één update, als aparte commits met elk eigen logregels of metric, zodat de
+effecten te scheiden blijven. Controle van 21:18 uitgezet op verzoek.
+
+### Commits
+
+1. `7711cca` **Loadout stap 2.** `Loadout.travelKit`: bij gathering één reismiddel (geladen
+   sieraad, anders law/air/fire voor Varrock Teleport vanaf Magic 25, anders één soort tablet).
+   Het bankbezoek dat reisspullen meeneemt en `bankOffLoadout` gebruiken dezelfde kit. Logregel
+   "Neemt voor … één reismiddel mee". Bewijs: reisspullen 3,6 vakjes (controle 20:36).
+2. `c327316` **`canExecute` v2.** `onExchange(itemId)` (de GE-regel: unnoted tradeable) vóór een
+   GE-trip in `buyOnExchange`, `buyManyOnExchange` en `canExecute` (`not_buyable` /
+   `not_exchangeable`). `LightSources` beantwoordt `light-sources:unlit-for`; `lightItem`
+   (algemene `lightUp`) maakt een lichtbron uit de onverlichte versie + tinderbox, ook voor
+   quests (`acquireForQuest`, `replan: false`). Bewijs: `buy_nothing` lit candle, ghostspeak
+   amulet, combat bracelet.
+3. `b0e44c1` **Quest-verzamellus (melding eigenaar "naar de GE, weg, terug").** Markbot 3 mijnde
+   clay voor Doric's Quest, verkocht het (23×) bij de GE en mijnde opnieuw; na een herstart was
+   het quest-doel weg. `workingMaterials` bevat `entry.gather`; de "genoeg verzameld"-check draait
+   ook buiten `training` (niet tijdens een errand); `Tasks.taskRecord` bewaart `gather`.
+   (Jorgbot 17 en Markbot 15 liepen ook vaak naar de GE: buy-to-train firemaking, 150-237k XP/u,
+   geen lus.)
+4. `f2c0d02` **Transport stap 1 + teleport vóór shortcut.** Errands: Kourend-bestemmingen van
+   sieraden na een eerste bezoek (`visitedKourend`). `sailVeos` (Veos in Port Sarim, zijn optie,
+   Ferries-plugin vaart; metric `boat`). `kourendWay` voor Wintertodt: boot, dan games necklace,
+   dan de teleport. `canExecute` telt Kourend bereikbaar als Port Sarim te voet is. En (melding
+   eigenaar, screenshot): Patrickbot 17 liep met runes voor Falador Teleport via de underwall
+   tunnel; `walkTo` koos de shortcut (`levelHop`) vóór een teleport. Nu `teleportsNear` eerst
+   (niet voor plekken onder de grond).
+
+### Check van de eigenaar (geen wijziging): wapens en vechtstijlen
+
+- `Trade.wearBest` kiest alleen uit de tas; `fillEmptySlots(fromBank)` alleen lege slots. Een
+  beter wapen of schild in de bank komt nooit in plaats van wat hij draagt (Torva + rune sq +
+  dragon scimitar). Op de roadmap gezet.
+- Ranged en magic bestaan als klus en voor de Barrows; geen keuze naar zwakte. Op de roadmap.
+
+### Validatie
+
+Bot-tests 16 van 127 fout (zelfde 16); nieuw: `travelKit`, `gather` in de task-record,
+Kourend-teleport alleen na bezoek. Niet testbaar hier: `LightSources` en `RunCourse` (core).
+**Niets in game getest.**
+
+### Risico's
+
+1. Veos zet de bot af op het scheepsdek (z 1, Ferries `to: [1824, 3695, 1]`). Als hij daar niet
+   vanaf komt: `unstrand` na drie blokkades. In game kijken.
+2. Binnen Kourend zijn geen hubs: lopen naar ver weg kan stranden. Wintertodt gaat via de
+   necklace-teleport (Wintertodt Camp ligt ~33 tegels van het doel).
+3. Een bot die eerst naar Kourend vaart voor Wintertodt maar geen necklace kan kopen, gebruikt
+   een poging; `canExecute` onthoudt het daarna 30 min.
+4. Varrock Teleport als enige rune-kit bij gathering: een bot die ver van Varrock werkt teleporteert
+   minder handig dan met de volle set.
+
+### Na de update meten
+
+`boat`-metric, "Vaart met Veos", Wintertodt-starts en `blocked` wintertodt; "Neemt … één
+reismiddel mee" en reisvakjes bij gathering (was 3,6); `buy_nothing` (verwacht 0 met
+`not-exchangeable`); "Steekt een candle aan … (voor <quest>)"; Markbot 3 terug naar Doric's
+Quest; teleports richting Falador Park.
+
+---
+
 ## Sessie 20-11-2026 (20:50): klikken op een dak (oorzaak Seers en Falador)
 
 Branch: `adventurers/roof-click` (vanaf `main` `3e0f7a6`).
