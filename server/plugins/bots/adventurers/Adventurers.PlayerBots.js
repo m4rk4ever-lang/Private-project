@@ -2348,13 +2348,15 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (nowMs < (entry.dangerUntil ?? 0) && !carriesFood(entry.player)) for (const mode of DANGER_MODES) exclude.add(mode);
     view.earn = entry.earn ?? {};
     for (let attempt = 0; attempt < 4; attempt += 1) {
+      let why = null;
       const plan = chooseNext(view, questList(), {
         available: view.available, questChance: data.questChance, moneyChance: data.moneyChance ?? 0.1, bosses: (data.bosses ?? []).filter((boss) => boss.onFoot !== false), bossChance: attempt === 0 ? data.bossChance : 0, random,
-        focus: data.focus?.[entry.name] ?? {}, busyModes, exclude, goal: goalOf(entry),
+        focus: data.focus?.[entry.name] ?? {}, busyModes, exclude, goal: goalOf(entry), explain: (decision) => { why = decision; },
       });
       const started = plan.kind === "quest" ? startQuest(entry, plan)
         : plan.kind === "boss" ? startBoss(entry, plan, nowMs)
         : startTraining(entry, plan, nowMs);
+      decisionMetric(entry, plan, why, { attempt, started, exclude });
       if (started) {
         entry.idleReason = null;
         return;
@@ -2364,6 +2366,20 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     entry.idleReason = `kon ${[...exclude].map((mode) => mode.replace(/_/g, " ")).join(", ") || "niets"} niet starten`;
     world.log?.("adventurer_idle", { name: entry.name, tried: [...exclude] });
     entry.until = nowMs + 15_000;
+  }
+
+  /**
+   * Every pick of the planner, started or not (AI_Constitution §32: which choices were made and
+   * why): what it chose, the way through chooseNext (`path`: boss, quest, money, quest_gap,
+   * weighted, fallback), the best alternatives with their weight and chance, what was left out.
+   */
+  function decisionMetric(entry, plan, why, { attempt = 0, started = false, exclude = new Set() } = {}) {
+    metric({ kind: "decision", bot: entry.name, attempt, started: Boolean(started), path: why?.path ?? null,
+      chosen: { kind: plan.kind, mode: plan.mode ?? null, skill: plan.skill ?? null, quest: plan.quest?.name ?? null,
+        boss: plan.boss?.id ?? plan.boss?.name ?? null, reason: plan.reason ?? null },
+      chance: why?.chance ?? null, alternatives: why?.alternatives ?? null, candidates: why?.candidates ?? null,
+      quest: why?.quest ?? null, missing: why?.missing ?? null, excluded: [...exclude],
+      goal: Goals.describe(entry.player.getAttribute(GOAL_ATTRIBUTE) ?? null) ?? null });
   }
 
   /** A valuable drop (data.dropValue coins or more) from an adventurer's kill, for the drop log. */

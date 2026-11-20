@@ -5,6 +5,42 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 20-11-2026 (18:50): Fase 3 deel 2, `decision`-metric
+
+Branch: `adventurers/decision-metric` (vanaf `main` `3d92588`).
+
+### Wat aangepast is
+
+- `server/plugins/bots/adventurers/Planner.PlayerBots.js`: `chooseNext` krijgt een optionele
+  `explain`-callback. Op elke uitweg (`boss`, `quest`, `fallback`, `money_boss`, `money`,
+  `quest_gap`, `weighted`) krijgt die `{ path, choice, ... }`: bij `weighted` de kans van de keuze en
+  de beste 3 met gewicht en kans, bij `money` de beste 3 met gp/uur en of die gemeten is, bij
+  `quest_gap` de quest en wat ontbreekt. Het plan zelf is ongewijzigd; een fout in `explain` wordt
+  genegeerd.
+- `server/plugins/bots/adventurers/Adventurers.PlayerBots.js`: `decisionMetric` schrijft per
+  poging (max 4 per beslissing) een `decision`-regel, ook als de klus niet startte (`started`,
+  `excluded`).
+- `server/tests/bot-adventurers.test.cjs`: test dat de uitleg klopt en het plan niet verandert.
+- `docs/OBSERVABILITY.md` (soort en recept), `docs/ADVENTURER_ROADMAP.md`, `CHANGELOG.md`.
+
+Validatie: bot-tests 16 van 116 fout (zelfde 16); de nieuwe test slaagt. Adventurers-deel alleen
+`node --check`. **Niet in game getest.**
+
+### Risico's
+
+1. Volume: ongeveer één regel per gestarte klus plus de mislukte pogingen. Schatting 800 à 1.000
+   per uur extra in het metrics-log (was ~3.150 per uur): dekking van ~6 naar ~5 uur. Na deploy
+   meten.
+2. `path: "weighted"` met lage `chance` is normaal (gewogen loting), geen fout.
+
+### Volgende stap
+
+Na deploy: recept "Keuzes" draaien. Interessant voor Fase 4 en 5: hoe vaak `started: false` en
+welke modi (eisen die ontbreken: `CanExecute`, §7), en hoe vaak `quest_gap` tegenover `weighted`
+(hoeveel keuzes al een doel dienen, §10).
+
+---
+
 ## Sessie 20-11-2026 (18:40): Fase 3 deel 1, `::volg` toont doel en reden
 
 Branch: `adventurers/volg-status` (vanaf `main` `301f1ce`).
