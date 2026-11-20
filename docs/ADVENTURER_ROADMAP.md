@@ -74,7 +74,9 @@ vorige versie zijn bekeken.
 - Bewijs: errand 44,3% van de tijd bij werkende bots; bank-errands het grootst (Draynor,
   Edgeville, Varrock West, GE); `walk_blocked` 262 keer in 4,9 uur.
 - Eerst meten: per bank de duur van een bank-errand en hoe vaak hij eindigt via "binnen 15 tegels"
-  in plaats van echt aankomen. Daarna de grootste oorzaak oplossen.
+  in plaats van echt aankomen. **Instrumentatie klaar (20-11-2026):** metric `errand` met
+  `ended`, `why` en `seconds` ([OBSERVABILITY.md](OBSERVABILITY.md#metric-soorten-kind)). Nog te
+  doen: een paar uur data van de nieuwe versie bekijken, dan de grootste oorzaak oplossen.
 - Klaar als: errand-aandeel onder 30% bij gelijk aantal avonturiers.
 
 ### Fase 3: Observability van keuzes (§30, §31)

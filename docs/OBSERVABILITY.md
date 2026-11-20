@@ -53,6 +53,12 @@ naar de eerste en laatste `at` voordat je conclusies trekt.
 | `skills` | Elke 5 min: welke skills getraind, door wie, `untouched` | |
 | `server` | Elke 5 min: aantallen, tick-duur, geheugen, `questsBlocked` | |
 | `bank_nothing` | **Nieuw (20-11-2026).** Bank bij een volle tas kon niets aannemen | `bank`, `where`, `freeSlots`, `bag` |
+| `errand` | **Nieuw (20-11-2026, na `e210ce9`).** Einde van elke boodschap via `walkTo` | `reason`, `to`, `ended` (`arrived`, `near`, `toll_gate`, `blocked`), `why` (`stuck`, `no-closer`, `too-long`, of `null` bij aankomst), `seconds`, `tilesLeft`, `teleport`, `hop`, `where` |
+
+`errand.ended`: `arrived` = binnen 3 tegels (`ARRIVE_TILES`). `near` = de runner gaf op, maar de
+bot stond binnen 15 tegels (`NEAR_ENOUGH_TILES`) en dat telt als aangekomen; vaak een bank door de
+muur, na minstens 45 seconden stilstaan. Een errand die stopt omdat de bot stierf of uitlogde
+schrijft geen regel. Een trap of ladder onderweg geeft twee regels; de eerste heeft `hop: true`.
 
 Events in `bot.events`: `stuck`, `walkBlocked`, `errandIdle`, `idle`, `questFailed`, `fledLowHp`,
 `died`, `teleportedOut`, `targetReached`, en nieuw `bankNothing`.
@@ -96,6 +102,13 @@ for r in bots:
 print("bevroren", sorted(frozen))
 print("stuck", C.Counter((r.get("activity"), r.get("reason")) for r in rows if r["kind"] == "stuck").most_common(10))
 print("job.ended", C.Counter(r.get("ended") for r in rows if r["kind"] == "job").most_common(10))
+# Errands (vanaf de versie na e210ce9): minuten en afloop per bestemming, duurste eerst
+err = [r for r in rows if r["kind"] == "errand"]
+per = C.defaultdict(lambda: [0, 0, C.Counter()])
+for r in err:
+    p = per[(r["reason"], r["to"])]; p[0] += 1; p[1] += r["seconds"]; p[2][r["ended"]] += 1
+for (reason, to), (n, s, ended) in sorted(per.items(), key=lambda x: -x[1][1])[:15]:
+    print(f"{reason:10} {to:28} n={n:4} min={s/60:6.1f} gem={s/n:5.0f}s {dict(ended)}")
 ```
 
 ## Gaten ten opzichte van de constitution
