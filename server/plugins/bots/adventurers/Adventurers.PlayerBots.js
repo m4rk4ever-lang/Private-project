@@ -3945,7 +3945,16 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     dropJunk(player, bag.junk);
     // The exchange has its bank: what it keeps for later goes in there, not up for sale.
     const kit = entry ? new Set([...bossKit(entry), ...workingMaterials(entry)]) : new Set();
-    const stored = [...deposit(player, bag.keep.filter((good) => !kit.has(good.itemId))), ...(entry ? [...bankUnusedSupplies(entry, player), ...bankUnusedTools(entry, player)] : [])];
+    // What has no price at the exchange (a bag of things nobody buys) goes in its bank too, as at
+    // any bank. It stayed: the bag still counted as cluttered and trade() sent it to the exchange
+    // again, eight times in eleven seconds (Jorgbot 4, Patrickbot 1: loop metric, v 1fe6907,
+    // 20-11-2026, trade { cluttered: true, worth: 0, goods: [] }).
+    const keepHere = Trade.keepIds(player, core, { isFood });
+    for (const id of kit) keepHere.add(id);
+    const priced = new Set(Trade.goodsToSell(player, core, keepHere, { isFood }).map((good) => good.itemId));
+    const unpriced = Trade.goodsToSell(player, core, keepHere, { isFood, worthless: true }).filter((good) => !priced.has(good.itemId));
+    const stored = [...deposit(player, bag.keep.filter((good) => !kit.has(good.itemId))), ...deposit(player, unpriced),
+      ...(entry ? [...bankUnusedSupplies(entry, player), ...bankUnusedTools(entry, player)] : [])];
     if (stored.length > 0) note(player, `Bewaart op de bank: ${stored.map((good) => itemName(good.itemId)).join(", ")}.`, "activity");
     const pulled = withdrawToSell(player);
     const goods = Trade.goodsToSell(player, core, keepAtExchange(player), { isFood });

@@ -5,6 +5,40 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Controle 20-11-2026 18:26: lusbewaking (`1fe6907`)
+
+Basis: `bot-logs` push 17:26 UTC. `1fe6907` 17:07 tot 17:26 (**19 min**, 60 avonturiers).
+
+| Vraag | Uitkomst (19 min) |
+| --- | --- |
+| `loop`-regels | 5, alle in de eerste 13 min, alle echt (8 keer in 8 tot 37 s). Geen vals alarm gezien. |
+| Na de blokkade | Jorgbot 4 traint thieving (6.150 XP/u), Patrickbot 1 magic (29.657 XP/u). |
+| `errandInstant` | 405 in 19 min (was 1.386 in 24,5 min). Hoogste Patrickbot 14: 88. |
+| Tijd | errand 28,2% (was 32,6%), walking 26,6%, working 17,8%, idle 11,2%. |
+| Bevroren (15 min stil) | 0. |
+| Volume | metrics ~3.150/u, activiteit ~7.550/u. |
+
+**Oorzaak GE-lus Jorgbot 4 en Patrickbot 1 (uit de `loop`-metric):** `trade = { cluttered: true,
+worth: 0, goods: [], waiting: false, fund: false }`, bewaarde klus `buy_crafting`, GE leeg (8 vrije
+slots). De tas telt als "rommelig": 6 of meer vakjes met spullen zonder handelswaarde
+(`goodsToSell(..., { worthless: true })`). `trade()` kiest de GE omdat die dichtbij is, maar
+`atExchange` zet alleen `bag.keep` op de bank en verkoopt alleen spullen met waarde. De waardeloze
+voorraad blijft, de tas blijft rommelig, opnieuw. Het bankpad van `trade()` zet die voorraad wel weg.
+Voorgestelde fix (één regel): `atExchange` zet ook de waardeloze voorraad op de bank, zoals het
+bankpad (`Trade.goodsToSell(player, core, keepHere, { isFood, worthless: true })` met
+`workingMaterials` en `bossKit` erbij). **Gedaan 18:35** (branch `docs/controle-1826`): alleen
+spullen zonder prijs, zodat spullen met waarde nog verkocht worden. Risico: een niet-verhandelbaar
+quest-item in de tas gaat bij de GE ook de bank in, zoals bij elke andere bank al gebeurde.
+
+Andere lussen (geblokkeerd, oorzaak niet uitgezocht):
+- Jorgbot 14: `bank` Al Kharid, `fund: true`, 2 vrije vakjes, bewaarde klus `combat_training`.
+  Mogelijk de volle-tas-banktrip tegen de klus-uitrusting die nu in de tas blijft (PR #3).
+- Jorgbot 10: `exchange` en `withdraw` om en om bij de GE, `full: true`, bewaarde klus `hunter`.
+
+Fase 2b: werkt zoals bedoeld. Lussen zonder boodschap vallen er nog buiten.
+
+---
+
 ## Sessie 20-11-2026 (18:00): algemene lusbewaking (Fase 2b)
 
 Branch: `adventurers/loop-guard` (op `docs/controle-1730`, vanaf `main` `5c40d0c`).
