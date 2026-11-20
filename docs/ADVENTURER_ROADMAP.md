@@ -126,6 +126,21 @@ candle), Fase 5 (unlock-waarde).
   reden in `decision.blocked`. Geweigerde boodschappen en aankopen geven nu een reden in plaats
   van `unknown`. Nog niet: skills- en quest-eisen per activiteit, items, spellbook.
 
+### Fase 4b: Inventory management (§19), op verzoek van de eigenaar 20-11-2026
+
+- Bewijs (metrics 20-11-2026, 278 `bot`-regels tijdens woodcutting, mining en fishing): gemiddeld
+  ~10 van de 28 vakjes vast met spullen die de klus niet gebruikt: eten 3,7, reisspullen
+  (teleport-tablets, losse runes, sieraden) 2,8, overig 1,7 (bucket, pot, silk, reservewapens,
+  spade, clue geode), munten 0,9, gereedschap 0,8. 160 van 206 gathering-klussen eindigden op
+  "full bag": een kleinere tas is meer banktrips (errand ~30% van de tijd).
+- Eén loadout per klus in de Knowledge-laag: wat een klus in de tas wil (gereedschap, eten alleen
+  bij gevaar, reisspullen als één stapel of sieraad), de rest naar de bank bij de eerstvolgende
+  bank, niet een extra trip. Bouwt voort op `keepIds`, `goodsToSell`, `bankUnusedTools`,
+  `bankUnusedSupplies` en `workingMaterials`; geen nieuwe banklogica ernaast.
+- Eerst meten: vrije vakjes bij de start van een gathering-klus en ladingen per banktrip.
+- Klaar als: bij gathering gemiddeld 3 of minder vakjes vast met spullen buiten de loadout, en
+  meer grondstoffen per banktrip.
+
 ### Fase 5: Progression op unlock-waarde (§10, §11)
 
 - Unlock-scores als data (JSON), beginnend met de voorbeelden uit §11. De planner weegt ze naast
