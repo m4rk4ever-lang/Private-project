@@ -5,6 +5,14 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 20-11-2026 (22:55): eindspel voor maxed accounts; smithing-reeks via de bank (branch `adventurers/max-priorities`)
+
+- **Eigenaar:** bij max accounts prio op gear-, tool- en andere upgrades en een grotere bank, via money making en bossing. En Markbot 18: loop GE ↔ anvils Varrock West; "beter meer rune bars kopen en bank-anvil-bank".
+- **Data (logs tot 21:19 UTC):** 3 bots combat 126 met 2-4,4 miljard gp (Jorgbot 19, Markbot 18, Patrickbot 18). Tijd: thieving 31% (geld "eens proberen", 1-7k gp/u), wachten 19%, agility 16%, quests 15%, combat 7%; 5 boss-keuzes in ~4 uur.
+- **Planner:** `isEndgame` (≥ `endgame.share` 0,8 van de levels op 99; `adventurers.json` "endgame"). Dan bossChance ≥ 0,6 (alleen als bossChance > 0, dus niet na een mislukte poging), moneyChance ≥ 0,6, money-boss 50%, geen "eens proberen", questChance ≤ 0,1. Reden "eindspel: loot en upgrades". Upgrades zelf: de bestaande `Goals` (volgende stuk in de gear-lijsten) en `bidForUpgrades`.
+- **Smithing-loop:** `trade()` stuurde hem na elke lading naar de GE (platebodies ≥ `sellValue`, GE 47 tegels verder dan de bank ≤ `SELL_DETOUR_TILES`), waar hij ook de volgende bars pakte. Nu: midden in een reeks (`savedTask.afterTrip` en mode `buy_*`) de bank, GE alleen als die niet verder is. Verkoop later via `withdrawToSell`. `BUY_LOADS_MAX` 30 (was 10), nog steeds ≤ de helft van zijn coins.
+- **Validatie:** suite 145 tests, 16 vaste fails; test voor eindspel in `bot-adventurers`. Niet ingame getest. In de logs: `decision` met reden "eindspel", errands van Markbot 18 naar Varrock West in plaats van de GE.
+
 ## Sessie 20-11-2026 (22:40): vaker teleports kopen (branch `adventurers/teleport-buying`)
 
 - **Vraag eigenaar:** "vaker teleports kopen als het geld er voor is (zonder alles op te brassen), efficiëntie spreekt ook".
