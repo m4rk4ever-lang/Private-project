@@ -425,7 +425,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const memory = process.memoryUsage();
     metric({ kind: "server", adventurers: adventurers.size, bots, tickAvgMs: tickCost.count ? Math.round(tickCost.totalMs / tickCost.count * 10) / 10 : null,
       tickMaxMs: Math.round(tickCost.maxMs), heapMb: Math.round(memory.heapUsed / 1048576), rssMb: Math.round(memory.rss / 1048576),
-      questsBlocked: [...questsBlocked].filter(([, until]) => until > nowMs).map(([name]) => name) });
+      questsBlocked: [...questsBlocked].filter(([, until]) => until > nowMs).map(([name]) => name),
+      questsHeld: (data.questHold?.quests ?? []).map((quest) => quest.name) });
     Object.assign(tickCost, { count: 0, totalMs: 0, maxMs: 0 });
   }
 
@@ -2225,6 +2226,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * (snapshot().available is empty); when one is, it starts here.
    */
   function startQuest(entry, plan) {
+    // On hold (a saved task after a restart, the quest it left for a roof): not unless the owner asks.
+    if (!plan.forced && heldQuests.has(normalize(plan.quest.name))) {
+      return cannot(entry, "quest_on_hold", { quest: plan.quest.name });
+    }
     if (!questPlay.start(entry, plan.quest.name, now())) {
       note(entry.player, `${plan.quest.name} heeft nog geen bot-playthrough; overgeslagen.`, "quest");
       return cannot(entry, "no_quest_playthrough", { quest: plan.quest.name });
@@ -2239,8 +2244,17 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return true;
   }
 
-  /** A quest it could not finish lately (an NPC it could not find, a stuck walk). */
+  /**
+   * Quests on hold by hand (adventurers.json "questHold", AI_Constitution §28): never chosen until
+   * the cause is fixed. A Porcine of Interest shut bots in the Sourhog cave and its 3-hour block
+   * kept running out and starting again (20-11-2026). The owner's tests (::advquest, the sweep)
+   * still play them.
+   */
+  const heldQuests = new Set((data.questHold?.quests ?? []).map((quest) => normalize(quest.name)));
+
+  /** A quest it could not finish lately (an NPC it could not find, a stuck walk), or one on hold. */
   function questAside(player, name) {
+    if (heldQuests.has(normalize(name))) return true;
     const entry = adventurers.get(player.getUsername?.());
     return (entry?.questsAside?.get(name) ?? 0) > now() || (questsBlocked.get(name) ?? 0) > now();
   }
@@ -5041,7 +5055,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     entry.questsAside?.delete(questName);
     // A test of one step: the quest set to that stage first (an owner's ::advquest name:quest:stage).
     if (Number.isInteger(stage) && stage >= 0) questPlay.questOf(questName)?.setStage?.(entry.player, stage);
-    return startQuest(entry, { kind: "quest", quest: { name: questName } });
+    return startQuest(entry, { kind: "quest", quest: { name: questName }, forced: true });
   }
 
   /**
