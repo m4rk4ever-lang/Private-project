@@ -152,7 +152,7 @@ Indeling per versie:
 ### Gewijzigd
 - Avonturiers die hout hakken, minen of vissen nemen nog maar één reismiddel mee: een geladen sieraad, of de runes voor Varrock Teleport, of één soort tablet. In hun log staat welk.
 - Avonturiers proberen niets meer op de GE te kopen dat daar niet verhandeld wordt. Een brandende kaars voor een quest maken ze zelf: een candle kopen en die aansteken met een tinderbox.
-- Avonturiers kunnen naar Great Kourend: de eerste keer met de boot van Veos vanuit Port Sarim, daarna met een games necklace naar Wintertodt Camp. Daarmee kunnen ze Wintertodt doen.
+- Avonturiers kunnen naar Great Kourend, na X Marks the Spot: de eerste keer met de boot van Veos vanuit Port Sarim, daarna met een games necklace naar Wintertodt Camp. Daarmee kunnen ze Wintertodt doen.
 - Na een mislukte boodschap rusten avonturiers tien minuten met boodschappen. In die tijd kiezen ze geen klussen meer die meteen een boodschap nodig hebben, maar iets dat ze direct kunnen doen.
 - Avonturiers die hout hakken, minen of vissen nemen alleen eten mee als de plek gevaarlijk is voor hun combat level (agressieve monsters die hen aanvallen, de Wilderness, of avonturiers die daar kortgeleden gewond raakten), en minder als de bank dichtbij is. Spullen die ze daarbij niet gebruiken (een emmer, een pot, reservewapens) blijven bij de bank. In hun log staat waarom ze wel of geen eten meenemen. Zo past er meer in hun tas en hoeven ze minder vaak naar de bank.
 - Avonturiers kiezen geen klus meer waarvan al vaststaat dat die niet kan: zonder gereedschap dat ze hebben of kunnen kopen (geen hunter zonder bird snare), of op een plek waar ze niet kunnen komen. Mislukt een klus toch door een ontbrekende eis, dan kiezen ze die een half uur niet opnieuw.

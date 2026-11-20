@@ -32,7 +32,10 @@ effecten te scheiden blijven. Controle van 21:18 uitgezet op verzoek.
 4. `f2c0d02` **Transport stap 1 + teleport vóór shortcut.** Errands: Kourend-bestemmingen van
    sieraden na een eerste bezoek (`visitedKourend`). `sailVeos` (Veos in Port Sarim, zijn optie,
    Ferries-plugin vaart; metric `boat`). `kourendWay` voor Wintertodt: boot, dan games necklace,
-   dan de teleport. `canExecute` telt Kourend bereikbaar als Port Sarim te voet is. En (melding
+   dan de teleport. `canExecute` telt Kourend bereikbaar als Port Sarim te voet is **en X Marks the
+   Spot gedaan is** (eigenaar; Wiki: X Marks is sinds 28-04-2021 vereist voor Client of Kourend en
+   daarmee alle Kourend-quests; voor de boot zelf niet letterlijk bevestigd, de code noemt een
+   Port Sarim-Veos "na X Marks"). Zonder: `kourendWay` → `quest_x_marks_the_spot`. En (melding
    eigenaar, screenshot): Patrickbot 17 liep met runes voor Falador Teleport via de underwall
    tunnel; `walkTo` koos de shortcut (`levelHop`) vóór een teleport. Nu `teleportsNear` eerst
    (niet voor plekken onder de grond).

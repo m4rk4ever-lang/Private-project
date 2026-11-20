@@ -1542,6 +1542,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     } catch {
       visited = false;
     }
+    // The ship only after X Marks the Spot (the owner; the Wiki: that quest opens every Kourend
+    // quest, and Port Sarim's Veos is its completed form, ClientOfKourend.Quest.js).
+    if (!visited && !xMarksDone(player)) return "quest_x_marks_the_spot";
     if (!visited) return sailVeos(entry, place, resume) ? true : "no_ship";
     const necklace = (player.getInventory().getItems() ?? []).some((item) => item && /^games necklace\s*\(\d\)/i.test(itemName(item.getId())));
     if (necklace) return "there";
@@ -1556,6 +1559,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       return true;
     }
     return "no_necklace";
+  }
+
+  /** X Marks the Spot done: Veos's ship to Great Kourend is open. */
+  function xMarksDone(player) {
+    return questsByName().get(normalize("X Marks the Spot"))?.isComplete(player) === true;
   }
 
   /**
@@ -2712,8 +2720,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         return (entry.noExchangeBuyUntil ?? 0) <= now() && guide > 0 && onExchange(id) && coins() >= Math.ceil(guide * 1.05) + 50
           && !blockedPlace(entry, data.grandExchange);
       },
-      // Kourend: by Veos's ship from Port Sarim (and later a games necklace), so Port Sarim on foot.
-      reachable: (place) => TravelHubs.onFoot(inKourend(place) ? VEOS_PORT_SARIM : place, null, questDone(player), (item) => Shopping.owns(player, idOf(item)))
+      // Kourend: by Veos's ship from Port Sarim after X Marks the Spot (later a games necklace),
+      // so Port Sarim on foot and that quest done.
+      reachable: (place) => (!inKourend(place) || xMarksDone(player))
+        && TravelHubs.onFoot(inKourend(place) ? VEOS_PORT_SARIM : place, null, questDone(player), (item) => Shopping.owns(player, idOf(item)))
         && !blockedPlace(entry, place),
       remembered: (key) => Requirements.recall(entry.cannot, key, now()),
       toolsFor: (option) => {
