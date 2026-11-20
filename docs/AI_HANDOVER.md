@@ -32,8 +32,8 @@ eisen niet vooraf gecheckt zijn; waarom het niet startte staat nog niet in de me
 
 **Kleine planner-bug gevonden:** de `quest_gap`-weg kijkt niet naar `exclude`. Eeshwar kreeg in
 één beslissing twee keer `combat_training` voor Witch's House (combat 35), ook nadat die bij
-poging 1 al was uitgesloten. Kost een poging, geen lus. Fix: in `chooseNext` de combat-gap
-overslaan als `exclude` `combat_training` bevat. **Niet gedaan.**
+poging 1 al was uitgesloten. Kost een poging, geen lus. **Gefixt 19:00:** `chooseNext` slaat de
+combat-gap over als `exclude` `combat_training` bevat (test in `bot-adventurers.test.cjs`).
 
 ---
 

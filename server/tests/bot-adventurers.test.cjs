@@ -305,3 +305,11 @@ test("the planner explains its pick: the way it took and the best alternatives w
   const despite = chooseNext(adventurer(), data.quests, { random: () => 0, explain: () => { throw new Error("x"); } });
   assert.deepEqual(despite, same);
 });
+
+test("a quest's combat gap is not picked again once combat could not start (exclude)", () => {
+  const quest = { name: "Witch's House", combat: 35 };
+  const plan = chooseNext(adventurer({}, { combat: 10 }), [quest], { random: () => 0.99, questGapChance: 1, exclude: new Set(["combat_training"]) });
+  assert.notEqual(plan.mode, "combat_training");
+  const first = chooseNext(adventurer({}, { combat: 10 }), [quest], { random: () => 0.99, questGapChance: 1 });
+  assert.equal(first.mode, "combat_training", "without the exclude it is still the pick");
+});
