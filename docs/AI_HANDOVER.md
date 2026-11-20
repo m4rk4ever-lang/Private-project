@@ -5,6 +5,46 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 20-11-2026 (19:05): Fase 4 stap 1, waarom een klus niet start
+
+Branch: `adventurers/can-execute` (vanaf `main` `f7a284a`).
+
+### Waarom eerst dit
+
+Controle 18:56: 21% van de keuzes startte niet, zonder reden in de metrics. Een `canExecute` die
+de juiste eisen checkt, moet weten welke eisen ontbreken. Eerst meten (§5, §34).
+
+### Wat aangepast is
+
+- `Adventurers.PlayerBots.js`: `cannot(entry, why, detail)` zet `entry.startFailure` en geeft
+  `false`. Alle 20 stille `return false` in `startTraining`, `startBuyTraining`, `startBoss`,
+  `startQuest` en `startSlayer` zeggen nu waarom; een `shopFor` dat faalt voor gereedschap ook.
+  `decisionMetric` schrijft `failure` (of `{ why: "unknown" }` als nog geen reden gezet is).
+- Jachtplek: verdieping uit de data (`site[2]`) in plaats van altijd 0. De huidige data heeft geen
+  z, dus nu geen verschil.
+- `docs/OBSERVABILITY.md` (redenen, recept), `docs/ADVENTURER_ROADMAP.md`, `CHANGELOG.md`.
+
+### Locatie en verdieping (vraag van de eigenaar)
+
+Wat al plane-aware is en straks in `canExecute` hergebruikt wordt:
+- `TravelHubs.onFoot`: alleen bereikbaar via een knooppunt op dezelfde z; gebieden achter een
+  quest of item (`lockedAreas`, op x en y).
+- `blockedPlaces`: sleutel `x,y,z`.
+- Errand-runner: aankomst alleen op dezelfde verdieping, een verdieping telt als 20 tegels
+  voortgang; `levelHop` neemt trap of ladder naar ondergrondse plekken.
+Gat: een plek op een hogere verdieping zonder eigen knooppunt telt voor `onFoot` als onbereikbaar,
+ook als er een trap is. Dat wordt zichtbaar als `place_unreachable` met `z > 0`.
+
+Validatie: bot-tests 16 van 117 fout (zelfde 16). Alleen `node --check` voor dit deel. **Niet in
+game getest.**
+
+### Volgende stap
+
+Na deploy en ~30 min: `waarom niet` uit het recept. De grootste eis eerst in één `canExecute` vóór
+de keuze (planner sluit die optie uit), met plek en verdieping via de functies hierboven.
+
+---
+
 ## Controle 20-11-2026 18:56: `ce581ab` (`::volg`-status, `decision`, rommelige tas)
 
 Basis: `bot-logs` push 17:51 UTC. `ce581ab` 17:37 tot 17:51 (**14 min**, 60 avonturiers). Kort:

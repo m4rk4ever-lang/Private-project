@@ -113,6 +113,12 @@ candle), Fase 5 (unlock-waarde).
   (skills, quests, items, GP, gebied, transport). Eerst alleen gebruiken op de plekken waar logs
   falen tonen door een ontbrekende eis.
 - Klaar als: geen quest- of job-failures meer met een eis als oorzaak.
+- **Stap 1 gebouwd 20-11-2026:** elke gekozen klus die niet start zegt waarom (`decision.failure`,
+  20 plekken in `startTraining`, `startBuyTraining`, `startBoss`, `startQuest`, `startSlayer`).
+  Plek met verdieping (z) waar een plek de oorzaak is. Stap 2 (`canExecute` vóór de keuze) pas als
+  de logs tonen welke eisen het vaakst ontbreken. Locatie en verdieping: `TravelHubs.onFoot`
+  (knooppunt op dezelfde z, quest- en item-gebieden), `blockedPlaces` (sleutel x,y,z) en de
+  errand-runner (aankomst op dezelfde verdieping, trappen via `levelHop`) worden hergebruikt.
 
 ### Fase 5: Progression op unlock-waarde (§10, §11)
 

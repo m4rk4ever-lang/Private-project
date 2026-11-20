@@ -22,6 +22,7 @@ Indeling per versie:
 - Avonturiers met een tas vol dubbele spullen (acht dezelfde staffs, tientallen gesmede axes) bleven uren bij een bank staan zonder iets te doen. Ze houden nu één exemplaar van elk stuk uitrusting en gereedschap; de rest gaat naar de bank of de GE. Kan de bank toch niets aannemen, dan staat dat in hun log en gaan ze verder met een klus.
 
 ### Toegevoegd
+- Als een avonturier een klus kiest die niet kan starten, staat in de metrics nu waarom: geen gereedschap te koop, plek niet bereikbaar (met de coördinaten en de verdieping), een te laag level, geen quest-route, enzovoort.
 - In de metrics van avonturiers staat nu bij elke keuze wat ze kozen en waarom: of het een quest, een boss, geld verdienen of een gewogen keuze was, welke drie opties het zwaarst wogen en wat er niet kon. Zo is achteraf te zien waarom een avonturier iets ging doen.
 - `::volg` laat bij een avonturier nu ook zien wat zijn doel is, waar hij mee bezig is en waarom, en waar hij heen loopt als hij onderweg is. Elke twee minuten volgen zijn XP per uur, zijn vermogen en waar hij is.
 - De metrics van avonturiers hebben per boodschap (bank, GE, winkel, klus) een regel `errand`: hoe lang hij duurde en hoe hij eindigde: echt aangekomen, op minder dan 15 tegels als aangekomen geteld, via de tolpoort, of versperd. Zo is te zien welke banken en routes de meeste tijd kosten.
