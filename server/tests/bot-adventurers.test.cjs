@@ -144,6 +144,22 @@ test("found gear it may wear goes on; it keeps coins, food and tools and sells t
   }
 });
 
+test("one of each kept piece of gear or tool stays; spare copies are goods, not a full bag for ever", () => {
+  const Trade = require("../plugins/bots/adventurers/Trade.PlayerBots");
+  // As Markbot 14 and Jorgbot 18 stood at a bank for hours: a bag of identical kept things.
+  const f = tradeFixture([["RUNE_SCIMITAR", 1], ["RUNE_SCIMITAR", 1], ["RUNE_SCIMITAR", 1], ["BRONZE_AXE", 1], ["BRONZE_AXE", 1],
+    ["TINDERBOX", 1], ["SHRIMPS", 1], ["COINS", 500]], ["BRONZE_SCIMITAR"]);
+  try {
+    const keep = Trade.keepIds(f.player, f.core, { isFood: (id) => id === f.ids.SHRIMPS });
+    assert.ok(keep.has(f.ids.RUNE_SCIMITAR) && keep.has(f.ids.BRONZE_AXE));
+    const goods = Trade.goodsToSell(f.player, f.core, keep, { isFood: (id) => id === f.ids.SHRIMPS });
+    const byId = Object.fromEntries(goods.map((good) => [good.itemId, good.amount]));
+    assert.deepEqual(byId, { [f.ids.RUNE_SCIMITAR]: 2, [f.ids.BRONZE_AXE]: 1 });
+  } finally {
+    f.restore();
+  }
+});
+
 test("selling goes through the exchange's own events; coins only arrive from collected sales", () => {
   const Trade = require("../plugins/bots/adventurers/Trade.PlayerBots");
   const f = tradeFixture([["BONES", 3]]);

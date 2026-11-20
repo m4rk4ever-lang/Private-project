@@ -95,6 +95,8 @@ const BARROWS_SESSION_MS = 60 * 60_000;
 const QUEST_TICK_MS = 6_000;
 /** A walk that ends this close to its place has arrived (the exact tile may be in a hut). */
 const NEAR_ENOUGH_TILES = 15;
+/** A full bag the bank could not take anything from: not back to the bank for it before this. */
+const FULL_BAG_RETRY_MS = 30 * 60_000;
 /** Below this share of its Hitpoints with nothing to eat, a dangerous job stops. */
 const DANGER_HP_SHARE = 0.5;
 const DANGER_MODES = new Set(["combat_training", "combat_ranged", "combat_magic", "slayer", "thieving"]);
@@ -2236,7 +2238,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // A full bag and no bank or exchange it can reach now (every road it tried was blocked):
     // it weighs it up. Cheap things go; what is worth the walk stays and it tries a bank again
     // shortly instead of starting a new job with a full bag.
-    if (!clearBag(entry.player)) {
+    // After a bank trip that could take nothing (all of it kept: gear, tools, supplies) it goes on
+    // with the bag as it is for a while: the same trip again changes nothing.
+    if (!clearBag(entry.player) && nowMs >= (entry.fullBagBankAt ?? 0)) {
       // A bag full of things it keeps (the last job's materials: 21 raw monkfish for a firemaking
       // job): to the nearest bank with them, everything but coins, food and tools goes in. It
       // waited forever beside the GE's bank otherwise.
@@ -2248,6 +2252,16 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
           const keep = Trade.keepIds(banker, core, { isFood });
           const stored = deposit(banker, Trade.goodsToSell(banker, core, keep, { isFood, worthless: true }));
           if (stored.length > 0) note(banker, `Maakt zijn volle tas leeg op de bank: ${stored.slice(0, 5).map((good) => itemName(good.itemId).toLowerCase()).join(", ")}${stored.length > 5 ? ` en ${stored.length - 5} meer` : ""}.`, "activity");
+          if (banker.getInventory().getFreeSlots() > (data.fullSlots ?? 4)) return;
+          // Still full: it went round this loop silently for hours (15 of 60 adventurers on
+          // 17-11-2026, no log line, no event). Now it says so, counts it and moves on.
+          entry.fullBagBankAt = now() + FULL_BAG_RETRY_MS;
+          note(banker, `Kan op de bank in ${bank.name ?? bank.id} niets kwijt: alles in zijn tas houdt hij. Gaat verder met een volle tas.`, "activity");
+          countEvent(entry, "bankNothing");
+          const at = banker.getLocation();
+          metric({ kind: "bank_nothing", bot: entry.name, bank: bank.name ?? bank.id, where: [at.getX(), at.getY(), at.getZ()],
+            freeSlots: banker.getInventory().getFreeSlots(),
+            bag: (banker.getInventory().getItems() ?? []).filter((item) => item && item.getId() > 0).map((item) => itemName(item.getId())) });
         },
       })) return;
       entry.phase = "waiting";
@@ -3484,7 +3498,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const tab = core.Bank?.getTabForItem?.(player, itemId) ?? 0;
       const bank = player.getBank?.(tab);
       if (!bank) continue;
-      const held = inventory.getAmount(itemId);
+      // As many as asked (spare copies of a kept staff, food beyond what it carries), never more.
+      const held = Math.min(inventory.getAmount(itemId), Number.isFinite(amount) ? amount : Infinity);
       if (held <= 0) continue;
       // A note goes in as the item itself, as the bank does it.
       const definition = core.ItemDefinition?.forId?.(itemId);
@@ -4048,7 +4063,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     for (const good of stock) {
       if (inventory.getFreeSlots() >= room) break;
       if (good.value >= (data.cheapValue ?? 500)) break;
-      inventory.deleteNumber?.(good.itemId, inventory.getAmount(good.itemId));
+      // Only what is spare: the one staff it keeps stays when the other seven go.
+      inventory.deleteNumber?.(good.itemId, Math.min(good.amount, inventory.getAmount(good.itemId)));
       dropped.push(itemName(good.itemId));
     }
     inventory.refreshItems?.();

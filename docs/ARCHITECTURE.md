@@ -154,3 +154,39 @@ The server can send content that doesn't exist in the OSRS cache. It goes to the
 - **Custom items** are rows in `server/data/definitions/custom-items.json` (ids 50000+), loaded by `plugins/items/ItemDefinitionLoader.plugin.js`. On the client, `CustomItemRegistry` (`client/custom/items/`) holds them and `CustomObjTypeLoader` wraps the base `ObjTypeLoader` so they resolve like cache items. Models for them go in `server/data/models/`. See [Custom content](custom-content.md).
 - **Cache editor definitions** (custom locs, NPCs and items) are registered per source with `CacheDefinitions.registerCustomDefinitions(rows, source)`. See [server/docs/agents/cache-editor.md](https://github.com/RSPSApp/tsps/blob/main/server/docs/agents/cache-editor.md).
 - **Custom interfaces**: see [server/docs/agents/interfaces.md](https://github.com/RSPSApp/tsps/blob/main/server/docs/agents/interfaces.md).
+
+## Adventurer Platform
+
+The autonomous adventurers (player bots that play an account from level 3 upward) follow
+[`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/blob/main/AI_Constitution.md), the source of truth for their direction
+([ADR-0001](adr/0001-ai-constitution-als-bron-van-waarheid.md)). This section maps the
+constitution's three layers (§6) onto the code as it is today. It does not change the vision; it
+shows where each part lives, so new work lands in the right layer
+([ADR-0002](adr/0002-adventurer-platform-evolueert-binnen-plugins-bots.md)).
+
+All of it is plugin code under `server/plugins/bots/`. Honesty rules and how-to: 
+[`server/docs/agents/adventurers.md`](https://github.com/m4rk4ever-lang/private-project/blob/main/server/docs/agents/adventurers.md).
+Roadmap and gap analysis: [ADVENTURER_ROADMAP.md](ADVENTURER_ROADMAP.md). Logs and metrics:
+[OBSERVABILITY.md](OBSERVABILITY.md). Working rules: [RUNTIME_POLICY.md](RUNTIME_POLICY.md).
+
+### Layers in the current code
+
+| Layer (§6) | What it does | Where it lives now |
+| --- | --- | --- |
+| **Knowledge** | Facts about the account and world | `snapshot()`, `levelOf`, `banked`, `wealthOf` in `adventurers/Adventurers.PlayerBots.js`; quest list and requirements from the cache (`adventurers/Quests.PlayerBots.js`); shops and ownership (`adventurers/Shopping.PlayerBots.js`); keep/sell rules (`adventurers/Trade.PlayerBots.js`); places (`adventurers/Sites.PlayerBots.js`, `data/travel-destinations.json`, `data/travel-hubs.json`); activities (`server/data/definitions/bot-activities.json`); transports (`plugins/agent/data/transports.json`) |
+| **Decision** | Goals and what to do next | `adventurers/Planner.PlayerBots.js` (`chooseNext`, weights), `adventurers/Goals.PlayerBots.js` (gear and coin goals), the decide step in `Adventurers.PlayerBots.js` (trade, bank, resume, plan), `adventurers/Slayer.PlayerBots.js`, boss choice (`adventurers.json` `bosses`) |
+| **Execution** | Acting in the world through the game's own actions | Errands and teleports (`brain/Errands.PlayerBots.js`), brain and its actions (`brain/Brain.PlayerBots.js`, `brain/actions/`), navigation (`behaviours/navigation/`), doors and shortcuts (`brain/DoorOpening.PlayerBots.js`, `brain/ShortcutCrossing.PlayerBots.js`), quests (`adventurers/QuestPlay.PlayerBots.js`, `adventurers/QuestHelperSteps.PlayerBots.js`), Barrows (`adventurers/BarrowsRun.PlayerBots.js`) |
+| **Observability** (§29-32) | What it does and why | Journal and metrics (`logs/*.jsonl`, branch `bot-logs`), `/api/adventurers` + `client/public/adventurers.html`, `::volg` (`runtime/Watch.PlayerBots.js`), `::botinfo` |
+
+Known debt: `Adventurers.PlayerBots.js` (about 4,650 lines) still mixes all three layers. It is
+split only piece by piece, as part of a fix that runtime data asks for, never as a rewrite.
+
+### Supporting services
+
+| Service | Role |
+| --- | --- |
+| Quest Helper bridge (`tools/quest-helper-bridge`, `yarn bridge`) | The real RuneLite Quest Helper tells a bot the next quest step (§21). Started by the server when built (`ADVENTURER_START_BRIDGE`). |
+| RuneLite gateway (`runelite-gateway/`) | RuneLite API shape over the server, used by the bridge. |
+| Agent MCP (`plugins/agent/`) | Test and inspection tools per worktree port, including `quest_helper`. |
+| Persistence (`plugins/persistence/`) | SQLite saves (`server/data/saves/players.sqlite`); adventurer state lives in player attributes (`adventurers:task`, `adventurers:granted-quests`). Achievements race: `server/data/saves/adventurer-achievements.json`. |
+| Log sharing (`scripts/share-bot-logs.sh`) | Every 5 minutes and on shutdown, the last 20,000 lines of each log to branch `bot-logs`. |

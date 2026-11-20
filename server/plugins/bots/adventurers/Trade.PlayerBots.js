@@ -153,14 +153,28 @@ function slotsOf(player, goods) {
 
 /**
  * What it would bank or sell: [{ itemId, amount, value }], tradeable items it does not keep, and
- * food beyond what it carries for itself (cooked fish fill a bag too).
+ * food beyond what it carries for itself (cooked fish fill a bag too), and spare copies of
+ * gear and tools it keeps: one of each is enough.
  */
 function goodsToSell(player, core, keep, { isFood = null, worthless = false } = {}) {
   const totals = new Map();
   const food = new Map();
   const potions = new Map();
+  // Gear and tools are kept one of a kind. Eight staffs of fire or 24 adamant axes it smithed all
+  // stayed "kept": a bag of them could not go in the bank, and 15 of 60 adventurers stood for
+  // hours at a bank wall going nowhere (metrics 17-11-2026, 7a8e40b).
+  const gear = new Set(gearLists(player, core).flat().map((entry) => Shopping.idOf(core, entry.item)).filter(Number.isInteger));
+  const seen = new Set();
   for (const item of player.getInventory().getItems() ?? []) {
     if (!item || !(item.getId() > 0)) continue;
+    if (keep.has(item.getId()) && gear.has(item.getId()) && !isSupply(core, item.getId())) {
+      if (!seen.has(item.getId())) {
+        seen.add(item.getId());
+        continue;
+      }
+      totals.set(item.getId(), (totals.get(item.getId()) ?? 0) + item.getAmount());
+      continue;
+    }
     if (isFood?.(item.getId())) {
       food.set(item.getId(), (food.get(item.getId()) ?? 0) + item.getAmount());
       continue;

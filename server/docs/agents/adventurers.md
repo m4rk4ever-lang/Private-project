@@ -323,3 +323,14 @@ Nog open:
   nakijken; ook de Varrock-rooftop (3194,3416,1) waar meerdere bots uren vastzaten.
 - Bots rapen botten niet (gemeld): Loot.lootNear/takeStep lijkt intact, oorzaak nog niet gevonden.
 - Voorraad per bossrun bijhouden, construction, fletching, DT2-bosses voor endgame.
+
+## Stand 20-11-2026
+
+Platformdocumenten staan nu in `docs/`: `ADVENTURER_ROADMAP.md` (gap-analyse tegen
+`AI_Constitution.md` en de volgorde), `OBSERVABILITY.md` (logs, metric-soorten, analyse-recept),
+`RUNTIME_POLICY.md` (werkregels), `AI_HANDOVER.md` (overdracht) en `docs/adr/`.
+
+Gefixt: 15 van 60 avonturiers stonden 4,5 uur stil bij een bank (tas vol dubbele uitrusting die
+allemaal "houden" was, plus een stille banklus). Eén exemplaar per stuk gear/tool blijft; de rest
+gaat weg. Lukt banken niet, dan metric `bank_nothing`, event `bankNothing` en 30 minuten niet
+opnieuw (ADR-0005). Eerst controleren in de logs van de nieuwe versie.
