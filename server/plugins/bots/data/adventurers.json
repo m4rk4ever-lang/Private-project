@@ -30,6 +30,14 @@
   ],
   "questChance": 0.2,
   "moneyChance": 0.1,
+  "endgame": {
+    "$comment": "Maxed accounts (share of skills at 99): bossing and money-making for upgrades and a bigger bank (owner 20-11-2026). bossChance/moneyChance are floors; moneyBossShare: of the money picks, this share a boss; questChance a ceiling.",
+    "share": 0.8,
+    "bossChance": 0.6,
+    "moneyChance": 0.6,
+    "moneyBossShare": 0.5,
+    "questChance": 0.1
+  },
   "extraPerClan": 15,
   "testProfiles": [
     { "name": "vroege vechter", "count": 3, "levels": { "ATTACK": 30, "STRENGTH": 30, "DEFENCE": 25, "HITPOINTS": 30, "PRAYER": 15, "WOODCUTTING": 15, "MINING": 15, "FISHING": 10, "COOKING": 10 }, "quests": 5, "coins": 10000 },

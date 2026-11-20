@@ -343,3 +343,23 @@ test("a quest's combat gap is not picked again once combat could not start (excl
   const first = chooseNext(adventurer({}, { combat: 10 }), [quest], { random: () => 0.99, questGapChance: 1 });
   assert.equal(first.mode, "combat_training", "without the exclude it is still the pick");
 });
+
+test("a maxed account bosses and makes money for upgrades; others as before", () => {
+  const { chooseNext, isEndgame } = require("../plugins/bots/adventurers/Planner.PlayerBots");
+  const data = require("../plugins/bots/data/adventurers.json");
+  const skills = ["ATTACK", "STRENGTH", "DEFENCE", "HITPOINTS", "RANGED", "MAGIC", "PRAYER", "WOODCUTTING", "MINING", "FISHING", "THIEVING", "AGILITY"];
+  const maxed = { levels: Object.fromEntries(skills.map((s) => [s, 99])), combat: 126, done: new Set(), questPoints: 0 };
+  const mid = { levels: Object.fromEntries(skills.map((s) => [s, 60])), combat: 80, done: new Set(), questPoints: 0 };
+  assert.equal(isEndgame(maxed, data.endgame), true);
+  assert.equal(isEndgame(mid, data.endgame), false);
+  assert.equal(isEndgame(maxed, null), false);
+  const boss = { id: "boss_test", kind: "test", name: "Test", combat: 3, x: 3200, y: 3200, z: 0 };
+  // A roll of 0.5 is under the endgame's 0.6 boss chance, over the usual 0.25.
+  const pick = (adventurer) => chooseNext(adventurer, [], { bosses: [boss], bossChance: 0.25, endgame: data.endgame, questChance: 0, random: () => 0.5 });
+  const late = pick(maxed);
+  assert.equal(late.kind, "boss");
+  assert.match(late.reason, /eindspel/);
+  assert.notEqual(pick(mid).kind, "boss");
+  // After a failed attempt (bossChance 0) no boss is forced, maxed or not.
+  assert.notEqual(chooseNext(maxed, [], { bosses: [boss], bossChance: 0, endgame: data.endgame, questChance: 0, random: () => 0.5 }).kind, "boss");
+});

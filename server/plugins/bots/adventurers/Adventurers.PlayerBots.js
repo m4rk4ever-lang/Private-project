@@ -116,6 +116,8 @@ const DANGER_MODES = new Set(["combat_training", "combat_ranged", "combat_magic"
 const BID_WAIT_MS = 3 * 60_000;
 /** How much further than a bank it walks to the Grand Exchange to sell (saving up, offers in). */
 const SELL_DETOUR_TILES = 120;
+/** At most this many bags of materials bought at once for a buy-to-train job (half its coins at most). */
+const BUY_LOADS_MAX = 30;
 /** Coins a clanmate always keeps for itself before it chips in toward another's goal. */
 const CLAN_KEEP = 5_000;
 /** From this y the map is underground (dungeons, caves): no walking route there yet. */
@@ -2010,9 +2012,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         // As many as its coins pay for (bag and bank; the exchange has a bank), keeping 200 over.
         const perLot = buy.cost / buy.amount;
         const wealth = Shopping.coinsOf(buyer) + banked(buyer, Trade.COINS);
-        // A stock for several loads (up to ten bags), as a player buys a lot and banks it, when its
-        // coins allow it with half of them to spare; else one load.
-        const loads = Math.max(1, Math.min(10, Math.floor((wealth / 2) / Math.max(1, perLot * buy.amount))));
+        // A stock for several loads (up to BUY_LOADS_MAX bags), as a player buys a lot and banks it,
+        // when its coins allow it with half of them to spare; else one load. A rich account buys a
+        // big stock and goes bank-anvil-bank, not to the exchange for every load (the owner).
+        const loads = Math.max(1, Math.min(BUY_LOADS_MAX, Math.floor((wealth / 2) / Math.max(1, perLot * buy.amount))));
         const amount = Math.max(0, Math.min(buy.amount * loads, Math.floor((wealth - 200) / Math.max(1, perLot))));
         // A lot of one or two is not worth the walk (and the next walk for the next one): ten at least.
         if (amount < Math.min(10, buy.amount)) {
@@ -2855,7 +2858,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       entry.startFailure = null;
       entry.refusal = null;
       const plan = chooseNext(view, questList(), {
-        available: view.available, questChance: data.questChance, moneyChance: data.moneyChance ?? 0.1, bosses: checked.bosses, bossChance: attempt === 0 ? data.bossChance : 0, random,
+        available: view.available, questChance: data.questChance, moneyChance: data.moneyChance ?? 0.1, bosses: checked.bosses, bossChance: attempt === 0 ? data.bossChance : 0, endgame: data.endgame ?? null, random,
         focus: data.focus?.[entry.name] ?? {}, busyModes, exclude, goal: goalOf(entry), explain: (decision) => { why = decision; },
       });
       const started = plan.kind === "quest" ? startQuest(entry, plan)
@@ -4793,7 +4796,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // offers to collect, a valuable bag) when it is not much further. Far off it banks, as a
     // player does in the middle of a woodcutting trip, and sells another time.
     const extra = bank ? distanceTo(player, ge) - bank.away : 0;
-    const toExchange = geOpen && (!bank || extra <= 40 || ((fund || waiting || worth >= (data.sellValue ?? 5000)) && extra <= SELL_DETOUR_TILES));
+    // In the middle of a run of loads (bars banked for the next one): the nearest bank, and the
+    // products sold when the run is over. Markbot 18 smithed rune platebodies at Varrock West's
+    // anvils and went to the exchange after every load (47 tiles further than the bank) to sell
+    // them and take the next bars there (the owner, 20-11-2026).
+    const batching = entry.savedTask?.afterTrip === true && String(entry.savedTask?.mode ?? "").startsWith("buy_");
+    const toExchange = geOpen && (!bank || (batching ? extra <= 0
+      : extra <= 40 || ((fund || waiting || worth >= (data.sellValue ?? 5000)) && extra <= SELL_DETOUR_TILES)));
     // Why it goes, for the loop report: a loop to the exchange then says what drove it.
     entry.lastTrade = { at: now(), waiting, fund, worth, full, cluttered, goods: goods.slice(0, 5).map((good) => itemName(good.itemId)) };
     if (toExchange) return walkTo(entry, ge, { reason: "exchange", arrive: atExchange, urgent });
