@@ -5,6 +5,15 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 20-11-2026 (21:25): Eeshwar zweeft boven Falador (branch `adventurers/roof-drift`)
+
+- **Observatie:** screenshot 21:19. `::volg` zegt "Bij: giant mole hole" (2984,3314), minimap zwart met daken: verdieping 3, ~40 tegels west van de baan, naast het White Knights-kasteel. Logs (tot 21:13) tonen nog XP tot level 57; de afdrijving viel erna.
+- **Oorzaak 1:** `walkTo` weigerde een loopje vanaf het dak alleen met `entry.offRoof` (afdaal-modus). Midden in de agility-klus mocht een tussendoor-loopje (eten, bank) wel, en een pad op z=3 gaat door de lucht naast de daken.
+- **Oorzaak 2:** de noodteleport in `getOffRoof` liep alleen zolang `roofCourse(at)` de bot herkende (15 tegels rond een obstakel). Eenmaal daarbuiten: geen vangnet behalve de 60-minuten-strandcheck.
+- **Fix:** `walkTo` weigert `on_roof` ook als `roofCourse(fromHere)` (behalve reden `agility`). `getOffRoof` telt `roofSince` voor elke z>0: 3 min op een baan (`ROOF_STUCK_MS`), 5 min elders (`UPSTAIRS_STUCK_MS`), dan home teleport; metric `stranded` met `why: "upstairs"` voor het tweede geval.
+- **Validatie:** suite 127 tests, 16 vaste fails (basislijn). Geen unittest voor deze plugin-paden. Na deploy controleren: `stranded` met `why` `roof`/`upstairs` en `walkTo`-weigeringen `on_roof` in de `decision`-metric.
+- **Open:** welk loopje Eeshwar precies startte staat pas in de volgende `bot-logs`-push.
+
 ## Controle 20-11-2026 21:15: grote update (`450f871`)
 
 Basis: `bot-logs` push 20:13 UTC. `450f871` 20:04 tot 20:13 (**9,4 min**). Weinig data: alleen
