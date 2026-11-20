@@ -137,6 +137,18 @@ const JEWELLERY = ["GAMES_NECKLACE_8_", "RING_OF_DUELING_8_", "AMULET_OF_GLORY_4
  * 385 of 462 walks of 2 minutes or more went without a teleport, 1,530 minutes (20-11-2026).
  */
 const TRAVEL_JEWELLERY = ["GAMES_NECKLACE_8_", "RING_OF_DUELING_8_", "SKILLS_NECKLACE_4_", "AMULET_OF_GLORY_4_", "RING_OF_WEALTH_5_"];
+/**
+ * Teleport tablets it keeps a few of (5), with coins to spare: any spellbook's, as the errands
+ * break any tablet with a spell destination. Not the standard ones whose spell its Magic casts
+ * (`castFrom`, it carries the runes instead).
+ */
+const TRAVEL_TABLETS = [
+  { name: "VARROCK_TELEPORT", castFrom: 25 }, { name: "LUMBRIDGE_TELEPORT", castFrom: 31 }, { name: "FALADOR_TELEPORT", castFrom: 37 },
+  { name: "CAMELOT_TELEPORT", castFrom: 45 }, { name: "ARDOUGNE_TELEPORT" }, { name: "WATCHTOWER_TELEPORT" },
+  { name: "DRAYNOR_MANOR_TELEPORT" }, { name: "SALVE_GRAVEYARD_TELEPORT" }, { name: "FENKENSTRAINS_CASTLE_TELEPORT" },
+  { name: "MORTTON_TELEPORT" }, { name: "CATHERBY_TELEPORT" }, { name: "FISHING_GUILD_TELEPORT" }, { name: "KHAZARD_TELEPORT" },
+];
+const TABLET_STACK = 5;
 /** No jewellery beyond the first under this many coins; one piece at most this share of its coins, and per visit this share. */
 const TRAVEL_MIN_COINS = 50_000;
 const TRAVEL_PIECE_SHARE = 0.02;
@@ -4589,14 +4601,22 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // With coins to spare: one of each kind of teleport jewellery it lacks, cheapest first, each
     // within a small share of its coins and a cap per visit (never its savings).
     const idOfName = (name) => Shopping.idOf(core, name);
-    const buys = Loadout.travelBuys(TRAVEL_JEWELLERY, {
-      coins: Shopping.coinsOf(player) + banked(player, Trade.COINS), bagCoins: Shopping.coinsOf(player), have: jewelleryKinds(player),
-      kindOf: (name) => (Number.isInteger(idOfName(name)) ? jewelleryKind(idOfName(name)) : null),
+    const heldOf = (name) => (Number.isInteger(idOfName(name)) ? player.getInventory().getAmount(idOfName(name)) + banked(player, idOfName(name)) : 0);
+    // Tablets it has two or more of, and those whose spell it casts, count as had.
+    const have = jewelleryKinds(player);
+    for (const tablet of TRAVEL_TABLETS) {
+      if (heldOf(tablet.name) >= 2 || (tablet.castFrom && levelOf(player, "MAGIC") >= tablet.castFrom)) have.add(tablet.name);
+    }
+    const buys = Loadout.travelBuys([...TRAVEL_JEWELLERY, ...TRAVEL_TABLETS.map((tablet) => ({ name: tablet.name, amount: TABLET_STACK }))], {
+      coins: Shopping.coinsOf(player) + banked(player, Trade.COINS), bagCoins: Shopping.coinsOf(player), have,
+      kindOf: (name) => (TRAVEL_TABLETS.some((tablet) => tablet.name === name) ? name : Number.isInteger(idOfName(name)) ? jewelleryKind(idOfName(name)) : null),
       priceOf: (name) => Shopping.estimatedPrice(core, idOfName(name), 1), buyable: (name) => onExchange(idOfName(name)),
       minCoins: TRAVEL_MIN_COINS, pieceShare: TRAVEL_PIECE_SHARE, visitShare: TRAVEL_VISIT_SHARE });
-    for (const name of buys) {
-      if (bid(player, core, emit, idOfName(name), 1)) {
-        bids.push(`1 x ${itemName(idOfName(name))}`);
+    for (const want of buys) {
+      const name = typeof want === "string" ? want : want.name;
+      const amount = typeof want === "string" ? 1 : want.amount;
+      if (bid(player, core, emit, idOfName(name), amount)) {
+        bids.push(`${amount} x ${itemName(idOfName(name))}`);
         countEvent(adventurers.get(player.getUsername?.()), "teleportBought");
       }
     }
@@ -4674,7 +4694,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function wearUpgradesFromBank(entry, player) {
     if (!entry) return [];
     const rules = { levelOf: (skill) => levelOf(player, skill), questDone: questDone(player) };
-    const style = planStyle(entry) ?? planStyle(entry, entry.savedTask) ?? "melee";
+    const style = planStyle(entry) ?? planStyle(entry, entry.savedTask) ?? Trade.wornStyle(player, core);
     const bankIds = new Set();
     for (const bank of player.getBanks?.() ?? []) for (const item of bank?.getItems?.() ?? []) if (item?.getId?.() > 0) bankIds.add(item.getId());
     const upgrades = Trade.bankUpgrades(player, core, rules, style, bankIds, { skipWeapon: toolInHand(entry) });
@@ -4735,7 +4755,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // battleaxe went on at every bank trip and the axe back on at the trees.
     // The gear of its job's style (a bow for ranged training): with melee here the scimitar in its
     // bag went on at every look and the training's bow back on after (planStyle, 20-11-2026).
-    const style = planStyle(entry) ?? "melee";
+    // Without a fighting job (between jobs, just after a restart): the style of the weapon it wears.
+    const style = planStyle(entry) ?? Trade.wornStyle(player, core);
     for (const name of Trade.wearBest(player, core, rules, style, { skipWeapon: toolInHand(entry) })) {
       note(player, `Draagt nu ${name.toLowerCase().replace(/_/g, " ")}.`, "activity");
     }
@@ -4810,6 +4831,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         if (carried < 1_000 && banked(banker, Trade.COINS) > 0) withdraw(banker, Trade.COINS, 1_000 - carried);
         const carriesJewellery = (banker.getInventory().getItems() ?? []).some((item) => item && isJewellery(item.getId()));
         for (const name of kit ? kit.tablets : TABLETS) take(name, 20);
+        // Any other tablets it has (Salve Graveyard, Catherby...), while the bag keeps room for the job.
+        if (!kit) for (const tablet of TRAVEL_TABLETS) if (!TABLETS.includes(tablet.name) && banker.getInventory().getFreeSlots() > 10) take(tablet.name, 20);
         // Its teleport jewellery: one of each kind it has banked, any charge (a used games necklace
         // stayed in the bank: only the full one was looked for); a gathering job takes one only.
         const kindsCarried = new Set((banker.getInventory().getItems() ?? []).map((item) => (item?.getId?.() > 0 ? jewelleryKind(item.getId()) : null)).filter(Boolean));

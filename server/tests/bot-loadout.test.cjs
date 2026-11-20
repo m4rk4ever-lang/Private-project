@@ -62,3 +62,16 @@ test("teleport jewellery is bought with coins to spare, one of each kind, never 
   assert.deepEqual(buys(2_000_000, { bagCoins: 2_000 }), ["GAMES_NECKLACE_8_", "RING_OF_DUELING_8_"]);
   assert.deepEqual(buys(2_000_000, { buyable: (name) => name !== "RING_OF_WEALTH_5_" }), names.slice(0, 4));
 });
+
+test("teleport tablets are bought as a stack of 5, priced as a whole, after the jewellery", () => {
+  const Loadout = require("../plugins/bots/adventurers/Loadout.PlayerBots");
+  const list = ["GAMES_NECKLACE_8_", { name: "SALVE_GRAVEYARD_TELEPORT", amount: 5 }, { name: "CATHERBY_TELEPORT", amount: 5 }];
+  const price = { GAMES_NECKLACE_8_: 900, SALVE_GRAVEYARD_TELEPORT: 700, CATHERBY_TELEPORT: 900 };
+  const kindOf = (name) => name;
+  // 200k: 6k to spend, 4k a piece: the necklace (900) and Salve (3,500) fit, Catherby (4,500) is over a piece's share.
+  assert.deepEqual(Loadout.travelBuys(list, { coins: 200_000, kindOf, priceOf: (name) => price[name] }),
+    ["GAMES_NECKLACE_8_", { name: "SALVE_GRAVEYARD_TELEPORT", amount: 5 }]);
+  // A kind it has (two or more tablets, or the spell) is skipped.
+  assert.deepEqual(Loadout.travelBuys(list, { coins: 1_000_000, kindOf, priceOf: (name) => price[name], have: new Set(["SALVE_GRAVEYARD_TELEPORT"]) }),
+    ["GAMES_NECKLACE_8_", { name: "CATHERBY_TELEPORT", amount: 5 }]);
+});

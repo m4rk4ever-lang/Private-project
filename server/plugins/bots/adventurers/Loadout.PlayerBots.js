@@ -97,12 +97,15 @@ function travelBuys(names, { coins, bagCoins = coins, have = new Set(), kindOf, 
   let bag = bagCoins;
   const out = [];
   const kinds = new Set(have);
-  for (const name of names) {
+  // An entry is a name (one piece) or { name, amount } (a stack of tablets, priced as a whole).
+  for (const want of names) {
+    const name = typeof want === "string" ? want : want.name;
+    const amount = typeof want === "string" ? 1 : want.amount ?? 1;
     const kind = kindOf(name);
     if (!kind || kinds.has(kind) || !buyable(name)) continue;
-    const price = priceOf(name);
+    const price = priceOf(name) * amount;
     if (!(price > 0) || price > coins * pieceShare || price > budget || price > bag) continue;
-    out.push(name);
+    out.push(typeof want === "string" ? name : { name, amount });
     kinds.add(kind);
     budget -= price;
     bag -= price;

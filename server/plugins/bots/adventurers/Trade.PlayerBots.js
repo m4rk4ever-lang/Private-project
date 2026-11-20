@@ -86,6 +86,20 @@ function listsFor(style = "melee", player = null, core = null) {
   return lists;
 }
 
+/**
+ * The way of fighting its worn weapon is for: "magic" with a staff or wand of the magic list,
+ * "ranged" with a bow, else "melee". Between jobs (no plan yet, a restart) the gear stays with it:
+ * Markbot 10 trained Magic with its staff in a rune platebody and a berserker helm, put on by the
+ * look between jobs that took melee for granted (20-11-2026).
+ */
+function wornStyle(player, core) {
+  const worn = equippedIds(player);
+  for (const style of ["magic", "ranged"]) {
+    if ((Shopping.gear.styles?.[style]?.weapon ?? []).some((entry) => worn.has(Shopping.idOf(core, entry.item)))) return style;
+  }
+  return "melee";
+}
+
 function wearBest(player, core, { levelOf, questDone }, style = "melee", { skipWeapon = false } = {}) {
   const put = [];
   for (const [slot, list] of Object.entries(listsFor(style, player, core))) {
@@ -275,4 +289,4 @@ function finishedOffers(player, emit) {
 }
 
 module.exports = {
-  slotsOf, listsFor, twoHanded, isSupply, isPrayerRestore, wearBest, bankUpgrades, keepIds, goodsToSell, sellAtExchange, buyAtExchange, finishedOffers, COINS, KEEP_TOOLS };
+  slotsOf, listsFor, twoHanded, isSupply, isPrayerRestore, wearBest, wornStyle, bankUpgrades, keepIds, goodsToSell, sellAtExchange, buyAtExchange, finishedOffers, COINS, KEEP_TOOLS };

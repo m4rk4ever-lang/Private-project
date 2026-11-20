@@ -13,7 +13,9 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
   - `Errands.bestTeleport`: ring of wealth (charged ids 1-5 en i1-i5) naar de GE (Rub 1) en Falador Park (Rub 3), bestemmingen uit `RING_OF_WEALTH_DESTINATIONS`, volgorde uit `RingOfWealth.plugin.js` ACTIONS; optie `wealthData` voor tests.
   - `Loadout.travelBuys` (puur, getest): één per soort uit `TRAVEL_JEWELLERY` (games, dueling, skills, glory, RoW), vanaf 50k coins (bag + bank), per stuk ≤ 2%, per bezoek ≤ 3%, nooit meer dan de bag-coins. In `bidForSupplies`, event `teleportBought`.
   - Bankbezoek: per soort één sieraad mee met elke lading (`jewelleryKind`); gathering houdt één reismiddel.
-- **Validatie:** suite 141 tests, 16 vaste fails. Niet ingame getest: de Rub-submenu-index van de ring of wealth. In de logs: `errand` met `teleport: "jewellery"` naar de GE, event `teleportBought`, aandeel lange errands zonder teleport (nu 83%).
+  - **Tablets (vraag eigenaar 22:23):** `bestTeleport` breekt elke tablet waarvan de itemnaam een spreuknaam is (`SpellTeleports.spellDestination`: standaard, Arceuus, Lunar), niet de Wilderness; `TRAVEL_TABLETS` (13 soorten, `castFrom` voor de standaard die het zelf cast) als stapels van 5 in `travelBuys` (prijs × aantal). Bank: extra tablets mee zolang > 10 vrije vakjes.
+  - **Magic-gear (eigenaar 22:25, Markbot 10):** na een herstart draaide `trade()` vóór `resumeTask`; zonder plan gaf mijn `planStyle(entry) ?? "melee"` melee en trok hij rune platebody en berserker helm aan, terwijl de staf bleef autocasten. Nu `Trade.wornStyle` (stijl van het gedragen wapen) als terugval, ook in `wearUpgradesFromBank`. Open: waarom `TrainCombat.prepare` hem daarna niet terug in magic-gear zette (`castableSpell` false → honestStyle melee?); volgen in de logs.
+- **Validatie:** suite 144 tests, 16 vaste fails. Niet ingame getest: de Rub-submenu-index van de ring of wealth. In de logs: `errand` met `teleport: "jewellery"` naar de GE, event `teleportBought`, aandeel lange errands zonder teleport (nu 83%).
 
 ## Sessie 20-11-2026 (22:30): audit van hubs en bestemmingen (branch `adventurers/hub-audit`)
 

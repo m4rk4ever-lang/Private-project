@@ -157,9 +157,14 @@ function bestTeleport(core, player, to, { jewelleryData = null, wealthData = nul
   items.forEach((item, slot) => {
     const id = item?.getId?.() ?? -1;
     if (!(id > 0)) return;
-    for (const [key, spellName] of Object.entries(TABLETS)) {
-      const land = landing.get(spellName);
-      if (land && core.ItemIdentifiers?.[key] === id) consider({ kind: "tablet", slot, name: spellName }, land.getX(), land.getY());
+    // Any tablet: it shares its spell's name and lands where the spell does, of any spellbook
+    // (SpellTeleports.plugin.js spellDestination): Salve Graveyard, Catherby, Ardougne, not only
+    // the five it knew. None into the Wilderness.
+    const tabletName = String(core?.ItemDefinition?.forId?.(id)?.getName?.() ?? "").toLowerCase();
+    const named = landing.get(tabletName) ?? null;
+    const land = named ?? Object.entries(TABLETS).filter(([key]) => core.ItemIdentifiers?.[key] === id).map(([, spellName]) => landing.get(spellName)).find(Boolean);
+    if (land && !inWilderness(land.getX(), land.getY())) {
+      consider({ kind: "tablet", slot, name: named ? tabletName : Object.entries(TABLETS).find(([key]) => core.ItemIdentifiers?.[key] === id)?.[1] }, land.getX(), land.getY());
     }
     if (RING_OF_WEALTH_KEYS.some((key) => core?.ItemIdentifiers?.[key] === id)) {
       for (const destination of ringOfWealthDestinations(wealthData)) {

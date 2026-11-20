@@ -106,6 +106,23 @@ test("a ring of wealth takes it to the Grand Exchange (Rub 1), not to quest-lock
   assert.equal(bestTeleport(core, holder(3222, 3218, []), ge, { wealthData }), null, "no ring");
 });
 
+test("any tablet with a spell destination is broken for an errand (Salve Graveyard), none into the Wilderness", () => {
+  const SALVE = 19619;
+  const CEMETERY = 19621;
+  const core = {
+    Skill: { MAGIC: "MAGIC" }, ItemIdentifiers: {},
+    ItemDefinition: { forId: (id) => ({ getName: () => ({ [SALVE]: "Salve graveyard teleport", [CEMETERY]: "Cemetery teleport" })[id] ?? "item" }) },
+    ArceuusSpells: { getTeleportDestinations: () => [
+      { name: "salve graveyard teleport", destination: loc(3432, 3460) },
+      { name: "cemetery teleport", destination: loc(2978, 3763) },
+    ] },
+  };
+  const holder = (ids) => ({ ...walker(3165, 3487), getInventory: () => ({ getAmount: () => 0, getItems: () => ids.map((id) => ({ getId: () => id })) }) });
+  const tablet = bestTeleport(core, holder([SALVE]), { x: 3428, y: 3537 });
+  assert.deepEqual([tablet?.kind, tablet?.name], ["tablet", "salve graveyard teleport"]);
+  assert.equal(bestTeleport(core, holder([CEMETERY]), { x: 2970, y: 3760 }), null, "Wilderness");
+});
+
 test("a drop for an empty slot is picked up and worn, whatever it is worth", () => {
   const Loot = require("../plugins/bots/brain/Loot.PlayerBots");
   const HAT = 579;
