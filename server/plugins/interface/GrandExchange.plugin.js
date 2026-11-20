@@ -1194,13 +1194,22 @@ function freeSlot(player) {
 /**
  * "ge:place-offer" { player, sell, itemId, quantity, price? }: an offer placed as through the
  * interface, by content without one (a bot). The same checks, limits, payment and fill times
- * apply; the price defaults to the guide. Sets `placed` (and `slot`) on the payload.
+ * apply; the price defaults to the guide. Sets `placed` (and `slot`) on the payload; when not
+ * placed, `why`: "not-exchangeable", "no-slot" or "refused" (the same checks as the interface:
+ * coins, buy limit).
  */
 function placeOfferEvent(request) {
   const { player, sell, itemId, quantity } = request ?? {};
-  if (!player || !Number.isInteger(itemId) || !(quantity > 0) || !exchangeable(itemId)) return;
+  if (!player || !Number.isInteger(itemId) || !(quantity > 0)) return;
+  if (!exchangeable(itemId)) {
+    request.why = "not-exchangeable";
+    return;
+  }
   const slot = freeSlot(player);
-  if (slot === null) return;
+  if (slot === null) {
+    request.why = "no-slot";
+    return;
+  }
   const unit = Number.isInteger(request.price) && request.price > 0 ? request.price : (sell ? sellPrice(itemId) : price(itemId));
   const offer = { sell: sell === true, slot, itemId, quantity: Math.trunc(quantity), price: unit, direct: true };
   offers.set(player, offer);
@@ -1208,6 +1217,7 @@ function placeOfferEvent(request) {
   if (offers.get(player) === offer) offers.delete(player);
   request.placed = completedOffers(player)[slot]?.placedAt != null && completedOffers(player)[slot]?.itemId === itemId;
   if (request.placed) request.slot = slot;
+  else request.why = "refused";
 }
 
 /**

@@ -29,7 +29,7 @@ Werkregels voor iedereen (mens of agent) die aan het Adventurer Platform werkt. 
 - Elke herhaling of fallback schrijft een event (`countEvent`) of metric. Stil falen is een bug.
 - Bij falen: Analyse, Recovery, Retry. Recovery-middelen die er al zijn: repath via de
   routeplanner, `blockedPlaces`, `noErrandUntil`, `unstrand` (home teleport na 3 keer vast op
-  dezelfde plek), `clearBag`, de errand-watchdog.
+  dezelfde plek), `clearBag`, de errand-watchdog, `fullBagBankAt` en `noExchangeBuyUntil` (30 min na een bezoek dat niets opleverde).
 
 ## 4. Valideren
 

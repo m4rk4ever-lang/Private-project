@@ -97,6 +97,10 @@ const QUEST_TICK_MS = 6_000;
 const NEAR_ENOUGH_TILES = 15;
 /** A full bag the bank could not take anything from: not back to the bank for it before this. */
 const FULL_BAG_RETRY_MS = 30 * 60_000;
+/** A trip to buy at the exchange that bought nothing: no such trip again before this. */
+const BUY_RETRY_MS = 30 * 60_000;
+/** An errand shorter than this (it was already there) is counted, not written as its own line. */
+const INSTANT_ERRAND_MS = 3_000;
 /** Below this share of its Hitpoints with nothing to eat, a dangerous job stops. */
 const DANGER_HP_SHARE = 0.5;
 const DANGER_MODES = new Set(["combat_training", "combat_ranged", "combat_magic", "slayer", "thieving"]);
@@ -1239,7 +1243,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // One `errand` metric per errand: how long, and how it ended. "arrived" (within ARRIVE_TILES),
     // "near" (gave up but within NEAR_ENOUGH_TILES, counted as there: a bank through the wall),
     // "toll_gate" or "blocked". Phase 2 of the roadmap measures bank errands with it.
+    // An errand it was already at the end of (the exchange while it stands at the exchange) is
+    // counted in the bot line's events (errandInstant), not written: a loop of those wrote
+    // 12,000 lines an hour (84ecd13) and pushed everything else out of the shared log.
     const measured = (player, ended, outcome) => {
+      if (ended === "arrived" && (outcome?.ms ?? 0) < INSTANT_ERRAND_MS) {
+        countEvent(entry, "errandInstant");
+        return;
+      }
       const at = player.getLocation();
       metric({ kind: "errand", bot: entry.name, reason, to: placeName(to), ended, why: outcome?.why ?? null,
         seconds: Math.round((outcome?.ms ?? 0) / 1000), tilesLeft: outcome?.tilesLeft ?? null,
@@ -1981,8 +1992,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * A buy at the Grand Exchange: the offer, and a wait there until it has come in (a player does
    * not walk off and leave his trout in the exchange). True when placed.
    */
-  function bid(player, core_, emit_, itemId, amount) {
-    if (!Trade.buyAtExchange(player, core_, emit_, itemId, amount)) return false;
+  function bid(player, core_, emit_, itemId, amount, outcome = {}) {
+    if (!Trade.buyAtExchange(player, core_, emit_, itemId, amount, outcome)) return false;
     const entry = adventurers.get(player.getUsername?.());
     if (entry) entry.offersUntil = Math.max(entry.offersUntil ?? 0, now() + BID_WAIT_MS);
     return true;
@@ -2982,9 +2993,28 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * Walks to the nearest shop that sells it and buys there, through the shop itself. True when
    * it set off. Only shops within data.shopRadius tiles: a longer walk is not worth one item.
    */
+  /**
+   * A trip to buy at the exchange that bought nothing. It went round this silently, a trip every
+   * second or two at the exchange itself (3 of 60 adventurers, v 84ecd13, 20-11-2026: 1,379
+   * errands in 25 minutes, no log line). Now it says why, counts it and does not buy at the
+   * exchange for a while; a shop still may.
+   */
+  function boughtNothing(entry, buyer, names, why) {
+    entry.noExchangeBuyUntil = now() + BUY_RETRY_MS;
+    const peek = { player: buyer, peek: true };
+    emit("ge:collect", peek);
+    const reasons = { "no-slot": "alle GE-slots zijn bezet", "not-exchangeable": "het is niet te koop op de GE",
+      refused: "de GE weigerde het bod", coins: "niet genoeg geld" };
+    note(buyer, `Kon op de GE niets kopen (${names.slice(0, 3).join(", ")}): ${reasons[why] ?? why}. Probeert het over een half uur weer.`, "activity");
+    countEvent(entry, "buyNothing");
+    metric({ kind: "buy_nothing", bot: entry.name, items: names, why, geFreeSlots: peek.freeSlots ?? null,
+      geWaiting: peek.waiting ?? null, geWaitingBuys: peek.waitingBuys ?? null, coins: Shopping.coinsOf(buyer) });
+  }
+
   /** To the Grand Exchange for one thing it needs (a tool no shop near sells), then the job again. */
   function buyOnExchange(entry, itemId, name, amount = 1, { replan = true } = {}) {
     const { player } = entry;
+    if ((entry.noExchangeBuyUntil ?? 0) > now()) return false;
     const guide = Number(core.ItemDefinition?.forId?.(itemId)?.getGrandExchangeValue?.() ?? 0);
     // Its coins in the bag and in its bank: the exchange has a bank, it takes out what it needs.
     const cost = Math.ceil(guide * 1.05) * amount;
@@ -2998,7 +3028,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         emit("ge:collect", { player: buyer });
         const short = cost + 50 - Shopping.coinsOf(buyer);
         if (short > 0) withdraw(buyer, Trade.COINS, short);
-        if (!bid(buyer, core, emit, itemId, amount)) return;
+        const outcome = {};
+        if (!bid(buyer, core, emit, itemId, amount, outcome)) {
+          boughtNothing(entry, buyer, [label], outcome.why);
+          return;
+        }
         emit("ge:collect", { player: buyer });
         acquire(buyer, itemId);
         note(buyer, `Koopt ${amount > 1 ? `${amount} x ` : ""}${label} op de GE (~${Math.ceil(guide * 1.05 * amount).toLocaleString("nl-NL")} gp).`, "activity");
@@ -4119,7 +4153,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const priced = wants.map((want) => ({ ...want, guide: Number(core.ItemDefinition?.forId?.(want.itemId)?.getGrandExchangeValue?.() ?? 0) }))
       .filter((want) => want.guide > 0);
     if (priced.length === 0 || Shopping.coinsOf(player) + banked(player, Trade.COINS) < Math.ceil(priced[0].guide * 1.05) + 50) return false;
-    if (blockedPlace(entry, data.grandExchange)) return false;
+    if (blockedPlace(entry, data.grandExchange) || (entry.noExchangeBuyUntil ?? 0) > now()) return false;
     const plan = entry.plan;
     return walkTo(entry, { ...data.grandExchange, name: "de Grand Exchange" }, {
       reason: "buy_materials",
@@ -4130,16 +4164,25 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         if (total > Shopping.coinsOf(buyer)) withdraw(buyer, Trade.COINS, Math.min(total - Shopping.coinsOf(buyer), banked(buyer, Trade.COINS)));
         const bought = [];
         let spent = 0;
+        let why = null;
         for (const want of priced) {
           const cost = Math.ceil(want.guide * 1.05);
-          if (Shopping.coinsOf(buyer) < cost + 50) continue;
-          if (!bid(buyer, core, emit, want.itemId, 1)) continue;
+          if (Shopping.coinsOf(buyer) < cost + 50) {
+            why ??= "coins";
+            continue;
+          }
+          const outcome = {};
+          if (!bid(buyer, core, emit, want.itemId, 1, outcome)) {
+            why ??= outcome.why;
+            continue;
+          }
           emit("ge:collect", { player: buyer });
           acquire(buyer, want.itemId);
           bought.push(String(want.name).toLowerCase().replace(/_/g, " "));
           spent += cost;
         }
         if (bought.length > 0) note(buyer, `Koopt op de GE: ${bought.join(", ")} (~${spent.toLocaleString("nl-NL")} gp).`, "activity");
+        else boughtNothing(entry, buyer, priced.map((want) => String(want.name).toLowerCase().replace(/_/g, " ")), why ?? "unknown");
         if (plan?.mode) entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, planActivity: plan.activity ?? null, remainingMs: 0, savedAt: now() };
       },
     });
