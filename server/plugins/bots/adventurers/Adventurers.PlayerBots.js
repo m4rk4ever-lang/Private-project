@@ -1437,7 +1437,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // A refused errand says why (`entry.refusal`): a job that could not start because of it then
     // has a reason in its decision metric instead of "unknown".
     const refuse = (why) => { entry.refusal = { why, errand: reason, to: placeName(to), place: { x: to.x, y: to.y, z: to.z ?? 0 } }; return false; };
-    if (entry.offRoof && entry.player.getLocation().getZ() > 0 && reason !== "agility") return refuse("on_roof");
+    // Also mid-job on the course (food, a bank trip): a walk on floor 3 goes straight through the
+    // air beside the roof (Eeshwar, Falador, 20-11-2026). The course's own walk ("agility") may.
+    const fromHere = entry.player.getLocation();
+    if (fromHere.getZ() > 0 && reason !== "agility" && (entry.offRoof || roofCourse(fromHere))) return refuse("on_roof");
     // `urgent`: a full bag to bank goes even while other errands rest after a failed one.
     if (!run) return refuse("no_runtime");
     if (errands.busy(entry.player)) return refuse("busy");
@@ -2535,6 +2538,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    */
   const troubledCourses = new Map();
   const COURSE_TROUBLE_MS = 60 * 60_000;
+  /** On a rooftop course this long without getting down: the home teleport. */
+  const ROOF_STUCK_MS = 3 * 60_000;
+  /** Up a floor off any course (a ladder it cannot reach, the air beside a roof): longer, the stairs get a chance first. */
+  const UPSTAIRS_STUCK_MS = 5 * 60_000;
 
   function getOffRoof(entry, nowMs) {
     const player = entry.player;
@@ -2551,18 +2558,23 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       return false;
     }
     // Up there for minutes and the course does not bring it down (an obstacle it cannot do from
-    // where it stands): the home teleport, as a player stuck on a roof does.
-    if (roofCourse(at)) entry.roofSince ??= nowMs;
-    else entry.roofSince = null;
-    if (entry.roofSince && nowMs - entry.roofSince > 3 * 60_000 && castHome(player)) {
+    // where it stands): the home teleport, as a player stuck on a roof does. Also up a floor off
+    // any course with no way down that works: Eeshwar walked off the Falador roof on floor 3 into
+    // the air over the town (by the White Knights' castle), out of the course's reach, so this
+    // never fired and only the 60-minute stranded check could free it (20-11-2026).
+    entry.roofSince ??= nowMs;
+    const onCourse = roofCourse(at);
+    const upFor = onCourse ? ROOF_STUCK_MS : UPSTAIRS_STUCK_MS;
+    if (nowMs - entry.roofSince > upFor && castHome(player)) {
       entry.roofSince = null;
       entry.offRoof = false;
+      entry.climbingDown = false;
       countEvent(entry, "teleportedOut");
       // That course is out for a while, for every adventurer, and its saved job does not send it back.
-      const stuckOn = roofCourse(at)?.course ?? null;
+      const stuckOn = onCourse?.course ?? null;
       if (stuckOn) troubledCourses.set(stuckOn, nowMs + COURSE_TROUBLE_MS);
       if (entry.savedTask?.mode === "agility") entry.savedTask = null;
-      metric({ kind: "stranded", bot: entry.name, where: [at.getX(), at.getY(), at.getZ()], why: "roof", course: stuckOn });
+      metric({ kind: "stranded", bot: entry.name, where: [at.getX(), at.getY(), at.getZ()], why: onCourse ? "roof" : "upstairs", course: stuckOn });
       note(player, `Komt niet van het dak af; teleporteert naar huis (Lumbridge).${stuckOn ? ` Laat de ${stuckOn}-baan een uur liggen.` : ""}`, "activity");
       entry.phase = "waiting";
       entry.until = nowMs + 20_000;
