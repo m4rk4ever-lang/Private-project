@@ -11,7 +11,7 @@
  *
  * First step: gathering jobs only. Food by the place (foodFor): none where it is safe for its
  * combat level, a little where it is not, more when the bank is far. Other things out. Travel
- * things (runes, tablets, jewellery) stay: the errands teleport with them.
+ * things down to one way to teleport (travelKit).
  *
  * Plain logic, no game core: each item's kind comes in through `kindOf(itemId)`:
  *   "keep"  stays (the job's tools, coins, runes and teleports, quest items, kit, materials)
@@ -60,4 +60,26 @@ function offLoadout(items, { mode, kindOf, foodKeep = GATHERING_FOOD } = {}) {
   return [...out].map(([itemId, amount]) => ({ itemId, amount }));
 }
 
-module.exports = { offLoadout, foodFor, GATHERING, GATHERING_FOOD, NEAR_BANK_TILES };
+/** The runes an errand teleport uses; a gathering job keeps those of one spell only. */
+const TRAVEL_RUNES = Object.freeze(["LAW_RUNE", "AIR_RUNE", "EARTH_RUNE", "WATER_RUNE", "FIRE_RUNE"]);
+/** Varrock Teleport (Magic 25): law, air and fire. It lands by the Grand Exchange and its banks. */
+const KIT_RUNES = Object.freeze(["LAW_RUNE", "AIR_RUNE", "FIRE_RUNE"]);
+
+/**
+ * The travel things a gathering job carries (Phase 4b step 2): one way to teleport, not every one
+ * it owns. Travel things held 3.6 slots in a gathering bag after step 1 (metrics 20-11-2026): five
+ * kinds of rune, four kinds of tablet and the jewellery. One charged jewellery piece if it has one
+ * (one slot, several destinations), else the runes for Varrock Teleport with the Magic for it,
+ * else one kind of tablet. Null for other jobs: they keep all.
+ * Used both where it takes travel things from the bank and where it banks what is off the
+ * loadout, so the two never undo each other.
+ */
+function travelKit({ mode, magic = 1, hasJewellery = false, tablets = [] } = {}) {
+  if (!GATHERING.has(mode)) return null;
+  if (hasJewellery) return { jewellery: 1, runes: [], tablets: [], text: "één geladen sieraad" };
+  if (magic >= 25) return { jewellery: 0, runes: [...KIT_RUNES], tablets: [], text: "runes voor Varrock Teleport" };
+  if (tablets.length > 0) return { jewellery: 0, runes: [], tablets: [tablets[0]], text: "één soort tablet" };
+  return { jewellery: 0, runes: [], tablets: [], text: "geen" };
+}
+
+module.exports = { offLoadout, foodFor, travelKit, GATHERING, GATHERING_FOOD, NEAR_BANK_TILES, TRAVEL_RUNES, KIT_RUNES };

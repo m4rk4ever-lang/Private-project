@@ -935,6 +935,20 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return decision.food;
   }
 
+  /** Charged teleport jewellery by its name (a games necklace(5), a ring of dueling(3) ...). */
+  const JEWELLERY_NAME = /^(games necklace|ring of dueling|amulet of glory|skills necklace|combat bracelet|ring of wealth)\s*\(\d\)/i;
+  const isJewellery = (id) => JEWELLERY_NAME.test(String(core.ItemDefinition?.forId?.(id)?.getName?.() ?? ""));
+
+  /** The travel things its gathering job carries (Loadout.travelKit), or null: all of them. */
+  function travelKitFor(entry, player, plan = entry.plan ?? entry.savedTask) {
+    const owned = (name) => {
+      const id = Shopping.idOf(core, name);
+      return Number.isInteger(id) && player.getInventory().getAmount(id) + banked(player, id) > 0;
+    };
+    const hasJewellery = (player.getInventory().getItems() ?? []).some((item) => item && isJewellery(item.getId())) || JEWELLERY.some(owned);
+    return Loadout.travelKit({ mode: plan?.mode, magic: levelOf(player, "MAGIC"), hasJewellery, tablets: TABLETS.filter(owned) });
+  }
+
   function bankOffLoadout(entry, banker, plan = entry.plan ?? entry.savedTask) {
     const mode = plan?.mode;
     if (!Loadout.GATHERING.has(mode)) return [];
@@ -944,8 +958,16 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const tools = toolsFor(mode, activityId);
     const keep = new Set([...workingMaterials(entry), ...bossKit(entry), Trade.COINS,
       ...[...(tools.any ?? []), ...(tools.all ?? [])].map((name) => Shopping.idOf(core, name)).filter(Number.isInteger)]);
+    // Travel things: only its one way to teleport (travelKit), the rest goes in with the other things.
+    const kit = travelKitFor(entry, banker, plan);
+    const kitIds = new Set([...(kit?.runes ?? []), ...(kit?.tablets ?? [])].map((name) => Shopping.idOf(core, name)).filter(Number.isInteger));
+    const travelIds = new Set([...Loadout.TRAVEL_RUNES, ...TABLETS].map((name) => Shopping.idOf(core, name)).filter(Number.isInteger));
+    let jewelleryLeft = kit?.jewellery ?? Infinity;
     const kindOf = (id) => {
-      if (keep.has(id) || Trade.isSupply(core, id) || !Value.tradeable(core, id)) return "keep";
+      if (keep.has(id)) return "keep";
+      if (kit && isJewellery(id)) return jewelleryLeft-- > 0 ? "keep" : "other";
+      if (kit && travelIds.has(id)) return kitIds.has(id) ? "keep" : "other";
+      if (Trade.isSupply(core, id) || !Value.tradeable(core, id)) return "keep";
       return isFood(id) ? "food" : "other";
     };
     const items = (banker.getInventory().getItems() ?? []).filter((item) => item && item.getId() > 0)
@@ -4378,11 +4400,26 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
           const id = Shopping.idOf(core, name);
           if (Number.isInteger(id) && banked(banker, id) > 0 && banker.getInventory().getFreeSlots() > 2 && withdraw(banker, id, amount) > 0) travelBack.push(itemName(id));
         };
-        if (levelOf(banker, "MAGIC") >= 25) for (const name of ["LAW_RUNE", "AIR_RUNE", "EARTH_RUNE", "WATER_RUNE", "FIRE_RUNE"]) take(name, 1_000);
+        // A gathering job takes one way to teleport (Loadout.travelKit), the same one its bank visit
+        // leaves in the bag; any other job takes them all, as before.
+        const kit = travelKitFor(entry, banker);
+        const runes = kit ? kit.runes : levelOf(banker, "MAGIC") >= 25 ? Loadout.TRAVEL_RUNES : [];
+        for (const name of runes) take(name, 1_000);
         // Some coins in the bag (the Al Kharid toll, a ferry, a shop on the way).
         const carried = banker.getInventory().getAmount(Trade.COINS);
         if (carried < 1_000 && banked(banker, Trade.COINS) > 0) withdraw(banker, Trade.COINS, 1_000 - carried);
-        for (const name of [...TABLETS, ...JEWELLERY]) take(name, name.startsWith("AMULET") || name.startsWith("RING") || name.startsWith("GAMES") ? 1 : 20);
+        const carriesJewellery = (banker.getInventory().getItems() ?? []).some((item) => item && isJewellery(item.getId()));
+        const jewellery = kit ? (kit.jewellery > 0 && !carriesJewellery ? JEWELLERY : []) : JEWELLERY;
+        for (const name of kit ? kit.tablets : TABLETS) take(name, 20);
+        for (const name of jewellery) {
+          const before = travelBack.length;
+          take(name, 1);
+          if (kit && travelBack.length > before) break;
+        }
+        if (kit && kit.text !== entry.travelNote) {
+          entry.travelNote = kit.text;
+          note(banker, `Neemt voor ${String(entry.plan?.mode ?? "deze klus").replace(/_/g, " ")} één reismiddel mee: ${kit.text}.`, "activity");
+        }
         if (travelBack.length > 0) note(banker, `Neemt mee om te reizen: ${travelBack.join(", ").toLowerCase()}.`, "activity");
       },
     });
