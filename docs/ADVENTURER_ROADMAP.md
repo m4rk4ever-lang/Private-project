@@ -180,6 +180,15 @@ candle), Fase 5 (unlock-waarde).
   **Stap 1 en de Kourend-helft van stap 2 gebouwd 20-11-2026** (Veos, games necklace na een
   bezoek, Wintertodt via `kourendWay`). Geen Kourend-hubs: binnen Kourend lopen naar verre plekken
   kan nog stranden.
+  **Meting 20-11-2026 (17:08-20:28 UTC, versies 1fe6907 t/m 450f871), volgorde voor stap 2-5:**
+  | Wat | Mislukte loopjes | Stap / status |
+  | --- | --- | --- |
+  | Morytania (Mazchna, Slayer Tower, Mort'ton, Canifis Rooftop) | ~110 van 117, 201 min | Nu alleen per teleport (`onFoot: false`). Volgende: route via de Paterdomus-tempel in het spel checken met `plan_route` (valluik 3405,3506 → hekken 3444/3445 → Holy barrier 3443 naar 3423,3485), dan `canifis`-hub koppelen en de vlag weg. |
+  | Ondergronds vast met een doel boven (Seers 2716,3483: 24; Edgeville: 18) | 42 | Stap 5: de ladder kiezen die vanuit de huidige tunnel bereikbaar is. Raakt de kern van de navigatie: alleen met een test op de server bouwen. |
+  | Gnome Stronghold (agility) | 16 van 16, vast rond 2693,3426 | Stap 4: glider of spirit tree; eerst de hub-route checken. |
+  | Wintertodt | 225× vooraf uitgesloten | Stap 2/3 (skills necklace, memoirs). Kost geen looptijd. |
+  | Sourhog-grot (3164,9677) | 54 | Geen transport: quest-logica (Blockage 40331 met dialoog, touw 40330). Staat niet in Shortest Path, ook niet upstream (8bd3cc6). A Porcine of Interest staat in `questHold`. |
+- **Gebouwd 20-11-2026:** gear uit de bank (`Trade.bankUpgrades` bij bank en GE, event `gearFromBank`) en `trade()` draagt de stijl van de klus (`planStyle`). Hieronder de oorspronkelijke melding.
 - **Gear uit de bank (§20, gemeld door de eigenaar 20-11-2026):** hoge-level bots dragen een
   Torva-helm met een rune sq shield en een dragon scimitar terwijl de bank beter heeft.
   `Trade.wearBest` kijkt alleen in de tas (`inventoryIds`), en `fillEmptySlots(fromBank)` vult
