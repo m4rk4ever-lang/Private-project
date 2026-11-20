@@ -131,6 +131,16 @@ const TABLETS = ["VARROCK_TELEPORT", "LUMBRIDGE_TELEPORT", "FALADOR_TELEPORT", "
  * dueling, an amulet of glory. Each charge is one errand teleport (Errands.PlayerBots.js).
  */
 const JEWELLERY = ["GAMES_NECKLACE_8_", "RING_OF_DUELING_8_", "AMULET_OF_GLORY_4_"];
+/**
+ * The teleport jewellery it keeps one of each, cheapest first, with coins to spare (the owner:
+ * "buy teleports more often when the money is there, without spending it all; efficiency counts").
+ * 385 of 462 walks of 2 minutes or more went without a teleport, 1,530 minutes (20-11-2026).
+ */
+const TRAVEL_JEWELLERY = ["GAMES_NECKLACE_8_", "RING_OF_DUELING_8_", "SKILLS_NECKLACE_4_", "AMULET_OF_GLORY_4_", "RING_OF_WEALTH_5_"];
+/** No jewellery beyond the first under this many coins; one piece at most this share of its coins, and per visit this share. */
+const TRAVEL_MIN_COINS = 50_000;
+const TRAVEL_PIECE_SHARE = 0.02;
+const TRAVEL_VISIT_SHARE = 0.03;
 /** Slayer rings, the one it buys first; any charge takes it to a master's teleport spot. */
 /** A walk to a Slayer master longer than this: with the Slayer ring's teleport, when it can get one. */
 const SLAYER_RING_TILES = 300;
@@ -959,6 +969,17 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   /** Charged teleport jewellery by its name (a games necklace(5), a ring of dueling(3) ...). */
   const JEWELLERY_NAME = /^(games necklace|ring of dueling|amulet of glory|skills necklace|combat bracelet|ring of wealth)\s*\(\d\)/i;
   const isJewellery = (id) => JEWELLERY_NAME.test(String(core.ItemDefinition?.forId?.(id)?.getName?.() ?? ""));
+  /** Its kind ("ring of wealth"), whatever its charges, or null. */
+  const jewelleryKind = (id) => JEWELLERY_NAME.exec(String(core.ItemDefinition?.forId?.(id)?.getName?.() ?? ""))?.[1]?.toLowerCase() ?? null;
+  /** The kinds it has: in the bag, worn or in the bank, any charge. */
+  function jewelleryKinds(player) {
+    const kinds = new Set();
+    const add = (items) => { for (const item of items ?? []) { const kind = item?.getId?.() > 0 ? jewelleryKind(item.getId()) : null; if (kind) kinds.add(kind); } };
+    add(player.getInventory().getItems());
+    add(player.getEquipment?.()?.getItems?.());
+    for (const bank of player.getBanks?.() ?? []) add(bank?.getItems?.());
+    return kinds;
+  }
 
   /** The travel things its gathering job carries (Loadout.travelKit), or null: all of them. */
   function travelKitFor(entry, player, plan = entry.plan ?? entry.savedTask) {
@@ -4563,7 +4584,21 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         const id = Shopping.idOf(core, name);
         return Number.isInteger(id) ? player.getInventory().getAmount(id) + banked(player, id) : 0;
       };
-      if (JEWELLERY.reduce((sum, name) => sum + owned(name), 0) < 1) top(JEWELLERY[Math.floor(random() * JEWELLERY.length)], 1);
+      if (JEWELLERY.reduce((sum, name) => sum + owned(name), 0) < 1 && jewelleryKinds(player).size === 0) top(JEWELLERY[Math.floor(random() * JEWELLERY.length)], 1);
+    }
+    // With coins to spare: one of each kind of teleport jewellery it lacks, cheapest first, each
+    // within a small share of its coins and a cap per visit (never its savings).
+    const idOfName = (name) => Shopping.idOf(core, name);
+    const buys = Loadout.travelBuys(TRAVEL_JEWELLERY, {
+      coins: Shopping.coinsOf(player) + banked(player, Trade.COINS), bagCoins: Shopping.coinsOf(player), have: jewelleryKinds(player),
+      kindOf: (name) => (Number.isInteger(idOfName(name)) ? jewelleryKind(idOfName(name)) : null),
+      priceOf: (name) => Shopping.estimatedPrice(core, idOfName(name), 1), buyable: (name) => onExchange(idOfName(name)),
+      minCoins: TRAVEL_MIN_COINS, pieceShare: TRAVEL_PIECE_SHARE, visitShare: TRAVEL_VISIT_SHARE });
+    for (const name of buys) {
+      if (bid(player, core, emit, idOfName(name), 1)) {
+        bids.push(`1 x ${itemName(idOfName(name))}`);
+        countEvent(adventurers.get(player.getUsername?.()), "teleportBought");
+      }
     }
     if (bids.length > 0) note(player, `Koopt voorraad op de GE: ${bids.join(", ")}.`, "activity");
   }
@@ -4774,12 +4809,23 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         const carried = banker.getInventory().getAmount(Trade.COINS);
         if (carried < 1_000 && banked(banker, Trade.COINS) > 0) withdraw(banker, Trade.COINS, 1_000 - carried);
         const carriesJewellery = (banker.getInventory().getItems() ?? []).some((item) => item && isJewellery(item.getId()));
-        const jewellery = kit ? (kit.jewellery > 0 && !carriesJewellery ? JEWELLERY : []) : JEWELLERY;
         for (const name of kit ? kit.tablets : TABLETS) take(name, 20);
-        for (const name of jewellery) {
-          const before = travelBack.length;
-          take(name, 1);
-          if (kit && travelBack.length > before) break;
+        // Its teleport jewellery: one of each kind it has banked, any charge (a used games necklace
+        // stayed in the bank: only the full one was looked for); a gathering job takes one only.
+        const kindsCarried = new Set((banker.getInventory().getItems() ?? []).map((item) => (item?.getId?.() > 0 ? jewelleryKind(item.getId()) : null)).filter(Boolean));
+        const wantKinds = kit ? (kit.jewellery > 0 && !carriesJewellery ? 1 : 0) : Infinity;
+        // The ids first, then out of the bank (not while going through its items).
+        const banks = (banker.getBanks?.() ?? []).flatMap((bank) => bank?.getItems?.() ?? []).map((item) => item?.getId?.() ?? -1);
+        let taken = 0;
+        for (const id of banks) {
+          if (taken >= wantKinds) break;
+          const kind = id > 0 ? jewelleryKind(id) : null;
+          if (!kind || kindsCarried.has(kind) || banker.getInventory().getFreeSlots() <= 2) continue;
+          if (withdraw(banker, id, 1) > 0) {
+            kindsCarried.add(kind);
+            travelBack.push(itemName(id));
+            taken += 1;
+          }
         }
         if (kit && kit.text !== entry.travelNote) {
           entry.travelNote = kit.text;

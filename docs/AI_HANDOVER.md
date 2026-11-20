@@ -5,6 +5,16 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 20-11-2026 (22:40): vaker teleports kopen (branch `adventurers/teleport-buying`)
+
+- **Vraag eigenaar:** "vaker teleports kopen als het geld er voor is (zonder alles op te brassen), efficiëntie spreekt ook".
+- **Data (logs tot 21:19 UTC):** 462 errands van ≥ 2 min, 385 zonder teleport (1.530 min). Top: de Grand Exchange (88).
+- **Bouw:**
+  - `Errands.bestTeleport`: ring of wealth (charged ids 1-5 en i1-i5) naar de GE (Rub 1) en Falador Park (Rub 3), bestemmingen uit `RING_OF_WEALTH_DESTINATIONS`, volgorde uit `RingOfWealth.plugin.js` ACTIONS; optie `wealthData` voor tests.
+  - `Loadout.travelBuys` (puur, getest): één per soort uit `TRAVEL_JEWELLERY` (games, dueling, skills, glory, RoW), vanaf 50k coins (bag + bank), per stuk ≤ 2%, per bezoek ≤ 3%, nooit meer dan de bag-coins. In `bidForSupplies`, event `teleportBought`.
+  - Bankbezoek: per soort één sieraad mee met elke lading (`jewelleryKind`); gathering houdt één reismiddel.
+- **Validatie:** suite 141 tests, 16 vaste fails. Niet ingame getest: de Rub-submenu-index van de ring of wealth. In de logs: `errand` met `teleport: "jewellery"` naar de GE, event `teleportBought`, aandeel lange errands zonder teleport (nu 83%).
+
 ## Sessie 20-11-2026 (22:30): audit van hubs en bestemmingen (branch `adventurers/hub-audit`)
 
 - **Methode:** BFS/A* op de collision map van Shortest Path (zie roadmap), plain transports + Priest in Peril. Script stond in `/tmp/route` (niet in de repo); opnieuw maken: regio's `x_y` van 64×64, bit = ((z·64·64 + (y%64)·64 + x%64)·4 + flag), flag 0 = noord open, 1 = oost open.

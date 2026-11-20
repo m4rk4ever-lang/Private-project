@@ -161,6 +161,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Avonturiers met geld over kopen nu vaker teleport-sieraden op de GE: van elke soort één (games necklace, ring of dueling, skills necklace, amulet of glory, ring of wealth). Pas vanaf 50.000 gp, een stuk kost hooguit 2% van hun geld en per bezoek hooguit 3%. Bij de bank nemen ze van elke soort één mee, ook als hij al deels gebruikt is. De ring of wealth brengt ze direct naar de Grand Exchange.
 - Avonturiers die hout hakken, minen of vissen nemen nog maar één reismiddel mee: een geladen sieraad, of de runes voor Varrock Teleport, of één soort tablet. In hun log staat welk.
 - Avonturiers proberen niets meer op de GE te kopen dat daar niet verhandeld wordt. Een brandende kaars voor een quest maken ze zelf: een candle kopen en die aansteken met een tinderbox.
 - Avonturiers kunnen naar Great Kourend, na X Marks the Spot: de eerste keer met de boot van Veos vanuit Port Sarim, daarna met een games necklace naar Wintertodt Camp. Daarmee kunnen ze Wintertodt doen.

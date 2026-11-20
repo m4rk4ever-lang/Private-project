@@ -45,3 +45,20 @@ test("a gathering job carries one way to teleport: jewellery, else Varrock's run
   assert.deepEqual(travelKit({ mode: "woodcutting", magic: 10, tablets: ["VARROCK_TELEPORT", "CAMELOT_TELEPORT"] }).tablets, ["VARROCK_TELEPORT"]);
   assert.equal(travelKit({ mode: "woodcutting", magic: 10 }).text, "geen");
 });
+
+test("teleport jewellery is bought with coins to spare, one of each kind, never its savings", () => {
+  const Loadout = require("../plugins/bots/adventurers/Loadout.PlayerBots");
+  const names = ["GAMES_NECKLACE_8_", "RING_OF_DUELING_8_", "SKILLS_NECKLACE_4_", "AMULET_OF_GLORY_4_", "RING_OF_WEALTH_5_"];
+  const price = { GAMES_NECKLACE_8_: 900, RING_OF_DUELING_8_: 800, SKILLS_NECKLACE_4_: 12_000, AMULET_OF_GLORY_4_: 13_000, RING_OF_WEALTH_5_: 13_500 };
+  const kindOf = (name) => name.replace(/_\d+_$/, "");
+  const buys = (coins, extra = {}) => Loadout.travelBuys(names, { coins, kindOf, priceOf: (name) => price[name], ...extra });
+  // Under 50k coins: nothing extra.
+  assert.deepEqual(buys(40_000), []);
+  // 100k: 3% is 3,000 to spend, each piece at most 2,000: the necklace and the ring of dueling.
+  assert.deepEqual(buys(100_000), ["GAMES_NECKLACE_8_", "RING_OF_DUELING_8_"]);
+  // 2M: all five (39k of 60k); kinds it has are skipped; never more than the bag holds.
+  assert.deepEqual(buys(2_000_000), names);
+  assert.deepEqual(buys(2_000_000, { have: new Set(["AMULET_OF_GLORY", "GAMES_NECKLACE"]) }), ["RING_OF_DUELING_8_", "SKILLS_NECKLACE_4_", "RING_OF_WEALTH_5_"]);
+  assert.deepEqual(buys(2_000_000, { bagCoins: 2_000 }), ["GAMES_NECKLACE_8_", "RING_OF_DUELING_8_"]);
+  assert.deepEqual(buys(2_000_000, { buyable: (name) => name !== "RING_OF_WEALTH_5_" }), names.slice(0, 4));
+});
