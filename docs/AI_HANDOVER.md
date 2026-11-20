@@ -5,6 +5,26 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Controle 20-11-2026 21:15: grote update (`450f871`)
+
+Basis: `bot-logs` push 20:13 UTC. `450f871` 20:04 tot 20:13 (**9,4 min**). Weinig data: alleen
+richting, geen conclusies over tijd of volume.
+
+| Vraag | Uitkomst (9,4 min) |
+| --- | --- |
+| Reisspullen bij gathering | **1,7** vakjes (was 3,6), 15 regels; vrije vakjes 17,5. Logregels "één reismiddel mee" verschijnen (sieraad, Varrock-runes, geen). Tekst zegt soms "deze klus" (plan nog leeg): cosmetisch. |
+| `buy_nothing` | 0 (eerder steeds `not-exchangeable`). Geen aansteek-regel gezien. |
+| Markbot 3 | **Verkoopt nog clay** ("26 x clay … ook uit de bank") en mijnt verder voor Doric's Quest. Vermoedelijk overgang: zijn bewaarde klus komt van vóór de fix (zonder `gather`), dus na de herstart weet hij niet meer dat het quest-clay is. Opnieuw bekijken. |
+| Teleport vóór shortcut | 2× "underwall" in het log; te weinig data om te zeggen of het minder is. |
+| Veos / Wintertodt | 0 `boat`. Wintertodt 12× vooraf uitgesloten: 11× `place_unreachable` (X Marks the Spot niet gedaan), 1× `no_ship`. 0 starts. Scheepsdek dus nog niet te beoordelen. |
+| Niet gestart | 9× `errands_resting`, 1× `place_unreachable`, 1× `tool_unbuyable`. |
+| `loop` / `errandInstant` | 1 (Jorgbot 14, `bank`) / 84. |
+| Daken | 0 `stuck` op Seers (2710, 3475, 3) en Falador (3050, 3366, 3) (was 24 en 23 in 2,6 uur). |
+
+Zie ook de sessie van 21:15 (afgesloten gebieden, quests 0 van 152 voltooid).
+
+---
+
 ## Sessie 20-11-2026 (21:15): afgesloten gebieden centraal in `walkTo`; quests voltooien niet
 
 Branch: `adventurers/locked-areas` (vanaf `main` `450f871`).
