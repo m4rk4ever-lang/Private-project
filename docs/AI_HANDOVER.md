@@ -5,6 +5,77 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 20-11-2026 (21:35): `quest_end`-metric (branch `adventurers/quest-end`)
+
+- **Waarom:** 152 quest-starts, 0 `quest_done` in 3 uur, en geen regel zei hoe ver elke poging kwam of hoe hij eindigde.
+- **Wat:** nieuwe pure module `QuestEnd.PlayerBots.js` (`questEnd(run, outcome, extra)`), aangeroepen via `endQuestRun` in Adventurers op alle zes eindpunten: `done`, `failed` (met de reden en stage uit `describeFailure`), `gather` (item zelf verzamelen), `roof` (eerst de dakbaan af), `died`, `override` (`::advtrain`). `entry.questStarts` telt de poging per bot per quest (`attempt`). `quest_done` blijft bestaan.
+- **Validatie:** `tests/bot-quest-end.test.cjs` (4 tests). Suite 131 tests, 16 vaste fails.
+- **Volgende:** na een uur draaien het recept "Quests" in OBSERVABILITY: slagingskans per quest en de top van mislukte stappen. Daarna de data-gedreven quest-hold-lijst (A Porcine of Interest eerst) en de grootste reden aanpakken.
+## Sessie 20-11-2026 (21:25): Eeshwar zweeft boven Falador (branch `adventurers/roof-drift`)
+
+- **Observatie:** screenshot 21:19. `::volg` zegt "Bij: giant mole hole" (2984,3314), minimap zwart met daken: verdieping 3, ~40 tegels west van de baan, naast het White Knights-kasteel. Logs (tot 21:13) tonen nog XP tot level 57; de afdrijving viel erna.
+- **Oorzaak 1:** `walkTo` weigerde een loopje vanaf het dak alleen met `entry.offRoof` (afdaal-modus). Midden in de agility-klus mocht een tussendoor-loopje (eten, bank) wel, en een pad op z=3 gaat door de lucht naast de daken.
+- **Oorzaak 2:** de noodteleport in `getOffRoof` liep alleen zolang `roofCourse(at)` de bot herkende (15 tegels rond een obstakel). Eenmaal daarbuiten: geen vangnet behalve de 60-minuten-strandcheck.
+- **Fix:** `walkTo` weigert `on_roof` ook als `roofCourse(fromHere)` (behalve reden `agility`). `getOffRoof` telt `roofSince` voor elke z>0: 3 min op een baan (`ROOF_STUCK_MS`), 5 min elders (`UPSTAIRS_STUCK_MS`), dan home teleport; metric `stranded` met `why: "upstairs"` voor het tweede geval.
+- **Validatie:** suite 127 tests, 16 vaste fails (basislijn). Geen unittest voor deze plugin-paden. Na deploy controleren: `stranded` met `why` `roof`/`upstairs` en `walkTo`-weigeringen `on_roof` in de `decision`-metric.
+- **Open:** welk loopje Eeshwar precies startte staat pas in de volgende `bot-logs`-push.
+
+## Controle 20-11-2026 21:15: grote update (`450f871`)
+
+Basis: `bot-logs` push 20:13 UTC. `450f871` 20:04 tot 20:13 (**9,4 min**). Weinig data: alleen
+richting, geen conclusies over tijd of volume.
+
+| Vraag | Uitkomst (9,4 min) |
+| --- | --- |
+| Reisspullen bij gathering | **1,7** vakjes (was 3,6), 15 regels; vrije vakjes 17,5. Logregels "één reismiddel mee" verschijnen (sieraad, Varrock-runes, geen). Tekst zegt soms "deze klus" (plan nog leeg): cosmetisch. |
+| `buy_nothing` | 0 (eerder steeds `not-exchangeable`). Geen aansteek-regel gezien. |
+| Markbot 3 | **Verkoopt nog clay** ("26 x clay … ook uit de bank") en mijnt verder voor Doric's Quest. Vermoedelijk overgang: zijn bewaarde klus komt van vóór de fix (zonder `gather`), dus na de herstart weet hij niet meer dat het quest-clay is. Opnieuw bekijken. |
+| Teleport vóór shortcut | 2× "underwall" in het log; te weinig data om te zeggen of het minder is. |
+| Veos / Wintertodt | 0 `boat`. Wintertodt 12× vooraf uitgesloten: 11× `place_unreachable` (X Marks the Spot niet gedaan), 1× `no_ship`. 0 starts. Scheepsdek dus nog niet te beoordelen. |
+| Niet gestart | 9× `errands_resting`, 1× `place_unreachable`, 1× `tool_unbuyable`. |
+| `loop` / `errandInstant` | 1 (Jorgbot 14, `bank`) / 84. |
+| Daken | 0 `stuck` op Seers (2710, 3475, 3) en Falador (3050, 3366, 3) (was 24 en 23 in 2,6 uur). |
+
+Zie ook de sessie van 21:15 (afgesloten gebieden, quests 0 van 152 voltooid).
+
+---
+
+## Sessie 20-11-2026 (21:15): afgesloten gebieden centraal in `walkTo`; quests voltooien niet
+
+Branch: `adventurers/locked-areas` (vanaf `main` `450f871`).
+
+### Gevonden
+
+- 98 `walk_blocked` naar Morytania in 3 uur (Mazchna 38, Slayer Tower 29, Mort'ton 13, Canifis
+  Rooftop 12, Canifis 6), 34 bots. Priest in Peril staat in `grantedQuests` (alle bots "voltooid",
+  zonder spelen), maar `travel-hubs.json` heeft in Morytania alleen de hub `canifis` zonder één link:
+  te voet onbereikbaar. Paden die dat niet checkten: de Slayer-meesterkeuze valt terug op álle
+  meesters als geen bereikbaar is; de agility-baankeuze checkt quests, geen bereikbaarheid;
+  combat-plekken.
+- **Quests: 152 gestart, 0 `quest_done` in 3 uur** (17:05 tot 20:08 UTC). Feedback vandaag 267:
+  "blocked for every adventurer for 3 h" 66, "too many tries" 50, "talked, but the step did not
+  advance" 42, "object used, but the step did not advance" 25, "step without a place" 25, "object
+  not found at 3166,3306,0 (ids 1782)" 20, "quest helper gave no step for a minute" 15, "npc not
+  found: Veos" 7. Meest: Cook's Assistant 33, The Restless Ghost 24, The Knight's Sword 22, A Porcine
+  of Interest 21, Imp Catcher 20.
+
+### Aangepast
+
+- `walkTo`: `lockedAway` weigert een plek in een `lockedArea` die niet `onFoot` is (quest/item en
+  een hub die aan Lumbridge vastzit), tenzij een teleport die de bot draagt binnen 30 tegels landt
+  (Barrows-tablet). Weigering `locked_area` → `decision.failure` `place_unreachable` (onthouden
+  30 min). Eén check voor alle aanroepers.
+- `CHANGELOG.md`.
+
+Validatie: bot-tests 16 van 127 fout (zelfde 16). Alleen `node --check`. Niet in game getest.
+
+### Open
+
+- Morytania echt bereikbaar maken: hubs en links door Paterdomus (transportplan).
+- `grantedQuests` verbergt echte eisen: een bot "heeft" Priest in Peril maar niet de toegang.
+- **Quest-pijplijn**: geen enkele voltooiing. Voorstel aan de eigenaar: eerst een `quest_end`-metric
+  (uitkomst per run: voltooid, opgegeven, reden, stap) en dan de top-redenen; Fase 5 (meer
+  quest-keuzes) pas mergen als quests weer voltooien.
 ## Sessie 20-11-2026 (21:10): Fase 5 stap 1, progression op unlock-waarde
 
 Branch: `adventurers/fase-5` (vanaf `main` `450f871`). **Niet gemerged vóór de controle van 21:15**,

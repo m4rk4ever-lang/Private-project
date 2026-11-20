@@ -17,6 +17,8 @@ Indeling per versie:
 - Avonturiers kiezen vaker iets dat een unlock oplevert in plaats van alleen skills bij te trainen. Van de quests die ze kunnen doen kiezen ze de waardevolste (zoals X Marks the Spot voor Kourend, Priest in Peril voor Morytania en de Barrows), en ze trainen gericht naar levels die iets openen (Agility 10 voor de daken en Graceful, Prayer 43 voor de Barrows). De waardes staan in een bestand dat zonder code aan te passen is.
 
 ### Opgelost
+- Een avonturier op het Falador-dak kon tijdens het trainen een loopje starten (eten halen, bank) en liep dan op dakhoogte door de lucht boven de stad. Daar bleef hij tot een uur hangen. Vanaf een dakbaan starten ze nu geen loopje meer, en wie langer dan vijf minuten op een verdieping staat zonder naar beneden te komen, teleporteert naar huis.
+- Avonturiers liepen steeds naar Morytania (Mazchna, Slayer Tower, Mort'ton, Canifis Rooftop) en kwamen er nooit, omdat geen route daar naartoe leidt. Een boodschap naar een afgesloten gebied wordt nu meteen geweigerd, tenzij ze een teleport hebben die daar landt (zoals een Barrows-tablet), en ze kiezen die klus een half uur niet opnieuw.
 - Een avonturier die clay of iets anders verzamelde voor een quest, verkocht het bij de GE en ging opnieuw verzamelen. Nu houdt hij het, ziet hij ook onderweg dat hij genoeg heeft, en weet hij na een herstart nog voor welke quest het was.
 - Avonturiers met runes voor een teleport liepen toch via een shortcut (zoals de underwall tunnel bij de GE) naar hun doel. Nu teleporteren ze eerst als dat een flink stuk lopen scheelt.
 - Avonturiers op de daken van Seers' Village en Falador bleven staan na een sprong, net te ver van het volgende obstakel. Op een dak klikken ze het volgende obstakel nu aan zoals een speler, ook van een paar tegels verder, en de baan loopt ze erheen.
@@ -32,6 +34,7 @@ Indeling per versie:
 - Avonturiers met een tas vol dubbele spullen (acht dezelfde staffs, tientallen gesmede axes) bleven uren bij een bank staan zonder iets te doen. Ze houden nu één exemplaar van elk stuk uitrusting en gereedschap; de rest gaat naar de bank of de GE. Kan de bank toch niets aannemen, dan staat dat in hun log en gaan ze verder met een klus.
 
 ### Toegevoegd
+- De logs houden nu per quest-poging bij hoe die afliep: voltooid, mislukt, onderbroken (verzamelen, dak, dood) of handmatig gestopt, met de stap, de reden en de duur. Zo is per quest te zien hoe vaak het lukt en waar het vastloopt.
 - Als een avonturier een klus kiest die niet kan starten, staat in de metrics nu waarom: geen gereedschap te koop, plek niet bereikbaar (met de coördinaten en de verdieping), een te laag level, geen quest-route, enzovoort.
 - In de metrics van avonturiers staat nu bij elke keuze wat ze kozen en waarom: of het een quest, een boss, geld verdienen of een gewogen keuze was, welke drie opties het zwaarst wogen en wat er niet kon. Zo is achteraf te zien waarom een avonturier iets ging doen.
 - `::volg` laat bij een avonturier nu ook zien wat zijn doel is, waar hij mee bezig is en waarom, en waar hij heen loopt als hij onderweg is. Elke twee minuten volgen zijn XP per uur, zijn vermogen en waar hij is.

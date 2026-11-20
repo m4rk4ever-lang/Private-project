@@ -80,9 +80,12 @@ const { markHonest, markAdventurer } = require("../brain/Honest.PlayerBots");
 const { errandsFor, inWilderness, bestTeleport } = require("../brain/Errands.PlayerBots");
 const { createLoopGuard } = require("./Loops.PlayerBots");
 const Requirements = require("./Requirements.PlayerBots");
+const { questEnd } = require("./QuestEnd.PlayerBots");
 const Loadout = require("./Loadout.PlayerBots");
 /** Unlock values for the planner (Phase 5, AI_Constitution §10, §11). */
 const unlockValues = require("../data/unlock-values.json");
+/** Locked areas (Morytania, the desert): the walk guard reads them (lockedAway). */
+const travelHubsData = require("../data/travel-hubs.json");
 /** Within this many tiles of its job's place it is there, and its stretch runs. */
 const ARRIVED_TILES = 25;
 /** A walk that never gets there (a blocked way) stops pausing the stretch after this. */
@@ -536,6 +539,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         entry.questRun = run;
         continue;
       }
+      endQuestRun(entry, run, "gather", `gathering ${itemName(itemId).toLowerCase()}`);
       note(entry.player, `Kan ${itemName(itemId).toLowerCase()} niet kopen; gaat het zelf verzamelen voor ${run.name}.`, "quest");
       return true;
     }
@@ -1376,6 +1380,24 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       trade: fresh ? entry.lastTrade : null, ge, coins: Shopping.coinsOf(player), freeSlots: player.getInventory().getFreeSlots() });
   }
 
+  /**
+   * Whether `to` lies in a locked area (travel-hubs.json lockedAreas) it cannot walk to now
+   * (TravelHubs.onFoot: the quest or item, and a hub there joined to Lumbridge), and no teleport
+   * it carries lands within 30 tiles of it.
+   */
+  function lockedAway(player, to) {
+    if ((to.z ?? 0) !== 0 || to.y >= UNDERGROUND_Y) return false;
+    const locked = (travelHubsData.lockedAreas ?? []).some(({ area: [minX, minY, maxX, maxY] }) => to.x >= minX && to.x <= maxX && to.y >= minY && to.y <= maxY);
+    if (!locked) return false;
+    if (TravelHubs.onFoot(to, null, questDone(player), (item) => Shopping.owns(player, Shopping.idOf(core, item)))) return false;
+    try {
+      const teleport = bestTeleport(core, player, to, { questDone: questDone(player) });
+      return !(teleport && teleport.after <= 30);
+    } catch {
+      return true;
+    }
+  }
+
   /** Whether one of its teleports (spell, tablet, jewellery) saves a long walk to `to` now. */
   function teleportsNear(player, to) {
     try {
@@ -1419,12 +1441,20 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // A refused errand says why (`entry.refusal`): a job that could not start because of it then
     // has a reason in its decision metric instead of "unknown".
     const refuse = (why) => { entry.refusal = { why, errand: reason, to: placeName(to), place: { x: to.x, y: to.y, z: to.z ?? 0 } }; return false; };
-    if (entry.offRoof && entry.player.getLocation().getZ() > 0 && reason !== "agility") return refuse("on_roof");
+    // Also mid-job on the course (food, a bank trip): a walk on floor 3 goes straight through the
+    // air beside the roof (Eeshwar, Falador, 20-11-2026). The course's own walk ("agility") may.
+    const fromHere = entry.player.getLocation();
+    if (fromHere.getZ() > 0 && reason !== "agility" && (entry.offRoof || roofCourse(fromHere))) return refuse("on_roof");
     // `urgent`: a full bag to bank goes even while other errands rest after a failed one.
     if (!run) return refuse("no_runtime");
     if (errands.busy(entry.player)) return refuse("busy");
     if (replan && !urgent && (entry.noErrandUntil ?? 0) > now()) return refuse("errands_resting");
     if (blockedPlace(entry, to)) return refuse("place_blocked");
+    // A place behind a lock (Morytania past the Salve, the desert past the Shantay Pass) that it
+    // cannot walk to: refused here, whoever asked, unless a teleport it carries lands there (the
+    // Barrows tablet). 98 walks into Morytania were blocked in 3 hours (Mazchna, Slayer Tower,
+    // Mort'ton, Canifis Rooftop): Priest in Peril is granted, but no walk leads in (20-11-2026).
+    if (lockedAway(entry.player, to)) return refuse("locked_area");
     // The same errand over and over without XP was a loop (Loops.PlayerBots.js): not now.
     if (loopGuard.blocked(entry, reason, placeKey(to))) return refuse("loop_blocked");
     // The errand walks it through its brain's navigation (doors, stairs, long routes). A new
@@ -2201,6 +2231,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       note(entry.player, `${plan.quest.name} heeft nog geen bot-playthrough; overgeslagen.`, "quest");
       return cannot(entry, "no_quest_playthrough", { quest: plan.quest.name });
     }
+    const starts = (entry.questStarts ??= new Map());
+    starts.set(plan.quest.name, (starts.get(plan.quest.name) ?? 0) + 1);
     entry.phase = "quest";
     entry.plan = plan;
     entry.activity = null;
@@ -2242,6 +2274,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // quest again, not "no stairs found" for every quest it tries from up there.
     if (!busy && entry.plan?.quest && roofCourse(entry.player.getLocation())) {
       entry.afterRoof = entry.plan.quest;
+      if (run) endQuestRun(entry, run, "roof", "on a rooftop course");
       entry.questRun = null;
       if (brain) brain.paused = false;
       getOffRoof(entry, nowMs);
@@ -2257,6 +2290,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       metric({ kind: "quest_done", bot: entry.name, quest: run.name, guide: run.helperKey ? "quest-helper" : "playthrough",
         minutes: startedAt ? Math.round((Date.now() - startedAt) / 6000) / 10 : null, steps: run.history?.length ?? null,
         dialogue: run.dialogue ?? [] });
+      endQuestRun(entry, run, "done");
       entry.jobEnd = "quest done";
     } else {
       // Stuck: put aside (longer each time it fails) and written down why, so the cause can be
@@ -2264,7 +2298,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const failures = (entry.questFailures ??= new Map());
       failures.set(run.name, (failures.get(run.name) ?? 0) + 1);
       (entry.questsAside ??= new Map()).set(run.name, nowMs + QUEST_ASIDE_MS * Math.min(8, 2 ** (failures.get(run.name) - 1)));
-      recordQuestFeedback(entry, questPlay.describeFailure({ ...entry, questRun: run }));
+      const failure = questPlay.describeFailure({ ...entry, questRun: run });
+      recordQuestFeedback(entry, failure);
+      endQuestRun(entry, run, "failed", failure?.reason ?? run.reason ?? null, failure?.stage);
       noteQuestFailure(run.name, entry.name);
       countEvent(entry, "questFailed");
       entry.jobEnd = `quest failed: ${run.reason ?? "?"}`;
@@ -2275,6 +2311,20 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     entry.until = 0;
     // In a sweep (::advquestall): on to the next quest no one has tried in it yet.
     if (sweep.active && nowMs < sweep.until) sweepNext(entry);
+  }
+
+  /**
+   * The quest_end metric: one line per attempt, however it ends (QuestEnd.PlayerBots.js), so the
+   * success rate per quest and where each attempt stopped can be counted from the logs.
+   */
+  function endQuestRun(entry, run, outcome, reason = null, stage = undefined) {
+    try {
+      const at = stage !== undefined ? stage : questPlay.describeFailure({ ...entry, questRun: run })?.stage;
+      const line = questEnd(run, outcome, { bot: entry.name, reason, stage: at, attempt: entry.questStarts?.get(run.name) ?? null });
+      if (line) metric(line);
+    } catch {
+      // A metric line, not a must: the quest goes on (or is put aside) either way.
+    }
   }
 
   /** One stuck quest, as a line in the feedback log (and the last few in memory for the page). */
@@ -2512,6 +2562,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    */
   const troubledCourses = new Map();
   const COURSE_TROUBLE_MS = 60 * 60_000;
+  /** On a rooftop course this long without getting down: the home teleport. */
+  const ROOF_STUCK_MS = 3 * 60_000;
+  /** Up a floor off any course (a ladder it cannot reach, the air beside a roof): longer, the stairs get a chance first. */
+  const UPSTAIRS_STUCK_MS = 5 * 60_000;
 
   function getOffRoof(entry, nowMs) {
     const player = entry.player;
@@ -2528,18 +2582,23 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       return false;
     }
     // Up there for minutes and the course does not bring it down (an obstacle it cannot do from
-    // where it stands): the home teleport, as a player stuck on a roof does.
-    if (roofCourse(at)) entry.roofSince ??= nowMs;
-    else entry.roofSince = null;
-    if (entry.roofSince && nowMs - entry.roofSince > 3 * 60_000 && castHome(player)) {
+    // where it stands): the home teleport, as a player stuck on a roof does. Also up a floor off
+    // any course with no way down that works: Eeshwar walked off the Falador roof on floor 3 into
+    // the air over the town (by the White Knights' castle), out of the course's reach, so this
+    // never fired and only the 60-minute stranded check could free it (20-11-2026).
+    entry.roofSince ??= nowMs;
+    const onCourse = roofCourse(at);
+    const upFor = onCourse ? ROOF_STUCK_MS : UPSTAIRS_STUCK_MS;
+    if (nowMs - entry.roofSince > upFor && castHome(player)) {
       entry.roofSince = null;
       entry.offRoof = false;
+      entry.climbingDown = false;
       countEvent(entry, "teleportedOut");
       // That course is out for a while, for every adventurer, and its saved job does not send it back.
-      const stuckOn = roofCourse(at)?.course ?? null;
+      const stuckOn = onCourse?.course ?? null;
       if (stuckOn) troubledCourses.set(stuckOn, nowMs + COURSE_TROUBLE_MS);
       if (entry.savedTask?.mode === "agility") entry.savedTask = null;
-      metric({ kind: "stranded", bot: entry.name, where: [at.getX(), at.getY(), at.getZ()], why: "roof", course: stuckOn });
+      metric({ kind: "stranded", bot: entry.name, where: [at.getX(), at.getY(), at.getZ()], why: onCourse ? "roof" : "upstairs", course: stuckOn });
       note(player, `Komt niet van het dak af; teleporteert naar huis (Lumbridge).${stuckOn ? ` Laat de ${stuckOn}-baan een uur liggen.` : ""}`, "activity");
       entry.phase = "waiting";
       entry.until = nowMs + 20_000;
@@ -2683,7 +2742,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const started = plan.kind === "quest" ? startQuest(entry, plan)
         : plan.kind === "boss" ? startBoss(entry, plan, nowMs)
         : startTraining(entry, plan, nowMs);
-      const failure = started ? null : entry.startFailure ?? (entry.refusal ? { why: entry.refusal.why === "not_buyable" ? "not_buyable" : "errand_refused", detail: entry.refusal } : null);
+      // A refused walk into a locked area is a missing requirement (remembered), not a hitch.
+      const refusedWhy = entry.refusal?.why === "not_buyable" ? "not_buyable" : entry.refusal?.why === "locked_area" ? "place_unreachable" : "errand_refused";
+      const failure = started ? null : entry.startFailure ?? (entry.refusal ? { why: refusedWhy, detail: entry.refusal } : null);
       // A missing requirement keeps this option out for a while (no pick, fail, same pick again).
       if (failure) Requirements.remember(entry.cannot, plan, failure, now(), { restingUntil: entry.noErrandUntil ?? 0 });
       decisionMetric(entry, plan, why, { attempt, started, exclude, failure, blocked: attempt === 0 ? checked.blocked : undefined });
@@ -3884,6 +3945,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         : "verloor het gevecht met eten bij zich",
       prayer: player.getSkillManager().getCurrentLevel(core.Skill.PRAYER) });
     note(player, `Is gestorven bij (${at.getX()}, ${at.getY()})${entry.lastFoe && now() - entry.lastFoe.at < 60_000 ? ` door ${entry.lastFoe.name.toLowerCase()}` : ""}; gaat zijn spullen ophalen.`, "activity");
+    if (entry.questRun) endQuestRun(entry, entry.questRun, "died", entry.lastFoe && now() - entry.lastFoe.at < 60_000 ? `died to ${entry.lastFoe.name}` : "died");
     entry.lastFoe = null;
     entry.graveTries = 0;
     entry.questRun = null;
@@ -5046,6 +5108,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const entry = adventurers.get(name);
     if (!entry?.player?.isRegistered?.() || !mode) return false;
     errands.errands?.delete?.(entry.player);
+    if (entry.questRun) endQuestRun(entry, entry.questRun, "override", `owner test: ${mode}`);
     entry.questRun = null;
     // A boss by its id or name (::advtrain Markbot 18:boss_barrows), for a test run.
     const boss = (data.bosses ?? []).find((entry2) => entry2.id === mode || String(entry2.name).toLowerCase() === String(mode).toLowerCase());
