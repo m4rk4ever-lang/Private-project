@@ -107,6 +107,34 @@ function wearBest(player, core, { levelOf, questDone }, style = "melee", { skipW
   return put;
 }
 
+/**
+ * Gear in its bank that beats what it wears and what it carries, per slot, and that its levels
+ * and quests allow: the ids to take out before wearBest. A whip or a rapier in the bank was never
+ * worn while it fought with a dragon scimitar (high-level bots, 20-11-2026): wearBest looks in
+ * the bag only. One id per slot, the best; none for the weapon while a tool is in hand.
+ */
+function bankUpgrades(player, core, { levelOf, questDone }, style = "melee", bankIds = new Set(), { skipWeapon = false } = {}) {
+  const out = [];
+  const held = inventoryIds(player);
+  for (const [slot, list] of Object.entries(listsFor(style, player, core))) {
+    if (skipWeapon && slot === "weapon") continue;
+    if (slot === "shield" && twoHanded(player, core)) continue;
+    const allowed = (entry) => Shopping.allowed(entry, { levelOf, questDone });
+    // What it has now: worn, or the best allowed piece in its bag (wearBest puts that on anyway).
+    let rank = wornRank(list, core, equippedIds(player));
+    const carried = list.findIndex((entry) => held.has(Shopping.idOf(core, entry.item)) && allowed(entry));
+    if (carried >= 0 && carried < rank) rank = carried;
+    for (let index = 0; index < rank; index += 1) {
+      const entry = list[index];
+      const itemId = Shopping.idOf(core, entry.item);
+      if (!Number.isInteger(itemId) || !bankIds.has(itemId) || !allowed(entry)) continue;
+      out.push(itemId);
+      break;
+    }
+  }
+  return out;
+}
+
 /** The ids it does not sell: coins, food, tools, and gear better than what it wears. */
 function keepIds(player, core, { isFood = () => false } = {}) {
   const keep = new Set([COINS, PLATINUM_TOKEN]);
@@ -247,4 +275,4 @@ function finishedOffers(player, emit) {
 }
 
 module.exports = {
-  slotsOf, listsFor, twoHanded, isSupply, isPrayerRestore, wearBest, keepIds, goodsToSell, sellAtExchange, buyAtExchange, finishedOffers, COINS, KEEP_TOOLS };
+  slotsOf, listsFor, twoHanded, isSupply, isPrayerRestore, wearBest, bankUpgrades, keepIds, goodsToSell, sellAtExchange, buyAtExchange, finishedOffers, COINS, KEEP_TOOLS };

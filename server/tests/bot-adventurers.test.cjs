@@ -144,6 +144,23 @@ test("found gear it may wear goes on; it keeps coins, food and tools and sells t
   }
 });
 
+test("better gear in the bank is found for wearing: the best its levels allow, not what it already has", () => {
+  const Trade = require("../plugins/bots/adventurers/Trade.PlayerBots");
+  // High-level bots fought with a dragon scimitar while a whip lay in the bank (20-11-2026).
+  const f = tradeFixture([["IRON_SCIMITAR", 1]], ["BRONZE_SCIMITAR"]);
+  try {
+    const bank = new Set([f.ids.RUNE_SCIMITAR, f.ids.MITHRIL_SCIMITAR, f.ids.SHRIMPS]);
+    const rules = (attack) => ({ levelOf: (skill) => (skill === "ATTACK" ? attack : 1), questDone: () => false });
+    assert.deepEqual(Trade.bankUpgrades(f.player, f.core, rules(45), "melee", bank), [f.ids.RUNE_SCIMITAR]);
+    assert.deepEqual(Trade.bankUpgrades(f.player, f.core, rules(25), "melee", bank), [f.ids.MITHRIL_SCIMITAR]);
+    // Nothing better than its bag's iron scimitar at Attack 10; no weapon while a tool is in hand.
+    assert.deepEqual(Trade.bankUpgrades(f.player, f.core, rules(10), "melee", bank), []);
+    assert.deepEqual(Trade.bankUpgrades(f.player, f.core, rules(45), "melee", bank, { skipWeapon: true }), []);
+  } finally {
+    f.restore();
+  }
+});
+
 test("one of each kept piece of gear or tool stays; spare copies are goods, not a full bag for ever", () => {
   const Trade = require("../plugins/bots/adventurers/Trade.PlayerBots");
   // As Markbot 14 and Jorgbot 18 stood at a bank for hours: a bag of identical kept things.
