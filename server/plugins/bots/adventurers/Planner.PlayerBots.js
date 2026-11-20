@@ -85,20 +85,30 @@ function bossesFor(adventurer, bosses = []) {
 
 function chooseNext(adventurer, quests, {
   available = null, questChance = 0.45, questGapChance = 0.25, moneyChance = 0, bosses = [], bossChance = 0, random = Math.random,
-  focus = {}, busyModes = new Set(), exclude = new Set(), goal = null,
+  focus = {}, busyModes = new Set(), exclude = new Set(), goal = null, explain = null,
 } = {}) {
+  // How it chose, for the `decision` metric (AI_Constitution §32): which way through this function
+  // (`path`) and the options it weighed, best first. The plan returned is the same with or without.
+  const decided = (choice, path, extra = {}) => {
+    try {
+      explain?.({ path, choice, ...extra });
+    } catch {
+      // Explaining is a help, never a reason not to choose.
+    }
+    return choice;
+  };
   const open = quests.filter((quest) => !adventurer.done.has(quest.name) && (!available || available.has(quest.name)));
   const fightable = bossesFor(adventurer, bosses);
   if (fightable.length > 0 && random() < bossChance) {
-    return { kind: "boss", boss: fightable[Math.floor(random() * fightable.length)] };
+    return decided({ kind: "boss", boss: fightable[Math.floor(random() * fightable.length)] }, "boss", { candidates: fightable.length });
   }
   const ready = open.filter((quest) => isReady(quest, adventurer));
   if (ready.length > 0 && random() < questChance) {
-    return { kind: "quest", quest: ready[0] };
+    return decided({ kind: "quest", quest: ready[0] }, "quest", { candidates: ready.length, alternatives: ready.slice(1, 4).map((quest) => ({ quest: quest.name })) });
   }
   // Modes that could not start just now (no tool, no place) are left out of this pick.
   const options = trainingOptions(adventurer).filter((option) => !exclude.has(option.mode));
-  if (options.length === 0) return { kind: "train", mode: COMBAT, skill: "COMBAT", reason: "loot en levels" };
+  if (options.length === 0) return decided({ kind: "train", mode: COMBAT, skill: "COMBAT", reason: "loot en levels" }, "fallback");
   // Now and then a stretch only to make money: what earned it the most per hour so far (its own
   // measure, adventurer.earn), a mode it has not tried yet now and then, a boss when it can.
   if (random() < moneyChance) {
@@ -107,7 +117,7 @@ function chooseNext(adventurer, quests, {
     const earners = options.filter((option) => MONEY_MODES.has(option.mode) && !(rate(option.mode) !== null && rate(option.mode) <= 0));
     const untried = earners.filter((option) => rate(option.mode) === null);
     if (fightable.length > 0 && random() < 0.25) {
-      return { kind: "boss", boss: fightable[Math.floor(random() * fightable.length)], reason: "geld verdienen" };
+      return decided({ kind: "boss", boss: fightable[Math.floor(random() * fightable.length)], reason: "geld verdienen" }, "money_boss", { candidates: fightable.length });
     }
     // Something new now and then (one pick in ten), else what it knows earns best: an untried
     // way's guess counts for half against a measured rate ("eens proberen" came up too often).
@@ -117,8 +127,11 @@ function chooseNext(adventurer, quests, {
       : [...earners].sort((a, b) => score(b) - score(a))[0];
     if (pick) {
       const known = rate(pick.mode);
-      return { kind: "train", mode: pick.mode, skill: pick.skill, money: true,
-        reason: known ? `geld verdienen (~${Math.round(known).toLocaleString("nl-NL")} gp/uur)` : "geld verdienen (eens proberen)" };
+      return decided({ kind: "train", mode: pick.mode, skill: pick.skill, money: true,
+        reason: known ? `geld verdienen (~${Math.round(known).toLocaleString("nl-NL")} gp/uur)` : "geld verdienen (eens proberen)" }, "money", {
+        alternatives: [...earners].sort((a, b) => score(b) - score(a)).slice(0, 3)
+          .map((option) => ({ mode: option.mode, gpPerHour: Math.round(score(option)), measured: rate(option.mode) !== null })),
+      });
     }
   }
   // What the nearest quest that is not ready still needs, and that the bots can train: now and
@@ -127,11 +140,15 @@ function chooseNext(adventurer, quests, {
     if (isReady(quest, adventurer)) continue;
     const gap = missing(quest, adventurer);
     if (gap.combat) {
-      return { kind: "train", mode: COMBAT, skill: "COMBAT", reason: `${quest.name} (combat ${gap.combat})`, target: { skill: "COMBAT", level: gap.combat } };
+      return decided({ kind: "train", mode: COMBAT, skill: "COMBAT", reason: `${quest.name} (combat ${gap.combat})`, target: { skill: "COMBAT", level: gap.combat } },
+        "quest_gap", { quest: quest.name, missing: gap });
     }
     for (const [skill, level] of Object.entries(gap.skills)) {
       const option = options.find((entry) => entry.skill === skill);
-      if (option) return { kind: "train", mode: option.mode, skill, reason: `${quest.name} (${skill.toLowerCase()} ${level})`, target: { skill, level } };
+      if (option) {
+        return decided({ kind: "train", mode: option.mode, skill, reason: `${quest.name} (${skill.toLowerCase()} ${level})`, target: { skill, level } },
+          "quest_gap", { quest: quest.name, missing: gap });
+      }
     }
   }
   // Nothing in the way: a weighted pick (trainingWeights), so each adventurer has its own way.
@@ -140,8 +157,13 @@ function chooseNext(adventurer, quests, {
   let roll = random() * total;
   const choice = (weighted.find((entry) => (roll -= entry.weight) < 0) ?? weighted[weighted.length - 1]).option;
   const forGoal = goal && goalWeight(goal, choice) > 1;
-  return { kind: "train", mode: choice.mode, skill: choice.skill, reason: forGoal ? `doel: ${describe(goal)}` : reasonFor(choice, options, focus),
-    ...(forGoal && goal.kind === "level" ? { target: { skill: goal.skill, level: goal.level } } : {}) };
+  return decided({ kind: "train", mode: choice.mode, skill: choice.skill, reason: forGoal ? `doel: ${describe(goal)}` : reasonFor(choice, options, focus),
+    ...(forGoal && goal.kind === "level" ? { target: { skill: goal.skill, level: goal.level } } : {}) }, "weighted", {
+    // Its chance was its share of the total weight; the best three, and the chosen one's share.
+    chance: total > 0 ? Math.round((weighted.find((entry) => entry.option === choice)?.weight ?? 0) / total * 100) : null,
+    alternatives: [...weighted].sort((a, b) => b.weight - a.weight).slice(0, 3)
+      .map((entry) => ({ mode: entry.option.mode, weight: Math.round(entry.weight * 100) / 100, chance: total > 0 ? Math.round(entry.weight / total * 100) : null })),
+  });
 }
 
 /**

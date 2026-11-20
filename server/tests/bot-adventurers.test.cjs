@@ -285,3 +285,23 @@ test("a buy at the exchange that is not placed says why (no silent buy loop)", (
   assert.equal(placed.why, undefined);
   assert.equal(Trade.buyAtExchange({}, core, (name, request) => { request.placed = true; }, 1127, 1), true, "outcome is optional");
 });
+
+test("the planner explains its pick: the way it took and the best alternatives with their chance (§32)", () => {
+  // A weighted pick: everything else rolled past.
+  let why = null;
+  const done = new Set(data.quests.map((q) => q.name));
+  const plan = chooseNext(adventurer({ MINING: 30, WOODCUTTING: 30 }, { done }), data.quests, { random: () => 0.99, explain: (d) => { why = d; } });
+  assert.equal(why.path, "weighted");
+  assert.equal(why.choice, plan, "the same plan it returned");
+  assert.ok(why.alternatives.length > 0 && why.alternatives.length <= 3);
+  assert.ok(why.alternatives.every((alt, i, all) => i === 0 || all[i - 1].weight >= alt.weight), "best first");
+  assert.ok(why.chance > 0 && why.chance <= 100);
+  // A quest it was ready for.
+  let quest = null;
+  chooseNext(adventurer(), data.quests, { random: () => 0, explain: (d) => { quest = d; } });
+  assert.equal(quest.path, "quest");
+  // Without explain, and with one that throws, it chooses all the same.
+  const same = chooseNext(adventurer(), data.quests, { random: () => 0 });
+  const despite = chooseNext(adventurer(), data.quests, { random: () => 0, explain: () => { throw new Error("x"); } });
+  assert.deepEqual(despite, same);
+});

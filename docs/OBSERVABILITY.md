@@ -53,6 +53,7 @@ naar de eerste en laatste `at` voordat je conclusies trekt.
 | `skills` | Elke 5 min: welke skills getraind, door wie, `untouched` | |
 | `server` | Elke 5 min: aantallen, tick-duur, geheugen, `questsBlocked` | |
 | `bank_nothing` | **Nieuw (20-11-2026).** Bank bij een volle tas kon niets aannemen | `bank`, `where`, `freeSlots`, `bag` |
+| `decision` | **Nieuw (20-11-2026).** Elke keuze van de planner (`chooseNext`), ook als de klus niet startte | `attempt`, `started`, `path` (`boss`, `quest`, `money`, `money_boss`, `quest_gap`, `weighted`, `fallback`), `chosen` (`kind`, `mode`, `skill`, `quest`, `boss`, `reason`), `chance` (% bij `weighted`), `alternatives` (beste 3: `mode` met `weight` en `chance`, of `gpPerHour` bij `money`, of quests), `candidates`, `quest` en `missing` (bij `quest_gap`), `excluded`, `goal` |
 | `loop` | **Nieuw (20-11-2026, na `e59bc71`).** Dezelfde boodschap (reden en plek) 8 keer in 5 min zonder XP; die boodschap 15 min geweigerd | `reason`, `to`, `repeats`, `seconds`, `recent` (laatste 10 boodschappen), `phase`, `plan`, `savedTask`, `goal`, `trade` (waarom `trade()` ging: `waiting`, `fund`, `worth`, `full`, `cluttered`, `goods`), `ge` (`finished`, `waiting`, `freeSlots`), `coins`, `freeSlots` |
 | `buy_nothing` | **Nieuw (20-11-2026, na `84ecd13`).** Koopbezoek aan de GE dat niets kocht; 30 min geen nieuw GE-koopbezoek | `items`, `why` (`no-slot`, `not-exchangeable`, `refused`, `coins`, `unknown`), `geFreeSlots`, `geWaiting`, `geWaitingBuys`, `coins` |
 | `errand` | **Nieuw (20-11-2026, na `e210ce9`).** Einde van elke boodschap via `walkTo` | `reason`, `to`, `ended` (`arrived`, `near`, `toll_gate`, `blocked`), `why` (`stuck`, `no-closer`, `too-long`, of `null` bij aankomst), `seconds`, `tilesLeft`, `teleport`, `hop`, `where` |
@@ -114,6 +115,10 @@ for r in err:
     p = per[(r["reason"], r["to"])]; p[0] += 1; p[1] += r["seconds"]; p[2][r["ended"]] += 1
 for (reason, to), (n, s, ended) in sorted(per.items(), key=lambda x: -x[1][1])[:15]:
     print(f"{reason:10} {to:28} n={n:4} min={s/60:6.1f} gem={s/n:5.0f}s {dict(ended)}")
+# Keuzes van de planner: langs welke weg, hoe vaak de klus niet startte, wat het meest gekozen werd
+dec = [r for r in rows if r["kind"] == "decision"]
+print("path", C.Counter((r["path"], r["started"]) for r in dec).most_common())
+print("niet gestart", C.Counter(r["chosen"]["mode"] or r["chosen"]["kind"] for r in dec if not r["started"]).most_common(10))
 ```
 
 ## Gaten ten opzichte van de constitution
@@ -122,7 +127,7 @@ for (reason, to), (n, s, ended) in sorted(per.items(), key=lambda x: -x[1][1])[:
 | --- | --- | --- | --- |
 | 30 | `::volg` toont Current Goal, Subgoal, Activity, State, Location, Route, Inventory, Equipment, Wealth, Skill, XP Rate | Alles, sinds 20-11-2026: doel, bezig (activiteit of fase), reden (subdoel), route, plek, vermogen, skill en XP/uur in de chat; inventaris, uitrusting en skills in de tabs | Subdoel is de reden van het plan, geen aparte stap uit een dependency-keten (§9) |
 | 31 | "Wat doet hij en waarom?" | Eén regel `Doel / Bezig / Reden` in `::volg` | Nog niet op het dashboard |
-| 32 | Reconstructie van keuzes | Journaal en momentopnames bij stuck/idle/walk_blocked | De planner logt niet welke opties hij woog en waarom hij koos |
+| 32 | Reconstructie van keuzes | Journaal, momentopnames bij stuck/idle/walk_blocked, `decision` per planner-keuze, `loop` met de laatste boodschappen | Keuzes buiten de planner (`trade`, `upgrade`, hervatten) alleen via `errand` en `loop` |
 | 33 | Read Only / Advisory / Override | Override deels (`::advtrain`, `::advquest`, `grantedQuests`) | Geen Read Only of Advisory modus |
 | 5 | Stil falen voorkomen | Meeste lussen tellen een event | De banklus was stil (opgelost in ADR-0005). Andere stille lussen zijn niet systematisch gezocht |
 
