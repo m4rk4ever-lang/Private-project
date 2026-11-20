@@ -5,6 +5,49 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 20-11-2026 (20:45): Patrickbot 17 vast op Seers' rooftop
+
+Branch: `adventurers/roof-course-trouble` (vanaf `main` `5e887a4`).
+
+### Gevonden (melding eigenaar met screenshot, bevestigd in `bot-logs` 19:36 UTC)
+
+Patrickbot 17 op (2710, 3475, 3), Seers' rooftop, `runCourse seers obstacle=5`. Die tegel is de
+landing van obstakel 4 (GAP_28, wall scramble naar `pos.y - 5`, z 3); obstakel 5 (GAP_29) begint op
+(2702, 3470, 3). De loop over het dak daartussen lukt niet. Waarschijnlijk collision op z 3 daar;
+**niet onderzocht** (geen cache hier). Dezelfde plek stond al in de eerste handover (1.718
+`stuck` in oudere versies). Na de herstart koos hij een groepsklus (Sarachnis) maar kwam niet van
+het dak (249 `stuck` in 10 min); `getOffRoof` teleporteerde hem na 3 min terecht naar huis, maar
+zijn `savedTask` (agility seers) stuurde hem direct terug.
+
+### Aangepast
+
+- `Adventurers.PlayerBots.js`: `troubledCourses` (gedeeld, 60 min) gezet bij de home teleport
+  van een dak; de baan wordt overgeslagen bij de keuze van een course; een bewaarde agility-klus
+  vervalt. `stranded`-metric krijgt `course`.
+- `CHANGELOG.md`.
+
+Validatie: bot-tests 16 van 124 fout (zelfde 16). Alleen `node --check`. **Niet in game getest.**
+
+Ook in deze PR (fix 1 uit de controle van 20:36): `bossKit` neemt `via.lightFrom` (CANDLE) en
+TINDERBOX mee, zodat een gekochte candle niet meer verkocht wordt.
+
+### Andere daken (zelfde check, `bot-logs` 17:05 tot 19:41 UTC)
+
+70 agility-`stuck`. Op een dak: Seers (2710, 3475, 3) obstakel 5 (24, 3 bots, 7 `stranded`),
+Falador (3050, 3366, 3) obstakel 5 (23, 2 bots, 10 `stranded`; obstakel 4 GAP_15 route
+(3048, 3358, 3) springt 3 noord, obstakel 5 GAP_16 route (3045, 3361, 3)), Varrock-dak
+(3193, 3398, 3) (4 bots met een andere baan als klus). Niet op een dak: Gnome (11 jobs `stuck`
+onderweg) en Canifis (10, onderweg naar Morytania): navigatie.
+
+### Open
+
+**De eigenaar loopt als speler wel** van de landing naar het volgende obstakel (Seers, Falador).
+De fout zit dus in de bot: hoe `runCourse` (brain, agility-behaviour) na een obstakel naar de
+`route`-tegel van het volgende loopt op een dak (z 3). Daar beginnen: de beweging tussen
+obstakels op een verdieping, niet de collision of de baan-data.
+
+---
+
 ## Controle 20-11-2026 20:36: loadout, candle, tunnel (`f4c67e7` + `eef0e4d`)
 
 Basis: `bot-logs` push 19:36 UTC. `f4c67e7` 6,5 min + `eef0e4d` 19,1 min (**~26 min samen**, 60
