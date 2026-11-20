@@ -26,7 +26,9 @@ slots). De tas telt als "rommelig": 6 of meer vakjes met spullen zonder handelsw
 voorraad blijft, de tas blijft rommelig, opnieuw. Het bankpad van `trade()` zet die voorraad wel weg.
 Voorgestelde fix (één regel): `atExchange` zet ook de waardeloze voorraad op de bank, zoals het
 bankpad (`Trade.goodsToSell(player, core, keepHere, { isFood, worthless: true })` met
-`workingMaterials` en `bossKit` erbij). **Nog niet gedaan.**
+`workingMaterials` en `bossKit` erbij). **Gedaan 18:35** (branch `docs/controle-1826`): alleen
+spullen zonder prijs, zodat spullen met waarde nog verkocht worden. Risico: een niet-verhandelbaar
+quest-item in de tas gaat bij de GE ook de bank in, zoals bij elke andere bank al gebeurde.
 
 Andere lussen (geblokkeerd, oorzaak niet uitgezocht):
 - Jorgbot 14: `bank` Al Kharid, `fund: true`, 2 vrije vakjes, bewaarde klus `combat_training`.

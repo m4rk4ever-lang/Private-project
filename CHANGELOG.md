@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Avonturiers met een tas vol spullen die niets opbrengen liepen steeds opnieuw naar de Grand Exchange, omdat ze die spullen daar niet op de bank zetten. Dat doen ze nu wel, zoals bij elke andere bank.
 - Avonturiers die steeds opnieuw dezelfde boodschap doen zonder iets op te schieten (acht keer in vijf minuten naar dezelfde plek, zonder XP), stoppen daar nu een kwartier mee en kiezen iets anders. In hun log staat dat ze vastzaten, en de metrics laten zien welke boodschappen het waren en waarom ze die kozen.
 - Avonturiers die gingen boogschieten of toveren zetten hun boog, pijlen en runes bij de GE op de bank en haalden ze meteen weer op, honderden keren achter elkaar. Hetzelfde gebeurde met de magic-set voor de Barrows. De spullen voor hun klus blijven nu bij ze.
 - Sommige avonturiers stonden bij de Grand Exchange en probeerden elke seconde opnieuw een upgrade te kopen die niet lukte, zonder dat ergens te melden. Nu zeggen ze in hun log waarom het niet lukte (bijvoorbeeld alle GE-slots bezet) en proberen ze het pas na een half uur weer op de GE.
