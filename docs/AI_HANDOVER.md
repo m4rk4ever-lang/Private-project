@@ -5,6 +5,40 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Controle 20-11-2026 20:36: loadout, candle, tunnel (`f4c67e7` + `eef0e4d`)
+
+Basis: `bot-logs` push 19:36 UTC. `f4c67e7` 6,5 min + `eef0e4d` 19,1 min (**~26 min samen**, 60
+avonturiers). Tijdsbesteding voorlopig (`new` 8,1%, twee herstarts).
+
+| Vraag | Uitkomst (~26 min) | Was |
+| --- | --- | --- |
+| Vrije vakjes tijdens gathering (52 regels) | **18,2** | 15,6 |
+| Eten in de tas bij gathering | **0,9** vakjes | 3,7 |
+| Overig | **0,5** | 1,7 |
+| Reisspullen | 3,6 | 2,8 (nu de grootste post) |
+| `loadoutBanked` | 31 | |
+| Eten-beslissingen | 21× "Neemt geen eten mee: veilige plek …"; geen gevaarlijke plek gezien | |
+| Deaths / `fledLowHp` | 0 / 4 (niet bij gathering) | |
+| Markbot 18 | Om ~19:26 UTC uit de tunnel, traint weer. Jorgbot 18 zat in dezelfde tunnel (3158, 9713): `stranded` om 19:20. Fix werkt. | 2 uur vast |
+| Bevroren (nieuw recept) | 0 | |
+| `loop` | 0 | |
+| Keuzes niet gestart | 26 van 136 (19%); 17 `errands_resting` (10 min rust na een mislukte boodschap), 6 `tool_unbuyable` | 13% |
+
+**Giant Mole, nieuwe bug:** Jorgbot 14 kocht een candle op de GE en zette hem bij het volgende
+GE-bezoek weer te koop. `bossKit` bevat `via.tool` en `via.light` (LIT_CANDLE), maar niet
+`via.lightFrom` (CANDLE) en de tinderbox, dus `trade()` ziet de candle als handelswaar.
+Voorgestelde fix: `bossKit` neemt `via.lightFrom` en TINDERBOX mee als de light `lightFrom` heeft.
+**Niet gedaan.** Daarnaast 24 keer `blocked` voor de Mole op `tool_unbuyable` (spade en/of candle),
+waarschijnlijk geld of `noExchangeBuyUntil`; 3 Mole-starts wel.
+
+**`errands_resting` is nu de grootste oorzaak van niet-gestarte keuzes** (17 van 26): na een
+mislukte boodschap 10 min geen nieuwe, en de planner kiest intussen klussen die een boodschap
+nodig hebben. **Gedaan 20:40:** `Requirements.remember` onthoudt een `errand_refused` met
+`errands_resting` tot `noErrandUntil` (niet 30 min); `canExecute` sluit die klus zolang uit. Test
+in `bot-requirements.test.cjs`.
+
+---
+
 ## Sessie 20-11-2026 (20:15): Markbot 18 vast in een tunnel; transportplan
 
 Branch: `adventurers/unstrand-window` (vanaf `main` `f4c67e7`).

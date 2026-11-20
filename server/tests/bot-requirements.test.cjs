@@ -40,3 +40,14 @@ test("a failed requirement is remembered a while; a passing hitch is not", () =>
   assert.equal(recall(state, "hunter", REMEMBER_MS), null, "runs out");
   assert.equal(keyOf({ kind: "boss", boss: { id: "boss_giant_mole" } }), "boss:boss_giant_mole");
 });
+
+test("a job refused while errands rest is left out until the rest ends, not for half an hour", () => {
+  const state = new Map();
+  const slayer = { kind: "train", mode: "slayer" };
+  const refused = { why: "errand_refused", detail: { why: "errands_resting", errand: "withdraw" } };
+  assert.equal(remember(state, slayer, refused, 0, { restingUntil: 4 * 60_000 }), true);
+  assert.equal(recall(state, "slayer", 60_000)?.why, "errands_resting");
+  assert.equal(recall(state, "slayer", 4 * 60_000), null, "the rest is over: free again");
+  assert.equal(remember(state, slayer, refused, 0), false, "no rest known: nothing to remember");
+  assert.equal(remember(state, slayer, { why: "errand_refused", detail: { why: "busy" } }, 0, { restingUntil: 60_000 }), false, "busy is a passing hitch");
+});

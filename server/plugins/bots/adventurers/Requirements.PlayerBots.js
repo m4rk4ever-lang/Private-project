@@ -57,10 +57,20 @@ function canExecute(option, ctx) {
   return { ok: true };
 }
 
-/** Remembers a failed start when its reason is a missing requirement. Returns whether it did. */
-function remember(state, option, failure, nowMs) {
+/**
+ * Remembers a failed start when its reason is a missing requirement (REMEMBER_MS), or a refused
+ * errand while errands rest after a failed one (until that rest ends, `restingUntil`): the planner
+ * picked such jobs again and again in that rest (17 of 26 failed picks, v eef0e4d, 20-11-2026).
+ * Returns whether it did.
+ */
+function remember(state, option, failure, nowMs, { restingUntil = 0 } = {}) {
   const key = keyOf(option);
-  if (!key || !failure || !REQUIREMENT_REASONS.has(failure.why)) return false;
+  if (!key || !failure) return false;
+  if (failure.why === "errand_refused" && failure.detail?.why === "errands_resting" && restingUntil > nowMs) {
+    state.set(key, { why: "errands_resting", detail: { errand: failure.detail.errand ?? null }, until: restingUntil });
+    return true;
+  }
+  if (!REQUIREMENT_REASONS.has(failure.why)) return false;
   state.set(key, { why: failure.why, detail: failure.detail ?? null, until: nowMs + REMEMBER_MS });
   return true;
 }

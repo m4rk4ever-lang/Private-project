@@ -145,6 +145,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Na een mislukte boodschap rusten avonturiers tien minuten met boodschappen. In die tijd kiezen ze geen klussen meer die meteen een boodschap nodig hebben, maar iets dat ze direct kunnen doen.
 - Avonturiers die hout hakken, minen of vissen nemen alleen eten mee als de plek gevaarlijk is voor hun combat level (agressieve monsters die hen aanvallen, de Wilderness, of avonturiers die daar kortgeleden gewond raakten), en minder als de bank dichtbij is. Spullen die ze daarbij niet gebruiken (een emmer, een pot, reservewapens) blijven bij de bank. In hun log staat waarom ze wel of geen eten meenemen. Zo past er meer in hun tas en hoeven ze minder vaak naar de bank.
 - Avonturiers kiezen geen klus meer waarvan al vaststaat dat die niet kan: zonder gereedschap dat ze hebben of kunnen kopen (geen hunter zonder bird snare), of op een plek waar ze niet kunnen komen. Mislukt een klus toch door een ontbrekende eis, dan kiezen ze die een half uur niet opnieuw.
 - Avonturiers kiezen hun geldklussen doelmatiger: een klus die eerder niets of verlies opleverde, geldt niet meer als geldklus, en iets nieuws proberen ("eens proberen") gebeurt nog maar af en toe. Een verwerkklus met gekochte materialen (zoals Herblore) telt niet meer als sparen voor een doel.
