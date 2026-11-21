@@ -253,6 +253,58 @@ function toWaypoints(tiles, z, getFlag) {
   return unique;
 }
 
+/**
+ * Planning time shared by every long search (walks, stairs, ways out of caves): PLAN_BUDGET_MS per
+ * game tick, kept as an allowance that refills with time. A search may run over; what it ran over
+ * is owed, and no new search starts until it is paid off. The old budget reset its window on wall
+ * time, so after a 2,5 s search the next bot found a fresh window and searched too: ticks of 15 to
+ * 27 s after every restart, when no route is cached yet (BotBehaviorTask, 21-11-2026). Stairs
+ * searches had no budget at all.
+ */
+const PLAN_BUDGET_MS = 60;
+const TICK_MS = 600;
+const planBudget = { allowance: PLAN_BUDGET_MS, at: 0 };
+// Where the planning time went since the last read (the server metric): per kind of search.
+const planSpent = {};
+
+function canPlan(nowMs = Date.now()) {
+  if (planBudget.at > 0 && nowMs > planBudget.at) {
+    planBudget.allowance = Math.min(PLAN_BUDGET_MS, planBudget.allowance + (nowMs - planBudget.at) / TICK_MS * PLAN_BUDGET_MS);
+  }
+  planBudget.at = Math.max(planBudget.at, nowMs);
+  return planBudget.allowance > 0;
+}
+
+function chargePlan(kind, ms) {
+  planBudget.allowance -= ms;
+  const spent = (planSpent[kind] ??= { count: 0, totalMs: 0, maxMs: 0 });
+  spent.count += 1;
+  spent.totalMs += ms;
+  spent.maxMs = Math.max(spent.maxMs, ms);
+}
+
+/** The planning time per kind since the last call, rounded, and starts over. */
+function takePlanSpent() {
+  const out = {};
+  for (const [kind, spent] of Object.entries(planSpent)) {
+    out[kind] = { count: spent.count, totalMs: Math.round(spent.totalMs), maxMs: Math.round(spent.maxMs) };
+    delete planSpent[kind];
+  }
+  out.owedMs = Math.round(Math.max(0, -planBudget.allowance));
+  return out;
+}
+
+/** Tests: a full allowance and no debt. */
+function resetPlanBudget() {
+  planBudget.allowance = PLAN_BUDGET_MS;
+  planBudget.at = 0;
+}
+
 module.exports = {
   planRoute,
+  canPlan,
+  resetPlanBudget,
+  chargePlan,
+  takePlanSpent,
+  PLAN_BUDGET_MS,
 };

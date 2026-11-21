@@ -4,7 +4,7 @@ const { RegionManager } = require("../../../src/main/typescript/elvarg/game/coll
 const { MapObjects } = require("../../../src/main/typescript/elvarg/game/entity/impl/object/MapObjects");
 const { ObjectDefinition } = require("../../../src/main/typescript/elvarg/game/definition/ObjectDefinition");
 const { PathFinder } = require("../../../src/main/typescript/elvarg/game/model/movement/path/PathFinder");
-const { planRoute } = require("../behaviours/navigation/LongRoutePlanner.PlayerBots");
+const { planRoute, canPlan, chargePlan } = require("../behaviours/navigation/LongRoutePlanner.PlayerBots");
 const ClimbLinks = require("../../objects/ClimbLinks");
 
 /**
@@ -84,6 +84,19 @@ function findStairs(here, goal, direction, nowMs, hops = MAX_HOPS) {
   }
   const cached = stairsByGoal.get(key);
   if (cached && nowMs - cached.at < CACHE_TTL_MS) return cached.object;
+  // Each candidate is a door-aware search (up to 120.000 tiles): under the shared planning budget,
+  // once per walk (the nested floors are part of it). Undefined: not searched yet, try again later.
+  const top = hops === MAX_HOPS;
+  if (top && !canPlan(Date.now())) return undefined;
+  const startedAt = Date.now();
+  try {
+    return searchStairs(key, here, goal, direction, nowMs, hops);
+  } finally {
+    if (top) chargePlan("stairs", Date.now() - startedAt);
+  }
+}
+
+function searchStairs(key, here, goal, direction, nowMs, hops) {
   RegionManager.loadMapFiles(goal.x, goal.y);
   RegionManager.loadMapFiles(here.x, here.y);
   // Near the destination (going up to a bank) and near the bot (going down to a far mine).

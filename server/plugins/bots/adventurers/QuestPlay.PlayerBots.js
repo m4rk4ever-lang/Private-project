@@ -483,11 +483,14 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     return true;
   }
 
-  /** The stairs from this floor that lead toward the target's floor (Climbing's own search). */
+  /**
+   * The stairs from this floor that lead toward the target's floor (Climbing's own search): null
+   * when there are none, undefined when not searched yet (the planning budget is spent this tick).
+   */
   function stairsTo(here, target, nowMs) {
     const { findStairs } = require("../brain/Climbing.PlayerBots");
     const ClimbLinks = require("../../objects/ClimbLinks");
-    return findStairs(here, target, target.z > here.z ? ClimbLinks.UP : ClimbLinks.DOWN, nowMs) ?? null;
+    return findStairs(here, target, target.z > here.z ? ClimbLinks.UP : ClimbLinks.DOWN, nowMs);
   }
 
   function climb(player, hop) {
@@ -722,6 +725,11 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     const floorGoal = hop.climb ? { x: hop.x, y: hop.y, z: hop.z } : target;
     if (here.z !== floorGoal.z) {
       const stairs = stairsTo(here, floorGoal, nowMs);
+      // Not searched yet: wait a tick rather than take any way down.
+      if (stairs === undefined) {
+        run.reason = "waiting for the stairs search";
+        return "running";
+      }
       if (!stairs) {
         // No known stairs: down by whatever leads down here (a ship's gangplank "Cross", a ladder
         // not in the climb list, an exit), as a player looks for the way off.

@@ -5,6 +5,16 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 21-11-2026 15:10: lag na elke herstart, planningsbudget (branch `adventurers/plan-budget`)
+
+- **Eigenaar:** "ik merk nog lag", met de serverconsole van 13:2x tot 13:57 UTC.
+- **Waarneming:** na elke herstart duurt `BotBehaviorTask` om de paar ticks 2,2 tot 3,5 s, met uitschieters van 15, 19, 21 en 27 s (`tick_overrun`). Op een server die al lang draaide (begin van de console) bleef die taak onder de 170 ms. De `server`-metric in de botlogs meet alleen de planner (Adventurers): ~20 ms, dus die zag dit niet.
+- **Oorzaak (waarschijnlijk, nog niet gemeten):** zoektochten over de kaart (A*, tot 120.000 tegels) als de caches leeg zijn. Het budget in `LongRoutes` (60 ms per 600 ms) begon een nieuw venster op wandklok-tijd: na een zoektocht van 2,5 s vond de volgende bot een vers venster en zocht ook. Zo stapelen ze in één tick. De trappenzoektocht in `Climbing` (per kandidaat-trap een zoektocht) had geen budget.
+- **Fix:** één gedeeld budget in `LongRoutePlanner` (`canPlan`, `chargePlan`): een tegoed dat met 60 ms per tick bijvult; wat een zoektocht overschrijdt is schuld, en er start niets nieuws tot die is afbetaald. `LongRoutes` en `Climbing.findStairs` wachten erop (undefined: later opnieuw, niet gecachet); `LevelHops` telt mee maar wacht niet (de weg naar buiten is nu nodig). QuestPlay wacht een tick als de trap nog niet gezocht is, in plaats van een willekeurige weg omlaag te nemen.
+- **Meting:** de `server`-metric heeft nu `planning`: per soort (`route`, `stairs`, `exit`) aantal, totaal en langste ms, en `owedMs`. Na de update: is `maxMs` ~2.500, dan zijn het de zoektochten; zo niet, dan zit de tijd elders in de brain.
+- **Gevolg:** na een herstart plannen bots trager (lopen eerst recht op het doel af). Een losse zoektocht van 2,5 s blijft mogelijk; volgende stap is een tijdslimiet per zoektocht.
+- **Validatie:** suite 155 pass, 14 fail (baseline); nieuwe `bot-plan-budget.test.cjs` (2 pass). `bot-climbing` zet het budget per zoektocht terug (draait hier niet zonder `dist`).
+
 ## 21-11-2026 14:55: Taverley-poort en candle (Markbot 18 "geen spade")
 
 - **Vraag:** waarom kon Markbot 18 geen spade krijgen? Niet door een volle tas (`freeSlots` 25).

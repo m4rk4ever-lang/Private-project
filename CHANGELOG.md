@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Na een herstart haperde de server vaak seconden lang, soms meer dan 20 seconden, terwijl bots hun routes en trappen zochten. Dat zoeken wordt nu over de ticks verdeeld.
 - Avonturiers bleven voor de poort van Taverley staan en liepen niet verder naar het westen. Ze openen de poort nu.
 - Avonturiers verkochten de candle voor de Giant Mole op de GE. Die houden ze nu, net als hun spade.
 - Rijke avonturiers namen bij elk bankbezoek al hun runes, tablets en sieraden mee. Met hun eten was de tas dan vol en liepen ze steeds opnieuw naar de bank. Ze nemen nu een kleine reisset mee: twee sieraden, runes als ze de spreuken kennen, en een of twee soorten tablets.

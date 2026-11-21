@@ -3,7 +3,7 @@
 const { RegionManager } = require("../../../../src/main/typescript/elvarg/game/collision/RegionManager");
 const { MapObjects } = require("../../../../src/main/typescript/elvarg/game/entity/impl/object/MapObjects");
 const { RsmodRouteFinding } = require("../../../../src/main/typescript/elvarg/game/model/movement/path/RsmodRouteFinding");
-const { planRoute } = require("./LongRoutePlanner.PlayerBots");
+const { planRoute, canPlan, chargePlan } = require("./LongRoutePlanner.PlayerBots");
 const TravelHubs = require("./TravelHubs.PlayerBots");
 
 // Walks shorter than this are left to the route finder's own 128-tile window.
@@ -15,15 +15,12 @@ const WAYPOINT_ARRIVE_TILES = 4;
 const ROUTE_TTL_MS = 10 * 60 * 1000;
 const MAX_ROUTES_PER_GOAL = 6;
 const FAILED_TTL_MS = 5 * 60 * 1000;
-// Planning CPU per game tick (600 ms window); over it, plans wait for the next tick.
-// 25 ms starved bots picking a far site for minutes with 500 bots (plans are ~2% CPU).
-const PLAN_BUDGET_MS = 60;
+// Planning CPU per game tick: LongRoutePlanner.canPlan, shared with the stairs and cave-exit searches.
 
 // Routes are shared by destination area (16x16): bots heading the same way, and a
 // bot re-requesting the next leg, rejoin a cached route instead of re-planning.
 const routesByGoal = new Map(); // goal key -> [{ waypoints, at }]
 const failedUntil = new Map(); // "startKey>goalKey" -> until
-const budget = { windowStart: 0, spentMs: 0 };
 const routeFinder = new RsmodRouteFinding();
 // What the last long walk of each bot did, for the walk_blocked metric: which leg, whether a plan
 // came (ok, none, budget), the hubs given up. Bots stood still at the start of a 220-tile walk to
@@ -114,11 +111,7 @@ function routeFor(player, here, goal, nowMs, { fresh = false } = {}) {
   if ((failedUntil.get(failKey) ?? 0) > nowMs) {
     return null;
   }
-  if (nowMs - budget.windowStart >= 600) {
-    budget.windowStart = nowMs;
-    budget.spentMs = 0;
-  }
-  if (budget.spentMs >= PLAN_BUDGET_MS) {
+  if (!canPlan(Date.now())) {
     return undefined;
   }
   const startedAt = Date.now();
@@ -128,7 +121,7 @@ function routeFor(player, here, goal, nowMs, { fresh = false } = {}) {
     getFlag: (x, y, z) => RegionManager.getClipping(x, y, z, null),
     isDoor: isDoorTile(player),
   });
-  budget.spentMs += Date.now() - startedAt;
+  chargePlan("route", Date.now() - startedAt);
   if (!plan || plan.waypoints.length === 0) {
     failedUntil.set(failKey, nowMs + FAILED_TTL_MS);
     return null;

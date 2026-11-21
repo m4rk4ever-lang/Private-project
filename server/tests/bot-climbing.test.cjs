@@ -7,7 +7,10 @@ Server.installProductionPathResolver();
 
 const { CachePipeline } = require('../dist/game/cache/CachePipeline');
 const { RegionManager } = require('../dist/game/collision/RegionManager');
-const { findStairs } = require('../plugins/bots/brain/Climbing.PlayerBots');
+const Climbing = require('../plugins/bots/brain/Climbing.PlayerBots');
+const { resetPlanBudget } = require('../plugins/bots/behaviours/navigation/LongRoutePlanner.PlayerBots');
+// Each search on its own: the shared planning budget would make a later one wait (undefined).
+const findStairs = (...args) => { resetPlanBudget(); return Climbing.findStairs(...args); };
 
 before(async () => {
     await CachePipeline.initialize(path.resolve(__dirname, '..'));
