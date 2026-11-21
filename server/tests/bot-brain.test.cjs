@@ -1770,6 +1770,47 @@ test('a door is opened when it unblocks the current segment of a longer route', 
   MapObjects.mapObjects.delete(MapObjects.getHash(104, 102, 0));
 });
 
+test('a gate right in front of the bot is opened for the waypoint just past it, not judged by the far goal', () => {
+  // Taverley (21-11-2026): bots stood at 2936,3450 with the route's door waypoint one tile on;
+  // judged by a goal hundreds of tiles away the gate "helped none" and stayed shut.
+  const { MapObjects } = require('../dist/game/entity/impl/object/MapObjects');
+  const { maybeOpenDoor } = require('../plugins/bots/brain/DoorOpening.PlayerBots');
+  const gate = {
+    getId: () => 9,
+    getLocation: () => ({ getX: () => 100, getY: () => 100, getZ: () => 0 }),
+    getDefinition: () => ({ name: 'Gate', getInteractions: () => ['Open'] }),
+  };
+  // The bot stands on the gate's tile (its wall is on the west edge); the waypoint is one west.
+  MapObjects.mapObjects.set(MapObjects.getHash(100, 100, 0), [gate]);
+  let open = false;
+  const world = {
+    core: {
+      RegionManager: {
+        getClipping: () => 0,
+        removeObjectClipping: () => { open = true; },
+        addObjectClipping: () => { open = false; },
+      },
+      RsmodRouteFinding: class {
+        findRoute({ destX, locShape, moveNear }) {
+          // The far goal: the same nearest tile inside the window, gate open or shut.
+          if (destX === 2729) return locShape === -2 && !moveNear ? { success: false } : { success: true, endX: 60, endY: 100 };
+          if (locShape === -2 && !moveNear) return { success: open };
+          return { success: true, endX: 100, endY: 100 };
+        }
+      },
+      PathFinder: { calculateWalkRoute: () => 1 },
+    },
+    emitObjectInteraction: (payload) => { world.emitted.push(payload); return true; },
+    emitted: [],
+  };
+  const player = { ...fakePlayer('bot', 100, 100), getMovementQueue: () => ({ size: () => 0 }) };
+  const state = {};
+  const request = { x: 2729, y: 100, z: 0, lastSegmentX: 99, lastSegmentY: 100 };
+  assert.equal(maybeOpenDoor({ player, state, world, request, select: true }), true, 'the gate is picked');
+  assert.equal(world.emitted[0]?.objectId, 9, 'and clicked open');
+  MapObjects.mapObjects.delete(MapObjects.getHash(100, 100, 0));
+});
+
 test('training stages pick opponents by overlapping NPC combat-level bands', () => {
   const stages = [...trainingSpec.stages].sort((a, b) => a.minLevel - b.minLevel);
   assert.equal(stages[0].minLevel, 1);
