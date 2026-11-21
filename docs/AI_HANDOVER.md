@@ -5,6 +5,15 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 21-11-2026 (09:20): waarom lange wandelingen stilvallen (branch `adventurers/long-legs`)
+
+- **Offline met de echte `LongRoutePlanner`** op de collision map van Shortest Path (`/tmp/route/plan.cjs`, niet in de repo; vlaggen: WALL_* uit de noord/oost-bits, LOC als een tegel nergens heen kan; geen deuren):
+  - (3292,3438) → Paterdomus: plan 158 tegels; (3253,3422) → Paterdomus 213. In het spel staan bots juist op (3288-3292,3436-3438) stil met 216-223 tegels te gaan (26× walk_blocked, `doorAttempt` null).
+  - Seers → fishing_guild_road 167; fishing_guild_road → Stronghold-poort 214; (2692,3426) → poort 292. Rechtstreeks naar Nieve/gnome-agility geen plan zonder het hek als deur.
+- **Conclusie:** de planning lukt offline; in het spel komt de wandeling niet op gang. Kandidaten: planbudget (60 ms/tick, `undefined` → rechtdoor), `failedUntil` (5 min), of `nextLeg` null na `badHubs` → rechtdoor tegen een hek.
+- **Bouw:** `LongRoutes.lastRouteOf(player)` (WeakMap): `from`, `goal`, `leg`, `plan` (ok/none/budget), `waypoints`, `badHubs`, `straight`. `walk_blocked` krijgt `route`.
+- **Volgende:** na een run de `walk_blocked.route` bij Varrock East en Seers uitlezen en de echte oorzaak fixen.
+- **Validatie:** suite 145 tests (deze branch), 16 vaste fails.
 ## Sessie 21-11-2026 (08:50): dubbele uitrusting uit de bank verkopen (branch `adventurers/sell-duplicate-gear`)
 
 - **Eigenaar:** sommige bots (Patrickbot 16) hebben een veelvoud aan elite armour/wapens op de bank; daar kunnen ze upgrades van kopen.

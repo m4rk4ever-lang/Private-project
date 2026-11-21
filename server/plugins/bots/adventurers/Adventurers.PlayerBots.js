@@ -1451,6 +1451,15 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
   }
 
+  /** The navigation's last long-walk decision (LongRoutes), for the walk_blocked metric; null without it. */
+  function lastRouteOf(player) {
+    try {
+      return require("../behaviours/navigation/LongRoutes.PlayerBots").lastRouteOf(player);
+    } catch {
+      return null;
+    }
+  }
+
   function walkTo(entry, to, { reason, arrive = () => {}, replan = true, say = true, urgent = false, hopped = false } = {}) {
     const run = runtimeEntry(entry.player);
     // On the other side of the ground (the Dwarven Mine below Falador, the Mining Guild): first to
@@ -1584,7 +1593,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         metric({ kind: "walk_blocked", bot: entry.name, reason, to: { name: placeName(to), x: to.x, y: to.y, z: to.z ?? 0 },
           where: [at.getX(), at.getY(), at.getZ()], tilesLeft: Math.max(Math.abs(at.getX() - to.x), Math.abs(at.getY() - to.y)),
           doorAttempt: stateOf(player)?.doorAttempt ? { id: stateOf(player).doorAttempt.objectId ?? stateOf(player).doorAttempt.object?.getId?.() ?? null } : null,
-          coins: Shopping.coinsOf(player), ...brainSnapshot(entry) });
+          coins: Shopping.coinsOf(player), route: lastRouteOf(player), ...brainSnapshot(entry) });
         // That place is out for a while; the next bank or shop is still fine.
         // A quest's walk tries again (doors, another way); its own tries decide when to give up.
         if (reason !== "quest") (entry.blockedPlaces ??= new Map()).set(placeKey(to), now() + BLOCKED_MS);
