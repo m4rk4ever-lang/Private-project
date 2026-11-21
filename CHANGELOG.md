@@ -14,6 +14,8 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Na een gevecht met de Giant Mole kwamen avonturiers het hol niet meer uit. Ze liepen steeds tegen de wand en stonden er tot twintig minuten, tot de home teleport weer kon. Ze klimmen nu langs het touw naar boven, zoals een speler doet. Dat geldt ook voor andere afgesloten grotten met een ladder, trap of touw naar buiten.
+- Bij een quest stond soms "Gaat 20 x 20 x Balls of wool halen" of "Gaat 1 x Egg halen". Het aantal staat er nu één keer, en alleen als het er meer dan één zijn.
 - Het hol van de Giant Mole is nu multi-combat, zoals in OSRS. Twee avonturiers bij de Mole vechten nu allebei; eerder stond er één werkloos naast.
 - Een avonturier met een volle tas vlak bij een bank of de GE gooide spullen op de grond, zelfs de spade die hij net voor de Giant Mole had gekocht. Bij een bank stort hij nu zijn tas, en spullen voor zijn klus gooit hij nooit weg.
 - Avonturiers praatten bij Doric's Quest en Romeo & Juliet steeds met Doric of de Apothecary zonder de spullen die de quest vraagt (clay en ertsen, cadava berries), en gaven de quest dan op. Ze halen nu eerst de spullen die de quest vereist: uit de bank, op de GE of zelf verzameld.

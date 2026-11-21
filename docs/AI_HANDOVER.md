@@ -5,6 +5,24 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 21-11-2026 (09:35): controle logs, uitgang Mole-hol (branch `adventurers/molshol-uitgang`, nog niet gecommit)
+
+- **Logs:** push 08:32 UTC, versies 784667c (07:52-08:15) en c025568 (08:17-08:32). 61 bots.
+- **walk_blocked (122 op de nieuwe versies):** `plan` none 75, ok 39, budget 4.
+  - **Giant Mole-hol (y 5100-5250):** 4 bots (Markbot 14, Patrickbot 12, Jorgbot 15, Patrickbot 17) tot ~20 min vast na het gevecht. Oorzaak: alleen y >= 6400 telde als "onder de grond", dus `levelHop` en `climbOut` zochten het touw (Shortest Path: "Climb Rope" 1752,5137 → 2985,3316) nooit. Pas `unstrand` met de home teleport haalde ze eruit.
+  - **Misthalin Mystery-eiland (1637,4802):** Markbot 13 en Jorgbot 14 strandden na een mislukte quest (stage 20, "object used, but the step did not advance"). Geen transport in de tabel (de roeiboot is quest-gebonden). De home teleport was al gebruikt voor de reis naar de boot (30 min cooldown); Markbot 13 kwam pas na 30 min vrij. Niet opgelost.
+  - **Varrock East → Morytania:** leg `canifis`, plan none (Mazchna, Slayer Tower, Canifis, Mort'ton; 12×). De leg Canifis vanaf 3251-3268,3240-3430 terwijl Paterdomus ervoor moet; badHubs soms `mort_ton`. Nog uitzoeken in de legkeuze van `TravelHubs`.
+  - **Gnome Stronghold:** plan none, straight, vanaf 2503,3524 en 2511,3548 (noordkant, Fishing Guild-weg) en Seers-zuid 2694,3426. Eén keer `budget`.
+- **not_buyable "coins":** 0 op de nieuwe versies.
+- **Dubbele uitrusting verkopen:** werkt (Patrickbot 16 masori, Patrickbot 15 ahrim's). Jorgbot 10 zette 6× binnen een minuut een blue wizard robe te koop, net na magic-gear uit de bank en daarna melee kopen.
+- **Quests:** 1 klaar (Cook's Assistant). Misthalin Mystery 4× mislukt op stage 20, Restless Ghost 5×, Doric 3× `gather` (clay). "Gaat ... halen (nodig voor de quest)" komt voor. Veos weer niet gevonden.
+- **boss_taken:** 0. Mole met 4 bots tegelijk (multi, toegestaan).
+- **Eindspel:** Markbot 18 koos Barrows (3×) en Giant Mole ("eindspel: loot en upgrades"). Patrickbot 18 alleen buy_herblore (8.125 XP per ~19 s: ~1,5M XP/u, Fase 6). Jorgbot 19 zonder keuzes in dit venster.
+- **Patrickbot 18** stortte games necklace, ring of dueling en skills necklace "voor herblore": teleport-sieraden gaan mee bij het storten.
+- **Fix:** nieuwe pure module `behaviours/navigation/LevelHops.PlayerBots.js`: `offSurface(y)` (y >= 4160), `levelHopsFrom` (ook menu "Climb"), `chooseLevelHop` (naar buiten: elke uitgang binnen 200 tegels, eerst bereikbaarheid via `planRoute` met `exactOnly`, max 4 zoekopdrachten, tegels van één ladder samen overgeslagen). `Adventurers` gebruikt `offSurface` voor hops, `climbOut`, `afterHop` en `teleportsNear`. Offline (BFS op de collision map): touw 105 tegels van de landingsplek; de ladder van de Stronghold of Security is alleen bereikbaar via het touw. Ook `countedName` in `QuestPlay`.
+- **Validatie:** nieuwe test `bot-level-hops` (5). Suite 152 tests, 14 fails (omgeving, zelfde basislijn).
+- **Open:** Misthalin-eiland (roeiboot terug als uitgang), Morytania-legkeuze vanaf Varrock East, teleport-sieraden niet storten, verkooplus Jorgbot 10, PR #34 (levels-metric) wacht op "mergen".
+
 ## Sessie 21-11-2026 (10:15): Mole Hole multi-combat; volle tas bij de bank (branch `adventurers/occupancy`)
 
 - **Eigenaar (screenshot 09:06):** 2 bots bij de Giant Mole, één staat erbij; "dit zie ik bij meer activiteiten". Wereld-hoppen/tweede wereld staat sinds 17-11 op de lijst; besproken: groot werk (één wereld, `GatewayTarget.WORLD_ID` = 1, gedeelde saves, wereldlijst, dubbele serverlast). Afgesproken: eerst de Mole-fix, dan een bezettingscontrole (bot kiest iets anders als een single-combat boss/plek bezet is). Tweede wereld later.

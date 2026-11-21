@@ -124,6 +124,7 @@ const BUY_LOADS_MAX = 30;
 const CLAN_KEEP = 5_000;
 /** From this y the map is underground (dungeons, caves): no walking route there yet. */
 const UNDERGROUND_Y = 6400;
+const { offSurface, chooseLevelHop, levelHopsFrom, reachableOnFoot } = require("../behaviours/navigation/LevelHops.PlayerBots");
 /** No XP and no step for this long while training: it is stuck, it picks something else. */
 const STUCK_MS = 75_000;
 /** The longest one Slayer task may take before it gives up on it for now. */
@@ -1137,16 +1138,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   const LEVEL_HOPS = (() => {
     try {
       const data = require("../../agent/data/transports.json");
-      const rows = data?.transports?.transports ?? [];
-      const hops = [];
-      for (const [from, to, menu, id, skills, items, quests, varbits, varps] of rows) {
-        if (!Array.isArray(from) || !Array.isArray(to) || items || quests || varbits || varps) continue;
-        if ((from[1] >= UNDERGROUND_Y) === (to[1] >= UNDERGROUND_Y)) continue;
-        if (!/^(climb-(down|up)|enter|leave|exit|go-down|go-up|walk-down|walk-up)\b/i.test(String(menu ?? ""))) continue;
-        const needs = [...String(skills ?? "").matchAll(/(\d+)\s+([A-Za-z]+)/g)].map(([, level, skill]) => ({ level: Number(level), skill: skill.toUpperCase() }));
-        hops.push({ from: { x: from[0], y: from[1], z: from[2] }, to: { x: to[0], y: to[1], z: to[2] }, menu: String(menu), id, needs });
-      }
-      return hops;
+      return levelHopsFrom(data?.transports?.transports);
     } catch {
       return [];
     }
@@ -1199,20 +1191,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   /** The way down or up to reach `to` when it is on the other side of the ground, or null. */
   function levelHop(player, to) {
     const here = player.getLocation();
-    const goingDown = to.y >= UNDERGROUND_Y;
-    if ((here.getY() >= UNDERGROUND_Y) === goingDown) return shortcutHop(player, to);
-    let best = null;
-    let bestCost = Infinity;
-    for (const hop of LEVEL_HOPS) {
-      if ((hop.to.y >= UNDERGROUND_Y) !== goingDown || hop.from.z !== here.getZ() || hop.to.z !== (to.z ?? 0)) continue;
-      if (hop.needs.some(({ level, skill }) => levelOf(player, skill) < level)) continue;
-      // The landing near the goal (the same mine or dungeon), the way in not too far off.
-      const landing = Math.max(Math.abs(hop.to.x - to.x), Math.abs(hop.to.y - to.y));
-      if (landing > 120) continue;
-      const cost = Math.max(Math.abs(hop.from.x - here.getX()), Math.abs(hop.from.y - here.getY())) + 3 * landing;
-      if (cost < bestCost) { bestCost = cost; best = hop; }
-    }
-    return best;
+    const goingDown = offSurface(to.y);
+    if (offSurface(here.getY()) === goingDown) return shortcutHop(player, to);
+    return chooseLevelHop(LEVEL_HOPS, { x: here.getX(), y: here.getY(), z: here.getZ() }, to, (skill) => levelOf(player, skill),
+      (from, tile) => reachableOnFoot(from, tile, (x, y, z) => core.RegionManager.getClipping(x, y, z, null)));
   }
 
   /** Clicks the hop's stairs or ladder (by its id near the tile, else by its name). */
@@ -1447,7 +1429,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         return query.complete === true;
       };
       // Not for a place under the ground: that one needs its ladder after the teleport too.
-      return (to.z ?? 0) === 0 && to.y < UNDERGROUND_Y && bestTeleport(core, player, to, { questDone }) !== null;
+      return (to.z ?? 0) === 0 && !offSurface(to.y) && bestTeleport(core, player, to, { questDone }) !== null;
     } catch {
       return false;
     }
@@ -1506,7 +1488,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
           }
           note(player, `${hop.menu.split(" ")[0].replace(/-/g, " ")} (${hop.menu.split(" ").slice(1).join(" ").toLowerCase()}) op weg naar ${placeName(to)}.`, "activity");
           metric({ kind: "level_hop", bot: entry.name, menu: hop.menu, from: [hop.from.x, hop.from.y, hop.from.z], to: placeName(to) });
-          entry.afterHop = { to, options, down: hop.to.y >= UNDERGROUND_Y, until: now() + 20_000, landing: hop.shortcut ? hop.to : null, key: hop.shortcut ? shortcutKey(hop) : null };
+          entry.afterHop = { to, options, down: offSurface(hop.to.y), until: now() + 20_000, landing: hop.shortcut ? hop.to : null, key: hop.shortcut ? shortcutKey(hop) : null };
         },
       });
     }
@@ -1588,7 +1570,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         measured(player, "blocked", outcome);
         note(player, `Kwam niet bij ${placeName(to)}: de weg was versperd.`, "activity");
         // From under the ground to a place above it: up the ladder at the next look.
-        if (here.getY() >= 6400 && to.y < 6400) entry.climbOut = true;
+        if (offSurface(here.getY()) && !offSurface(to.y)) entry.climbOut = true;
         countEvent(entry, "walkBlocked");
         unstrand(entry, player);
         const at = player.getLocation();
@@ -2736,7 +2718,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       entry.roofSince = null;
       // Under the ground (a basement, a dungeon: y 6400 and up) after a walk from there failed
       // (the Wizards' Tower basement to the GE): up the ladder first, then the walk again.
-      if (entry.climbOut && at.getY() >= 6400) {
+      if (entry.climbOut && offSurface(at.getY())) {
         if (climbDown(entry, nowMs, "up")) return true;
       }
       entry.climbOut = false;
@@ -3209,7 +3191,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         const spot = entry.player.getLocation();
         const landed = hop.landing
           ? Math.max(Math.abs(spot.getX() - hop.landing.x), Math.abs(spot.getY() - hop.landing.y)) <= (hop.radius ?? 2)
-          : (spot.getY() >= UNDERGROUND_Y) === hop.down;
+          : offSurface(spot.getY()) === hop.down;
         // Off the boat's deck first (a floor up), then the walk on.
         if (landed && hop.boat && spot.getZ() > 0 && nowMs < hop.until) {
           crossGangplank(entry, nowMs);
