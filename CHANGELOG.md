@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- PvP-bots die hun wapen kwijt waren, kregen geen nieuwe uitrusting omdat de code vastliep. Dat werkt weer.
 - Na een herstart haperde de server vaak seconden lang, soms meer dan 20 seconden, terwijl bots hun routes en trappen zochten. Dat zoeken wordt nu over de ticks verdeeld.
 - Avonturiers bleven voor de poort van Taverley staan en liepen niet verder naar het westen. Ze openen de poort nu.
 - Avonturiers verkochten de candle voor de Giant Mole op de GE. Die houden ze nu, net als hun spade.
@@ -67,6 +68,7 @@ Indeling per versie:
 - Avonturiers met een tas vol dubbele spullen (acht dezelfde staffs, tientallen gesmede axes) bleven uren bij een bank staan zonder iets te doen. Ze houden nu één exemplaar van elk stuk uitrusting en gereedschap; de rest gaat naar de bank of de GE. Kan de bank toch niets aannemen, dan staat dat in hun log en gaan ze verder met een klus.
 
 ### Toegevoegd
+- De botlogs melden nu elke bot die de server langer dan een halve seconde ophoudt, met wat hij op dat moment deed. Zo is te zien waardoor de server na een herstart hapert.
 - Avonturiers doen nu aan Farming: ze kopen een rake, seed dibber en spade en zaden op de GE, wieden de herb patch en de twee allotments bij Falador, Catherby of Ardougne, oogsten wat gegroeid is en zaaien opnieuw. Na ongeveer 80 minuten komen ze terug.
 - Avonturiers doen nu aan Construction: ze kopen een huis bij de makelaar (1.000 gp), een hammer, een saw en planks, gaan via het portaal in Rimmington hun huis binnen in bouwmodus en bouwen en slopen meubels in de parlour tot de planks op zijn.
 - Avonturiers met Hunter 59 of hoger vangen nu red salamanders met een net trap bij Ourania, ten westen van Ardougne. Ze nemen een small fishing net en een rope mee. Eerder konden ze alleen vogels vangen.
