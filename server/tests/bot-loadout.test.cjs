@@ -38,7 +38,12 @@ test("food by the place: none where it is safe for its level, a little where it 
 
 test("a gathering job carries one way to teleport: jewellery, else Varrock's runes, else one tablet", () => {
   const { travelKit, KIT_RUNES } = require("../plugins/bots/adventurers/Loadout.PlayerBots");
-  assert.equal(travelKit({ mode: "combat_training", magic: 60, hasJewellery: true }), null, "other jobs keep all");
+  // Other jobs: a small set, not all it owns (Markbot 18's full bag, 21-11-2026).
+  const other = travelKit({ mode: "combat_training", magic: 60, hasJewellery: true, tablets: ["ARDOUGNE_TELEPORT", "WATCHTOWER_TELEPORT", "SALVE_GRAVEYARD_TELEPORT"] });
+  assert.equal(other.jewellery, 2);
+  assert.equal(other.runes.length, 5);
+  assert.deepEqual(other.tablets, ["ARDOUGNE_TELEPORT"]);
+  assert.deepEqual(travelKit({ mode: "combat_training", magic: 10, tablets: ["ARDOUGNE_TELEPORT", "WATCHTOWER_TELEPORT", "SALVE_GRAVEYARD_TELEPORT"] }).tablets, ["ARDOUGNE_TELEPORT", "WATCHTOWER_TELEPORT"]);
   assert.deepEqual(travelKit({ mode: "mining", magic: 60, hasJewellery: true, tablets: ["VARROCK_TELEPORT"] }).jewellery, 1);
   assert.deepEqual(travelKit({ mode: "mining", magic: 60, hasJewellery: true }).runes, [], "no runes beside the jewellery");
   assert.deepEqual(travelKit({ mode: "fishing", magic: 30 }).runes, [...KIT_RUNES]);

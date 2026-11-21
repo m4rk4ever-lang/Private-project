@@ -5,6 +5,16 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 21-11-2026 (14:45): talisman op de ruïnes, zaad op de patch (branch `adventurers/rc-ruins`)
+
+- **Eigenaar:** "runecrafting bots lopen vast omdat ze de air talisman niet gebruiken met Use op de ruins."
+- **Oorzaak (vermoedelijk):** `CraftRunes` gebruikte de talisman alleen via `walkToObject(..., { execute })`; bij de ruïnes (groot object) kwam die `execute` niet, dus geen item-op-object. De plugin (`handleTalismanOnRuins`) zelf klopt: RUINS_BY_ID kent het id en zijn transforms.
+- **Fix:** naast de ruïnes (≤ 3 tegels van het object) of na 2 pogingen: `emitItemOnObject` meteen, met de echte objectlocatie. Hetzelfde in `FarmPatches.useOn` (≤ 4 tegels): wieden werkte (object-klik), zaaien niet (item-op-object).
+- **Validatie:** suite 167 tests, 14 fails; eslint no-undef schoon. In de game te zien: "You hold the Air Talisman towards the mysterious ruins" en Runecrafting-XP; Farming-XP na het wieden.
+- **Markbot 18 (screenshot, logs):** sinds 11:42 UTC twee uur in een lus naar de bank in Ardougne-zuid (`loop` bank, `trade.full` true, `goods` []). Bij elk bankbezoek nam hij "om te reizen" vijf soorten runes, tien soorten tablets, zijn sieraden en 9 sharks mee: tas vol, niets te verkopen, opnieuw naar de bank. Oorzaak: `travelKit` gaf `null` (alles meenemen) voor elke klus die geen verzamelklus is, en de rijke bots hebben door de teleport-aankopen veel soorten. Fix: elke klus een set (`travelKit`): 2 sieraden, de runes met Magic 25+, 1 tablet (2 zonder runes) van een soort die hij niet kan casten; `travelBeyondKit` zet de rest bij het bankbezoek eerst op de bank. Ook Patrickbot 14 (Ardougne-zuid) en Jorgbot 15 (Al Kharid) liepen in dezelfde lus.
+- **Hunter:** met de vooraf-controle (`layable`) legden bots nooit (describe: `laid=- refused=0`); die vond op de stranden geen goede tegel. Nu telt alleen de echte weigering. Vier van de zes plekken gaven in twee uur 0 XP (crimson swift 2, 3; wagtail 2, 3): weggehaald; `HUNT_SITE_CAP` 3.
+- **Overig in de logs (11:40-13:39 UTC):** 28 loops (alle bank, tas vol), 100 stuck (combat_training 22, agility Falador/Seers/Canifis/Gnome 29, silver stalls 8).
+
 ## Sessie 21-11-2026 (14:40): lag na 1c9f840 (branch `adventurers/lag`)
 
 - **Eigenaar:** "hele erge laggs sinds de voorgaande update". Log: `BotBehaviorTask` 2-8 s per tick, elke ~10 ticks, en de ReferenceError bij elk GE-bezoek.

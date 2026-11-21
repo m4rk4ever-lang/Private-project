@@ -83,16 +83,10 @@ function createHuntBirdsAction(spec, world) {
     });
   }
 
-  /**
-   * Whether the plugin lets a trap stand on this tile: no wall or scenery (type 10), no ground
-   * decoration (type 22: grass tufts, ferns) and not blocked (Traps.Hunter.js canLay).
-   */
-  function layable(player, x, y) {
+  /** Whether a tile can be stood on (a trap goes on the tile it stands on). */
+  function walkable(player, x, y) {
     try {
-      const location = new core.Location(x, y, 0);
-      const area = player.getPrivateArea?.() ?? null;
-      return !core.MapObjects.getType?.(location, 10, area) && !core.MapObjects.getType?.(location, 22, area)
-        && !core.RegionManager.blocked?.(location, area);
+      return !core.RegionManager.blocked?.(new core.Location(x, y, 0), player.getPrivateArea?.() ?? null);
     } catch {
       return true;
     }
@@ -107,7 +101,7 @@ function createHuntBirdsAction(spec, world) {
       for (let dy = -reach; dy <= reach; dy += 1) {
         const x = cx + dx;
         const y = cy + dy;
-        if (refused?.has(`${x},${y}`) || !layable(player, x, y)) continue;
+        if (refused?.has(`${x},${y}`) || !walkable(player, x, y)) continue;
         const d = center ? Math.max(Math.abs(dx), Math.abs(dy)) : away(here, x, y);
         if (d > 0 && d < bestAway) { best = { x, y }; bestAway = d; }
       }
@@ -183,7 +177,9 @@ function createHuntBirdsAction(spec, world) {
         if (bot.tried && player.getInventory().getAmount(snare) >= bot.tried.had) (bot.refused ??= new Set()).add(bot.tried.tile);
         bot.tried = null;
         const tileKey = `${here.getX()},${here.getY()}`;
-        if (!layable(player, here.getX(), here.getY()) || bot.refused?.has(tileKey)) {
+        // Only what the plugin said counts: the precheck of objects on a tile (layable) found none
+        // fit on the crimson swift beaches, and those bots never laid a snare (21-11-2026).
+        if (bot.refused?.has(tileKey)) {
           const spot = layableNear(player, here, bot.refused);
           if (spot) {
             requestMovement(player, spot.x, spot.y, { state, nowMs, z: 0, reason: "brain_hunter", basicPather: true });

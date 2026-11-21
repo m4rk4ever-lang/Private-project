@@ -14,6 +14,9 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Rijke avonturiers namen bij elk bankbezoek al hun runes, tablets en sieraden mee. Met hun eten was de tas dan vol en liepen ze steeds opnieuw naar de bank. Ze nemen nu een kleine reisset mee: twee sieraden, runes als ze de spreuken kennen, en een of twee soorten tablets.
+- Van de zes jachtplekken in de Feldip Hills leverden er vier niets op. Die zijn weggehaald; op de twee die wel werken mogen nu drie jagers tegelijk.
+- Avonturiers die runes wilden maken, stonden bij de Air-ruïnes zonder hun air talisman te gebruiken. Ze houden de talisman nu bij de ruïnes en gaan naar binnen. Bij het tuinieren zaaien ze nu ook echt na het wieden.
 - Na de vorige update konden avonturiers bij de GE niets meer kopen of verkopen door een fout in de code. Dat werkt weer.
 - Een avonturier die een huis kocht voor Construction ging daarna iets anders doen. Hij gaat nu door naar zijn huis om te bouwen.
 - Een avonturier die vogels ving, bleef soms staan op een plek waar geen snare mag staan (gras, varens) en zette niets neer. Hij zoekt nu een tegel waar het wel mag.

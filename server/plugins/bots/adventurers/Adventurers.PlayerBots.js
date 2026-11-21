@@ -158,8 +158,11 @@ const TRAVEL_TABLETS = [
 const TABLET_STACK = 5;
 /** Long walks without a teleport it remembers, for the tablets it buys. */
 const LONG_WALKS_KEPT = 12;
-/** Hunters on one bird-snaring spot at most (a beach has three to seven birds). */
-const HUNT_SITE_CAP = 2;
+/**
+ * Hunters on one bird-snaring spot at most (a beach has three to seven birds). Two spots are left:
+ * of the six, four gave no XP at all in two hours (21-11-2026: crimson swift 2 and 3, wagtail 2 and 3).
+ */
+const HUNT_SITE_CAP = 3;
 /** After a quest that stopped, this long its first blocked walk sends it home. */
 const QUEST_STRAND_MS = 15 * 60_000;
 /** No jewellery beyond the first under this many coins; one piece at most this share of its coins, and per visit this share. */
@@ -1069,14 +1072,37 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return kinds;
   }
 
-  /** The travel things its gathering job carries (Loadout.travelKit), or null: all of them. */
+  /**
+   * The travel things in its bag beyond its set (`kit`): runes it does not use, tablets of other
+   * kinds, jewellery past its count, as [{ itemId, amount }] to bank.
+   */
+  function travelBeyondKit(player, kit) {
+    if (!kit) return [];
+    const runeIds = new Set(Loadout.TRAVEL_RUNES.map((name) => Shopping.idOf(core, name)));
+    const keepIds = new Set([...kit.runes, ...kit.tablets].map((name) => Shopping.idOf(core, name)));
+    const kits = new Set([...bossKit(entryOf(player) ?? {}), ...workingMaterials(entryOf(player) ?? {})]);
+    let jewelleryLeft = kit.jewellery;
+    const out = [];
+    for (const item of player.getInventory().getItems() ?? []) {
+      const id = item?.getId?.() ?? -1;
+      if (!(id > 0) || keepIds.has(id) || kits.has(id) || out.some((good) => good.itemId === id)) continue;
+      if (isJewellery(id)) { if (jewelleryLeft-- <= 0) out.push({ itemId: id, amount: 1 }); continue; }
+      if (runeIds.has(id) || isTeleportTablet(id)) out.push({ itemId: id, amount: player.getInventory().getAmount(id) });
+    }
+    return out;
+  }
+
+  /** The travel things a job carries (Loadout.travelKit): one way for a gathering job, a small set for others. */
   function travelKitFor(entry, player, plan = entry.plan ?? entry.savedTask) {
     const owned = (name) => {
       const id = Shopping.idOf(core, name);
       return Number.isInteger(id) && player.getInventory().getAmount(id) + banked(player, id) > 0;
     };
     const hasJewellery = (player.getInventory().getItems() ?? []).some((item) => item && isJewellery(item.getId())) || JEWELLERY.some(owned);
-    return Loadout.travelKit({ mode: plan?.mode, magic: levelOf(player, "MAGIC"), hasJewellery, tablets: TABLETS.filter(owned) });
+    // Tablets whose spell it cannot cast, the ones it walked for first (walkTablets), then the rest.
+    const casts = (name) => { const tablet = TRAVEL_TABLETS.find((one) => one.name === name); return tablet?.castFrom && levelOf(player, "MAGIC") >= tablet.castFrom; };
+    const tablets = [...TABLETS, ...TRAVEL_TABLETS.map((tablet) => tablet.name)].filter((name, index, all) => all.indexOf(name) === index && owned(name) && !casts(name));
+    return Loadout.travelKit({ mode: plan?.mode, magic: levelOf(player, "MAGIC"), hasJewellery, tablets });
   }
 
   function bankOffLoadout(entry, banker, plan = entry.plan ?? entry.savedTask) {
@@ -5193,6 +5219,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         // A gathering job takes one way to teleport (Loadout.travelKit), the same one its bank visit
         // leaves in the bag; any other job takes them all, as before.
         const kit = travelKitFor(entry, banker);
+        // What it carries beyond its set goes in first (tablets of other kinds, more jewellery).
+        const tooMuch = travelBeyondKit(banker, kit);
+        if (tooMuch.length > 0) deposit(banker, tooMuch);
         const runes = kit ? kit.runes : levelOf(banker, "MAGIC") >= 25 ? Loadout.TRAVEL_RUNES : [];
         for (const name of runes) take(name, 1_000);
         // Some coins in the bag (the Al Kharid toll, a ferry, a shop on the way).
@@ -5200,12 +5229,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         if (carried < 1_000 && banked(banker, Trade.COINS) > 0) withdraw(banker, Trade.COINS, 1_000 - carried);
         const carriesJewellery = (banker.getInventory().getItems() ?? []).some((item) => item && isJewellery(item.getId()));
         for (const name of kit ? kit.tablets : TABLETS) take(name, 20);
-        // Any other tablets it has (Salve Graveyard, Catherby...), while the bag keeps room for the job.
-        if (!kit) for (const tablet of TRAVEL_TABLETS) if (!TABLETS.includes(tablet.name) && banker.getInventory().getFreeSlots() > 10) take(tablet.name, 20);
         // Its teleport jewellery: one of each kind it has banked, any charge (a used games necklace
         // stayed in the bank: only the full one was looked for); a gathering job takes one only.
         const kindsCarried = new Set((banker.getInventory().getItems() ?? []).map((item) => (item?.getId?.() > 0 ? jewelleryKind(item.getId()) : null)).filter(Boolean));
-        const wantKinds = kit ? (kit.jewellery > 0 && !carriesJewellery ? 1 : 0) : Infinity;
+        const wantKinds = kit ? Math.max(0, kit.jewellery - kindsCarried.size) : Infinity;
         // The ids first, then out of the bank (not while going through its items).
         const banks = (banker.getBanks?.() ?? []).flatMap((bank) => bank?.getItems?.() ?? []).map((item) => item?.getId?.() ?? -1);
         let taken = 0;
@@ -5221,7 +5248,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         }
         if (kit && kit.text !== entry.travelNote) {
           entry.travelNote = kit.text;
-          note(banker, `Neemt voor ${String(entry.plan?.mode ?? "deze klus").replace(/_/g, " ")} één reismiddel mee: ${kit.text}.`, "activity");
+          note(banker, `Neemt voor ${String(entry.plan?.mode ?? "deze klus").replace(/_/g, " ")} mee om te reizen: ${kit.text}.`, "activity");
         }
         if (travelBack.length > 0) note(banker, `Neemt mee om te reizen: ${travelBack.join(", ").toLowerCase()}.`, "activity");
       },
