@@ -3685,14 +3685,19 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   /** To the Grand Exchange for one thing it needs (a tool no shop near sells), then the job again. */
   function buyOnExchange(entry, itemId, name, amount = 1, { replan = true } = {}) {
     const { player } = entry;
-    const notBuyable = (why) => { entry.refusal = { why: "not_buyable", detail: { item: String(name), because: why } }; return false; };
+    const notBuyable = (why, numbers = {}) => { entry.refusal = { why: "not_buyable", detail: { item: String(name), because: why, ...numbers } }; return false; };
     if ((entry.noExchangeBuyUntil ?? 0) > now()) return notBuyable("exchange_resting");
     if (!onExchange(itemId)) return notBuyable("not_exchangeable");
     const guide = Number(core.ItemDefinition?.forId?.(itemId)?.getGrandExchangeValue?.() ?? 0);
     // Its coins in the bag and in its bank: the exchange has a bank, it takes out what it needs.
     const cost = Math.ceil(guide * 1.05) * amount;
     if (!(guide > 0)) return notBuyable("no_exchange_price");
-    if (Shopping.coinsOf(player) + banked(player, Trade.COINS) < cost + 50) return notBuyable("coins");
+    // The numbers it saw, in the refusal: bots with 56k and with 2 billion coins were refused a
+    // spade or a tinderbox "for coins" (20-11-2026), which these coins cannot explain.
+    if (Shopping.coinsOf(player) + banked(player, Trade.COINS) < cost + 50) {
+      return notBuyable("coins", { bag: Shopping.coinsOf(player), bank: banked(player, Trade.COINS), cost, amount, guide,
+        registered: player.isRegistered?.() ?? null, same: entry.player === player });
+    }
     if (blockedPlace(entry, data.grandExchange)) return notBuyable("exchange_blocked");
     const plan = entry.plan;
     const label = String(name).toLowerCase().replace(/_/g, " ");
@@ -4490,11 +4495,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       for (const item of [...(bank?.getItems?.() ?? [])]) {
         const id = item?.getId?.() ?? -1;
         const amount = item?.getAmount?.() ?? 0;
-        if (!(id > 0) || !(amount > 0) || keep.has(id) || Value.itemValue(core, id, 1) <= 0) continue;
+        // Gear it keeps (better than it wears, any style): one copy stays, the rest is sold.
+        const spare = keep.has(id) ? Trade.spareGear(player, core, id, amount) : 0;
+        if (!(id > 0) || !(amount > 0) || (keep.has(id) && spare <= 0) || Value.itemValue(core, id, 1) <= 0) continue;
         // What it needs stays; only the surplus (or what it has outgrown) is sold.
-        const wanted = need(player, id);
+        const wanted = spare > 0 ? amount - spare : need(player, id);
         let surplus = wanted === Infinity ? 0 : amount - wanted;
-        if (wanted !== Infinity && short > 0 && surplus < amount) {
+        if (spare <= 0 && wanted !== Infinity && short > 0 && surplus < amount) {
           const each = Value.itemValue(core, id, 1);
           const extra = Math.min(amount - Math.max(0, surplus), Math.ceil(short / each));
           surplus = Math.max(0, surplus) + extra;

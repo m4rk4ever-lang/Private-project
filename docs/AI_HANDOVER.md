@@ -14,6 +14,16 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 - **Bouw:** `LongRoutes.lastRouteOf(player)` (WeakMap): `from`, `goal`, `leg`, `plan` (ok/none/budget), `waypoints`, `badHubs`, `straight`. `walk_blocked` krijgt `route`.
 - **Volgende:** na een run de `walk_blocked.route` bij Varrock East en Seers uitlezen en de echte oorzaak fixen.
 - **Validatie:** suite 145 tests (deze branch), 16 vaste fails.
+## Sessie 21-11-2026 (08:50): dubbele uitrusting uit de bank verkopen (branch `adventurers/sell-duplicate-gear`)
+
+- **Eigenaar:** sommige bots (Patrickbot 16) hebben een veelvoud aan elite armour/wapens op de bank; daar kunnen ze upgrades van kopen.
+- **Oorzaak:** `Trade.keepIds` zet elk gear-id dat beter is dan het gedragen stuk (per stijl-lijst) op de bewaarlijst; `withdrawToSell` slaat zo'n id helemaal over, met alle kopieën. Een melee-bot "draagt niets" in magic/ranged, dus al die stukken bleven. Patrickbot 16 spaart intussen voor een twisted bow (doel 1,54 miljard gp).
+- **Fix:** `Trade.spareGear(player, core, id, inBank)` (puur, getest): voor gear-stukken (slots en stijl-lijsten, niet tools/supplies) blijft er één exemplaar over (gedragen, tas of bank), de rest gaat in `withdrawToSell` te koop.
+- **Data:** de laatste push op `bot-logs` is van 20-11 22:25 UTC; de logs hebben geen bank-inhoud, dus het effect alleen zichtbaar aan "Zet te koop op de GE (ook uit de bank)" na de update.
+- **Logs tot 20-11 22:25 UTC (ab19a51):** Markbot 18 pendelt nu bank-anvil (28× anvil, 35× Varrock West, 2× GE). Quests: 5 voltooid van 23 (Cook's Assistant 4×, Romeo & Juliet). Eerste boot werkt (Brimhaven→Ardougne `ok`). Morytania 24/24 vast. Veos 3× `no_veos`. Lange errands zonder teleport nog 83%; GE 91/109 zonder.
+- **Raadsel `not_buyable` "coins":** Jorgbot 19 (2 miljard), Patrickbot 7 (56k, tinderbox 3×) en Markbot 8 (97k, hammer) geweigerd wegens coins; prijzen kloppen (spade 125, tinderbox 30). De refusal geeft nu `bag`, `bank`, `cost`, `amount`, `guide`, `registered`, `same` mee (verdenking: verouderd player-object na een relog).
+- **Validatie:** suite 146 tests, 16 vaste fails. Niet ingame getest.
+- **Open (van 20-11):** routes naar Morytania/Stronghold lopen vast in open terrein; onderzoek naar `LongRoutePlanner` (A* 4-richtingen, 120k expansies, box 640) en `DIRECT_TILES` 250 loopt nog.
 
 ## Sessie 20-11-2026 (22:55): eindspel voor maxed accounts; smithing-reeks via de bank (branch `adventurers/max-priorities`)
 
