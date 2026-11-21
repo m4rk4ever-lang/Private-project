@@ -14,6 +14,10 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Avonturiers stonden bij de Giant Mole vaak werkloos zodra ze zich ingroef en elders in het hol opdook. Ze zoeken haar nu in het hele hol en vechten door.
+- Avonturiers zetten hun teleport-sieraden en teleport-tablets op de bank voordat ze gingen fletchen of potions maken. Strandden ze daarna ergens, dan moesten ze tot een half uur wachten op de home teleport. Eén teleport gaat nu altijd mee.
+- Een avonturier verkocht spullen die hij net voor een quest had gekocht (soft clay voor Prince Ali Rescue) zodra hij even iets anders ging doen. Wat hij voor een quest haalt, houdt hij nu een paar uur.
+- In de log stond "Kon 1 x Knife niet halen". Nu staat er "Kon Knife niet halen".
 - Na een gevecht met de Giant Mole kwamen avonturiers het hol niet meer uit. Ze liepen steeds tegen de wand en stonden er tot twintig minuten, tot de home teleport weer kon. Ze klimmen nu langs het touw naar boven, zoals een speler doet. Dat geldt ook voor andere afgesloten grotten met een ladder, trap of touw naar buiten.
 - Bij een quest stond soms "Gaat 20 x 20 x Balls of wool halen" of "Gaat 1 x Egg halen". Het aantal staat er nu één keer, en alleen als het er meer dan één zijn.
 - Het hol van de Giant Mole is nu multi-combat, zoals in OSRS. Twee avonturiers bij de Mole vechten nu allebei; eerder stond er één werkloos naast.

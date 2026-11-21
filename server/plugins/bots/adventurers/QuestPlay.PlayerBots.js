@@ -11,6 +11,8 @@
  * A basement is reached by its ladder (`places`): the long-route walk stays on one plane.
  */
 const data = require("../data/quest-playthroughs.json");
+/** What it fetched for a quest is not sold for this long, as the quest may be picked up again. */
+const QUEST_KEEP_MS = 6 * 60 * 60_000;
 
 /** Close enough to click stairs or a ladder (the click walks the rest), past an errand's arrival. */
 const CLICK_TILES = 4;
@@ -529,6 +531,8 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     const player = entry.player;
     const before = ids.reduce((sum, id) => sum + (player.getInventory().getAmount(id) ?? 0), 0);
     (run.fetching ??= []).push({ ids, amount, name, why, before, since: nowMs });
+    // Kept from the bank's sales for a while (Adventurers.workingMaterials), also if the quest waits.
+    for (const id of ids) (entry.questKeep ??= new Map()).set(id, nowMs + QUEST_KEEP_MS);
   }
 
   function checkFetched(entry, run, nowMs) {
@@ -537,7 +541,7 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     for (const job of run.fetching.splice(0)) {
       const have = job.ids.reduce((sum, id) => sum + (player.getInventory().getAmount(id) ?? 0), 0);
       const got = have >= job.amount || have > job.before;
-      note?.(player, got ? `Heeft ${job.name} voor ${run.name}.` : `Kon ${job.name} niet halen voor ${run.name}; gaat zonder verder.`, "quest");
+      note?.(player, got ? `Heeft ${countedName(job)} voor ${run.name}.` : `Kon ${countedName(job)} niet halen voor ${run.name}; gaat zonder verder.`, "quest");
       metric({ kind: "quest_fetch", bot: entry.name, quest: run.name, item: job.name, why: job.why, amount: job.amount,
         have, got, minutes: Math.round((nowMs - job.since) / 600) / 100 });
     }
@@ -881,4 +885,4 @@ function matchesIds(core, id, ids) {
   }
 }
 
-module.exports = { matchesIds, countedName, createQuestPlay, chooseOption, nextHop, placeOf, stepDone, data };
+module.exports = { matchesIds, countedName, QUEST_KEEP_MS, createQuestPlay, chooseOption, nextHop, placeOf, stepDone, data };

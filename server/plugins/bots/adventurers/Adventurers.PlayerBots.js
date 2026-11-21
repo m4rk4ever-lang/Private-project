@@ -685,28 +685,42 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (notes.length > 0) deposit(buyer, notes);
     for (const id of buy.materials) {
       if (buyer.getInventory().getAmount(id) <= 0 && banked(buyer, id) > 0) {
-        withdraw(buyer, id, Math.min(buy.amount, Math.floor(27 / buy.materials.length)));
+        withdraw(buyer, id, Math.min(buy.amount, loadShare(buyer, buy)));
       }
     }
   }
 
   /**
-   * At a bank before a processing job: everything but its materials, the tool of the recipe and
-   * its coins goes in, as a player empties the bag before fletching or making potions (the
-   * owner's rule: only what is processed, and how, in the bag).
+   * At a bank before a processing job: everything but its materials, the tool of the recipe,
+   * its coins and one way to teleport goes in, as a player empties the bag before fletching or
+   * making potions (the owner's rule: only what is processed, and how, in the bag). The teleport
+   * stays: Patrickbot 18 banked his games necklace, ring of dueling and skills necklace "for
+   * herblore", and a bot without one waited out the home teleport's 30 minutes when stranded.
    */
   function clearForProcessing(banker, buy) {
     const tool = buy.recipe.tool ? Shopping.idOf(core, buy.recipe.tool) : null;
     const keep = new Set([...buy.materials, Trade.COINS, ...(Number.isInteger(tool) ? [tool] : [])]);
+    const travel = travelItemIn(banker);
+    if (travel) keep.add(travel);
     const goods = [];
     for (const item of banker.getInventory().getItems() ?? []) {
       const id = item?.getId?.() ?? -1;
-      if (!(id > 0) || keep.has(baseId(id)) || goods.some((good) => good.itemId === id)) continue;
+      if (!(id > 0) || keep.has(baseId(id)) || keep.has(id) || goods.some((good) => good.itemId === id)) continue;
       goods.push({ itemId: id, amount: banker.getInventory().getAmount(id) });
     }
     const stored = deposit(banker, goods);
     if (stored.length > 0) note(banker, `Zet op de bank voor ${buy.skill.toLowerCase()}: ${stored.slice(0, 5).map((good) => itemName(good.itemId).toLowerCase()).join(", ")}${stored.length > 5 ? ` en ${stored.length - 5} meer` : ""}.`, "activity");
   }
+
+  /** A teleport tablet by its name ("Varrock teleport", "Salve graveyard teleport"). */
+  const isTeleportTablet = (id) => / teleport$/i.test(String(core.ItemDefinition?.forId?.(id)?.getName?.() ?? "")) && baseId(id) === id;
+  /** The one way to teleport a processing job keeps in its bag: charged jewellery first, else a tablet; null when it has none. */
+  function travelItemIn(player) {
+    const ids = (player.getInventory().getItems() ?? []).map((item) => item?.getId?.() ?? -1).filter((id) => id > 0);
+    return ids.find((id) => isJewellery(id)) ?? ids.find((id) => isTeleportTablet(id)) ?? null;
+  }
+  /** Materials per kind for one load: the bag less its coins and the teleport it keeps. */
+  const loadShare = (player, buy) => Math.floor((27 - (travelItemIn(player) ? 1 : 0)) / buy.materials.length);
 
   /** The materials it would buy for a skill now: { skill, recipe, itemId, name, amount, cost }, or null. */
   function buyPlan(player, skill) {
@@ -1992,7 +2006,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         reason: "withdraw",
         arrive: (banker) => {
           clearForProcessing(banker, buy);
-          const share = Math.floor(28 / buy.materials.length) - 1;
+          const share = loadShare(banker, buy);
           const got = buy.materials.reduce((sum, id) => sum + withdraw(banker, id, Math.min(buy.amount, share)), 0);
           if (got > 0) {
             note(banker, `Haalt ${buy.materials.map(itemName).join(" en ")} van de bank om ${plan.skill.toLowerCase()} te trainen.`, "activity");
@@ -4943,6 +4957,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // What it gathers for a quest (clay for Doric's Quest) is the quest's, not goods: Markbot 3
     // mined clay, banked it and sold it at the exchange, and mined again (20-11-2026).
     if (Number.isInteger(entry.gather?.itemId)) ids.add(entry.gather.itemId);
+    // What it fetched or bought for a quest (QuestPlay `questKeep`), for some hours, also when the
+    // quest is set aside for a while: Jorgbot 13 bought soft clay for Prince Ali Rescue and put it
+    // up for sale a minute later, when it chose the Giant Mole instead (21-11-2026).
+    for (const [id, until] of entry.questKeep ?? []) {
+      if (until > now()) ids.add(id);
+      else entry.questKeep.delete(id);
+    }
     for (const plan of [entry.resume, entry.plan, entry.savedTask]) {
       const mode = String(plan?.mode ?? "");
       // The bow and arrows or the runes of a ranged or magic job: it fetched them from the bank
