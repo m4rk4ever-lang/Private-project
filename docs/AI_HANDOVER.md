@@ -5,6 +5,18 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 21-11-2026 (12:35): eerste controle Fase 6-update (branch `adventurers/fase-6-fixes`)
+
+- **Logs:** da32947 van 11:15 tot 11:34 UTC (20 min).
+- **Farming:** 4× gestart, Patrickbot 7 kocht rake en dibber (Farming Supplies), spade en 6 potato seeds (GE), wiedde bij Falador (Farming 1 → 3), daarna `stuck`: het onkruid bleef in de tas (`useItem(..., "Drop")` doet niets, de Drop-optie is geen plugin-actie) en elke stap begon met "drop". Fix: `deleteNumber` zoals `DropItems`. 6× `tool_unbuyable`: bots met weinig coins.
+- **Runecrafting:** 4 bots kochten de air talisman (~177 gp), daarna geen Runecrafting: na `shopFor` in `startBuyTraining` geen `savedTask`, dus een nieuwe keuze. Fix: `savedTask` voor de koop. Markbot 3: `exchange_blocked` (GE tijdelijk geblokkeerd voor hem).
+- **Hunter:** verdeling werkt (crimson swift 8, wagtail 3 starts; `site_full` 5×). Red salamanders nog niet gezien: de bots met Hunter ≥ 59 die het kozen (Jorgbot 14, 18, 19, Markbot 18) hadden geen coins voor een rope (`tool_unbuyable`; Jorgbot 19 spaart "44 gp voor leather boots").
+- **Construction:** nog niet gestart (1× `errands_resting` op weg naar de makelaar).
+- **Teleports (`carried`, 71 lange boodschappen zonder teleport):** 29 (41%) hadden niets bij zich; de rest alleen sieraden die niet dichtbij landen (games necklace 13, ring of dueling 7, glory 4). Volgende stap: tablets voor de plekken waar ze vaak heen lopen.
+- **Routes:** leg canifis vanaf Varrock-oost 0×. Gnome Stronghold: Nieve 1× aangekomen, 2× blocked; "Open Gate" 1× gebruikt.
+- **Quest-teleport:** 1× "Neemt lumbridge teleport mee voor de quest".
+- **Validatie:** test weeds in `bot-construct-farm`. Suite 165 tests, 14 fails.
+
 ## Sessie 21-11-2026 (12:45): Farming en Construction als klus; Sailing ontwerp (branch `adventurers/salamanders-rc`)
 
 - **Eigenaar:** "bouw deze wel, zet de juiste stappen" (Construction, Farming, Sailing), na de salamanders en Runecrafting, in één update. Niet in de game getest (geen server hier): de stappen hieronder zijn wat in de logs te controleren is.

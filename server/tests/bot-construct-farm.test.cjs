@@ -37,7 +37,7 @@ function fakeWorld(objects, { items = {}, emit = () => {} } = {}) {
     getPrivateArea: () => "house",
     getMovementQueue: () => ({ size: () => 0, walkToObject: (object, { execute }) => execute() }),
     getInventory: () => ({
-      getAmount: (id) => inventory[id] ?? 0, getFreeSlots: () => 20,
+      getAmount: (id) => inventory[id] ?? 0, getFreeSlots: () => 20, deleteNumber: (id, n) => { inventory[id] = Math.max(0, (inventory[id] ?? 0) - n); },
       getItems: () => Object.entries(inventory).map(([id]) => ({ getId: () => Number(id) })),
     }),
     getPacketSender: () => ({ sendInterfaceRemoval: () => {} }),
@@ -114,4 +114,12 @@ test("farm patches: the spots' patch ids and tiles are the farming plugin's", ()
       assert.ok(farming.patches.some((known) => known.id === patch.id && known.x === patch.x && known.y === patch.y), JSON.stringify(patch));
     }
   }
+});
+
+test("farm patches: the weeds go from the bag, the farm run goes on", () => {
+  const { world, player, clicks, inventory } = fakeWorld([{ id: 8150, x: 3058, y: 3311, name: "Herb patch", options: ["Rake", "Inspect", "Guide"] }], { items: { 6055: 6 } });
+  const action = createFarmPatchesAction({ site: [3058, 3311], patches: [{ id: 8150, x: 3058, y: 3311, kind: "herb" }], seeds: { herb: [], allotment: [] } }, world);
+  action.update({ player, state: {}, nowMs: 0 });
+  assert.equal(inventory[6055], 0);
+  assert.deepEqual(clicks.at(-1), { kind: "object", name: "Herb patch", clickType: 1 });
 });

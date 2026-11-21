@@ -2203,6 +2203,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (Number.isInteger(toolId) && !Shopping.owns(player, toolId)) {
       // Its knife or hammer at the bank: fetched there, not bought again.
       if (banked(player, toolId) > 0) return fetchTools(entry, plan, [toolId]);
+      // Bought, then on with this job: four bots bought an air talisman and went to do something
+      // else, as nothing brought them back to Runecrafting (21-11-2026).
+      entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, remainingMs: 0, savedAt: now() };
       return shopFor(entry, toolId, buy.recipe.tool, 1);
     }
     entry.plan = plan;

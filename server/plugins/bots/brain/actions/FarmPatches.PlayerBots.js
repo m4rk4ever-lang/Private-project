@@ -85,8 +85,12 @@ function createFarmPatchesAction(spec, world) {
       if (nowMs < bot.at || player.busy?.() || player.getMovementQueue().size() > 0) return "running";
       bot.at = nowMs + STEP_MS;
       // The weeds a rake brings up: dropped, as a player does.
-      const weedSlot = (player.getInventory().getItems() ?? []).findIndex((item) => item?.getId?.() === weeds);
-      if (weedSlot >= 0 && world.useItem?.(player, weedSlot, "Drop")) return "running";
+      // (As DropItems does: the item's Drop option is not a plugin action; Patrickbot 7 kept raking
+      // with a bag of weeds that never went and stood stuck at Falador, 21-11-2026.)
+      if (player.getInventory().getAmount(weeds) > 0) {
+        player.getInventory().deleteNumber?.(weeds, player.getInventory().getAmount(weeds));
+        player.getInventory().refreshItems?.();
+      }
       if (player.getInventory().getFreeSlots() <= 0) return "success";
       const here = patches(player);
       if (here.length === 0) return "failed";
