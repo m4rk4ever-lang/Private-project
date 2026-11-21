@@ -266,6 +266,7 @@ const TICK_MS = 600;
 const planBudget = { allowance: PLAN_BUDGET_MS, at: 0 };
 // Where the planning time went since the last read (the server metric): per kind of search.
 const planSpent = {};
+let planTotal = 0;
 
 function canPlan(nowMs = Date.now()) {
   if (planBudget.at > 0 && nowMs > planBudget.at) {
@@ -277,6 +278,7 @@ function canPlan(nowMs = Date.now()) {
 
 function chargePlan(kind, ms) {
   planBudget.allowance -= ms;
+  planTotal += ms;
   const spent = (planSpent[kind] ??= { count: 0, totalMs: 0, maxMs: 0 });
   spent.count += 1;
   spent.totalMs += ms;
@@ -300,9 +302,15 @@ function resetPlanBudget() {
   planBudget.at = 0;
 }
 
+/** All planning time since the start (ms). */
+function planTotalMs() {
+  return planTotal;
+}
+
 module.exports = {
   planRoute,
   canPlan,
+  planTotalMs,
   resetPlanBudget,
   chargePlan,
   takePlanSpent,
