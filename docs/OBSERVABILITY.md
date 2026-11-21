@@ -43,7 +43,7 @@ naar de eerste en laatste `at` voordat je conclusies trekt.
 | `goal` | Doel gezet, gehaald of geschrapt | minuten sinds zetten |
 | `idle` | Een minuut zonder XP op de klus | plek, hp, in gevecht, vrije slots |
 | `stuck` | Klus zonder voortgang (max 1 per minuut per bot) | `activity`, `action`, `describe`, `npcsNear`, `where`, `home` |
-| `walk_blocked` | Route die niet lukte | `reason`, `to`, `where`, `tilesLeft`, `doorAttempt`, `route` (laatste lange-wandeling-beslissing: `leg`, `plan` ok/none/budget, `straight`, `badHubs`, `waypoints`) |
+| `walk_blocked` | Route die niet lukte | `reason`, `to`, `where`, `tilesLeft`, `doorAttempt`, `route` (laatste lange-wandeling-beslissing: `leg`, `plan` ok/none/budget, `straight`, `badHubs`, `waypoints`); sinds 21-11-2026 `door`: wat de deuropener in de 90 s ervoor deed (`clicked`, `open`, `no_way_to_it`, `none_near`, `none_helps`, met id en tegel) |
 | `stranded` | Home teleport na 3 keer vastlopen op dezelfde plek | `where` |
 | `death` | Avonturier stierf | `killer`, `killerLevel`, `hadFood`, `reason` |
 | `teleport` | Teleport onderweg | `how`, `name`, `to`, `reason` |

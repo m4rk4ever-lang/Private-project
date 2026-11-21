@@ -133,6 +133,10 @@ function createConstructAction(spec, world) {
       bot.at = nowMs + BUILD_MS;
       return "running";
     },
+    describe(ctx) {
+      const bot = ctx?.state?.construct;
+      return `construct house=${Boolean(ctx?.player?.getPrivateArea?.())} hotspot=${bot?.hotspot ?? "-"} built=${bot?.built?.size ?? 0} skip=${bot?.skip?.size ?? 0} left=${bot?.left ?? false}`;
+    },
     stop(ctx) {
       if (ctx?.state) ctx.state.construct = null;
     },

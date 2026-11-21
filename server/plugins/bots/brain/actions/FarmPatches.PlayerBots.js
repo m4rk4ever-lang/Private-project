@@ -96,6 +96,7 @@ function createFarmPatchesAction(spec, world) {
       if (here.length === 0) return "failed";
       for (const patch of here) {
         const can = (option) => patch.options.includes(option);
+        bot.seen = here.map((one) => `${one.kind}:${one.options.join("/")}`).join(" ");
         if (can("rake")) { click(player, patch, "rake"); return "running"; }
         const pick = ["harvest", "pick"].find(can);
         if (pick) { click(player, patch, pick); return "running"; }
@@ -115,6 +116,10 @@ function createFarmPatchesAction(spec, world) {
         if (useOn(player, patch, seed)) return "running";
       }
       return "success";
+    },
+    describe(ctx) {
+      const bot = ctx?.state?.farmPatches;
+      return `farmPatches seen=[${bot?.seen ?? "-"}] tries=${bot ? JSON.stringify([...bot.tries.values()]) : "-"}`;
     },
     stop(ctx) {
       if (ctx?.state) ctx.state.farmPatches = null;

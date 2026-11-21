@@ -83,6 +83,38 @@ function createHuntBirdsAction(spec, world) {
     });
   }
 
+  /**
+   * Whether the plugin lets a trap stand on this tile: no wall or scenery (type 10), no ground
+   * decoration (type 22: grass tufts, ferns) and not blocked (Traps.Hunter.js canLay).
+   */
+  function layable(player, x, y) {
+    try {
+      const location = new core.Location(x, y, 0);
+      const area = player.getPrivateArea?.() ?? null;
+      return !core.MapObjects.getType?.(location, 10, area) && !core.MapObjects.getType?.(location, 22, area)
+        && !core.RegionManager.blocked?.(location, area);
+    } catch {
+      return true;
+    }
+  }
+
+  /** The nearest tile of the site a trap may stand on, not one refused before, as { x, y }, or null. */
+  function layableNear(player, here, refused, center = null) {
+    let best = null;
+    let bestAway = Infinity;
+    const [cx, cy, reach] = center ? [center.x, center.y, 2] : [siteX, siteY, radius];
+    for (let dx = -reach; dx <= reach; dx += 1) {
+      for (let dy = -reach; dy <= reach; dy += 1) {
+        const x = cx + dx;
+        const y = cy + dy;
+        if (refused?.has(`${x},${y}`) || !layable(player, x, y)) continue;
+        const d = center ? Math.max(Math.abs(dx), Math.abs(dy)) : away(here, x, y);
+        if (d > 0 && d < bestAway) { best = { x, y }; bestAway = d; }
+      }
+    }
+    return best;
+  }
+
   const BIRD = /swift|wagtail|longtail|warbler|bird/i;
   /** The nearest bird of the snare's kind within the site's reach, or null. */
   function nearestBird(here) {
@@ -145,14 +177,30 @@ function createHuntBirdsAction(spec, world) {
       // Lay one from the bag (the plugin refuses past its limit for the level).
       if (nowMs >= bot.layAt && player.getInventory().getAmount(snare) > 0) {
         bot.layAt = nowMs + LAY_RETRY_MS;
+        // The last try left the snare in the bag: that tile is refused (grass, a fern, a rock:
+        // "You can't set up a trap here"). Patrickbot 10 stood 22 minutes on one such tile among
+        // the tropical wagtails with two snares in his bag (21-11-2026).
+        if (bot.tried && player.getInventory().getAmount(snare) >= bot.tried.had) (bot.refused ??= new Set()).add(bot.tried.tile);
+        bot.tried = null;
+        const tileKey = `${here.getX()},${here.getY()}`;
+        if (!layable(player, here.getX(), here.getY()) || bot.refused?.has(tileKey)) {
+          const spot = layableNear(player, here, bot.refused);
+          if (spot) {
+            requestMovement(player, spot.x, spot.y, { state, nowMs, z: 0, reason: "brain_hunter", basicPather: true });
+            bot.layAt = nowMs + 1_500;
+          }
+          return "running";
+        }
         // Where the birds are, as a player lays a snare in their flight path: the nearest bird of
         // the site (crimson swifts fly about the beach) within 2 tiles, else a walk to it first.
         // Laid at the site's centre they went down on empty sand beside the birds.
         const bird = nearestBird(here);
         if (bird && away(here, bird.getLocation().getX(), bird.getLocation().getY()) > 2) {
           const at = bird.getLocation();
-          requestMovement(player, at.getX() + Math.floor(Math.random() * 3) - 1, at.getY() + Math.floor(Math.random() * 3) - 1,
-            { state, nowMs, z: 0, reason: "brain_hunter", basicPather: true });
+          // A tile by the bird where a snare may stand.
+          const spot = layableNear(player, here, bot.refused, { x: at.getX(), y: at.getY() })
+            ?? { x: at.getX() + Math.floor(Math.random() * 3) - 1, y: at.getY() + Math.floor(Math.random() * 3) - 1 };
+          requestMovement(player, spot.x, spot.y, { state, nowMs, z: 0, reason: "brain_hunter", basicPather: true });
           bot.layAt = nowMs + 1_500;
           return "running";
         }
@@ -163,10 +211,17 @@ function createHuntBirdsAction(spec, world) {
           return "running";
         }
         const slot = (player.getInventory().getItems() ?? []).findIndex((item) => item?.getId?.() === snare);
-        if (slot >= 0 && world.useItem?.(player, slot, "Lay")) bot.laidAt = `${here.getX()},${here.getY()}`;
+        if (slot >= 0 && world.useItem?.(player, slot, "Lay")) {
+          bot.laidAt = tileKey;
+          bot.tried = { tile: tileKey, had: player.getInventory().getAmount(snare) };
+        }
         return "running";
       }
       return player.getInventory().getAmount(snare) > 0 || bot.laidAt ? "running" : "failed";
+    },
+    describe(ctx) {
+      const bot = ctx?.state?.huntBirds;
+      return `huntBirds ${net ? "net" : "snare"} laid=${bot?.laidAt ?? "-"} refused=${bot?.refused?.size ?? 0} carries=${ctx?.player ? carries(ctx.player) : "?"}`;
     },
     stop(ctx) {
       if (ctx?.state) ctx.state.huntBirds = null;

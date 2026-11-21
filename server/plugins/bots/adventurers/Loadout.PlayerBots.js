@@ -113,4 +113,30 @@ function travelBuys(names, { coins, bagCoins = coins, have = new Set(), kindOf, 
   return out;
 }
 
-module.exports = { offLoadout, foodFor, travelKit, travelBuys, GATHERING, GATHERING_FOOD, NEAR_BANK_TILES, TRAVEL_RUNES, KIT_RUNES };
+/**
+ * Tablets for the places it keeps walking to: of its recent long walks without a teleport
+ * (`walks`: [{ from: {x, y}, to: {x, y} }]), the tablet that would have saved the most of them
+ * (its landing at least `saves` tiles nearer the place than the start was), at least `minCount`
+ * walks, bought by the stack when it has fewer than two and the stack costs at
+ * most `share` of its coins (from `minCoins` on). Four in ten long walks went with nothing at all
+ * to teleport with, and the rest with jewellery that lands far off (21-11-2026: 71 walks).
+ * @param {{from:{x:number,y:number}, to:{x:number,y:number}}[]} walks
+ * @param {{name:string,x:number,y:number}[]} landings  tablet name and where it lands
+ * @returns {{name:string, amount:number, walks:number}[]} at most one
+ */
+function walkTablets(walks, landings, { coins = 0, held = () => 0, priceOf = () => 0, buyable = () => true,
+  minCount = 2, saves = 150, share = 0.1, minCoins = 5_000, amount = 5 } = {}) {
+  if (!(coins >= minCoins) || walks.length < minCount) return [];
+  const away = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+  let best = null;
+  for (const landing of landings) {
+    const count = walks.filter((walk) => away(walk.from, walk.to) - away(landing, walk.to) >= saves).length;
+    if (count < minCount || held(landing.name) >= 2 || !buyable(landing.name)) continue;
+    const price = priceOf(landing.name) * amount;
+    if (!(price > 0) || price > coins * share) continue;
+    if (!best || count > best.walks || (count === best.walks && price < best.price)) best = { name: landing.name, amount, walks: count, price };
+  }
+  return best ? [{ name: best.name, amount: best.amount, walks: best.walks }] : [];
+}
+
+module.exports = { offLoadout, foodFor, travelKit, travelBuys, walkTablets, GATHERING, GATHERING_FOOD, NEAR_BANK_TILES, TRAVEL_RUNES, KIT_RUNES };

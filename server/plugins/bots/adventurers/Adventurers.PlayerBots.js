@@ -156,6 +156,8 @@ const TRAVEL_TABLETS = [
   { name: "MORTTON_TELEPORT" }, { name: "CATHERBY_TELEPORT" }, { name: "FISHING_GUILD_TELEPORT" }, { name: "KHAZARD_TELEPORT" },
 ];
 const TABLET_STACK = 5;
+/** Long walks without a teleport it remembers, for the tablets it buys. */
+const LONG_WALKS_KEPT = 12;
 /** Hunters on one bird-snaring spot at most (a beach has three to seven birds). */
 const HUNT_SITE_CAP = 2;
 /** After a quest that stopped, this long its first blocked walk sends it home. */
@@ -718,6 +720,18 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
     const stored = deposit(banker, goods);
     if (stored.length > 0) note(banker, `Zet op de bank voor ${buy.skill.toLowerCase()}: ${stored.slice(0, 5).map((good) => itemName(good.itemId).toLowerCase()).join(", ")}${stored.length > 5 ? ` en ${stored.length - 5} meer` : ""}.`, "activity");
+  }
+
+  /** Where each travel tablet lands: [{ name, x, y }] (its spell's destination, any spellbook). */
+  function tabletLandings() {
+    const spells = [...(core.SpellTeleports?.getTeleportDestinations?.() ?? []), ...(core.ArceuusSpells?.getTeleportDestinations?.() ?? []),
+      ...(core.LunarSpells?.getTeleportDestinations?.() ?? [])];
+    const landing = new Map(spells.map((spell) => [String(spell.name).toLowerCase(), spell.destination]));
+    return TRAVEL_TABLETS.map(({ name }) => {
+      const id = idOfName(name);
+      const at = Number.isInteger(id) ? landing.get(itemName(id).toLowerCase()) : null;
+      return at ? { name, x: at.getX(), y: at.getY() } : null;
+    }).filter((spot) => spot && !inWilderness(spot.x, spot.y));
   }
 
   /** A teleport tablet by its name ("Varrock teleport", "Salve graveyard teleport"). */
@@ -1506,6 +1520,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
 
   function walkTo(entry, to, { reason, arrive = () => {}, replan = true, say = true, urgent = false, hopped = false } = {}) {
     const run = runtimeEntry(entry.player);
+    const startAt = entry.player.getLocation();
+    const from = { x: startAt.getX(), y: startAt.getY() };
     // On the other side of the ground (the Dwarven Mine below Falador, the Mining Guild): first to
     // the stairs or ladder, down or up as a player goes, then on from where it lands (tickAll).
     // A teleport that lands near the place goes before a shortcut or ladder on the way: Patrickbot 17
@@ -1597,6 +1613,12 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         // A long walk without a teleport: what it had to teleport with (OBSERVABILITY: why 8 in 10
         // long errands went on foot: nothing carried, or nothing landing near enough).
         carried: !outcome?.teleport && (outcome?.ms ?? 0) >= 60_000 ? travelCarried(player) : undefined });
+      // Its long walks without a teleport, for the tablets it buys (walkTablets): the last dozen.
+      if (!outcome?.teleport && (outcome?.ms ?? 0) >= 60_000 && Number.isFinite(to.x)) {
+        const walks = (entry.longWalks ??= []);
+        walks.push({ from, to: { x: to.x, y: to.y } });
+        if (walks.length > LONG_WALKS_KEPT) walks.shift();
+      }
     };
     const started = errands.go(run, to, {
       reason,
@@ -1646,6 +1668,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         metric({ kind: "walk_blocked", bot: entry.name, reason, to: { name: placeName(to), x: to.x, y: to.y, z: to.z ?? 0 },
           where: [at.getX(), at.getY(), at.getZ()], tilesLeft: Math.max(Math.abs(at.getX() - to.x), Math.abs(at.getY() - to.y)),
           doorAttempt: stateOf(player)?.doorAttempt ? { id: stateOf(player).doorAttempt.objectId ?? stateOf(player).doorAttempt.object?.getId?.() ?? null } : null,
+          door: Date.now() - (stateOf(player)?.lastDoor?.ms ?? 0) < 90_000 ? { ...stateOf(player).lastDoor, ms: undefined } : null,
           coins: Shopping.coinsOf(player), route: lastRouteOf(player), ...brainSnapshot(entry) });
         // That place is out for a while; the next bank or shop is still fine.
         // A quest's walk tries again (doors, another way); its own tries decide when to give up.
@@ -1913,6 +1936,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const owns = { player, owns: false };
     emit("construction:owns-house", owns);
     if (!owns.owns) {
+      // After the house (or the coins for it), on with building: Patrickbot 4 bought his house and
+      // went to farm, as nothing brought him back (21-11-2026).
+      entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, remainingMs: 0, savedAt: now() };
       const cost = cfg.houseCost ?? 1000;
       if (Shopping.coinsOf(player) < cost) {
         if (banked(player, Trade.COINS) < cost) return cannot(entry, "too_poor", { mode: "construction", cost });
@@ -4929,6 +4955,20 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       kindOf: (name) => (TRAVEL_TABLETS.some((tablet) => tablet.name === name) ? name : Number.isInteger(idOfName(name)) ? jewelleryKind(idOfName(name)) : null),
       priceOf: (name) => Shopping.estimatedPrice(core, idOfName(name), 1), buyable: (name) => onExchange(idOfName(name)),
       minCoins: TRAVEL_MIN_COINS, pieceShare: TRAVEL_PIECE_SHARE, visitShare: TRAVEL_VISIT_SHARE });
+    // A stack of the tablet that would have saved most of its recent long walks (the Feldip Hills
+    // from the GE: Watchtower), when it has a few thousand coins.
+    const entryHere = adventurers.get(player.getUsername?.());
+    if (entryHere?.longWalks?.length) {
+      const extra = Loadout.walkTablets(entryHere.longWalks, tabletLandings(), {
+        coins: Shopping.coinsOf(player) + banked(player, Trade.COINS), held: heldOf,
+        priceOf: (name) => Shopping.estimatedPrice(core, idOfName(name), 1), buyable: (name) => onExchange(idOfName(name)) });
+      for (const want of extra) {
+        if (buys.some((other) => (typeof other === "string" ? other : other.name) === want.name)) continue;
+        if (Shopping.coinsOf(player) < Shopping.estimatedPrice(core, idOfName(want.name), want.amount)) continue;
+        buys.push({ name: want.name, amount: want.amount });
+        entryHere.longWalks = [];
+      }
+    }
     for (const want of buys) {
       const name = typeof want === "string" ? want : want.name;
       const amount = typeof want === "string" ? 1 : want.amount;
