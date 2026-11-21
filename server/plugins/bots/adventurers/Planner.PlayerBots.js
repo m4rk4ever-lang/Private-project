@@ -247,4 +247,40 @@ function bestActivity(mode, level, definitions) {
   return best?.id ?? null;
 }
 
-module.exports = { isEndgame, trainingWeight, chooseNext, bossesFor, missing, isReady, trainingOptions, bestActivity, TRAINABLE, COMBAT };
+/**
+ * Every activity of a mode its level allows, best first: [{ id, level }] (highest level, then by
+ * id). For a mode with several spots for one tier (bird snaring in the Feldip Hills).
+ */
+function activitiesFor(mode, level, definitions) {
+  const fields = new Map();
+  const found = [];
+  for (const activity of definitions.activities ?? []) {
+    const own = activity.fieldsFrom ? { ...fields.get(activity.fieldsFrom), ...activity.fields } : activity.fields ?? {};
+    fields.set(activity.id, own);
+    const template = activity.template ? definitions.templates?.[activity.template] : null;
+    if ((activity.mode ?? template?.mode) !== mode) continue;
+    const required = Number(own.level ?? 1);
+    if (required <= level) found.push({ id: activity.id, level: required });
+  }
+  return found.sort((a, b) => b.level - a.level || a.id.localeCompare(b.id));
+}
+
+/**
+ * Of `options` (activitiesFor), the spot to go to: the best tier with room (fewer than `cap`
+ * others there, `occupied(id)`), the emptiest of that tier; null when every spot is full. Fifteen
+ * bots stood on one crimson swift beach with six birds and caught almost nothing (21-11-2026).
+ */
+function leastBusy(options, occupied, cap) {
+  let tier = null;
+  let best = null;
+  for (const option of options) {
+    if (tier !== null && option.level < tier) break;
+    const there = occupied(option.id);
+    if (there >= cap) continue;
+    tier = option.level;
+    if (!best || there < best.there) best = { id: option.id, there };
+  }
+  return best?.id ?? null;
+}
+
+module.exports = { isEndgame, trainingWeight, chooseNext, bossesFor, missing, isReady, trainingOptions, bestActivity, activitiesFor, leastBusy, TRAINABLE, COMBAT };

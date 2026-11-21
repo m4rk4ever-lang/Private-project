@@ -5,6 +5,17 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 21-11-2026 (12:00): Hunter-plekken, skills en teleportgebruik meten (branch `adventurers/hunter-plekken`)
+
+- **Eigenaar:** quests zijn geen hoofdprioriteit; eerst skills (Fase 6) en teleportgebruik. "Bots staan op een kluitje in Feldip Hills voor hunter (snares)."
+- **Hunter (logs 21-11, 07:50-10:44 UTC):** `hunter_crimson_swift` 426 min "time up" voor 1.388 XP, 25× stuck; tot 15 bots tegelijk (gemiddeld 7,6) op één plek (site 2604,2910, radius 7) met 3-6 vogels binnen bereik. Lokken (`Traps.Hunter.js eligible`) vraagt een vogel binnen 3 tegels die niet al gereserveerd is: weinig vogels, veel strikken.
+  - **Bouw:** zes plekken in `bot-activities.json` (handwerk): crimson swift [2609,2926] r8, [2609,2896] r6, [2588,2884] r6 (level 1); tropical wagtail [2502,2890], [2513,2912], [2542,2885] r6 (level 19, 95,2 XP). Spawns uit `npc-spawns.json`; bereikbaar vanaf Yanille (BFS 229-267 tegels). Snares in `adventurer-gear.json`.
+  - `Planner.activitiesFor` (alle activiteiten van een modus die het level toelaat, beste eerst) en `leastBusy` (beste tier met plaats, de leegste; null als alles vol is). `HUNT_SITE_CAP` 2. Vol: `cannot("site_full")`. Test `bot-hunter-sites`.
+  - **Nog niet:** hogere Hunter (40-99, 27 bots) heeft alleen vogels; box traps (chinchompa's) vragen een nieuwe actie.
+- **Skills (levels-metric, 60 bots):** Slayer traint wel (43× gekozen; levels 1-99 verspreid). Runecrafting: alle 24 nieuwe accounts op 1. `buyToTrain.RUNECRAFTING` vraagt Rune Mysteries (en de air talisman daaruit), en Rune Mysteries is in deze logs nooit geprobeerd (geen decision, geen quest_end). Ligt dus bij de quests; niet gebouwd.
+- **Teleportgebruik:** boodschappen van 60 s of langer met teleport: 14-17% (ab19a51, 147ac3b, 784667c), 21-23% (c025568, 2f29401, 2cf602e). Lang zonder teleport, top: Feldip Hills (7), GE (6), Mazchna (4), Falador Rooftop (4). Nieuw veld `carried` in `errand` (bij ≥ 60 s zonder teleport): de reismiddelen in de tas. Daarmee is te zien of hij niets had of niets dat dichtbij landt.
+- **Validatie:** suite 159 tests, 14 fails (omgeving).
+
 ## Sessie 21-11-2026 (11:40): PR #19 bijgewerkt; Morytania en Gnome Stronghold (branch `adventurers/morytania-leg`)
 
 - **PR #19 (Fase 5):** main erin gemerged (conflicten: planner-opties `endgame` en `unlocks` samen, requires samen, handover beide). Ook de oudere remote merge van 20-11 meegenomen. Suite 158 tests, 14 fails (omgeving). Mergeable: clean. Nog niet mergen tot quests vaker afkomen.

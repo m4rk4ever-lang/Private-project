@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Tot vijftien avonturiers stonden tegelijk op één strandje in de Feldip Hills met hun bird snares, waar maar een paar vogels vliegen. Ze vingen bijna niets (zo'n 1.400 Hunter-XP in 7 uur samen). Er zijn nu drie plekken voor crimson swifts en vanaf Hunter 19 drie voor tropical wagtails. Op elke plek jagen er hoogstens twee; zijn alle plekken vol, dan doet een avonturier iets anders.
 - Avonturiers op de oostoever bij Varrock liepen rechtdoor op Canifis af, over de rivier Salve, en kwamen nergens. Ze gaan Morytania nu altijd binnen via de tempel van Paterdomus.
 - Avonturiers kwamen bijna nooit in de Gnome Stronghold (1 van de 14 tochten): ze bleven voor de grote poort staan. Ze lopen nu naar de poort, openen die en gaan naar binnen. Naar buiten gaan ze ook door de poort.
 - Een quest bracht avonturiers soms met een boot naar een plek zonder weg terug, zoals Corsair Cove of het eiland van Misthalin Mystery. Mislukte de quest daar, dan zaten ze tot een half uur vast. Ze nemen nu bij het begin van een quest een teleport uit de bank mee. Lopen ze na een mislukte quest vast, dan teleporteren ze bij de eerste keer naar huis.

@@ -274,6 +274,11 @@
   "fishingTools": {
     "net_fishing": ["SMALL_FISHING_NET"],
     "hunter_crimson_swift": ["BIRD_SNARE"],
+    "hunter_crimson_swift_2": ["BIRD_SNARE"],
+    "hunter_crimson_swift_3": ["BIRD_SNARE"],
+    "hunter_tropical_wagtail": ["BIRD_SNARE"],
+    "hunter_tropical_wagtail_2": ["BIRD_SNARE"],
+    "hunter_tropical_wagtail_3": ["BIRD_SNARE"],
     "fly_fishing": ["FLY_FISHING_ROD", "FEATHER"],
     "lobster_fishing": ["LOBSTER_POT"],
     "harpoon_fishing": ["HARPOON"],
