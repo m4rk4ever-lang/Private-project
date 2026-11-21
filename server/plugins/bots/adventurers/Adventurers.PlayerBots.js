@@ -116,6 +116,8 @@ const DANGER_MODES = new Set(["combat_training", "combat_ranged", "combat_magic"
 const BID_WAIT_MS = 3 * 60_000;
 /** How much further than a bank it walks to the Grand Exchange to sell (saving up, offers in). */
 const SELL_DETOUR_TILES = 120;
+/** How often the `levels` metric (all levels of a bot) is written. */
+const SKILLS_METRIC_MS = 60 * 60_000;
 /** This near a bank (or the Grand Exchange) it banks there, without a walk: a bag is never emptied on the floor beside one. */
 const AT_BANK_TILES = 12;
 /** At most this many bags of materials bought at once for a buy-to-train job (half its coins at most). */
@@ -446,6 +448,16 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         savedTask: entry.savedTask ? { kind: entry.savedTask.kind, mode: entry.savedTask.mode ?? null, boss: entry.savedTask.bossId ?? null } : null,
       });
       entry.metrics = { since: nowMs, time: {}, xp, coins, events: {} };
+      // Once an hour its levels (`levels`; Phase 6, skills complete and efficient): which skills lag,
+      // per bot and over all, not only the XP of the last five minutes.
+      if (nowMs >= (entry.skillsMetricAt ?? 0)) {
+        entry.skillsMetricAt = nowMs + SKILLS_METRIC_MS;
+        const manager = entry.player.getSkillManager();
+        const levels = {};
+        for (const skill of core.Skill.values()) levels[skill.getName().toLowerCase()] = manager.getMaxLevel(skill);
+        metric({ kind: "levels", bot: entry.name, levels, total: Object.values(levels).reduce((sum, level) => sum + level, 0),
+          combat: manager.getCombatLevel() });
+      }
     }
     metric({ kind: "skills", trained: bySkill,
       untouched: core.Skill.values().map((skill) => skill.getName().toLowerCase()).filter((skill) => !bySkill[skill]) });

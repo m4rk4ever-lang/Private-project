@@ -5,7 +5,7 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
-## Sessie 21-11-2026 (09:35): controle logs, uitgang Mole-hol (branch `adventurers/molshol-uitgang`, nog niet gecommit)
+## Sessie 21-11-2026 (09:35): controle logs, uitgang Mole-hol (branch `adventurers/molshol-uitgang`)
 
 - **Logs:** push 08:32 UTC, versies 784667c (07:52-08:15) en c025568 (08:17-08:32). 61 bots.
 - **walk_blocked (122 op de nieuwe versies):** `plan` none 75, ok 39, budget 4.
@@ -21,7 +21,15 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 - **Patrickbot 18** stortte games necklace, ring of dueling en skills necklace "voor herblore": teleport-sieraden gaan mee bij het storten.
 - **Fix:** nieuwe pure module `behaviours/navigation/LevelHops.PlayerBots.js`: `offSurface(y)` (y >= 4160), `levelHopsFrom` (ook menu "Climb"), `chooseLevelHop` (naar buiten: elke uitgang binnen 200 tegels, eerst bereikbaarheid via `planRoute` met `exactOnly`, max 4 zoekopdrachten, tegels van één ladder samen overgeslagen). `Adventurers` gebruikt `offSurface` voor hops, `climbOut`, `afterHop` en `teleportsNear`. Offline (BFS op de collision map): touw 105 tegels van de landingsplek; de ladder van de Stronghold of Security is alleen bereikbaar via het touw. Ook `countedName` in `QuestPlay`.
 - **Validatie:** nieuwe test `bot-level-hops` (5). Suite 152 tests, 14 fails (omgeving, zelfde basislijn).
-- **Open:** Misthalin-eiland (roeiboot terug als uitgang), Morytania-legkeuze vanaf Varrock East, teleport-sieraden niet storten, verkooplus Jorgbot 10, PR #34 (levels-metric) wacht op "mergen".
+- **Open:** Misthalin-eiland (roeiboot terug als uitgang), Morytania-legkeuze vanaf Varrock East, teleport-sieraden niet storten, verkooplus Jorgbot 10, PR #34 (levels-metric) is gemerged.
+
+## Sessie 21-11-2026 (09:40): Fase 6 stap 1, skills meten (branch `adventurers/fase-6-meten`)
+
+- **Eigenaar:** "waar komen alle skills en progressie terug?" Antwoord: niet als fase; voorgesteld en akkoord: Fase 6, skills compleet en efficiënt (roadmap). Eerste stap: meten.
+- **Bouw:** metric `levels` (elk uur per bot: alle levels, totaal, combat; `SKILLS_METRIC_MS`). Bestaande aggregaat-metric heet `skills` (trained/untouched per 5 min), vandaar een eigen naam. Recept "Skills" in OBSERVABILITY.
+- **Nulmeting (20-11, 17:05-22:25 UTC):** Slayer, Runecrafting, Farming, Construction, Sailing 57/57 vensters onaangeroerd; Hunter 56/57 met 8,2% van de tijd voor 1.700 XP (kapot); Ranged en Crafting 52/57. Verdacht hoge XP/uur (fletching ~1,0M, herblore ~1,4M, firemaking ~1,6M, agility tot >700k) bij `experienceMultiplier` 1: eerlijkheid nagaan.
+- **Volgende (roadmap Fase 6):** Hunter repareren, Runecrafting/Slayer laten starten, XP-snelheden toetsen, Construction/Farming/Sailing, methodes per level.
+- **Validatie:** suite 148 tests, 14 fails (omgeving). Geen gedragswijziging behalve de nieuwe metric.
 
 ## Sessie 21-11-2026 (10:15): Mole Hole multi-combat; volle tas bij de bank (branch `adventurers/occupancy`)
 

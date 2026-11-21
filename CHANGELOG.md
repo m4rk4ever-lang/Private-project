@@ -44,6 +44,7 @@ Indeling per versie:
 - Avonturiers met een tas vol dubbele spullen (acht dezelfde staffs, tientallen gesmede axes) bleven uren bij een bank staan zonder iets te doen. Ze houden nu één exemplaar van elk stuk uitrusting en gereedschap; de rest gaat naar de bank of de GE. Kan de bank toch niets aannemen, dan staat dat in hun log en gaan ze verder met een klus.
 
 ### Toegevoegd
+- De logs houden nu elk uur per avonturier alle skill-levels bij. Zo is te zien welke skills achterblijven.
 - Bij een vastgelopen wandeling staat in de logs nu wat de routeplanner deed: via welk knooppunt, of er een route was of niet, of dat hij rechtdoor liep. Zo is te zien waarom tochten naar Morytania en de Gnome Stronghold stranden.
 - Quests kunnen nu met de hand in de wacht worden gezet, met een reden erbij. Avonturiers kiezen ze dan niet meer tot het probleem is opgelost. A Porcine of Interest staat als eerste in de wacht: bots raakten opgesloten in de Sourhog-grot.
 - De logs houden nu per quest-poging bij hoe die afliep: voltooid, mislukt, onderbroken (verzamelen, dak, dood) of handmatig gestopt, met de stap, de reden en de duur. Zo is per quest te zien hoe vaak het lukt en waar het vastloopt.
