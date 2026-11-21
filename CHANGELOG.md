@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Een quest bracht avonturiers soms met een boot naar een plek zonder weg terug, zoals Corsair Cove of het eiland van Misthalin Mystery. Mislukte de quest daar, dan zaten ze tot een half uur vast. Ze nemen nu bij het begin van een quest een teleport uit de bank mee. Lopen ze na een mislukte quest vast, dan teleporteren ze bij de eerste keer naar huis.
 - Avonturiers stonden bij de Giant Mole vaak werkloos zodra ze zich ingroef en elders in het hol opdook. Ze zoeken haar nu in het hele hol en vechten door.
 - Avonturiers zetten hun teleport-sieraden en teleport-tablets op de bank voordat ze gingen fletchen of potions maken. Strandden ze daarna ergens, dan moesten ze tot een half uur wachten op de home teleport. Eén teleport gaat nu altijd mee.
 - Een avonturier verkocht spullen die hij net voor een quest had gekocht (soft clay voor Prince Ali Rescue) zodra hij even iets anders ging doen. Wat hij voor een quest haalt, houdt hij nu een paar uur.

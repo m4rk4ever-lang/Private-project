@@ -156,6 +156,8 @@ const TRAVEL_TABLETS = [
   { name: "MORTTON_TELEPORT" }, { name: "CATHERBY_TELEPORT" }, { name: "FISHING_GUILD_TELEPORT" }, { name: "KHAZARD_TELEPORT" },
 ];
 const TABLET_STACK = 5;
+/** After a quest that stopped, this long its first blocked walk sends it home. */
+const QUEST_STRAND_MS = 15 * 60_000;
 /** No jewellery beyond the first under this many coins; one piece at most this share of its coins, and per visit this share. */
 const TRAVEL_MIN_COINS = 50_000;
 const TRAVEL_PIECE_SHARE = 0.02;
@@ -1392,7 +1394,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       && spot.z === at.getZ() && Math.max(Math.abs(spot.x - at.getX()), Math.abs(spot.y - at.getY())) <= 10);
     recent.push({ x: at.getX(), y: at.getY(), z: at.getZ(), at: now() });
     entry.blockedFrom = recent;
-    if (recent.length < 3) return;
+    // Just after a quest that stopped: once is enough. Jorgbot 14 tried twenty times in 21
+    // minutes to walk out of Corsair Cove, where The Corsair Curse's ship had left it (21-11-2026).
+    const afterQuest = now() - (entry.questEndedAt ?? -Infinity) < QUEST_STRAND_MS;
+    if (recent.length < (afterQuest ? 1 : 3)) return;
     if (castHome(player)) {
       entry.blockedFrom = [];
       countEvent(entry, "teleportedOut");
@@ -2371,7 +2376,31 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     entry.activity = null;
     entry.until = Infinity;
     note(entry.player, `Begint aan de quest ${plan.quest.name}.`, "quest");
+    packTeleport(entry);
     return true;
+  }
+
+  /**
+   * Into a quest with a way to teleport, as a player packs one: a quest's boat or ship can leave
+   * it where no road leads back (Corsair Cove, the Misthalin Mystery island), and the home
+   * teleport may be on its 30 minutes. One from its bank when the bag has none: a walk to the
+   * bank first, then the quest goes on.
+   */
+  function packTeleport(entry) {
+    const { player } = entry;
+    if (travelItemIn(player)) return false;
+    const banks = (player.getBanks?.() ?? []).flatMap((bank) => bank?.getItems?.() ?? []).map((item) => item?.getId?.() ?? -1);
+    const id = banks.find((banked) => banked > 0 && isJewellery(banked)) ?? banks.find((banked) => banked > 0 && isTeleportTablet(banked));
+    if (!Number.isInteger(id)) return false;
+    const bank = nearestBank(player, entry);
+    if (!bank) return false;
+    const label = itemName(id).toLowerCase();
+    return walkTo(entry, { ...bank, name: bank.name ?? bank.id }, {
+      reason: "withdraw",
+      arrive: (banker) => {
+        if (withdraw(banker, id, isJewellery(id) ? 1 : TABLET_STACK) > 0) note(banker, `Neemt ${label} mee voor de quest, om terug te kunnen.`, "quest");
+      },
+    });
   }
 
   /**
@@ -2460,6 +2489,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * success rate per quest and where each attempt stopped can be counted from the logs.
    */
   function endQuestRun(entry, run, outcome, reason = null, stage = undefined) {
+    // Where a quest leaves it (an island, a cove reached by its boat) may have no walk back: its
+    // first blocked walk from there is enough to get out (unstrand).
+    if (outcome !== "done") entry.questEndedAt = now();
     try {
       const at = stage !== undefined ? stage : questPlay.describeFailure({ ...entry, questRun: run })?.stage;
       const line = questEnd(run, outcome, { bot: entry.name, reason, stage: at, attempt: entry.questStarts?.get(run.name) ?? null });

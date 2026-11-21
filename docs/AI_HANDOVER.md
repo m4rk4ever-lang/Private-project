@@ -5,6 +5,13 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 21-11-2026 (11:20): teleport mee naar quests (branch `adventurers/quest-teleport`)
+
+- **Eigenaar:** de live Experience rate staat bewust hoger ("andere opbouw"); de XP per uur is dus geen bot-fout. Niet verder onderzoeken.
+- **Bouw:** `startQuest` roept `packTeleport` aan: zonder reismiddel in de tas (sieraad of tablet, `travelItemIn`) en met een in de bank loopt hij eerst naar de dichtstbijzijnde bank en neemt één sieraad of `TABLET_STACK` tablets mee ("Neemt ... mee voor de quest, om terug te kunnen."). De quest wacht zolang de errand loopt (`errands.busy`).
+- **Na een gestopte quest:** `endQuestRun` zet `entry.questEndedAt` (niet bij "done"); `unstrand` heeft dan 15 min (`QUEST_STRAND_MS`) genoeg aan één geblokkeerde wandeling in plaats van drie.
+- **Validatie:** syntax en suite (154 tests, 14 fails omgeving). Geen unit-test: zit in de plugin-factory. In de logs: "mee voor de quest", stranded kort na quest_end.
+
 ## Sessie 21-11-2026 (11:15): Mole vechten, teleport houden, quest-spullen houden (branch `adventurers/teleports-houden`)
 
 - **Controle 10:40 (2f29401, 08:48-09:28 UTC):** Mole-hol 2 bots, 4,5 en 2,5 min binnen, beide met een teleport uit de tas weg (touw nog niet gebruikt). Levels-metric: 60 regels. "20 x 20 x" weg. Strandingen na quests: Patrickbot 13 op het Misthalin-eiland (3 min), Jorgbot 14 in Corsair Cove (21 min, 20 pogingen, home teleport op cooldown sinds 08:39). Jorgbot 13 verkocht soft clay voor Prince Ali Rescue een minuut na het kopen.
