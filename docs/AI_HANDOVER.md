@@ -5,6 +5,18 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 21-11-2026 (11:40): PR #19 bijgewerkt; Morytania en Gnome Stronghold (branch `adventurers/morytania-leg`)
+
+- **PR #19 (Fase 5):** main erin gemerged (conflicten: planner-opties `endgame` en `unlocks` samen, requires samen, handover beide). Ook de oudere remote merge van 20-11 meegenomen. Suite 158 tests, 14 fails (omgeving). Mergeable: clean. Nog niet mergen tot quests vaker afkomen.
+- **Morytania:** `nextLeg` nam een hub binnen een `enterVia`-gebied als eerste leg vanaf buiten (Canifis op 243 tegels van Varrock-oost, over de Salve). Nu niet meer: zo'n hub alleen via links. Varrock-oost → Slayer Tower/Mazchna/Mort'ton: eerst Paterdomus.
+- **Gnome Stronghold (1 van 14 aangekomen):** BFS zonder transports: geen weg door de grote poort (Shortest Path "Open Gate" 190, 2461,3382 ↔ 2461,3385, 3 tegels). De deuropener kent die poort niet.
+  - `travel-hubs.json`: lockedArea "Gnome Stronghold" [2370,3386,2498,3518], `enterVia` gnome_agility (handwerk).
+  - `nextLeg` ook naar buiten via de hubs (`leaving`): van binnen eerst een hub binnen, dan de poort.
+  - `SHORTCUT_HOPS` neemt ook grote poorten (menu Open Gate/Door, verplaatsing ≥ 3 tegels, niet in de Wilderness).
+  - `walkTo`-fail: staat hij bij zo'n poort of shortcut (`shortcutHop`), dan erdoor en verder (errand `ended: shortcut`).
+- **Validatie:** tests in `bot-travel-hubs` (Morytania, Stronghold in en uit). Suite 157 tests, 14 fails.
+- **In de logs:** errand `shortcut`, level_hop "Open Gate", Gnome Stronghold/Nieve `arrived`; walk_blocked met leg canifis vanaf x 3240-3290 hoort weg te zijn.
+
 ## Sessie 21-11-2026 (11:20): teleport mee naar quests (branch `adventurers/quest-teleport`)
 
 - **Eigenaar:** de live Experience rate staat bewust hoger ("andere opbouw"); de XP per uur is dus geen bot-fout. Niet verder onderzoeken.

@@ -47,15 +47,24 @@ function nextLeg(here, goal, avoid = null, source = null) {
   // but the river is between).
   const entry = enteredVia(goal, source);
   const fromOutside = entry && !inArea(here, entry.area);
-  if ((goal.z ?? 0) !== z || (!fromOutside && chebyshev(here, goal) <= DIRECT_TILES)) return null;
+  // Out of such an area the same way: by its hubs (out of the Gnome Stronghold by its gate).
+  const inside = enteredVia(here, source);
+  const leaving = inside && !inArea(goal, inside.area);
+  if ((goal.z ?? 0) !== z || (!fromOutside && !leaving && chebyshev(here, goal) <= DIRECT_TILES)) return null;
   const usable = [...hubs.values()].filter((hub) => hub.z === z && !avoid?.has?.(hub.key));
   const dist = new Map();
   const first = new Map();
   const done = new Set();
-  // From here: hubs within a plannable walk, except the one it stands at.
+  // From here: hubs within a plannable walk, except the one it stands at. Not one inside an
+  // area entered only by certain hubs while it stands outside: the way in is by those links.
+  // Canifis is 243 tiles from Varrock's east bank, across the Salve; bots took it as their first
+  // leg, the planner found no way, and they stood there ("leg canifis, plan none", 21-11-2026).
   for (const hub of usable) {
     const away = chebyshev(here, hub);
     if (away > DIRECT_TILES || away <= AT_HUB_TILES) continue;
+    const hubArea = enteredVia(hub, source);
+    if (hubArea && !inArea(here, hubArea.area)) continue;
+    if (leaving && !inArea(hub, inside.area)) continue;
     dist.set(hub.key, away * UNCHECKED_COST);
     first.set(hub.key, hub);
   }

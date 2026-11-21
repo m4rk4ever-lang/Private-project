@@ -1174,9 +1174,15 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
 
   // Agility shortcuts on the surface (the Grand Exchange's underwall tunnel to Edgeville, 21),
   // from the same table: taken when one is close by and saves a good part of the walk.
+  // Also the big gates that put you through in one go (the Gnome Stronghold's: Open Gate moves
+  // 3 tiles), which the door opener does not handle: the walk stood outside it (21-11-2026).
   const SHORTCUT_HOPS = (() => {
     try {
-      const rows = require("../../agent/data/transports.json")?.transports?.agility_shortcuts ?? [];
+      const table = require("../../agent/data/transports.json")?.transports ?? {};
+      const gates = (table.transports ?? []).filter(([from, to, menu]) => Array.isArray(from) && Array.isArray(to)
+        && /^open (gate|door)\b/i.test(String(menu ?? "")) && Math.max(Math.abs(from[0] - to[0]), Math.abs(from[1] - to[1])) >= 3
+        && !inWilderness(from[0], from[1]));
+      const rows = [...(table.agility_shortcuts ?? []), ...gates];
       const hops = [];
       for (const [from, to, menu, id, skills, items, quests, varbits, varps] of rows) {
         if (!Array.isArray(from) || !Array.isArray(to) || items || quests || varbits || varps) continue;
@@ -1596,6 +1602,12 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         // (Pay-toll, or Open after Prince Ali Rescue), then the walk again from the other side.
         if (crossTollGate(entry, player, to)) {
           measured(player, "toll_gate", outcome);
+          return;
+        }
+        // Stopped beside a gate or shortcut through the wall between it and the place (the Gnome
+        // Stronghold's gate): through it, as at the start of a walk, and on from the far side.
+        if (!hopped && shortcutHop(player, to) && walkTo(entry, to, { reason, arrive, replan, say, urgent })) {
+          measured(player, "shortcut", outcome);
           return;
         }
         measured(player, "blocked", outcome);

@@ -81,3 +81,32 @@ test("Karamja: across by boat (Port Sarim, Ardougne, Rimmington), not on foot (c
   assert.equal(Hubs.boatArea({ x: 2957, y: 3215, z: 0 }), null);
   assert.equal(Hubs.boatArea({ x: 3041, y: 3193, z: 0 }), null);
 });
+
+test("travel hubs: into Morytania from Varrock's east bank by Paterdomus, not straight at Canifis", () => {
+  const { nextLeg } = require("../plugins/bots/behaviours/navigation/TravelHubs.PlayerBots");
+  // walk_blocked 21-11-2026: "leg canifis, plan none" from here to the Slayer Tower and Mazchna.
+  assert.equal(nextLeg({ x: 3251, y: 3428, z: 0 }, { x: 3428, y: 3535, z: 0 })?.key, "paterdomus");
+  assert.equal(nextLeg({ x: 3263, y: 3430, z: 0 }, { x: 3511, y: 3509, z: 0 })?.key, "paterdomus");
+  // Inside Morytania a near hub is still a leg of its own.
+  assert.notEqual(nextLeg({ x: 3500, y: 3480, z: 0 }, { x: 3489, y: 3290, z: 0 })?.key, "paterdomus");
+});
+
+test("travel hubs: into the Gnome Stronghold by its gate, also from close by", () => {
+  const { nextLeg, onFoot } = require("../plugins/bots/behaviours/navigation/TravelHubs.PlayerBots");
+  // Seers, the Barbarian Outpost (a games necklace lands there): 220 and 112 tiles, walls between.
+  for (const from of [{ x: 2694, y: 3426, z: 0 }, { x: 2511, y: 3548, z: 0 }]) {
+    const leg = nextLeg(from, { x: 2474, y: 3436, z: 0 });
+    assert.ok(leg, JSON.stringify(from));
+    assert.notEqual(leg.key, "gnome_agility");
+  }
+  // At the gate: the agility course is the next leg (through the gate).
+  assert.equal(nextLeg({ x: 2461, y: 3381, z: 0 }, { x: 2465, y: 3490, z: 0 })?.key, "gnome_agility");
+  assert.equal(onFoot({ x: 2465, y: 3490, z: 0 }), true);
+});
+
+test("travel hubs: out of the Gnome Stronghold by its gate", () => {
+  const { nextLeg } = require("../plugins/bots/behaviours/navigation/TravelHubs.PlayerBots");
+  // Nieve to Ardougne (220 tiles, the wall between): first to the agility hub inside, then the gate.
+  assert.equal(nextLeg({ x: 2465, y: 3490, z: 0 }, { x: 2662, y: 3305, z: 0 })?.key, "gnome_agility");
+  assert.equal(nextLeg({ x: 2474, y: 3438, z: 0 }, { x: 2662, y: 3305, z: 0 })?.key, "gnome_stronghold_gate");
+});
