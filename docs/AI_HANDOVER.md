@@ -13,6 +13,20 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 - **Bezettingscontrole (bosses):** `precheck` sluit een boss uit met `boss_taken` (detail `by`) als een andere online avonturier er al mee bezig is (`phase` boss, of errand met `plan.kind` boss) en de boss niet in een multi-combat zone ligt (`bossInMulti`, uit `world.json`). Barrows uitgezonderd (eigen broers per speler). `startGroup` neemt alleen nog multi-combat bosses ("samen"). Nu: Barrows single (uitgezonderd), Giant Mole multi, Sarachnis single.
 - **Nog niet:** bezetting van trainingsplekken (combat-clusters, volle mijn). `ActivityRegistry` heeft al capacity-slots per activiteit; meten in de logs voordat daar iets bij komt.
 - **Validatie:** suite 147 tests, 16 fails (deze branch zonder PR #32: 14 omgeving + de 2 oude). Bezetting niet unit-getest (zit in de plugin-factory).
+## Sessie 21-11-2026 (09:45): quest-spullen vooraf halen (branch `adventurers/next`)
+
+- **Data (feedback-log tot 22:25 UTC):** top-oorzaak "talked, but the step did not advance" (9 van 44). Doric's Quest stage 10: dialoog "Certainly, I'll be right back!" steeds opnieuw (geen clay/ertsen). Romeo & Juliet stage 50 ("Bring the cadava berries to the Apothecary"): uitleg over de bessen, geen bessen. Geen "Gaat ... halen" of "Mist" in de log: de helper-stap gaf geen `needs`.
+- **Fix:** `QuestHelperSteps` leest ook `overview.itemRequirements` (onvervuld, met ids) als `required(player)`. `QuestPlay.tick` haalt die eerst, één per 5 s, elk één keer (`run.reqTried`, max 8), vóór de aangeraden spullen; via `acquire` (bank, GE, zelf verzamelen). Niet te krijgen: geen stop.
+- **Validatie:** nieuwe test in `bot-quest-play` (Doric: clay, dan copper ore). Suite 147 tests, 14 fails (omgeving).
+- **In de logs:** "Gaat ... halen voor ... (nodig voor de quest)", quest_end voor Doric's Quest en Romeo & Juliet.
+
+## Sessie 21-11-2026 (09:30): de vaste test-fails uitgezocht (branch `adventurers/next`)
+
+- De "16 vaste fails" waren niet allemaal omgeving. Gerepareerd (verouderde tests, geen codewijziging):
+  - `bot-accounts`: bij 61 Woodcutting krijgt een gegenereerd account een dragon axe (gear-lijst), de test verwachtte rune.
+  - `bot-ironmen`: `adventurers.json` heeft geen `names` meer maar `clans`; de test telt nu via `Clans.namesOf`.
+- Resterend 14, allemaal omgeving: 12 × `Cannot find module '../dist/Server'` (of `dist/...MobileList`, `src/.../PlayerRights`: server niet gebouwd), 1 × `bot-toll-gate` (ts-node: TS5011/TS5101 tsconfig), 1 × `bot-index-timer` telt 2. Draait wel na `yarn build` in de server.
+- **Nieuwe basislijn:** 146 tests, 14 fails.
 
 ## Sessie 21-11-2026 (09:20): waarom lange wandelingen stilvallen (branch `adventurers/long-legs`)
 

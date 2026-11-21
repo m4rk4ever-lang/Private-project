@@ -16,6 +16,7 @@ Indeling per versie:
 ### Opgelost
 - Het hol van de Giant Mole is nu multi-combat, zoals in OSRS. Twee avonturiers bij de Mole vechten nu allebei; eerder stond er één werkloos naast.
 - Een avonturier met een volle tas vlak bij een bank of de GE gooide spullen op de grond, zelfs de spade die hij net voor de Giant Mole had gekocht. Bij een bank stort hij nu zijn tas, en spullen voor zijn klus gooit hij nooit weg.
+- Avonturiers praatten bij Doric's Quest en Romeo & Juliet steeds met Doric of de Apothecary zonder de spullen die de quest vraagt (clay en ertsen, cadava berries), en gaven de quest dan op. Ze halen nu eerst de spullen die de quest vereist: uit de bank, op de GE of zelf verzameld.
 - Een avonturier die met een staf magic traint, trok na een herstart melee-uitrusting aan (rune platebody, berserker helm) en bleef daarin toveren. Zonder klus houdt hij nu de uitrusting die bij zijn wapen hoort.
 - Avonturiers liepen naar Karamja (Musa Point, Brimhaven) alsof het geen eiland was, en liepen vast. Ze nemen nu de boot: van Port Sarim met Captain Tobias, tussen Ardougne, Brimhaven en Rimmington met Captain Barnaby, en terug met de douane. Een teleport, zoals een amulet of glory, gaat nog steeds voor. Shilo Village (Duradel) telt pas na de quest Shilo Village.
 - Op weg naar Mort'ton of de Barrows probeerden avonturiers vanaf de Digsite rechtdoor over de rivier Salve te lopen. Ze gaan Morytania nu altijd binnen via de tempel van Paterdomus en Canifis, en er is een tussenstop bij Mort'ton.

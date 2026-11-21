@@ -40,3 +40,29 @@ test("a quest object is found by the form the helper names, also on a multi-loc'
   assert.equal(matchesIds(core, 999, [1782]), false);
   assert.equal(matchesIds({}, 1781, [1782]), false);
 });
+
+test("a quest's required items it lacks are fetched before it talks (Doric's clay and ores)", () => {
+  const { createQuestPlay } = require("../plugins/bots/adventurers/QuestPlay.PlayerBots");
+  const fetched = [];
+  const helper = {
+    available: () => true, keyOf: () => "dorics_quest", status: () => null, recommended: () => [],
+    current: () => ({ id: "talk-doric", kind: "npc", npc: "Doric", ids: [], needs: [], at: [2951, 3450, 0], text: "Bring Doric 6 clay, 4 copper ore and 2 iron ore." }),
+    required: () => [{ ids: [434], amount: 6, name: "Clay" }, { ids: [436], amount: 4, name: "Copper ore" }],
+  };
+  const player = {
+    getLocation: () => ({ getX: () => 2951, getY: () => 3450, getZ: () => 0 }),
+    getInventory: () => ({ getAmount: () => 0, getItems: () => [] }),
+    getDialogueManager: () => ({ isActive: () => false }),
+    getUsername: () => "Testbot",
+  };
+  const play = createQuestPlay({ core: {}, world: {}, walkTo: () => true, note: () => {}, helper,
+    quests: () => [{ name: "Doric's Quest", isComplete: () => false }],
+    playthroughs: {}, acquire: (entry, ids, amount, name) => { fetched.push([name, amount]); return true; } });
+  const entry = { player, name: "Testbot" };
+  assert.equal(play.start(entry, "Doric's Quest", 0), true);
+  assert.equal(play.tick(entry, 1_000), "running");
+  assert.deepEqual(fetched, [["Clay", 6]]);
+  // The next one a moment later, each once.
+  play.tick(entry, 7_000);
+  assert.deepEqual(fetched, [["Clay", 6], ["Copper ore", 4]]);
+});
