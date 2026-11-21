@@ -12,7 +12,9 @@ test("about the configured share of bots are Ironmen, fixed by name", () => {
     assert.ok(Math.abs(counts[mode] / 4000 - share) < 0.02, `${mode}: ${counts[mode]}`);
   }
   assert.equal(modeFor("Zezima"), modeFor("Zezima"));
-  assert.ok(adventurers.names.length === 5, "adventurers are spawned apart, never through assignIronMode");
+  // Adventurers live in clans now (adventurers.json "clans"; the flat "names" list is gone): spawned
+  // apart, never through assignIronMode.
+  assert.ok(require("../plugins/bots/adventurers/Clans.PlayerBots").namesOf(adventurers).length >= 5, "adventurers are spawned apart, never through assignIronMode");
 });
 
 test("a Hardcore death is announced with the total level", () => {

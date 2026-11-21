@@ -1,4 +1,10 @@
 {
+  "questHold": {
+    "$comment": "Handmatige hold (AI_Constitution §28): deze quests kiezen avonturiers niet, tot de oorzaak is opgelost. Per quest de reden en sinds wanneer. ::advquest en ::advquestall (eigenaarstests) spelen ze wel. Haal een quest hier weg om hem weer vrij te geven.",
+    "quests": [
+      { "name": "A Porcine of Interest", "since": "20-11-2026", "reason": "Sluit bots op in de Sourhog-grot (3156,9715): de blokkades en het touw naar buiten staan niet in transports.json. 36 mislukte pogingen in de feedback-log, de 3-uursblokkade gaat steeds opnieuw in." }
+    ]
+  },
   "grantedQuests": {
     "$comment": "Tijdelijk: deze quests (die een skill, minigame of gebied openen) staan voor avonturiers op voltooid, zonder beloningen (geen XP, items of questpunten), tot ze speelbaar zijn uitgewerkt. Haal een quest hier weg om hem weer zelf te laten spelen.",
     "quests": ["Druidic Ritual", "Rune Mysteries", "Priest in Peril", "Nature Spirit", "Lost City", "Fairytale I - Growing Pains", "Fairytale II - Cure a Queen", "Tree Gnome Village", "The Grand Tree", "Plague City", "Bone Voyage", "Monkey Madness I", "Swan Song", "Desert Treasure I", "Desert Treasure II - The Fallen Empire", "The Fremennik Trials", "Song of the Elves", "Dragon Slayer I", "Lunar Diplomacy", "Ghosts Ahoy", "Children of the Sun"]
@@ -25,6 +31,14 @@
   "unlockChance": 0.5,
   "questChance": 0.2,
   "moneyChance": 0.1,
+  "endgame": {
+    "$comment": "Maxed accounts (share of skills at 99): bossing and money-making for upgrades and a bigger bank (owner 20-11-2026). bossChance/moneyChance are floors; moneyBossShare: of the money picks, this share a boss; questChance a ceiling.",
+    "share": 0.8,
+    "bossChance": 0.6,
+    "moneyChance": 0.6,
+    "moneyBossShare": 0.5,
+    "questChance": 0.1
+  },
   "extraPerClan": 15,
   "testProfiles": [
     { "name": "vroege vechter", "count": 3, "levels": { "ATTACK": 30, "STRENGTH": 30, "DEFENCE": 25, "HITPOINTS": 30, "PRAYER": 15, "WOODCUTTING": 15, "MINING": 15, "FISHING": 10, "COOKING": 10 }, "quests": 5, "coins": 10000 },

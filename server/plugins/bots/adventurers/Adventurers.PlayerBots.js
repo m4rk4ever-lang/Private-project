@@ -80,9 +80,12 @@ const { markHonest, markAdventurer } = require("../brain/Honest.PlayerBots");
 const { errandsFor, inWilderness, bestTeleport } = require("../brain/Errands.PlayerBots");
 const { createLoopGuard } = require("./Loops.PlayerBots");
 const Requirements = require("./Requirements.PlayerBots");
+const { questEnd } = require("./QuestEnd.PlayerBots");
 const Loadout = require("./Loadout.PlayerBots");
 /** Unlock values for the planner (Phase 5, AI_Constitution §10, §11). */
 const unlockValues = require("../data/unlock-values.json");
+/** Locked areas (Morytania, the desert): the walk guard reads them (lockedAway). */
+const travelHubsData = require("../data/travel-hubs.json");
 /** Within this many tiles of its job's place it is there, and its stretch runs. */
 const ARRIVED_TILES = 25;
 /** A walk that never gets there (a blocked way) stops pausing the stretch after this. */
@@ -115,10 +118,17 @@ const DANGER_MODES = new Set(["combat_training", "combat_ranged", "combat_magic"
 const BID_WAIT_MS = 3 * 60_000;
 /** How much further than a bank it walks to the Grand Exchange to sell (saving up, offers in). */
 const SELL_DETOUR_TILES = 120;
+/** How often the `levels` metric (all levels of a bot) is written. */
+const SKILLS_METRIC_MS = 60 * 60_000;
+/** This near a bank (or the Grand Exchange) it banks there, without a walk: a bag is never emptied on the floor beside one. */
+const AT_BANK_TILES = 12;
+/** At most this many bags of materials bought at once for a buy-to-train job (half its coins at most). */
+const BUY_LOADS_MAX = 30;
 /** Coins a clanmate always keeps for itself before it chips in toward another's goal. */
 const CLAN_KEEP = 5_000;
 /** From this y the map is underground (dungeons, caves): no walking route there yet. */
 const UNDERGROUND_Y = 6400;
+const { offSurface, chooseLevelHop, levelHopsFrom, reachableOnFoot } = require("../behaviours/navigation/LevelHops.PlayerBots");
 /** No XP and no step for this long while training: it is stuck, it picks something else. */
 const STUCK_MS = 75_000;
 /** The longest one Slayer task may take before it gives up on it for now. */
@@ -130,6 +140,34 @@ const TABLETS = ["VARROCK_TELEPORT", "LUMBRIDGE_TELEPORT", "FALADOR_TELEPORT", "
  * dueling, an amulet of glory. Each charge is one errand teleport (Errands.PlayerBots.js).
  */
 const JEWELLERY = ["GAMES_NECKLACE_8_", "RING_OF_DUELING_8_", "AMULET_OF_GLORY_4_"];
+/**
+ * The teleport jewellery it keeps one of each, cheapest first, with coins to spare (the owner:
+ * "buy teleports more often when the money is there, without spending it all; efficiency counts").
+ * 385 of 462 walks of 2 minutes or more went without a teleport, 1,530 minutes (20-11-2026).
+ */
+const TRAVEL_JEWELLERY = ["GAMES_NECKLACE_8_", "RING_OF_DUELING_8_", "SKILLS_NECKLACE_4_", "AMULET_OF_GLORY_4_", "RING_OF_WEALTH_5_"];
+/**
+ * Teleport tablets it keeps a few of (5), with coins to spare: any spellbook's, as the errands
+ * break any tablet with a spell destination. Not the standard ones whose spell its Magic casts
+ * (`castFrom`, it carries the runes instead).
+ */
+const TRAVEL_TABLETS = [
+  { name: "VARROCK_TELEPORT", castFrom: 25 }, { name: "LUMBRIDGE_TELEPORT", castFrom: 31 }, { name: "FALADOR_TELEPORT", castFrom: 37 },
+  { name: "CAMELOT_TELEPORT", castFrom: 45 }, { name: "ARDOUGNE_TELEPORT" }, { name: "WATCHTOWER_TELEPORT" },
+  { name: "DRAYNOR_MANOR_TELEPORT" }, { name: "SALVE_GRAVEYARD_TELEPORT" }, { name: "FENKENSTRAINS_CASTLE_TELEPORT" },
+  { name: "MORTTON_TELEPORT" }, { name: "CATHERBY_TELEPORT" }, { name: "FISHING_GUILD_TELEPORT" }, { name: "KHAZARD_TELEPORT" },
+];
+const TABLET_STACK = 5;
+/** After a quest that stopped, this long its first blocked walk sends it home. */
+const QUEST_STRAND_MS = 15 * 60_000;
+/** No jewellery beyond the first under this many coins; one piece at most this share of its coins, and per visit this share. */
+const TRAVEL_MIN_COINS = 50_000;
+const TRAVEL_PIECE_SHARE = 0.02;
+const TRAVEL_VISIT_SHARE = 0.03;
+/** Slayer rings, the one it buys first; any charge takes it to a master's teleport spot. */
+/** A walk to a Slayer master longer than this: with the Slayer ring's teleport, when it can get one. */
+const SLAYER_RING_TILES = 300;
+const SLAYER_RINGS = ["SLAYER_RING_8_", "SLAYER_RING_7_", "SLAYER_RING_6_", "SLAYER_RING_5_", "SLAYER_RING_4_", "SLAYER_RING_3_", "SLAYER_RING_2_", "SLAYER_RING_1_", "SLAYER_RING_ETERNAL_"];
 const TABLET_BUDGET = 5000;
 /** Arrows, or casts' worth of runes, it wants before it fights that way. */
 /** Places the travel data has no stop for, named on the page when an adventurer is there. */
@@ -414,6 +452,16 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         savedTask: entry.savedTask ? { kind: entry.savedTask.kind, mode: entry.savedTask.mode ?? null, boss: entry.savedTask.bossId ?? null } : null,
       });
       entry.metrics = { since: nowMs, time: {}, xp, coins, events: {} };
+      // Once an hour its levels (`levels`; Phase 6, skills complete and efficient): which skills lag,
+      // per bot and over all, not only the XP of the last five minutes.
+      if (nowMs >= (entry.skillsMetricAt ?? 0)) {
+        entry.skillsMetricAt = nowMs + SKILLS_METRIC_MS;
+        const manager = entry.player.getSkillManager();
+        const levels = {};
+        for (const skill of core.Skill.values()) levels[skill.getName().toLowerCase()] = manager.getMaxLevel(skill);
+        metric({ kind: "levels", bot: entry.name, levels, total: Object.values(levels).reduce((sum, level) => sum + level, 0),
+          combat: manager.getCombatLevel() });
+      }
     }
     metric({ kind: "skills", trained: bySkill,
       untouched: core.Skill.values().map((skill) => skill.getName().toLowerCase()).filter((skill) => !bySkill[skill]) });
@@ -424,7 +472,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const memory = process.memoryUsage();
     metric({ kind: "server", adventurers: adventurers.size, bots, tickAvgMs: tickCost.count ? Math.round(tickCost.totalMs / tickCost.count * 10) / 10 : null,
       tickMaxMs: Math.round(tickCost.maxMs), heapMb: Math.round(memory.heapUsed / 1048576), rssMb: Math.round(memory.rss / 1048576),
-      questsBlocked: [...questsBlocked].filter(([, until]) => until > nowMs).map(([name]) => name) });
+      questsBlocked: [...questsBlocked].filter(([, until]) => until > nowMs).map(([name]) => name),
+      questsHeld: (data.questHold?.quests ?? []).map((quest) => quest.name) });
     Object.assign(tickCost, { count: 0, totalMs: 0, maxMs: 0 });
   }
 
@@ -536,6 +585,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         entry.questRun = run;
         continue;
       }
+      endQuestRun(entry, run, "gather", `gathering ${itemName(itemId).toLowerCase()}`);
       note(entry.player, `Kan ${itemName(itemId).toLowerCase()} niet kopen; gaat het zelf verzamelen voor ${run.name}.`, "quest");
       return true;
     }
@@ -639,28 +689,42 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (notes.length > 0) deposit(buyer, notes);
     for (const id of buy.materials) {
       if (buyer.getInventory().getAmount(id) <= 0 && banked(buyer, id) > 0) {
-        withdraw(buyer, id, Math.min(buy.amount, Math.floor(27 / buy.materials.length)));
+        withdraw(buyer, id, Math.min(buy.amount, loadShare(buyer, buy)));
       }
     }
   }
 
   /**
-   * At a bank before a processing job: everything but its materials, the tool of the recipe and
-   * its coins goes in, as a player empties the bag before fletching or making potions (the
-   * owner's rule: only what is processed, and how, in the bag).
+   * At a bank before a processing job: everything but its materials, the tool of the recipe,
+   * its coins and one way to teleport goes in, as a player empties the bag before fletching or
+   * making potions (the owner's rule: only what is processed, and how, in the bag). The teleport
+   * stays: Patrickbot 18 banked his games necklace, ring of dueling and skills necklace "for
+   * herblore", and a bot without one waited out the home teleport's 30 minutes when stranded.
    */
   function clearForProcessing(banker, buy) {
     const tool = buy.recipe.tool ? Shopping.idOf(core, buy.recipe.tool) : null;
     const keep = new Set([...buy.materials, Trade.COINS, ...(Number.isInteger(tool) ? [tool] : [])]);
+    const travel = travelItemIn(banker);
+    if (travel) keep.add(travel);
     const goods = [];
     for (const item of banker.getInventory().getItems() ?? []) {
       const id = item?.getId?.() ?? -1;
-      if (!(id > 0) || keep.has(baseId(id)) || goods.some((good) => good.itemId === id)) continue;
+      if (!(id > 0) || keep.has(baseId(id)) || keep.has(id) || goods.some((good) => good.itemId === id)) continue;
       goods.push({ itemId: id, amount: banker.getInventory().getAmount(id) });
     }
     const stored = deposit(banker, goods);
     if (stored.length > 0) note(banker, `Zet op de bank voor ${buy.skill.toLowerCase()}: ${stored.slice(0, 5).map((good) => itemName(good.itemId).toLowerCase()).join(", ")}${stored.length > 5 ? ` en ${stored.length - 5} meer` : ""}.`, "activity");
   }
+
+  /** A teleport tablet by its name ("Varrock teleport", "Salve graveyard teleport"). */
+  const isTeleportTablet = (id) => / teleport$/i.test(String(core.ItemDefinition?.forId?.(id)?.getName?.() ?? "")) && baseId(id) === id;
+  /** The one way to teleport a processing job keeps in its bag: charged jewellery first, else a tablet; null when it has none. */
+  function travelItemIn(player) {
+    const ids = (player.getInventory().getItems() ?? []).map((item) => item?.getId?.() ?? -1).filter((id) => id > 0);
+    return ids.find((id) => isJewellery(id)) ?? ids.find((id) => isTeleportTablet(id)) ?? null;
+  }
+  /** Materials per kind for one load: the bag less its coins and the teleport it keeps. */
+  const loadShare = (player, buy) => Math.floor((27 - (travelItemIn(player) ? 1 : 0)) / buy.materials.length);
 
   /** The materials it would buy for a skill now: { skill, recipe, itemId, name, amount, cost }, or null. */
   function buyPlan(player, skill) {
@@ -952,6 +1016,17 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   /** Charged teleport jewellery by its name (a games necklace(5), a ring of dueling(3) ...). */
   const JEWELLERY_NAME = /^(games necklace|ring of dueling|amulet of glory|skills necklace|combat bracelet|ring of wealth)\s*\(\d\)/i;
   const isJewellery = (id) => JEWELLERY_NAME.test(String(core.ItemDefinition?.forId?.(id)?.getName?.() ?? ""));
+  /** Its kind ("ring of wealth"), whatever its charges, or null. */
+  const jewelleryKind = (id) => JEWELLERY_NAME.exec(String(core.ItemDefinition?.forId?.(id)?.getName?.() ?? ""))?.[1]?.toLowerCase() ?? null;
+  /** The kinds it has: in the bag, worn or in the bank, any charge. */
+  function jewelleryKinds(player) {
+    const kinds = new Set();
+    const add = (items) => { for (const item of items ?? []) { const kind = item?.getId?.() > 0 ? jewelleryKind(item.getId()) : null; if (kind) kinds.add(kind); } };
+    add(player.getInventory().getItems());
+    add(player.getEquipment?.()?.getItems?.());
+    for (const bank of player.getBanks?.() ?? []) add(bank?.getItems?.());
+    return kinds;
+  }
 
   /** The travel things its gathering job carries (Loadout.travelKit), or null: all of them. */
   function travelKitFor(entry, player, plan = entry.plan ?? entry.savedTask) {
@@ -1093,16 +1168,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   const LEVEL_HOPS = (() => {
     try {
       const data = require("../../agent/data/transports.json");
-      const rows = data?.transports?.transports ?? [];
-      const hops = [];
-      for (const [from, to, menu, id, skills, items, quests, varbits, varps] of rows) {
-        if (!Array.isArray(from) || !Array.isArray(to) || items || quests || varbits || varps) continue;
-        if ((from[1] >= UNDERGROUND_Y) === (to[1] >= UNDERGROUND_Y)) continue;
-        if (!/^(climb-(down|up)|enter|leave|exit|go-down|go-up|walk-down|walk-up)\b/i.test(String(menu ?? ""))) continue;
-        const needs = [...String(skills ?? "").matchAll(/(\d+)\s+([A-Za-z]+)/g)].map(([, level, skill]) => ({ level: Number(level), skill: skill.toUpperCase() }));
-        hops.push({ from: { x: from[0], y: from[1], z: from[2] }, to: { x: to[0], y: to[1], z: to[2] }, menu: String(menu), id, needs });
-      }
-      return hops;
+      return levelHopsFrom(data?.transports?.transports);
     } catch {
       return [];
     }
@@ -1155,20 +1221,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   /** The way down or up to reach `to` when it is on the other side of the ground, or null. */
   function levelHop(player, to) {
     const here = player.getLocation();
-    const goingDown = to.y >= UNDERGROUND_Y;
-    if ((here.getY() >= UNDERGROUND_Y) === goingDown) return shortcutHop(player, to);
-    let best = null;
-    let bestCost = Infinity;
-    for (const hop of LEVEL_HOPS) {
-      if ((hop.to.y >= UNDERGROUND_Y) !== goingDown || hop.from.z !== here.getZ() || hop.to.z !== (to.z ?? 0)) continue;
-      if (hop.needs.some(({ level, skill }) => levelOf(player, skill) < level)) continue;
-      // The landing near the goal (the same mine or dungeon), the way in not too far off.
-      const landing = Math.max(Math.abs(hop.to.x - to.x), Math.abs(hop.to.y - to.y));
-      if (landing > 120) continue;
-      const cost = Math.max(Math.abs(hop.from.x - here.getX()), Math.abs(hop.from.y - here.getY())) + 3 * landing;
-      if (cost < bestCost) { bestCost = cost; best = hop; }
-    }
-    return best;
+    const goingDown = offSurface(to.y);
+    if (offSurface(here.getY()) === goingDown) return shortcutHop(player, to);
+    return chooseLevelHop(LEVEL_HOPS, { x: here.getX(), y: here.getY(), z: here.getZ() }, to, (skill) => levelOf(player, skill),
+      (from, tile) => reachableOnFoot(from, tile, (x, y, z) => core.RegionManager.getClipping(x, y, z, null)));
   }
 
   /** Clicks the hop's stairs or ladder (by its id near the tile, else by its name). */
@@ -1340,7 +1396,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       && spot.z === at.getZ() && Math.max(Math.abs(spot.x - at.getX()), Math.abs(spot.y - at.getY())) <= 10);
     recent.push({ x: at.getX(), y: at.getY(), z: at.getZ(), at: now() });
     entry.blockedFrom = recent;
-    if (recent.length < 3) return;
+    // Just after a quest that stopped: once is enough. Jorgbot 14 tried twenty times in 21
+    // minutes to walk out of Corsair Cove, where The Corsair Curse's ship had left it (21-11-2026).
+    const afterQuest = now() - (entry.questEndedAt ?? -Infinity) < QUEST_STRAND_MS;
+    if (recent.length < (afterQuest ? 1 : 3)) return;
     if (castHome(player)) {
       entry.blockedFrom = [];
       countEvent(entry, "teleportedOut");
@@ -1376,6 +1435,24 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       trade: fresh ? entry.lastTrade : null, ge, coins: Shopping.coinsOf(player), freeSlots: player.getInventory().getFreeSlots() });
   }
 
+  /**
+   * Whether `to` lies in a locked area (travel-hubs.json lockedAreas) it cannot walk to now
+   * (TravelHubs.onFoot: the quest or item, and a hub there joined to Lumbridge), and no teleport
+   * it carries lands within 30 tiles of it.
+   */
+  function lockedAway(player, to) {
+    if ((to.z ?? 0) !== 0 || to.y >= UNDERGROUND_Y) return false;
+    const locked = (travelHubsData.lockedAreas ?? []).some(({ area }) => TravelHubs.inArea(to, area));
+    if (!locked) return false;
+    if (TravelHubs.onFoot(to, null, questDone(player), (item) => Shopping.owns(player, Shopping.idOf(core, item)))) return false;
+    try {
+      const teleport = bestTeleport(core, player, to, { questDone: questDone(player) });
+      return !(teleport && teleport.after <= 30);
+    } catch {
+      return true;
+    }
+  }
+
   /** Whether one of its teleports (spell, tablet, jewellery) saves a long walk to `to` now. */
   function teleportsNear(player, to) {
     try {
@@ -1385,9 +1462,18 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         return query.complete === true;
       };
       // Not for a place under the ground: that one needs its ladder after the teleport too.
-      return (to.z ?? 0) === 0 && to.y < UNDERGROUND_Y && bestTeleport(core, player, to, { questDone }) !== null;
+      return (to.z ?? 0) === 0 && !offSurface(to.y) && bestTeleport(core, player, to, { questDone }) !== null;
     } catch {
       return false;
+    }
+  }
+
+  /** The navigation's last long-walk decision (LongRoutes), for the walk_blocked metric; null without it. */
+  function lastRouteOf(player) {
+    try {
+      return require("../behaviours/navigation/LongRoutes.PlayerBots").lastRouteOf(player);
+    } catch {
+      return null;
     }
   }
 
@@ -1399,6 +1485,30 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // carried runes for Falador Teleport but walked from the GE through the underwall tunnel to
     // Falador Park, the tunnel's few steps being too short a walk for a teleport (20-11-2026).
     const teleportFirst = !hopped && teleportsNear(entry.player, to);
+    // Across the water (the mainland and Karamja): to the boat's dock, on board through the NPC's
+    // own option and fare (travel-hubs.json "boats"), then on from where it lands (tickAll). The
+    // owner: "there is a perfectly good boat for 30 gp" (20-11-2026).
+    const boat = hopped || teleportFirst ? null : TravelHubs.boatFor(here(entry.player), { x: to.x, y: to.y, z: to.z ?? 0 });
+    if (boat) {
+      if (Shopping.coinsOf(entry.player) < boat.fare) {
+        entry.refusal = { why: "no_fare", errand: reason, to: placeName(to), place: { x: to.x, y: to.y, z: to.z ?? 0 } };
+        return false;
+      }
+      const options = { reason, arrive, replan, say, urgent };
+      return walkTo(entry, { x: boat.from[0], y: boat.from[1], z: boat.from[2] ?? 0, name: `de boot (${boat.name})` }, {
+        reason, replan, say, urgent, hopped: true,
+        arrive: (sailor) => {
+          const ok = board(sailor, boat);
+          metric({ kind: "boat", bot: entry.name, to: boat.name, ok, why: ok ? null : "no_npc", for: placeName(to) });
+          if (!ok) {
+            note(sailor, `Vond geen schipper voor de boot ${boat.name}.`, "activity");
+            return;
+          }
+          note(sailor, `Neemt de boot: ${boat.name} (${boat.fare} gp), op weg naar ${placeName(to)}.`, "activity");
+          entry.afterHop = { to, options, until: now() + 45_000, landing: { x: boat.to[0], y: boat.to[1] }, radius: 10, boat: true };
+        },
+      });
+    }
     const hop = hopped || teleportFirst ? null : levelHop(entry.player, to);
     if (hop) {
       const options = { reason, arrive, replan, say, urgent };
@@ -1411,7 +1521,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
           }
           note(player, `${hop.menu.split(" ")[0].replace(/-/g, " ")} (${hop.menu.split(" ").slice(1).join(" ").toLowerCase()}) op weg naar ${placeName(to)}.`, "activity");
           metric({ kind: "level_hop", bot: entry.name, menu: hop.menu, from: [hop.from.x, hop.from.y, hop.from.z], to: placeName(to) });
-          entry.afterHop = { to, options, down: hop.to.y >= UNDERGROUND_Y, until: now() + 20_000, landing: hop.shortcut ? hop.to : null, key: hop.shortcut ? shortcutKey(hop) : null };
+          entry.afterHop = { to, options, down: offSurface(hop.to.y), until: now() + 20_000, landing: hop.shortcut ? hop.to : null, key: hop.shortcut ? shortcutKey(hop) : null };
         },
       });
     }
@@ -1419,12 +1529,20 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // A refused errand says why (`entry.refusal`): a job that could not start because of it then
     // has a reason in its decision metric instead of "unknown".
     const refuse = (why) => { entry.refusal = { why, errand: reason, to: placeName(to), place: { x: to.x, y: to.y, z: to.z ?? 0 } }; return false; };
-    if (entry.offRoof && entry.player.getLocation().getZ() > 0 && reason !== "agility") return refuse("on_roof");
+    // Also mid-job on the course (food, a bank trip): a walk on floor 3 goes straight through the
+    // air beside the roof (Eeshwar, Falador, 20-11-2026). The course's own walk ("agility") may.
+    const fromHere = entry.player.getLocation();
+    if (fromHere.getZ() > 0 && reason !== "agility" && (entry.offRoof || roofCourse(fromHere))) return refuse("on_roof");
     // `urgent`: a full bag to bank goes even while other errands rest after a failed one.
     if (!run) return refuse("no_runtime");
     if (errands.busy(entry.player)) return refuse("busy");
     if (replan && !urgent && (entry.noErrandUntil ?? 0) > now()) return refuse("errands_resting");
     if (blockedPlace(entry, to)) return refuse("place_blocked");
+    // A place behind a lock (Morytania past the Salve, the desert past the Shantay Pass) that it
+    // cannot walk to: refused here, whoever asked, unless a teleport it carries lands there (the
+    // Barrows tablet). 98 walks into Morytania were blocked in 3 hours (Mazchna, Slayer Tower,
+    // Mort'ton, Canifis Rooftop): Priest in Peril is granted, but no walk leads in (20-11-2026).
+    if (lockedAway(entry.player, to)) return refuse("locked_area");
     // The same errand over and over without XP was a loop (Loops.PlayerBots.js): not now.
     if (loopGuard.blocked(entry, reason, placeKey(to))) return refuse("loop_blocked");
     // The errand walks it through its brain's navigation (doors, stairs, long routes). A new
@@ -1485,14 +1603,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         measured(player, "blocked", outcome);
         note(player, `Kwam niet bij ${placeName(to)}: de weg was versperd.`, "activity");
         // From under the ground to a place above it: up the ladder at the next look.
-        if (here.getY() >= 6400 && to.y < 6400) entry.climbOut = true;
+        if (offSurface(here.getY()) && !offSurface(to.y)) entry.climbOut = true;
         countEvent(entry, "walkBlocked");
         unstrand(entry, player);
         const at = player.getLocation();
         metric({ kind: "walk_blocked", bot: entry.name, reason, to: { name: placeName(to), x: to.x, y: to.y, z: to.z ?? 0 },
           where: [at.getX(), at.getY(), at.getZ()], tilesLeft: Math.max(Math.abs(at.getX() - to.x), Math.abs(at.getY() - to.y)),
           doorAttempt: stateOf(player)?.doorAttempt ? { id: stateOf(player).doorAttempt.objectId ?? stateOf(player).doorAttempt.object?.getId?.() ?? null } : null,
-          coins: Shopping.coinsOf(player), ...brainSnapshot(entry) });
+          coins: Shopping.coinsOf(player), route: lastRouteOf(player), ...brainSnapshot(entry) });
         // That place is out for a while; the next bank or shop is still fine.
         // A quest's walk tries again (doors, another way); its own tries decide when to give up.
         if (reason !== "quest") (entry.blockedPlaces ??= new Map()).set(placeKey(to), now() + BLOCKED_MS);
@@ -1574,6 +1692,53 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * landing sets the game's "has visited Zeah" (ClientOfKourend.Quest.js), which the jewellery's
    * Kourend teleports ask for. Then `resume`.
    */
+  /** On board: the boat's NPC near the dock, clicked on its destination option (fare paid by the ferry's plugin). */
+  function board(player, boat) {
+    const names = new Set(boat.npcs.map((name) => name.toLowerCase()));
+    const wanted = boat.options.map((option) => option.toLowerCase());
+    let npcs = [];
+    try {
+      npcs = core.World.getNpcsNear(player.getLocation(), 10, null) ?? [];
+    } catch {
+      npcs = [];
+    }
+    for (const npc of npcs) {
+      const definition = npc.getCurrentDefinition?.(player) ?? npc.getDefinition?.();
+      if (!names.has(String(definition?.getName?.() ?? "").toLowerCase())) continue;
+      const actions = (definition?.getActions?.() ?? []).map((action) => String(action ?? "").toLowerCase());
+      const index = actions.findIndex((action) => wanted.includes(action));
+      if (index < 0 || !core.operateNpc) continue;
+      core.operateNpc(player, npc.getIndex(), index + 1);
+      return true;
+    }
+    return false;
+  }
+
+  /** Off a ship's deck (Captain Barnaby lands on 2775,3233,1): the gangplank's Cross, near it. */
+  function crossGangplank(entry, nowMs) {
+    const player = entry.player;
+    if (nowMs < (entry.plankAt ?? 0)) return true;
+    entry.plankAt = nowMs + 4_000;
+    const at = player.getLocation();
+    for (let dx = -8; dx <= 8; dx += 1) {
+      for (let dy = -8; dy <= 8; dy += 1) {
+        for (const object of core.MapObjects?.mapObjects?.get?.(core.MapObjects.getHash(at.getX() + dx, at.getY() + dy, at.getZ())) ?? []) {
+          const loc = object.getLocation();
+          if (loc.getX() !== at.getX() + dx || loc.getY() !== at.getY() + dy) continue;
+          const options = (core.ObjectDefinition.forId(object.getId())?.getInteractions?.() ?? []).map((option) => String(option ?? "").toLowerCase());
+          const index = options.findIndex((option) => option === "cross");
+          if (index < 0) continue;
+          player.getMovementQueue().walkToObject(object, {
+            execute: () => world.emitObjectInteraction?.({ player, object, objectId: object.getId(), clickType: index + 1,
+              location: { x: loc.getX(), y: loc.getY(), z: loc.getZ() }, handled: false }),
+          });
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   function sailVeos(entry, to, resume = () => {}) {
     const option = Math.hypot(to.x - 1824, to.y - 3691) <= Math.hypot(to.x - 1504, to.y - 3399) ? "port piscarilius" : "land's end";
     return walkTo(entry, { ...VEOS_PORT_SARIM, name: "Veos in Port Sarim" }, {
@@ -1848,7 +2013,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         reason: "withdraw",
         arrive: (banker) => {
           clearForProcessing(banker, buy);
-          const share = Math.floor(28 / buy.materials.length) - 1;
+          const share = loadShare(banker, buy);
           const got = buy.materials.reduce((sum, id) => sum + withdraw(banker, id, Math.min(buy.amount, share)), 0);
           if (got > 0) {
             note(banker, `Haalt ${buy.materials.map(itemName).join(" en ")} van de bank om ${plan.skill.toLowerCase()} te trainen.`, "activity");
@@ -1873,9 +2038,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         // As many as its coins pay for (bag and bank; the exchange has a bank), keeping 200 over.
         const perLot = buy.cost / buy.amount;
         const wealth = Shopping.coinsOf(buyer) + banked(buyer, Trade.COINS);
-        // A stock for several loads (up to ten bags), as a player buys a lot and banks it, when its
-        // coins allow it with half of them to spare; else one load.
-        const loads = Math.max(1, Math.min(10, Math.floor((wealth / 2) / Math.max(1, perLot * buy.amount))));
+        // A stock for several loads (up to BUY_LOADS_MAX bags), as a player buys a lot and banks it,
+        // when its coins allow it with half of them to spare; else one load. A rich account buys a
+        // big stock and goes bank-anvil-bank, not to the exchange for every load (the owner).
+        const loads = Math.max(1, Math.min(BUY_LOADS_MAX, Math.floor((wealth / 2) / Math.max(1, perLot * buy.amount))));
         const amount = Math.max(0, Math.min(buy.amount * loads, Math.floor((wealth - 200) / Math.max(1, perLot))));
         // A lot of one or two is not worth the walk (and the next walk for the next one): ten at least.
         if (amount < Math.min(10, buy.amount)) {
@@ -2197,20 +2363,59 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * (snapshot().available is empty); when one is, it starts here.
    */
   function startQuest(entry, plan) {
+    // On hold (a saved task after a restart, the quest it left for a roof): not unless the owner asks.
+    if (!plan.forced && heldQuests.has(normalize(plan.quest.name))) {
+      return cannot(entry, "quest_on_hold", { quest: plan.quest.name });
+    }
     if (!questPlay.start(entry, plan.quest.name, now())) {
       note(entry.player, `${plan.quest.name} heeft nog geen bot-playthrough; overgeslagen.`, "quest");
       return cannot(entry, "no_quest_playthrough", { quest: plan.quest.name });
     }
+    const starts = (entry.questStarts ??= new Map());
+    starts.set(plan.quest.name, (starts.get(plan.quest.name) ?? 0) + 1);
     entry.phase = "quest";
     entry.plan = plan;
     entry.activity = null;
     entry.until = Infinity;
     note(entry.player, `Begint aan de quest ${plan.quest.name}.`, "quest");
+    packTeleport(entry);
     return true;
   }
 
-  /** A quest it could not finish lately (an NPC it could not find, a stuck walk). */
+  /**
+   * Into a quest with a way to teleport, as a player packs one: a quest's boat or ship can leave
+   * it where no road leads back (Corsair Cove, the Misthalin Mystery island), and the home
+   * teleport may be on its 30 minutes. One from its bank when the bag has none: a walk to the
+   * bank first, then the quest goes on.
+   */
+  function packTeleport(entry) {
+    const { player } = entry;
+    if (travelItemIn(player)) return false;
+    const banks = (player.getBanks?.() ?? []).flatMap((bank) => bank?.getItems?.() ?? []).map((item) => item?.getId?.() ?? -1);
+    const id = banks.find((banked) => banked > 0 && isJewellery(banked)) ?? banks.find((banked) => banked > 0 && isTeleportTablet(banked));
+    if (!Number.isInteger(id)) return false;
+    const bank = nearestBank(player, entry);
+    if (!bank) return false;
+    const label = itemName(id).toLowerCase();
+    return walkTo(entry, { ...bank, name: bank.name ?? bank.id }, {
+      reason: "withdraw",
+      arrive: (banker) => {
+        if (withdraw(banker, id, isJewellery(id) ? 1 : TABLET_STACK) > 0) note(banker, `Neemt ${label} mee voor de quest, om terug te kunnen.`, "quest");
+      },
+    });
+  }
+
+  /**
+   * Quests on hold by hand (adventurers.json "questHold", AI_Constitution §28): never chosen until
+   * the cause is fixed. A Porcine of Interest shut bots in the Sourhog cave and its 3-hour block
+   * kept running out and starting again (20-11-2026). The owner's tests (::advquest, the sweep)
+   * still play them.
+   */
+  const heldQuests = new Set((data.questHold?.quests ?? []).map((quest) => normalize(quest.name)));
+
+  /** A quest it could not finish lately (an NPC it could not find, a stuck walk), or one on hold. */
   function questAside(player, name) {
+    if (heldQuests.has(normalize(name))) return true;
     const entry = adventurers.get(player.getUsername?.());
     return (entry?.questsAside?.get(name) ?? 0) > now() || (questsBlocked.get(name) ?? 0) > now();
   }
@@ -2242,6 +2447,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // quest again, not "no stairs found" for every quest it tries from up there.
     if (!busy && entry.plan?.quest && roofCourse(entry.player.getLocation())) {
       entry.afterRoof = entry.plan.quest;
+      if (run) endQuestRun(entry, run, "roof", "on a rooftop course");
       entry.questRun = null;
       if (brain) brain.paused = false;
       getOffRoof(entry, nowMs);
@@ -2257,6 +2463,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       metric({ kind: "quest_done", bot: entry.name, quest: run.name, guide: run.helperKey ? "quest-helper" : "playthrough",
         minutes: startedAt ? Math.round((Date.now() - startedAt) / 6000) / 10 : null, steps: run.history?.length ?? null,
         dialogue: run.dialogue ?? [] });
+      endQuestRun(entry, run, "done");
       entry.jobEnd = "quest done";
     } else {
       // Stuck: put aside (longer each time it fails) and written down why, so the cause can be
@@ -2264,7 +2471,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const failures = (entry.questFailures ??= new Map());
       failures.set(run.name, (failures.get(run.name) ?? 0) + 1);
       (entry.questsAside ??= new Map()).set(run.name, nowMs + QUEST_ASIDE_MS * Math.min(8, 2 ** (failures.get(run.name) - 1)));
-      recordQuestFeedback(entry, questPlay.describeFailure({ ...entry, questRun: run }));
+      const failure = questPlay.describeFailure({ ...entry, questRun: run });
+      recordQuestFeedback(entry, failure);
+      endQuestRun(entry, run, "failed", failure?.reason ?? run.reason ?? null, failure?.stage);
       noteQuestFailure(run.name, entry.name);
       countEvent(entry, "questFailed");
       entry.jobEnd = `quest failed: ${run.reason ?? "?"}`;
@@ -2275,6 +2484,23 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     entry.until = 0;
     // In a sweep (::advquestall): on to the next quest no one has tried in it yet.
     if (sweep.active && nowMs < sweep.until) sweepNext(entry);
+  }
+
+  /**
+   * The quest_end metric: one line per attempt, however it ends (QuestEnd.PlayerBots.js), so the
+   * success rate per quest and where each attempt stopped can be counted from the logs.
+   */
+  function endQuestRun(entry, run, outcome, reason = null, stage = undefined) {
+    // Where a quest leaves it (an island, a cove reached by its boat) may have no walk back: its
+    // first blocked walk from there is enough to get out (unstrand).
+    if (outcome !== "done") entry.questEndedAt = now();
+    try {
+      const at = stage !== undefined ? stage : questPlay.describeFailure({ ...entry, questRun: run })?.stage;
+      const line = questEnd(run, outcome, { bot: entry.name, reason, stage: at, attempt: entry.questStarts?.get(run.name) ?? null });
+      if (line) metric(line);
+    } catch {
+      // A metric line, not a must: the quest goes on (or is put aside) either way.
+    }
   }
 
   /** One stuck quest, as a line in the feedback log (and the last few in memory for the page). */
@@ -2295,6 +2521,32 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
   }
 
+  /** The world's multi-combat zones (data/definitions/world.json), loaded once. */
+  let multiZones = null;
+  function bossInMulti(boss) {
+    if (!multiZones) {
+      try {
+        multiZones = (require("../../../data/definitions/world.json").zones ?? []).filter((zone) => (zone.tags ?? []).includes("multi-combat"));
+      } catch {
+        multiZones = [];
+      }
+    }
+    const z = boss.z ?? 0;
+    return multiZones.some((zone) => (zone.z ?? 0) === z && boss.x >= zone.minX && boss.x <= zone.maxX && boss.y >= zone.minY && boss.y <= zone.maxY);
+  }
+
+  /** Another online adventurer at (or on its way to) this boss where only one fights it, or null. */
+  function bossTakenBy(entry, boss) {
+    // Barrows: each player raises its own brothers, so a second one is no trouble.
+    if (bossInMulti(boss) || boss.kind === "barrows") return null;
+    for (const other of adventurers.values()) {
+      if (other === entry || !other.player?.isRegistered?.()) continue;
+      const busyWith = other.phase === "boss" || (other.phase === "errand" && other.plan?.kind === "boss");
+      if (busyWith && (other.plan?.boss?.id ?? null) === boss.id) return other.name;
+    }
+    return null;
+  }
+
   /** Adventurers whose stretch is over or nearly so, and that are online: free to join a group. */
   function freeCompanions(entry, nowMs) {
     return [...adventurers.values()].filter((other) => other !== entry && other.player?.isRegistered?.()
@@ -2310,7 +2562,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (companions.length === 0) return false;
     const members = [entry, ...companions];
     // A boss all of them can take on, together.
-    const shared = (data.bosses ?? []).filter((boss) => members.every((member) => snapshot(member.player).combat >= boss.combat));
+    // Only where they can all fight it at once (multi-combat, as the Giant Mole's lair): at a
+    // single-combat boss one stood idle beside the other (21-11-2026).
+    const shared = (data.bosses ?? []).filter((boss) => bossInMulti(boss) && members.every((member) => snapshot(member.player).combat >= boss.combat));
     if (shared.length > 0 && random() < 0.5) {
       const boss = shared[Math.floor(random() * shared.length)];
       for (const member of members) {
@@ -2512,6 +2766,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    */
   const troubledCourses = new Map();
   const COURSE_TROUBLE_MS = 60 * 60_000;
+  /** On a rooftop course this long without getting down: the home teleport. */
+  const ROOF_STUCK_MS = 3 * 60_000;
+  /** Up a floor off any course (a ladder it cannot reach, the air beside a roof): longer, the stairs get a chance first. */
+  const UPSTAIRS_STUCK_MS = 5 * 60_000;
 
   function getOffRoof(entry, nowMs) {
     const player = entry.player;
@@ -2520,7 +2778,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       entry.roofSince = null;
       // Under the ground (a basement, a dungeon: y 6400 and up) after a walk from there failed
       // (the Wizards' Tower basement to the GE): up the ladder first, then the walk again.
-      if (entry.climbOut && at.getY() >= 6400) {
+      if (entry.climbOut && offSurface(at.getY())) {
         if (climbDown(entry, nowMs, "up")) return true;
       }
       entry.climbOut = false;
@@ -2528,18 +2786,23 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       return false;
     }
     // Up there for minutes and the course does not bring it down (an obstacle it cannot do from
-    // where it stands): the home teleport, as a player stuck on a roof does.
-    if (roofCourse(at)) entry.roofSince ??= nowMs;
-    else entry.roofSince = null;
-    if (entry.roofSince && nowMs - entry.roofSince > 3 * 60_000 && castHome(player)) {
+    // where it stands): the home teleport, as a player stuck on a roof does. Also up a floor off
+    // any course with no way down that works: Eeshwar walked off the Falador roof on floor 3 into
+    // the air over the town (by the White Knights' castle), out of the course's reach, so this
+    // never fired and only the 60-minute stranded check could free it (20-11-2026).
+    entry.roofSince ??= nowMs;
+    const onCourse = roofCourse(at);
+    const upFor = onCourse ? ROOF_STUCK_MS : UPSTAIRS_STUCK_MS;
+    if (nowMs - entry.roofSince > upFor && castHome(player)) {
       entry.roofSince = null;
       entry.offRoof = false;
+      entry.climbingDown = false;
       countEvent(entry, "teleportedOut");
       // That course is out for a while, for every adventurer, and its saved job does not send it back.
-      const stuckOn = roofCourse(at)?.course ?? null;
+      const stuckOn = onCourse?.course ?? null;
       if (stuckOn) troubledCourses.set(stuckOn, nowMs + COURSE_TROUBLE_MS);
       if (entry.savedTask?.mode === "agility") entry.savedTask = null;
-      metric({ kind: "stranded", bot: entry.name, where: [at.getX(), at.getY(), at.getZ()], why: "roof", course: stuckOn });
+      metric({ kind: "stranded", bot: entry.name, where: [at.getX(), at.getY(), at.getZ()], why: onCourse ? "roof" : "upstairs", course: stuckOn });
       note(player, `Komt niet van het dak af; teleporteert naar huis (Lumbridge).${stuckOn ? ` Laat de ${stuckOn}-baan een uur liggen.` : ""}`, "activity");
       entry.phase = "waiting";
       entry.until = nowMs + 20_000;
@@ -2676,14 +2939,16 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       entry.startFailure = null;
       entry.refusal = null;
       const plan = chooseNext(view, questList(), {
-        available: view.available, questChance: data.questChance, moneyChance: data.moneyChance ?? 0.1, bosses: checked.bosses, bossChance: attempt === 0 ? data.bossChance : 0, random,
+        available: view.available, questChance: data.questChance, moneyChance: data.moneyChance ?? 0.1, bosses: checked.bosses, bossChance: attempt === 0 ? data.bossChance : 0, endgame: data.endgame ?? null, random,
         focus: data.focus?.[entry.name] ?? {}, busyModes, exclude, goal: goalOf(entry), explain: (decision) => { why = decision; },
         unlocks: unlockValues, unlockChance: data.unlockChance ?? 0.5,
       });
       const started = plan.kind === "quest" ? startQuest(entry, plan)
         : plan.kind === "boss" ? startBoss(entry, plan, nowMs)
         : startTraining(entry, plan, nowMs);
-      const failure = started ? null : entry.startFailure ?? (entry.refusal ? { why: entry.refusal.why === "not_buyable" ? "not_buyable" : "errand_refused", detail: entry.refusal } : null);
+      // A refused walk into a locked area is a missing requirement (remembered), not a hitch.
+      const refusedWhy = entry.refusal?.why === "not_buyable" ? "not_buyable" : entry.refusal?.why === "locked_area" ? "place_unreachable" : "errand_refused";
+      const failure = started ? null : entry.startFailure ?? (entry.refusal ? { why: refusedWhy, detail: entry.refusal } : null);
       // A missing requirement keeps this option out for a while (no pick, fail, same pick again).
       if (failure) Requirements.remember(entry.cannot, plan, failure, now(), { restingUntil: entry.noErrandUntil ?? 0 });
       decisionMetric(entry, plan, why, { attempt, started, exclude, failure, blocked: attempt === 0 ? checked.blocked : undefined });
@@ -2756,7 +3021,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const fightable = bosses.filter((boss) => {
       const result = Requirements.canExecute({ kind: "boss", boss }, ctx);
       if (!result.ok) blocked[`boss:${boss.id}`] = { why: result.why, ...(result.detail ? { detail: result.detail } : {}) };
-      return result.ok;
+      // Taken: another adventurer fights it where only one can (single combat), as a player
+      // hops world or does something else (the owner, 21-11-2026).
+      const by = result.ok ? bossTakenBy(entry, boss) : null;
+      if (by) blocked[`boss:${boss.id}`] = { why: "boss_taken", detail: { by } };
+      return result.ok && !by;
     });
     return { blocked, bosses: fightable };
   }
@@ -2984,8 +3253,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         const hop = entry.afterHop;
         const spot = entry.player.getLocation();
         const landed = hop.landing
-          ? Math.max(Math.abs(spot.getX() - hop.landing.x), Math.abs(spot.getY() - hop.landing.y)) <= 2
-          : (spot.getY() >= UNDERGROUND_Y) === hop.down;
+          ? Math.max(Math.abs(spot.getX() - hop.landing.x), Math.abs(spot.getY() - hop.landing.y)) <= (hop.radius ?? 2)
+          : offSurface(spot.getY()) === hop.down;
+        // Off the boat's deck first (a floor up), then the walk on.
+        if (landed && hop.boat && spot.getZ() > 0 && nowMs < hop.until) {
+          crossGangplank(entry, nowMs);
+          entry.lastTickAt = nowMs;
+          continue;
+        }
         if (landed) {
           entry.afterHop = null;
           if (walkTo(entry, hop.to, { ...hop.options, hopped: true })) {
@@ -3489,14 +3764,19 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   /** To the Grand Exchange for one thing it needs (a tool no shop near sells), then the job again. */
   function buyOnExchange(entry, itemId, name, amount = 1, { replan = true } = {}) {
     const { player } = entry;
-    const notBuyable = (why) => { entry.refusal = { why: "not_buyable", detail: { item: String(name), because: why } }; return false; };
+    const notBuyable = (why, numbers = {}) => { entry.refusal = { why: "not_buyable", detail: { item: String(name), because: why, ...numbers } }; return false; };
     if ((entry.noExchangeBuyUntil ?? 0) > now()) return notBuyable("exchange_resting");
     if (!onExchange(itemId)) return notBuyable("not_exchangeable");
     const guide = Number(core.ItemDefinition?.forId?.(itemId)?.getGrandExchangeValue?.() ?? 0);
     // Its coins in the bag and in its bank: the exchange has a bank, it takes out what it needs.
     const cost = Math.ceil(guide * 1.05) * amount;
     if (!(guide > 0)) return notBuyable("no_exchange_price");
-    if (Shopping.coinsOf(player) + banked(player, Trade.COINS) < cost + 50) return notBuyable("coins");
+    // The numbers it saw, in the refusal: bots with 56k and with 2 billion coins were refused a
+    // spade or a tinderbox "for coins" (20-11-2026), which these coins cannot explain.
+    if (Shopping.coinsOf(player) + banked(player, Trade.COINS) < cost + 50) {
+      return notBuyable("coins", { bag: Shopping.coinsOf(player), bank: banked(player, Trade.COINS), cost, amount, guide,
+        registered: player.isRegistered?.() ?? null, same: entry.player === player });
+    }
     if (blockedPlace(entry, data.grandExchange)) return notBuyable("exchange_blocked");
     const plan = entry.plan;
     const label = String(name).toLowerCase().replace(/_/g, " ");
@@ -3884,6 +4164,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         : "verloor het gevecht met eten bij zich",
       prayer: player.getSkillManager().getCurrentLevel(core.Skill.PRAYER) });
     note(player, `Is gestorven bij (${at.getX()}, ${at.getY()})${entry.lastFoe && now() - entry.lastFoe.at < 60_000 ? ` door ${entry.lastFoe.name.toLowerCase()}` : ""}; gaat zijn spullen ophalen.`, "activity");
+    if (entry.questRun) endQuestRun(entry, entry.questRun, "died", entry.lastFoe && now() - entry.lastFoe.at < 60_000 ? `died to ${entry.lastFoe.name}` : "died");
     entry.lastFoe = null;
     entry.graveTries = 0;
     entry.questRun = null;
@@ -4069,17 +4350,49 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * with a task it fights only the task's monsters, at the nearest place it can fight them.
    * A task it cannot do here (Wilderness, a dungeon, a finishing item) puts Slayer aside.
    */
+  /**
+   * A Slayer ring's destination within 15 tiles of `place` whose quest it has done, or null. Whether
+   * it owns a ring is not asked: one is bought when it needs it (startSlayer).
+   */
+  function slayerRingTo(player, place) {
+    const ring = (require("../../items/Teleports.Jewellery").JEWELLERY ?? []).find((piece) => piece.key === "slayer");
+    return (ring?.destinations ?? []).find((spot) => (spot.tile[2] ?? 0) === (place.z ?? 0)
+      && Math.max(Math.abs(spot.tile[0] - place.x), Math.abs(spot.tile[1] - place.y)) <= 15
+      && (!spot.quest || questsByName().get(normalize(spot.quest.name))?.isComplete(player) === true)) ?? null;
+  }
+
   function startSlayer(entry, plan, nowMs) {
     const { player } = entry;
     const task = Slayer.currentTask(emit, player);
     const here = { x: player.getLocation().getX(), y: player.getLocation().getY() };
     if (!task) {
-      // The best master its levels allow and it can walk to; of equals, the nearest.
+      // The best master its levels allow and it can get to: on foot, or with a Slayer ring's
+      // teleport beside it (Nieve: the Stronghold Slayer Cave). Of equals, the nearest.
+      const walkable = (place) => TravelHubs.onFoot(place, null, (name) => questsByName().get(normalize(name))?.isComplete(player) === true, (item) => Shopping.owns(player, Shopping.idOf(core, item)));
       const options = Slayer.mastersFor({ combat: player.getSkillManager().getCombatLevel(), slayer: levelOf(player, "SLAYER") },
-        (place) => TravelHubs.onFoot(place, null, (name) => questsByName().get(normalize(name))?.isComplete(player) === true, (item) => Shopping.owns(player, Shopping.idOf(core, item))));
+        (place) => walkable(place) || slayerRingTo(player, place) !== null);
       const best = options.filter((option) => option.combat === options[0]?.combat);
       const master = Slayer.nearest(best.length > 0 ? best : Slayer.MASTERS, (place) => walkTiles(here, place, player));
       if (!master) return cannot(entry, "place_unreachable", { slayer: "master" });
+      // A long way (Nieve from the Grand Exchange: ~730 tiles) or not on foot: its Slayer ring in
+      // the bag first, from the bank or the exchange, and the walk teleports (Errands' bestTeleport
+      // takes it). A preference, not a must: without one it walks, when it can.
+      const ring = slayerRingTo(player, master);
+      const far = !walkable(master) || walkTiles(here, master, player) > SLAYER_RING_TILES;
+      const ids = SLAYER_RINGS.map((name) => Shopping.idOf(core, name)).filter(Number.isInteger);
+      if (ring && far && !ids.some((id) => player.getInventory().getAmount(id) > 0) && (entry.slayerRingTriedAt ?? 0) < now() - 30 * 60_000) {
+        entry.slayerRingTriedAt = now();
+        const inBank = ids.find((id) => banked(player, id) > 0);
+        if (inBank !== undefined && fetchTools(entry, plan, [inBank])) return true;
+        const buy = Shopping.idOf(core, SLAYER_RINGS[0]);
+        if (inBank === undefined && Number.isInteger(buy) && buyOnExchange(entry, buy, SLAYER_RINGS[0], 1)) {
+          note(player, `Koopt een Slayer ring om naar ${master.name} te teleporteren (${ring.label}).`, "activity");
+          return true;
+        }
+      }
+      if (!walkable(master) && !ids.some((id) => player.getInventory().getAmount(id) > 0)) {
+        return cannot(entry, "place_unreachable", { slayer: master.name, way: "slayer_ring" });
+      }
       return walkTo(entry, master, {
         reason: "slayer",
         arrive: (slayer) => {
@@ -4106,12 +4419,12 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // On the mainland it can walk (x 2400+, y 2400-4300): not Kourend (by boat), nor the maps of
     // places one only gets into another way (1893,5189: under the ground, like the Mole Hole).
     const onMainland = (place) => place.x >= 2400 && place.y >= 2400 && place.y <= 4300;
-    // Morytania's monsters only after Priest in Peril; none in the Wilderness (y 3520 and up between
-    // x 2944 and 3392), where an adventurer does not go for a task.
-    const morytania = questsByName().get(normalize("Priest in Peril"))?.isComplete(entry.player) === true;
+    // Behind a quest or not on foot (travel-hubs.json lockedAreas: Morytania, the Gnome
+    // Stronghold) only with a teleport there (lockedAway); none in the Wilderness (y 3520 and up
+    // between x 2944 and 3392), where an adventurer does not go for a task.
     const wilderness = (place) => place.x >= 2944 && place.x <= 3392 && place.y >= 3520 && place.y < 4000;
     const open = targets.filter((place) => !blockedNear(entry, place, 15) && place.y < UNDERGROUND_Y && onMainland(place)
-      && (morytania || !inMorytania(place)) && !wilderness(place));
+      && !lockedAway(player, place) && !wilderness(place));
     const spot = Slayer.nearest(open, (place) => walkTiles(here, place, player));
     if (!spot) {
       note(player, `Kan zijn Slayer-taak (${String(task.name).toLowerCase()}) hier nog niet doen; laat Slayer even liggen.`, "activity");
@@ -4261,11 +4574,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       for (const item of [...(bank?.getItems?.() ?? [])]) {
         const id = item?.getId?.() ?? -1;
         const amount = item?.getAmount?.() ?? 0;
-        if (!(id > 0) || !(amount > 0) || keep.has(id) || Value.itemValue(core, id, 1) <= 0) continue;
+        // Gear it keeps (better than it wears, any style): one copy stays, the rest is sold.
+        const spare = keep.has(id) ? Trade.spareGear(player, core, id, amount) : 0;
+        if (!(id > 0) || !(amount > 0) || (keep.has(id) && spare <= 0) || Value.itemValue(core, id, 1) <= 0) continue;
         // What it needs stays; only the surplus (or what it has outgrown) is sold.
-        const wanted = need(player, id);
+        const wanted = spare > 0 ? amount - spare : need(player, id);
         let surplus = wanted === Infinity ? 0 : amount - wanted;
-        if (wanted !== Infinity && short > 0 && surplus < amount) {
+        if (spare <= 0 && wanted !== Infinity && short > 0 && surplus < amount) {
           const each = Value.itemValue(core, id, 1);
           const extra = Math.min(amount - Math.max(0, surplus), Math.ceil(short / each));
           surplus = Math.max(0, surplus) + extra;
@@ -4379,7 +4694,29 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         const id = Shopping.idOf(core, name);
         return Number.isInteger(id) ? player.getInventory().getAmount(id) + banked(player, id) : 0;
       };
-      if (JEWELLERY.reduce((sum, name) => sum + owned(name), 0) < 1) top(JEWELLERY[Math.floor(random() * JEWELLERY.length)], 1);
+      if (JEWELLERY.reduce((sum, name) => sum + owned(name), 0) < 1 && jewelleryKinds(player).size === 0) top(JEWELLERY[Math.floor(random() * JEWELLERY.length)], 1);
+    }
+    // With coins to spare: one of each kind of teleport jewellery it lacks, cheapest first, each
+    // within a small share of its coins and a cap per visit (never its savings).
+    const idOfName = (name) => Shopping.idOf(core, name);
+    const heldOf = (name) => (Number.isInteger(idOfName(name)) ? player.getInventory().getAmount(idOfName(name)) + banked(player, idOfName(name)) : 0);
+    // Tablets it has two or more of, and those whose spell it casts, count as had.
+    const have = jewelleryKinds(player);
+    for (const tablet of TRAVEL_TABLETS) {
+      if (heldOf(tablet.name) >= 2 || (tablet.castFrom && levelOf(player, "MAGIC") >= tablet.castFrom)) have.add(tablet.name);
+    }
+    const buys = Loadout.travelBuys([...TRAVEL_JEWELLERY, ...TRAVEL_TABLETS.map((tablet) => ({ name: tablet.name, amount: TABLET_STACK }))], {
+      coins: Shopping.coinsOf(player) + banked(player, Trade.COINS), bagCoins: Shopping.coinsOf(player), have,
+      kindOf: (name) => (TRAVEL_TABLETS.some((tablet) => tablet.name === name) ? name : Number.isInteger(idOfName(name)) ? jewelleryKind(idOfName(name)) : null),
+      priceOf: (name) => Shopping.estimatedPrice(core, idOfName(name), 1), buyable: (name) => onExchange(idOfName(name)),
+      minCoins: TRAVEL_MIN_COINS, pieceShare: TRAVEL_PIECE_SHARE, visitShare: TRAVEL_VISIT_SHARE });
+    for (const want of buys) {
+      const name = typeof want === "string" ? want : want.name;
+      const amount = typeof want === "string" ? 1 : want.amount;
+      if (bid(player, core, emit, idOfName(name), amount)) {
+        bids.push(`${amount} x ${itemName(idOfName(name))}`);
+        countEvent(adventurers.get(player.getUsername?.()), "teleportBought");
+      }
     }
     if (bids.length > 0) note(player, `Koopt voorraad op de GE: ${bids.join(", ")}.`, "activity");
   }
@@ -4387,6 +4724,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function atExchange(player) {
     const entry = adventurers.get(player.getUsername?.());
     fillEmptySlots(player, { fromBank: true });
+    wearUpgradesFromBank(entry, player);
     const bag = sortBag(player);
     dropJunk(player, bag.junk);
     // The exchange has its bank: what it keeps for later goes in there, not up for sale.
@@ -4445,6 +4783,35 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     });
   }
 
+  /**
+   * At a bank: better gear of its style from the bank (Trade.bankUpgrades) taken out and put on.
+   * High-level bots fought with a dragon scimitar and a rune square shield while a better weapon
+   * lay in the bank (20-11-2026): wearBest looked in the bag only. The piece it took off goes the
+   * way of other goods (banked, or sold at the exchange).
+   */
+  function wearUpgradesFromBank(entry, player) {
+    if (!entry) return [];
+    const rules = { levelOf: (skill) => levelOf(player, skill), questDone: questDone(player) };
+    const style = planStyle(entry) ?? planStyle(entry, entry.savedTask) ?? Trade.wornStyle(player, core);
+    const bankIds = new Set();
+    for (const bank of player.getBanks?.() ?? []) for (const item of bank?.getItems?.() ?? []) if (item?.getId?.() > 0) bankIds.add(item.getId());
+    const upgrades = Trade.bankUpgrades(player, core, rules, style, bankIds, { skipWeapon: toolInHand(entry) });
+    if (upgrades.length === 0) return [];
+    for (const id of upgrades) withdraw(player, id, 1);
+    const worn = Trade.wearBest(player, core, rules, style, { skipWeapon: toolInHand(entry) });
+    if (worn.length > 0) {
+      countEvent(entry, "gearFromBank");
+      note(player, `Haalt betere uitrusting uit de bank en trekt die aan: ${worn.map((name) => name.toLowerCase().replace(/_/g, " ")).join(", ")}.`, "activity");
+    }
+    return worn;
+  }
+
+  /** Woodcutting or mining with its axe or pickaxe in hand (also on a bank trip mid-job): the weapon stays off. */
+  function toolInHand(entry) {
+    const gathering = (plan) => ["woodcutting", "mining"].includes(plan?.mode);
+    return (entry.phase === "training" || entry.phase === "errand") && (gathering(entry.plan) || gathering(entry.savedTask));
+  }
+
   function fillEmptySlots(player, { fromBank = false } = {}) {
     const equipment = player.getEquipment().getItems() ?? [];
     const skip = new Set([...Object.values(Shopping.gear.tools ?? {}).flat(), ...(Shopping.gear.styles?.ranged?.weapon ?? []),
@@ -4484,9 +4851,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // (that swapped battleaxe and rune axe back and forth all stretch).
     // Also on the way to the bank and back in the middle of that job (phase "errand"): the
     // battleaxe went on at every bank trip and the axe back on at the trees.
-    const gathering = (plan) => ["woodcutting", "mining"].includes(plan?.mode);
-    const toolInHand = (entry.phase === "training" || entry.phase === "errand") && (gathering(entry.plan) || gathering(entry.savedTask));
-    for (const name of Trade.wearBest(player, core, rules, "melee", { skipWeapon: toolInHand })) {
+    // The gear of its job's style (a bow for ranged training): with melee here the scimitar in its
+    // bag went on at every look and the training's bow back on after (planStyle, 20-11-2026).
+    // Without a fighting job (between jobs, just after a restart): the style of the weapon it wears.
+    const style = planStyle(entry) ?? Trade.wornStyle(player, core);
+    for (const name of Trade.wearBest(player, core, rules, style, { skipWeapon: toolInHand(entry) })) {
       note(player, `Draagt nu ${name.toLowerCase().replace(/_/g, " ")}.`, "activity");
     }
     fillEmptySlots(player);
@@ -4522,7 +4891,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // offers to collect, a valuable bag) when it is not much further. Far off it banks, as a
     // player does in the middle of a woodcutting trip, and sells another time.
     const extra = bank ? distanceTo(player, ge) - bank.away : 0;
-    const toExchange = geOpen && (!bank || extra <= 40 || ((fund || waiting || worth >= (data.sellValue ?? 5000)) && extra <= SELL_DETOUR_TILES));
+    // In the middle of a run of loads (bars banked for the next one): the nearest bank, and the
+    // products sold when the run is over. Markbot 18 smithed rune platebodies at Varrock West's
+    // anvils and went to the exchange after every load (47 tiles further than the bank) to sell
+    // them and take the next bars there (the owner, 20-11-2026).
+    const batching = entry.savedTask?.afterTrip === true && String(entry.savedTask?.mode ?? "").startsWith("buy_");
+    const toExchange = geOpen && (!bank || (batching ? extra <= 0
+      : extra <= 40 || ((fund || waiting || worth >= (data.sellValue ?? 5000)) && extra <= SELL_DETOUR_TILES)));
     // Why it goes, for the loop report: a loop to the exchange then says what drove it.
     entry.lastTrade = { at: now(), waiting, fund, worth, full, cluttered, goods: goods.slice(0, 5).map((good) => itemName(good.itemId)) };
     if (toExchange) return walkTo(entry, ge, { reason: "exchange", arrive: atExchange, urgent });
@@ -4535,6 +4910,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       arrive: (banker) => {
         // What it may wear from its bank goes on first, so it is not banked with the rest.
         fillEmptySlots(banker, { fromBank: true });
+        wearUpgradesFromBank(entry, banker);
         // The materials of its job (oak logs to fletch) stay in the bag here too.
         const keepHere = Trade.keepIds(banker, core, { isFood });
         for (const id of workingMaterials(entry)) keepHere.add(id);
@@ -4558,12 +4934,25 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         const carried = banker.getInventory().getAmount(Trade.COINS);
         if (carried < 1_000 && banked(banker, Trade.COINS) > 0) withdraw(banker, Trade.COINS, 1_000 - carried);
         const carriesJewellery = (banker.getInventory().getItems() ?? []).some((item) => item && isJewellery(item.getId()));
-        const jewellery = kit ? (kit.jewellery > 0 && !carriesJewellery ? JEWELLERY : []) : JEWELLERY;
         for (const name of kit ? kit.tablets : TABLETS) take(name, 20);
-        for (const name of jewellery) {
-          const before = travelBack.length;
-          take(name, 1);
-          if (kit && travelBack.length > before) break;
+        // Any other tablets it has (Salve Graveyard, Catherby...), while the bag keeps room for the job.
+        if (!kit) for (const tablet of TRAVEL_TABLETS) if (!TABLETS.includes(tablet.name) && banker.getInventory().getFreeSlots() > 10) take(tablet.name, 20);
+        // Its teleport jewellery: one of each kind it has banked, any charge (a used games necklace
+        // stayed in the bank: only the full one was looked for); a gathering job takes one only.
+        const kindsCarried = new Set((banker.getInventory().getItems() ?? []).map((item) => (item?.getId?.() > 0 ? jewelleryKind(item.getId()) : null)).filter(Boolean));
+        const wantKinds = kit ? (kit.jewellery > 0 && !carriesJewellery ? 1 : 0) : Infinity;
+        // The ids first, then out of the bank (not while going through its items).
+        const banks = (banker.getBanks?.() ?? []).flatMap((bank) => bank?.getItems?.() ?? []).map((item) => item?.getId?.() ?? -1);
+        let taken = 0;
+        for (const id of banks) {
+          if (taken >= wantKinds) break;
+          const kind = id > 0 ? jewelleryKind(id) : null;
+          if (!kind || kindsCarried.has(kind) || banker.getInventory().getFreeSlots() <= 2) continue;
+          if (withdraw(banker, id, 1) > 0) {
+            kindsCarried.add(kind);
+            travelBack.push(itemName(id));
+            taken += 1;
+          }
         }
         if (kit && kit.text !== entry.travelNote) {
           entry.travelNote = kit.text;
@@ -4605,6 +4994,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // What it gathers for a quest (clay for Doric's Quest) is the quest's, not goods: Markbot 3
     // mined clay, banked it and sold it at the exchange, and mined again (20-11-2026).
     if (Number.isInteger(entry.gather?.itemId)) ids.add(entry.gather.itemId);
+    // What it fetched or bought for a quest (QuestPlay `questKeep`), for some hours, also when the
+    // quest is set aside for a while: Jorgbot 13 bought soft clay for Prince Ali Rescue and put it
+    // up for sale a minute later, when it chose the Giant Mole instead (21-11-2026).
+    for (const [id, until] of entry.questKeep ?? []) {
+      if (until > now()) ids.add(id);
+      else entry.questKeep.delete(id);
+    }
     for (const plan of [entry.resume, entry.plan, entry.savedTask]) {
       const mode = String(plan?.mode ?? "");
       // The bow and arrows or the runes of a ranged or magic job: it fetched them from the bank
@@ -4628,8 +5024,18 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const inventory = player.getInventory();
     const room = (data.fullSlots ?? 4) + 1;
     if (inventory.getFreeSlots() >= room) return true;
-    const stock = Trade.goodsToSell(player, core, Trade.keepIds(player, core, { isFood }), { isFood, worthless: true })
+    // Its boss kit and the job's materials stay too (keepAtExchange): Markbot 18 stood at the
+    // Grand Exchange with a bag of mole skins and dropped the spade it had just bought for the
+    // Giant Mole (21-11-2026).
+    const stock = Trade.goodsToSell(player, core, keepAtExchange(player), { isFood, worthless: true })
       .sort((a, b) => a.value - b.value);
+    // Standing at a bank (the exchange has one): into the bank, not on the floor.
+    const bank = nearestBank(player);
+    if (distanceTo(player, data.grandExchange) <= AT_BANK_TILES || (bank && bank.away <= AT_BANK_TILES)) {
+      const stored = deposit(player, stock);
+      if (stored.length > 0) note(player, `Zet op de bank: ${stored.slice(0, 4).map((good) => itemName(good.itemId)).join(", ")}${stored.length > 4 ? ` en ${stored.length - 4} meer` : ""}.`, "activity");
+      if (inventory.getFreeSlots() >= room) return true;
+    }
     const dropped = [];
     for (const good of stock) {
       if (inventory.getFreeSlots() >= room) break;
@@ -4815,7 +5221,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const at = player.getLocation();
     const here = point ? { x: point.x, y: point.y } : { x: at.getX(), y: at.getY() };
     let best = null;
-    for (const place of [...LANDMARKS, ...travelData.destinations, ...travelData.hangouts, ...travelData.minigames]) {
+    // The agility courses too: a bot on the Falador roof's south-west ledges (3013,3335) was "bij
+    // giant mole hole" in ::volg, the nearest place known, though it ran the course (20-11-2026).
+    const courses = (data.agilityCourses ?? []).map((course) => ({ id: course.name ?? course.course, x: course.x, y: course.y }));
+    for (const place of [...LANDMARKS, ...travelData.destinations, ...travelData.hangouts, ...travelData.minigames, ...courses]) {
       const distance = Math.max(Math.abs(place.x - here.x), Math.abs(place.y - here.y));
       if (!best || distance < best.distance) best = { id: place.id, distance };
     }
@@ -4984,7 +5393,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     entry.questsAside?.delete(questName);
     // A test of one step: the quest set to that stage first (an owner's ::advquest name:quest:stage).
     if (Number.isInteger(stage) && stage >= 0) questPlay.questOf(questName)?.setStage?.(entry.player, stage);
-    return startQuest(entry, { kind: "quest", quest: { name: questName } });
+    return startQuest(entry, { kind: "quest", quest: { name: questName }, forced: true });
   }
 
   /**
@@ -5046,6 +5455,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const entry = adventurers.get(name);
     if (!entry?.player?.isRegistered?.() || !mode) return false;
     errands.errands?.delete?.(entry.player);
+    if (entry.questRun) endQuestRun(entry, entry.questRun, "override", `owner test: ${mode}`);
     entry.questRun = null;
     // A boss by its id or name (::advtrain Markbot 18:boss_barrows), for a test run.
     const boss = (data.bosses ?? []).find((entry2) => entry2.id === mode || String(entry2.name).toLowerCase() === String(mode).toLowerCase());

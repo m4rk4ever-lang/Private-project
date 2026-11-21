@@ -42,7 +42,12 @@ let graph = null;
 function nextLeg(here, goal, avoid = null, source = null) {
   const { hubs, links } = source ? build(source) : (graph ??= build());
   const z = here.z ?? 0;
-  if ((goal.z ?? 0) !== z || chebyshev(here, goal) <= DIRECT_TILES) return null;
+  // Into an area that is entered only by certain hubs (Morytania past the Salve: Canifis,
+  // Mort'ton) from outside it: by hubs, however near (Paterdomus to Mort'ton is 195 tiles straight
+  // but the river is between).
+  const entry = enteredVia(goal, source);
+  const fromOutside = entry && !inArea(here, entry.area);
+  if ((goal.z ?? 0) !== z || (!fromOutside && chebyshev(here, goal) <= DIRECT_TILES)) return null;
   const usable = [...hubs.values()].filter((hub) => hub.z === z && !avoid?.has?.(hub.key));
   const dist = new Map();
   const first = new Map();
@@ -74,7 +79,8 @@ function nextLeg(here, goal, avoid = null, source = null) {
     done.add(key);
     const hub = hubs.get(key);
     const toGoal = chebyshev(hub, goal);
-    if (toGoal <= DIRECT_TILES) {
+    // The last leg into such an area starts at one of its hubs (not Digsite across the Salve).
+    if (toGoal <= DIRECT_TILES && (!entry || entry.enterVia.includes(key))) {
       const total = dist.get(key) + toGoal * UNCHECKED_COST;
       if (total < best.cost) best = { cost: total, first: first.get(key) };
     }
@@ -88,6 +94,44 @@ function nextLeg(here, goal, avoid = null, source = null) {
     }
   }
   return best.first;
+}
+
+/** Whether `place` lies in a locked area: one [minX, minY, maxX, maxY] or a list of them (Karamja). */
+function inArea(place, area) {
+  if (Array.isArray(area?.[0])) return area.some((part) => inArea(place, part));
+  const [minX, minY, maxX, maxY] = area;
+  return place.x >= minX && place.x <= maxX && place.y >= minY && place.y <= maxY;
+}
+
+const tileOf = ([x, y, z = 0]) => ({ x, y, z });
+
+/** The area reached only by boat ("byBoat") that `place` lies in, or null (the mainland). */
+function boatArea(place, source = null) {
+  return ((source ?? data).lockedAreas ?? []).find((locked) => locked.byBoat && (place.z ?? 0) === 0 && inArea(place, locked.area)) ?? null;
+}
+
+/**
+ * The boat for a walk from `here` to `to` that crosses water (the mainland and Karamja), or null
+ * when both are on the same side. Of the boats between the two sides, the one whose docks are
+ * nearest: the walk to its dock plus the walk from where it lands.
+ */
+function boatFor(here, to, source = null) {
+  const fromArea = boatArea(here, source);
+  const toArea = boatArea(to, source);
+  if ((here.z ?? 0) !== 0 || (to.z ?? 0) !== 0 || fromArea === toArea) return null;
+  let best = null;
+  for (const boat of (source ?? data).boats ?? []) {
+    if (boatArea(tileOf(boat.from), source) !== fromArea || boatArea(tileOf(boat.to), source) !== toArea) continue;
+    const cost = chebyshev(here, tileOf(boat.from)) + chebyshev(tileOf(boat.to), to);
+    if (!best || cost < best.cost) best = { boat, cost };
+  }
+  return best?.boat ?? null;
+}
+
+/** The locked area `place` lies in that names the hubs it is entered by ("enterVia"), or null. */
+function enteredVia(place, source = null) {
+  return ((source ?? data).lockedAreas ?? []).find((locked) => Array.isArray(locked.enterVia) && locked.enterVia.length > 0
+    && (place.z ?? 0) === 0 && inArea(place, locked.area)) ?? null;
 }
 
 /** Hub keys connected by links to `from` (Lumbridge, where every account starts). */
@@ -118,13 +162,23 @@ function onFoot(place, source = null, questDone = null, hasItem = null) {
   // Behind a quest (Morytania past the Salve) or an item (a Shantay pass for the desert): only
   // with that quest done or that item carried.
   for (const locked of (source ?? data).lockedAreas ?? []) {
-    const [minX, minY, maxX, maxY] = locked.area;
-    if (place.x < minX || place.x > maxX || place.y < minY || place.y > maxY) continue;
+    if (!inArea(place, locked.area)) continue;
+    // An island (Karamja): on foot to a boat's dock that sails there, and across.
+    if (locked.byBoat) {
+      return ((source ?? data).boats ?? []).some((boat) => inArea(tileOf(boat.to), locked.area) && !inArea(tileOf(boat.from), locked.area)
+        && onFoot(tileOf(boat.from), source, questDone, hasItem));
+    }
+    // Not on foot at all (yet): a walk in that never arrived (Morytania, 20-11-2026: 1 of 117).
+    // Teleports still go (Adventurers' lockedAway).
+    if (locked.onFoot === false) return false;
     if (locked.quest && !questDone?.(locked.quest)) return false;
     if (locked.item && !hasItem?.(locked.item)) return false;
   }
   const joined = connectedTo("lumbridge", source);
+  // An area entered only by its own hubs: one of those within a plannable walk.
+  const entry = enteredVia(place, source);
   for (const key of joined) {
+    if (entry && !entry.enterVia.includes(key)) continue;
     const hub = hubs.get(key);
     if (hub && hub.z === (place.z ?? 0) && chebyshev(hub, place) <= DIRECT_TILES) return true;
   }
@@ -137,4 +191,4 @@ function hub(key, source = null) {
   return hubs.get(key) ?? null;
 }
 
-module.exports = { nextLeg, hub, onFoot, connectedTo, build, DIRECT_TILES, AT_HUB_TILES };
+module.exports = { nextLeg, hub, onFoot, connectedTo, build, boatFor, boatArea, inArea, DIRECT_TILES, AT_HUB_TILES };

@@ -88,6 +88,41 @@ test("a teleport is cast only with the level, the runes and a long walk saved", 
   assert.equal(bestTeleport(core, walker(2400, 3300, runes, 99), { x: 2660, y: 3300 }), null, "ardougne is behind a quest: never for an errand");
 });
 
+test("a ring of wealth takes it to the Grand Exchange (Rub 1), not to quest-locked places", () => {
+  const ROW_3 = 11984;
+  const core = { Skill: { MAGIC: "MAGIC" }, ItemIdentifiers: { RING_OF_WEALTH_3_: ROW_3 } };
+  const wealthData = [
+    { label: "Grand Exchange", tile: [3163, 3478, 0] },
+    { label: "Miscellania", tile: [2534, 3862, 0], quest: { key: "throne_of_miscellania", name: "Throne of Miscellania" } },
+    { label: "Falador Park", tile: [2995, 3375, 0] },
+  ];
+  const holder = (x, y, ids) => ({ ...walker(x, y), getInventory: () => ({ getAmount: () => 0, getItems: () => ids.map((id) => ({ getId: () => id })) }) });
+  const ge = { x: 3164, y: 3487 };
+  const viaRing = bestTeleport(core, holder(3222, 3218, [ROW_3]), ge, { wealthData });
+  assert.deepEqual([viaRing?.kind, viaRing?.index, viaRing?.name], ["jewellery", 1, "Grand Exchange"]);
+  // Falador Park is sub-option 3; Miscellania (a quest) is never picked.
+  assert.equal(bestTeleport(core, holder(3222, 3218, [ROW_3]), { x: 2990, y: 3380 }, { wealthData })?.index, 3);
+  assert.notEqual(bestTeleport(core, holder(3222, 3218, [ROW_3]), { x: 2534, y: 3862 }, { wealthData })?.name, "Miscellania");
+  assert.equal(bestTeleport(core, holder(3222, 3218, []), ge, { wealthData }), null, "no ring");
+});
+
+test("any tablet with a spell destination is broken for an errand (Salve Graveyard), none into the Wilderness", () => {
+  const SALVE = 19619;
+  const CEMETERY = 19621;
+  const core = {
+    Skill: { MAGIC: "MAGIC" }, ItemIdentifiers: {},
+    ItemDefinition: { forId: (id) => ({ getName: () => ({ [SALVE]: "Salve graveyard teleport", [CEMETERY]: "Cemetery teleport" })[id] ?? "item" }) },
+    ArceuusSpells: { getTeleportDestinations: () => [
+      { name: "salve graveyard teleport", destination: loc(3432, 3460) },
+      { name: "cemetery teleport", destination: loc(2978, 3763) },
+    ] },
+  };
+  const holder = (ids) => ({ ...walker(3165, 3487), getInventory: () => ({ getAmount: () => 0, getItems: () => ids.map((id) => ({ getId: () => id })) }) });
+  const tablet = bestTeleport(core, holder([SALVE]), { x: 3428, y: 3537 });
+  assert.deepEqual([tablet?.kind, tablet?.name], ["tablet", "salve graveyard teleport"]);
+  assert.equal(bestTeleport(core, holder([CEMETERY]), { x: 2970, y: 3760 }), null, "Wilderness");
+});
+
 test("a drop for an empty slot is picked up and worn, whatever it is worth", () => {
   const Loot = require("../plugins/bots/brain/Loot.PlayerBots");
   const HAT = 579;

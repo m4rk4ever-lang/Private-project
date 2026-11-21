@@ -25,6 +25,17 @@ const routesByGoal = new Map(); // goal key -> [{ waypoints, at }]
 const failedUntil = new Map(); // "startKey>goalKey" -> until
 const budget = { windowStart: 0, spentMs: 0 };
 const routeFinder = new RsmodRouteFinding();
+// What the last long walk of each bot did, for the walk_blocked metric: which leg, whether a plan
+// came (ok, none, budget), the hubs given up. Bots stood still at the start of a 220-tile walk to
+// Morytania and the Stronghold while a plan existed offline (20-11-2026); this says why.
+const lastRoute = new WeakMap();
+function noteRoute(player, note) {
+  if (player) lastRoute.set(player, { ...note, at: Date.now() });
+}
+/** The last long-walk decision for this bot, or null. */
+function lastRouteOf(player) {
+  return (player && lastRoute.get(player)) ?? null;
+}
 
 /** Can the bot walk to this tile from here (inside the route finder's window)? */
 function walkable(here, point) {
@@ -170,6 +181,9 @@ function nextWaypoint(player, request, nowMs = Date.now()) {
   const target = leg ? { x: leg.x, y: leg.y, z: leg.z } : goal;
   if (request.route === undefined) {
     const route = routeFor(player, here, target, nowMs, { fresh: request.fresh === true });
+    noteRoute(player, { from: [here.x, here.y], goal: [goal.x, goal.y], leg: leg?.key ?? null,
+      plan: route === undefined ? "budget" : route ? "ok" : "none", waypoints: route?.waypoints?.length ?? 0,
+      badHubs: [...(request.badHubs ?? [])] });
     if (route === undefined) {
       return null; // planning budget spent this tick: straight-line now, plan next dispatch
     }
@@ -184,6 +198,8 @@ function nextWaypoint(player, request, nowMs = Date.now()) {
   }
   const route = request.route;
   if (!route) {
+    // No plan (the planner found none, cached for a while): a straight walk at the target.
+    noteRoute(player, { ...(lastRoute.get(player) ?? {}), from: [here.x, here.y], goal: [goal.x, goal.y], leg: leg?.key ?? null, straight: true });
     return null;
   }
   // Move past reached (or overtaken) waypoints, but never past an uncrossed door:
@@ -223,5 +239,6 @@ function canReachSpot(player, goal, nowMs = Date.now()) {
 module.exports = {
   canReachSpot,
   nextWaypoint,
+  lastRouteOf,
   LONG_ROUTE_MIN_TILES,
 };

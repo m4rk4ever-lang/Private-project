@@ -5,6 +5,223 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 21-11-2026 (11:20): teleport mee naar quests (branch `adventurers/quest-teleport`)
+
+- **Eigenaar:** de live Experience rate staat bewust hoger ("andere opbouw"); de XP per uur is dus geen bot-fout. Niet verder onderzoeken.
+- **Bouw:** `startQuest` roept `packTeleport` aan: zonder reismiddel in de tas (sieraad of tablet, `travelItemIn`) en met een in de bank loopt hij eerst naar de dichtstbijzijnde bank en neemt één sieraad of `TABLET_STACK` tablets mee ("Neemt ... mee voor de quest, om terug te kunnen."). De quest wacht zolang de errand loopt (`errands.busy`).
+- **Na een gestopte quest:** `endQuestRun` zet `entry.questEndedAt` (niet bij "done"); `unstrand` heeft dan 15 min (`QUEST_STRAND_MS`) genoeg aan één geblokkeerde wandeling in plaats van drie.
+- **Validatie:** syntax en suite (154 tests, 14 fails omgeving). Geen unit-test: zit in de plugin-factory. In de logs: "mee voor de quest", stranded kort na quest_end.
+
+## Sessie 21-11-2026 (11:15): Mole vechten, teleport houden, quest-spullen houden (branch `adventurers/teleports-houden`)
+
+- **Controle 10:40 (2f29401, 08:48-09:28 UTC):** Mole-hol 2 bots, 4,5 en 2,5 min binnen, beide met een teleport uit de tas weg (touw nog niet gebruikt). Levels-metric: 60 regels. "20 x 20 x" weg. Strandingen na quests: Patrickbot 13 op het Misthalin-eiland (3 min), Jorgbot 14 in Corsair Cove (21 min, 20 pogingen, home teleport op cooldown sinds 08:39). Jorgbot 13 verkocht soft clay voor Prince Ali Rescue een minuut na het kopen.
+- **Mole:** de bots vochten niet ("Kon bij boss giant mole niets doen"). Oorzaak: `TrainCombat` zoekt doelen binnen `SITE_RADIUS` 24 van het cluster (spawn 1759,5189); de Mole graaft naar vaste plekken tot 43 tegels daarvandaan (`GiantMole.plugin.js` BURROW_LOCATIONS). Nieuw: spec-veld `siteRadius` (minimum 24); `bot-activities.json` (handwerk) Giant Mole `siteRadius` 48. Test `bot-mole-site` leest de plekken uit de plugin.
+- **Teleport houden:** `clearForProcessing` houdt één reismiddel (sieraad, anders tablet) in de tas; `loadShare` rekent een lading als (27 - 1) / materialen. Kruiden: 13 per soort (ongewijzigd), één materiaal: 26.
+- **Quest-spullen:** `QuestPlay.fetching` zet `entry.questKeep` (id → tot, `QUEST_KEEP_MS` 6 u); `workingMaterials` neemt ze mee, dus niet storten of verkopen. Test in `bot-quest-play`. Faalnotitie gebruikt `countedName`.
+- **XP-snelheid (niet opgelost, vraag aan eigenaar):** Jorgbot 13 kreeg 7.812 Herblore-XP voor 14 restore potions (62,5 XP per stuk in `herblore.json`, dus 875 verwacht): ongeveer 9×. Bots gebruiken de eigen skillcode (`Make` → `Mixing.Herblore`, 2 ticks per potion); `world.json` in de repo heeft `experienceMultiplier` 1 en geen league-relics. Vermoedelijk staat de live wereld op een hogere "Experience rate" (admin, `setExperienceRate`). Te controleren door de eigenaar.
+- **Validatie:** suite 154 tests, 14 fails (omgeving).
+- **Open:** wegkomen van quest-plekken zonder looproute (Corsair Cove, Misthalin-eiland) zonder home teleport; Morytania-legkeuze; touw-uitgang in de praktijk bevestigen.
+
+## Sessie 21-11-2026 (09:35): controle logs, uitgang Mole-hol (branch `adventurers/molshol-uitgang`)
+
+- **Logs:** push 08:32 UTC, versies 784667c (07:52-08:15) en c025568 (08:17-08:32). 61 bots.
+- **walk_blocked (122 op de nieuwe versies):** `plan` none 75, ok 39, budget 4.
+  - **Giant Mole-hol (y 5100-5250):** 4 bots (Markbot 14, Patrickbot 12, Jorgbot 15, Patrickbot 17) tot ~20 min vast na het gevecht. Oorzaak: alleen y >= 6400 telde als "onder de grond", dus `levelHop` en `climbOut` zochten het touw (Shortest Path: "Climb Rope" 1752,5137 → 2985,3316) nooit. Pas `unstrand` met de home teleport haalde ze eruit.
+  - **Misthalin Mystery-eiland (1637,4802):** Markbot 13 en Jorgbot 14 strandden na een mislukte quest (stage 20, "object used, but the step did not advance"). Geen transport in de tabel (de roeiboot is quest-gebonden). De home teleport was al gebruikt voor de reis naar de boot (30 min cooldown); Markbot 13 kwam pas na 30 min vrij. Niet opgelost.
+  - **Varrock East → Morytania:** leg `canifis`, plan none (Mazchna, Slayer Tower, Canifis, Mort'ton; 12×). De leg Canifis vanaf 3251-3268,3240-3430 terwijl Paterdomus ervoor moet; badHubs soms `mort_ton`. Nog uitzoeken in de legkeuze van `TravelHubs`.
+  - **Gnome Stronghold:** plan none, straight, vanaf 2503,3524 en 2511,3548 (noordkant, Fishing Guild-weg) en Seers-zuid 2694,3426. Eén keer `budget`.
+- **not_buyable "coins":** 0 op de nieuwe versies.
+- **Dubbele uitrusting verkopen:** werkt (Patrickbot 16 masori, Patrickbot 15 ahrim's). Jorgbot 10 zette 6× binnen een minuut een blue wizard robe te koop, net na magic-gear uit de bank en daarna melee kopen.
+- **Quests:** 1 klaar (Cook's Assistant). Misthalin Mystery 4× mislukt op stage 20, Restless Ghost 5×, Doric 3× `gather` (clay). "Gaat ... halen (nodig voor de quest)" komt voor. Veos weer niet gevonden.
+- **boss_taken:** 0. Mole met 4 bots tegelijk (multi, toegestaan).
+- **Eindspel:** Markbot 18 koos Barrows (3×) en Giant Mole ("eindspel: loot en upgrades"). Patrickbot 18 alleen buy_herblore (8.125 XP per ~19 s: ~1,5M XP/u, Fase 6). Jorgbot 19 zonder keuzes in dit venster.
+- **Patrickbot 18** stortte games necklace, ring of dueling en skills necklace "voor herblore": teleport-sieraden gaan mee bij het storten.
+- **Fix:** nieuwe pure module `behaviours/navigation/LevelHops.PlayerBots.js`: `offSurface(y)` (y >= 4160), `levelHopsFrom` (ook menu "Climb"), `chooseLevelHop` (naar buiten: elke uitgang binnen 200 tegels, eerst bereikbaarheid via `planRoute` met `exactOnly`, max 4 zoekopdrachten, tegels van één ladder samen overgeslagen). `Adventurers` gebruikt `offSurface` voor hops, `climbOut`, `afterHop` en `teleportsNear`. Offline (BFS op de collision map): touw 105 tegels van de landingsplek; de ladder van de Stronghold of Security is alleen bereikbaar via het touw. Ook `countedName` in `QuestPlay`.
+- **Validatie:** nieuwe test `bot-level-hops` (5). Suite 152 tests, 14 fails (omgeving, zelfde basislijn).
+- **Open:** Misthalin-eiland (roeiboot terug als uitgang), Morytania-legkeuze vanaf Varrock East, teleport-sieraden niet storten, verkooplus Jorgbot 10, PR #34 (levels-metric) is gemerged.
+
+## Sessie 21-11-2026 (09:40): Fase 6 stap 1, skills meten (branch `adventurers/fase-6-meten`)
+
+- **Eigenaar:** "waar komen alle skills en progressie terug?" Antwoord: niet als fase; voorgesteld en akkoord: Fase 6, skills compleet en efficiënt (roadmap). Eerste stap: meten.
+- **Bouw:** metric `levels` (elk uur per bot: alle levels, totaal, combat; `SKILLS_METRIC_MS`). Bestaande aggregaat-metric heet `skills` (trained/untouched per 5 min), vandaar een eigen naam. Recept "Skills" in OBSERVABILITY.
+- **Nulmeting (20-11, 17:05-22:25 UTC):** Slayer, Runecrafting, Farming, Construction, Sailing 57/57 vensters onaangeroerd; Hunter 56/57 met 8,2% van de tijd voor 1.700 XP (kapot); Ranged en Crafting 52/57. Verdacht hoge XP/uur (fletching ~1,0M, herblore ~1,4M, firemaking ~1,6M, agility tot >700k) bij `experienceMultiplier` 1: eerlijkheid nagaan.
+- **Volgende (roadmap Fase 6):** Hunter repareren, Runecrafting/Slayer laten starten, XP-snelheden toetsen, Construction/Farming/Sailing, methodes per level.
+- **Validatie:** suite 148 tests, 14 fails (omgeving). Geen gedragswijziging behalve de nieuwe metric.
+
+## Sessie 21-11-2026 (10:15): Mole Hole multi-combat; volle tas bij de bank (branch `adventurers/occupancy`)
+
+- **Eigenaar (screenshot 09:06):** 2 bots bij de Giant Mole, één staat erbij; "dit zie ik bij meer activiteiten". Wereld-hoppen/tweede wereld staat sinds 17-11 op de lijst; besproken: groot werk (één wereld, `GatewayTarget.WORLD_ID` = 1, gedeelde saves, wereldlijst, dubbele serverlast). Afgesproken: eerst de Mole-fix, dan een bezettingscontrole (bot kiest iets anders als een single-combat boss/plek bezet is). Tweede wereld later.
+- **Mole Hole:** OSRS Wiki noemt "Mole Hole" bij de multicombat-gebieden; `world.json` had hem niet. Zone toegevoegd: [1728-1791, 5120-5247], z 0 (regio's 6992-6993; alle mol-spawns 1734-1783, 5152-5241; Lunar-droomwereld ernaast is z 2). `world.json` is handwerk (geen generator). Test in `bot-adventurers`.
+- **Markbot 18 (screenshot 09:10):** op de GE met een tas vol mole skins: "Kon geen bank bereiken; laat het goedkoopste vallen: spade" (net gekocht voor de Mole). `clearBag` (na `trade()` die niets deed, vermoedelijk de lusbewaking op de GE) gebruikte `Trade.keepIds` (zonder boss-kit) en keek niet of hij al bij een bank stond. Nu: `keepAtExchange` (boss-kit, werkmaterialen) en binnen `AT_BANK_TILES` (12) van de GE of een bank eerst storten. Open: waarom de mole skins niet verkocht werden (logs).
+- **Bezettingscontrole (bosses):** `precheck` sluit een boss uit met `boss_taken` (detail `by`) als een andere online avonturier er al mee bezig is (`phase` boss, of errand met `plan.kind` boss) en de boss niet in een multi-combat zone ligt (`bossInMulti`, uit `world.json`). Barrows uitgezonderd (eigen broers per speler). `startGroup` neemt alleen nog multi-combat bosses ("samen"). Nu: Barrows single (uitgezonderd), Giant Mole multi, Sarachnis single.
+- **Nog niet:** bezetting van trainingsplekken (combat-clusters, volle mijn). `ActivityRegistry` heeft al capacity-slots per activiteit; meten in de logs voordat daar iets bij komt.
+- **Validatie:** suite 147 tests, 16 fails (deze branch zonder PR #32: 14 omgeving + de 2 oude). Bezetting niet unit-getest (zit in de plugin-factory).
+## Sessie 21-11-2026 (09:45): quest-spullen vooraf halen (branch `adventurers/next`)
+
+- **Data (feedback-log tot 22:25 UTC):** top-oorzaak "talked, but the step did not advance" (9 van 44). Doric's Quest stage 10: dialoog "Certainly, I'll be right back!" steeds opnieuw (geen clay/ertsen). Romeo & Juliet stage 50 ("Bring the cadava berries to the Apothecary"): uitleg over de bessen, geen bessen. Geen "Gaat ... halen" of "Mist" in de log: de helper-stap gaf geen `needs`.
+- **Fix:** `QuestHelperSteps` leest ook `overview.itemRequirements` (onvervuld, met ids) als `required(player)`. `QuestPlay.tick` haalt die eerst, één per 5 s, elk één keer (`run.reqTried`, max 8), vóór de aangeraden spullen; via `acquire` (bank, GE, zelf verzamelen). Niet te krijgen: geen stop.
+- **Validatie:** nieuwe test in `bot-quest-play` (Doric: clay, dan copper ore). Suite 147 tests, 14 fails (omgeving).
+- **In de logs:** "Gaat ... halen voor ... (nodig voor de quest)", quest_end voor Doric's Quest en Romeo & Juliet.
+
+## Sessie 21-11-2026 (09:30): de vaste test-fails uitgezocht (branch `adventurers/next`)
+
+- De "16 vaste fails" waren niet allemaal omgeving. Gerepareerd (verouderde tests, geen codewijziging):
+  - `bot-accounts`: bij 61 Woodcutting krijgt een gegenereerd account een dragon axe (gear-lijst), de test verwachtte rune.
+  - `bot-ironmen`: `adventurers.json` heeft geen `names` meer maar `clans`; de test telt nu via `Clans.namesOf`.
+- Resterend 14, allemaal omgeving: 12 × `Cannot find module '../dist/Server'` (of `dist/...MobileList`, `src/.../PlayerRights`: server niet gebouwd), 1 × `bot-toll-gate` (ts-node: TS5011/TS5101 tsconfig), 1 × `bot-index-timer` telt 2. Draait wel na `yarn build` in de server.
+- **Nieuwe basislijn:** 146 tests, 14 fails.
+
+## Sessie 21-11-2026 (09:20): waarom lange wandelingen stilvallen (branch `adventurers/long-legs`)
+
+- **Offline met de echte `LongRoutePlanner`** op de collision map van Shortest Path (`/tmp/route/plan.cjs`, niet in de repo; vlaggen: WALL_* uit de noord/oost-bits, LOC als een tegel nergens heen kan; geen deuren):
+  - (3292,3438) → Paterdomus: plan 158 tegels; (3253,3422) → Paterdomus 213. In het spel staan bots juist op (3288-3292,3436-3438) stil met 216-223 tegels te gaan (26× walk_blocked, `doorAttempt` null).
+  - Seers → fishing_guild_road 167; fishing_guild_road → Stronghold-poort 214; (2692,3426) → poort 292. Rechtstreeks naar Nieve/gnome-agility geen plan zonder het hek als deur.
+- **Conclusie:** de planning lukt offline; in het spel komt de wandeling niet op gang. Kandidaten: planbudget (60 ms/tick, `undefined` → rechtdoor), `failedUntil` (5 min), of `nextLeg` null na `badHubs` → rechtdoor tegen een hek.
+- **Bouw:** `LongRoutes.lastRouteOf(player)` (WeakMap): `from`, `goal`, `leg`, `plan` (ok/none/budget), `waypoints`, `badHubs`, `straight`. `walk_blocked` krijgt `route`.
+- **Volgende:** na een run de `walk_blocked.route` bij Varrock East en Seers uitlezen en de echte oorzaak fixen.
+- **Validatie:** suite 145 tests (deze branch), 16 vaste fails.
+## Sessie 21-11-2026 (08:50): dubbele uitrusting uit de bank verkopen (branch `adventurers/sell-duplicate-gear`)
+
+- **Eigenaar:** sommige bots (Patrickbot 16) hebben een veelvoud aan elite armour/wapens op de bank; daar kunnen ze upgrades van kopen.
+- **Oorzaak:** `Trade.keepIds` zet elk gear-id dat beter is dan het gedragen stuk (per stijl-lijst) op de bewaarlijst; `withdrawToSell` slaat zo'n id helemaal over, met alle kopieën. Een melee-bot "draagt niets" in magic/ranged, dus al die stukken bleven. Patrickbot 16 spaart intussen voor een twisted bow (doel 1,54 miljard gp).
+- **Fix:** `Trade.spareGear(player, core, id, inBank)` (puur, getest): voor gear-stukken (slots en stijl-lijsten, niet tools/supplies) blijft er één exemplaar over (gedragen, tas of bank), de rest gaat in `withdrawToSell` te koop.
+- **Data:** de laatste push op `bot-logs` is van 20-11 22:25 UTC; de logs hebben geen bank-inhoud, dus het effect alleen zichtbaar aan "Zet te koop op de GE (ook uit de bank)" na de update.
+- **Logs tot 20-11 22:25 UTC (ab19a51):** Markbot 18 pendelt nu bank-anvil (28× anvil, 35× Varrock West, 2× GE). Quests: 5 voltooid van 23 (Cook's Assistant 4×, Romeo & Juliet). Eerste boot werkt (Brimhaven→Ardougne `ok`). Morytania 24/24 vast. Veos 3× `no_veos`. Lange errands zonder teleport nog 83%; GE 91/109 zonder.
+- **Raadsel `not_buyable` "coins":** Jorgbot 19 (2 miljard), Patrickbot 7 (56k, tinderbox 3×) en Markbot 8 (97k, hammer) geweigerd wegens coins; prijzen kloppen (spade 125, tinderbox 30). De refusal geeft nu `bag`, `bank`, `cost`, `amount`, `guide`, `registered`, `same` mee (verdenking: verouderd player-object na een relog).
+- **Validatie:** suite 146 tests, 16 vaste fails. Niet ingame getest.
+- **Open (van 20-11):** routes naar Morytania/Stronghold lopen vast in open terrein; onderzoek naar `LongRoutePlanner` (A* 4-richtingen, 120k expansies, box 640) en `DIRECT_TILES` 250 loopt nog.
+
+## Sessie 20-11-2026 (22:55): eindspel voor maxed accounts; smithing-reeks via de bank (branch `adventurers/max-priorities`)
+
+- **Eigenaar:** bij max accounts prio op gear-, tool- en andere upgrades en een grotere bank, via money making en bossing. En Markbot 18: loop GE ↔ anvils Varrock West; "beter meer rune bars kopen en bank-anvil-bank".
+- **Data (logs tot 21:19 UTC):** 3 bots combat 126 met 2-4,4 miljard gp (Jorgbot 19, Markbot 18, Patrickbot 18). Tijd: thieving 31% (geld "eens proberen", 1-7k gp/u), wachten 19%, agility 16%, quests 15%, combat 7%; 5 boss-keuzes in ~4 uur.
+- **Planner:** `isEndgame` (≥ `endgame.share` 0,8 van de levels op 99; `adventurers.json` "endgame"). Dan bossChance ≥ 0,6 (alleen als bossChance > 0, dus niet na een mislukte poging), moneyChance ≥ 0,6, money-boss 50%, geen "eens proberen", questChance ≤ 0,1. Reden "eindspel: loot en upgrades". Upgrades zelf: de bestaande `Goals` (volgende stuk in de gear-lijsten) en `bidForUpgrades`.
+- **Smithing-loop:** `trade()` stuurde hem na elke lading naar de GE (platebodies ≥ `sellValue`, GE 47 tegels verder dan de bank ≤ `SELL_DETOUR_TILES`), waar hij ook de volgende bars pakte. Nu: midden in een reeks (`savedTask.afterTrip` en mode `buy_*`) de bank, GE alleen als die niet verder is. Verkoop later via `withdrawToSell`. `BUY_LOADS_MAX` 30 (was 10), nog steeds ≤ de helft van zijn coins.
+- **Validatie:** suite 145 tests, 16 vaste fails; test voor eindspel in `bot-adventurers`. Niet ingame getest. In de logs: `decision` met reden "eindspel", errands van Markbot 18 naar Varrock West in plaats van de GE.
+
+## Sessie 20-11-2026 (22:40): vaker teleports kopen (branch `adventurers/teleport-buying`)
+
+- **Vraag eigenaar:** "vaker teleports kopen als het geld er voor is (zonder alles op te brassen), efficiëntie spreekt ook".
+- **Data (logs tot 21:19 UTC):** 462 errands van ≥ 2 min, 385 zonder teleport (1.530 min). Top: de Grand Exchange (88).
+- **Bouw:**
+  - `Errands.bestTeleport`: ring of wealth (charged ids 1-5 en i1-i5) naar de GE (Rub 1) en Falador Park (Rub 3), bestemmingen uit `RING_OF_WEALTH_DESTINATIONS`, volgorde uit `RingOfWealth.plugin.js` ACTIONS; optie `wealthData` voor tests.
+  - `Loadout.travelBuys` (puur, getest): één per soort uit `TRAVEL_JEWELLERY` (games, dueling, skills, glory, RoW), vanaf 50k coins (bag + bank), per stuk ≤ 2%, per bezoek ≤ 3%, nooit meer dan de bag-coins. In `bidForSupplies`, event `teleportBought`.
+  - Bankbezoek: per soort één sieraad mee met elke lading (`jewelleryKind`); gathering houdt één reismiddel.
+  - **Tablets (vraag eigenaar 22:23):** `bestTeleport` breekt elke tablet waarvan de itemnaam een spreuknaam is (`SpellTeleports.spellDestination`: standaard, Arceuus, Lunar), niet de Wilderness; `TRAVEL_TABLETS` (13 soorten, `castFrom` voor de standaard die het zelf cast) als stapels van 5 in `travelBuys` (prijs × aantal). Bank: extra tablets mee zolang > 10 vrije vakjes.
+  - **Magic-gear (eigenaar 22:25, Markbot 10):** na een herstart draaide `trade()` vóór `resumeTask`; zonder plan gaf mijn `planStyle(entry) ?? "melee"` melee en trok hij rune platebody en berserker helm aan, terwijl de staf bleef autocasten. Nu `Trade.wornStyle` (stijl van het gedragen wapen) als terugval, ook in `wearUpgradesFromBank`. Open: waarom `TrainCombat.prepare` hem daarna niet terug in magic-gear zette (`castableSpell` false → honestStyle melee?); volgen in de logs.
+- **Validatie:** suite 144 tests, 16 vaste fails. Niet ingame getest: de Rub-submenu-index van de ring of wealth. In de logs: `errand` met `teleport: "jewellery"` naar de GE, event `teleportBought`, aandeel lange errands zonder teleport (nu 83%).
+
+## Sessie 20-11-2026 (22:30): audit van hubs en bestemmingen (branch `adventurers/hub-audit`)
+
+- **Methode:** BFS/A* op de collision map van Shortest Path (zie roadmap), plain transports + Priest in Peril. Script stond in `/tmp/route` (niet in de repo); opnieuw maken: regio's `x_y` van 64×64, bit = ((z·64·64 + (y%64)·64 + x%64)·4 + flag), flag 0 = noord open, 1 = oost open.
+- **Links:** 162/162 te lopen. Tree Gnome Village 2,2-2,7× (doolhof). `brimhaven_dock` los (eiland).
+- **Opgelost:**
+  - Karamja: geen looproute (Duradel en Musa Point golden als te voet; 21 walk_blocked naar Musa Point). Eerst als `onFoot: false` gebouwd; **eigenaar: "er loopt een perfecte boot voor 30 gp, kijk kritisch"**. Nu per boot: `boats` in travel-hubs.json (Tobias/Lorris/Thresnor Port Sarim→Musa Point, Customs officer terug, Barnaby Ardougne/Brimhaven/Rimmington; opties en fare uit transports.json en de plugins), Karamja `byBoat` met twee rechthoeken (`area` mag een lijst zijn). `onFoot`: eiland bereikbaar als een boot-kade te voet bereikbaar is. `walkTo`: `TravelHubs.boatFor` → naar de kade, `board` (NPC-optie via `core.operateNpc`), `afterHop` met `landing` en `radius: 10`, op een dek eerst `crossGangplank`; refusal `no_fare` zonder 30 gp in de tas; metric `boat` met `for`. Shilo Village als quest-slot vóór Karamja in de lijst.
+  - **Les (tweede keer vanavond):** niet afsluiten wat een speler gewoon kan bereiken; eerst de route of het transport zoeken.
+  - Morytania `enterVia: ["canifis","mort_ton"]`: `nextLeg` loopt vanaf buiten het gebied altijd via hubs en de laatste etappe begint bij een van die hubs; `onFoot` telt alleen die hubs. Hub `mort_ton` [3489,3290], link canifis-mort_ton 551 (BFS 399 × 1,38). Mort'ton-Barrows BFS 76, Canifis-Slayer Tower 88.
+- **Open:** Feldip Hills/Corsair Cove vanaf Yanille geen route zonder quest-transport (logs: Feldip 16× aangekomen, misschien via teleport); Barbarian Assault 342 tegels vanaf gnome_agility.
+- **Validatie:** 2 nieuwe tests in `bot-travel-hubs`. Suite 139 tests, 16 vaste fails. Niet ingame getest.
+
+## Sessie 20-11-2026 (22:20): Morytania en Gnome Stronghold te voet; Slayer ring als voorkeur (branch `adventurers/slayer-travel`)
+
+- **Observatie (eigenaar, 21:55):** Patrickbot 15 loopt van de GE naar Nieve (~730 tegels). Eigenaar: "er is map zat om door te lopen; teleport als voorkeur, geen zekerheid".
+- **Correctie op PR #25:** Morytania `onFoot: false` verschoof Slayer-bots van Mazchna naar Nieve, en de Stronghold faalde ook (0/16, vast bij 2693,3426 met 219 tegels te gaan: een directe wandeling zonder hub-link). De echte oorzaak in beide gevallen: hubs zonder links (`canifis`, `gnome_stronghold_gate`, `gnome_agility`).
+- **Fix:** links geteld met een BFS op de collision map van Shortest Path (methode in de roadmap, kalibratie 1,38 op 18 gemeten links): `paterdomus`-`canifis` 228 (via valluik 3405,3506 en de Holy barrier; zonder de 65-Agility-shortcut), `fishing_guild_road`-`gnome_stronghold_gate` 251, `gnome_stronghold_gate`-`gnome_agility` 81. Vlag `onFoot: false` weg bij Morytania; het mechanisme blijft in `TravelHubs.onFoot` (getest).
+- **Slayer:** meester bereikbaar te voet of via `slayerRingTo`. Bij > 300 tegels (`SLAYER_RING_TILES`) of niet te voet: ring uit bank of GE (eens per 30 min proberen), anders lopen. Taakplekken via `lockedAway`.
+- **Validatie:** suite 137 tests, 16 vaste fails; nieuwe test in `bot-travel-hubs` (Stronghold en Canifis verbonden). Niet ingame getest: of de walker de tempelgang (valluik, hekken 3444/3445, barrier) neemt, en of de ring gekozen wordt. In de logs: errands naar Mazchna/Nieve/Gnome Stronghold `arrived`; `teleport: "jewellery"` naar Nieve.
+
+## Sessie 20-11-2026 (22:15): punten 1-8 van de eigenaar (branch `adventurers/roadmap-batch`, PR na deze sessie)
+
+Eén branch, één commit per punt. Basis: logs tot 20:28 UTC (v 450f871) en de feedback-log sinds 17:00.
+
+- **8 `::volg` "Bij:":** `describeLocation` kende geen agility-banen; vanaf Faladors richels (3013,3335) was giant_mole_hole het dichtst. Banen uit `agilityCourses` tellen nu mee (ook in `place.near` van metrics).
+- **5+6 gear en stijl:** `Trade.bankUpgrades` (puur, getest) + `wearUpgradesFromBank` bij bank- en GE-bezoek (event `gearFromBank`). `trade()` draagt `planStyle(entry) ?? "melee"` in plaats van altijd melee.
+- **3 Sourhog-grot:** niet gebouwd. Niet in Shortest Path (ook niet upstream 8bd3cc6); Blockage 40331 (y 9704, dialoog-Yes) en touw 40330 zijn quest-logica. Porcine blijft in `questHold` (PR #24).
+- **4 Morytania:** `travel-hubs.json` lockedAreas Morytania `onFoot: false` (+ `onFootWhy`); `TravelHubs.onFoot` respecteert het. Data: 117 loopjes, 1 aangekomen, 201 min (vast bij tolpoort 3267,3228 en ten oosten van Varrock). Alleen per teleport tot de tempelroute met `plan_route` is gecheckt. `bot-slayer`-test aangepast.
+- **7 transportplan:** gemeten en volgorde in de roadmap. Stap 3-5 niet gebouwd: vereisen een test op de server.
+- **2 Fase 5:** `main` in `adventurers/fase-5` gemerged (PR #19 bijgewerkt, 135 tests, 16 vaste fails). Merge wacht op voltooide quests.
+- **1 quests:** top-oorzaak met harde data: Cook's Assistant "object not found at 3166,3306 (ids 1782)" ×12. `QuestPlay.matchesIds` telt de vormen van een multi-loc mee (zoals `ObjectActionPacketListener`). Volgende in de feedback: Restless Ghost "object used, not advanced" ×10, Imp Catcher "step without a place" ×9, Knight's Sword ×8, X Marks the Spot "npc not found: Veos" ×6.
+- **Validatie:** suite 133 tests (op deze branch), 16 vaste fails. Niets ingame getest.
+## Sessie 20-11-2026 (21:45): quest-hold-lijst; correctie Eeshwar (branch `adventurers/quest-hold`)
+
+- **Correctie op de sessie van 21:25:** Eeshwar zat **niet** vast. De push van 20:28 UTC toont hem om 20:14, 20:19 en 20:24 op de baan (3042,3363,3 / 3046,3360,3 / 3028,3354,3) met 21-28k agility-XP per 5 min, en level 58-60. Het screenshot was midden in een ronde. "Bij: giant mole hole" in `::volg` was misleidend (vanaf de baan hoort "falador park"); oorzaak niet gevonden, open punt. PR #22 blijft als preventieve fix: bij de controle letten op `on_roof`-weigeringen midden in agility.
+- **Les:** eerst de volgende log-push afwachten, dan pas een oorzaak benoemen (workflow: Observe → Analyse).
+- **Quest-hold (§28):** `adventurers.json` → `questHold.quests[]` met `name`, `since`, `reason`. `questAside` geeft `true` voor een gehouden quest (planner `available`), en `startQuest` weigert hem met `quest_on_hold` (opgeslagen taak na herstart, `afterRoof`) behalve bij `forced` (`::advquest`, sweep). Serverregel krijgt `questsHeld`.
+- **Eerste: A Porcine of Interest.** 36 mislukte pogingen in de feedback-log; de automatische 3-uursblokkade ging steeds opnieuw in (laatste 20:21 UTC). Vrijgeven: Sourhog-grot (blokkades en touw) in transports.json, dan uit de lijst.
+- **Validatie:** `tests/bot-quest-hold.test.cjs` (3 tests: vorm, Porcine erin, niet tegelijk granted). Suite 134 tests, 16 vaste fails.
+
+## Sessie 20-11-2026 (21:35): `quest_end`-metric (branch `adventurers/quest-end`)
+
+- **Waarom:** 152 quest-starts, 0 `quest_done` in 3 uur, en geen regel zei hoe ver elke poging kwam of hoe hij eindigde.
+- **Wat:** nieuwe pure module `QuestEnd.PlayerBots.js` (`questEnd(run, outcome, extra)`), aangeroepen via `endQuestRun` in Adventurers op alle zes eindpunten: `done`, `failed` (met de reden en stage uit `describeFailure`), `gather` (item zelf verzamelen), `roof` (eerst de dakbaan af), `died`, `override` (`::advtrain`). `entry.questStarts` telt de poging per bot per quest (`attempt`). `quest_done` blijft bestaan.
+- **Validatie:** `tests/bot-quest-end.test.cjs` (4 tests). Suite 131 tests, 16 vaste fails.
+- **Volgende:** na een uur draaien het recept "Quests" in OBSERVABILITY: slagingskans per quest en de top van mislukte stappen. Daarna de data-gedreven quest-hold-lijst (A Porcine of Interest eerst) en de grootste reden aanpakken.
+## Sessie 20-11-2026 (21:25): Eeshwar zweeft boven Falador (branch `adventurers/roof-drift`)
+
+- **Observatie:** screenshot 21:19. `::volg` zegt "Bij: giant mole hole" (2984,3314), minimap zwart met daken: verdieping 3, ~40 tegels west van de baan, naast het White Knights-kasteel. Logs (tot 21:13) tonen nog XP tot level 57; de afdrijving viel erna.
+- **Oorzaak 1:** `walkTo` weigerde een loopje vanaf het dak alleen met `entry.offRoof` (afdaal-modus). Midden in de agility-klus mocht een tussendoor-loopje (eten, bank) wel, en een pad op z=3 gaat door de lucht naast de daken.
+- **Oorzaak 2:** de noodteleport in `getOffRoof` liep alleen zolang `roofCourse(at)` de bot herkende (15 tegels rond een obstakel). Eenmaal daarbuiten: geen vangnet behalve de 60-minuten-strandcheck.
+- **Fix:** `walkTo` weigert `on_roof` ook als `roofCourse(fromHere)` (behalve reden `agility`). `getOffRoof` telt `roofSince` voor elke z>0: 3 min op een baan (`ROOF_STUCK_MS`), 5 min elders (`UPSTAIRS_STUCK_MS`), dan home teleport; metric `stranded` met `why: "upstairs"` voor het tweede geval.
+- **Validatie:** suite 127 tests, 16 vaste fails (basislijn). Geen unittest voor deze plugin-paden. Na deploy controleren: `stranded` met `why` `roof`/`upstairs` en `walkTo`-weigeringen `on_roof` in de `decision`-metric.
+- **Open:** welk loopje Eeshwar precies startte staat pas in de volgende `bot-logs`-push.
+
+## Controle 20-11-2026 21:15: grote update (`450f871`)
+
+Basis: `bot-logs` push 20:13 UTC. `450f871` 20:04 tot 20:13 (**9,4 min**). Weinig data: alleen
+richting, geen conclusies over tijd of volume.
+
+| Vraag | Uitkomst (9,4 min) |
+| --- | --- |
+| Reisspullen bij gathering | **1,7** vakjes (was 3,6), 15 regels; vrije vakjes 17,5. Logregels "één reismiddel mee" verschijnen (sieraad, Varrock-runes, geen). Tekst zegt soms "deze klus" (plan nog leeg): cosmetisch. |
+| `buy_nothing` | 0 (eerder steeds `not-exchangeable`). Geen aansteek-regel gezien. |
+| Markbot 3 | **Verkoopt nog clay** ("26 x clay … ook uit de bank") en mijnt verder voor Doric's Quest. Vermoedelijk overgang: zijn bewaarde klus komt van vóór de fix (zonder `gather`), dus na de herstart weet hij niet meer dat het quest-clay is. Opnieuw bekijken. |
+| Teleport vóór shortcut | 2× "underwall" in het log; te weinig data om te zeggen of het minder is. |
+| Veos / Wintertodt | 0 `boat`. Wintertodt 12× vooraf uitgesloten: 11× `place_unreachable` (X Marks the Spot niet gedaan), 1× `no_ship`. 0 starts. Scheepsdek dus nog niet te beoordelen. |
+| Niet gestart | 9× `errands_resting`, 1× `place_unreachable`, 1× `tool_unbuyable`. |
+| `loop` / `errandInstant` | 1 (Jorgbot 14, `bank`) / 84. |
+| Daken | 0 `stuck` op Seers (2710, 3475, 3) en Falador (3050, 3366, 3) (was 24 en 23 in 2,6 uur). |
+
+Zie ook de sessie van 21:15 (afgesloten gebieden, quests 0 van 152 voltooid).
+
+---
+
+## Sessie 20-11-2026 (21:15): afgesloten gebieden centraal in `walkTo`; quests voltooien niet
+
+Branch: `adventurers/locked-areas` (vanaf `main` `450f871`).
+
+### Gevonden
+
+- 98 `walk_blocked` naar Morytania in 3 uur (Mazchna 38, Slayer Tower 29, Mort'ton 13, Canifis
+  Rooftop 12, Canifis 6), 34 bots. Priest in Peril staat in `grantedQuests` (alle bots "voltooid",
+  zonder spelen), maar `travel-hubs.json` heeft in Morytania alleen de hub `canifis` zonder één link:
+  te voet onbereikbaar. Paden die dat niet checkten: de Slayer-meesterkeuze valt terug op álle
+  meesters als geen bereikbaar is; de agility-baankeuze checkt quests, geen bereikbaarheid;
+  combat-plekken.
+- **Quests: 152 gestart, 0 `quest_done` in 3 uur** (17:05 tot 20:08 UTC). Feedback vandaag 267:
+  "blocked for every adventurer for 3 h" 66, "too many tries" 50, "talked, but the step did not
+  advance" 42, "object used, but the step did not advance" 25, "step without a place" 25, "object
+  not found at 3166,3306,0 (ids 1782)" 20, "quest helper gave no step for a minute" 15, "npc not
+  found: Veos" 7. Meest: Cook's Assistant 33, The Restless Ghost 24, The Knight's Sword 22, A Porcine
+  of Interest 21, Imp Catcher 20.
+
+### Aangepast
+
+- `walkTo`: `lockedAway` weigert een plek in een `lockedArea` die niet `onFoot` is (quest/item en
+  een hub die aan Lumbridge vastzit), tenzij een teleport die de bot draagt binnen 30 tegels landt
+  (Barrows-tablet). Weigering `locked_area` → `decision.failure` `place_unreachable` (onthouden
+  30 min). Eén check voor alle aanroepers.
+- `CHANGELOG.md`.
+
+Validatie: bot-tests 16 van 127 fout (zelfde 16). Alleen `node --check`. Niet in game getest.
+
+### Open
+
+- Morytania echt bereikbaar maken: hubs en links door Paterdomus (transportplan).
+- `grantedQuests` verbergt echte eisen: een bot "heeft" Priest in Peril maar niet de toegang.
+- **Quest-pijplijn**: geen enkele voltooiing. Voorstel aan de eigenaar: eerst een `quest_end`-metric
+  (uitkomst per run: voltooid, opgegeven, reden, stap) en dan de top-redenen; Fase 5 (meer
+  quest-keuzes) pas mergen als quests weer voltooien.
+
 ## Sessie 20-11-2026 (21:10): Fase 5 stap 1, progression op unlock-waarde
 
 Branch: `adventurers/fase-5` (vanaf `main` `450f871`). **Niet gemerged vóór de controle van 21:15**,

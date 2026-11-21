@@ -43,12 +43,15 @@ naar de eerste en laatste `at` voordat je conclusies trekt.
 | `goal` | Doel gezet, gehaald of geschrapt | minuten sinds zetten |
 | `idle` | Een minuut zonder XP op de klus | plek, hp, in gevecht, vrije slots |
 | `stuck` | Klus zonder voortgang (max 1 per minuut per bot) | `activity`, `action`, `describe`, `npcsNear`, `where`, `home` |
-| `walk_blocked` | Route die niet lukte | `reason`, `to`, `where`, `tilesLeft`, `doorAttempt` |
+| `walk_blocked` | Route die niet lukte | `reason`, `to`, `where`, `tilesLeft`, `doorAttempt`, `route` (laatste lange-wandeling-beslissing: `leg`, `plan` ok/none/budget, `straight`, `badHubs`, `waypoints`) |
 | `stranded` | Home teleport na 3 keer vastlopen op dezelfde plek | `where` |
 | `death` | Avonturier stierf | `killer`, `killerLevel`, `hadFood`, `reason` |
 | `teleport` | Teleport onderweg | `how`, `name`, `to`, `reason` |
 | `toll_gate`, `level_hop` | Tolpoort Al Kharid, trap of ladder op een route | |
 | `quest_done`, `quest_fetch` | Quest voltooid, quest-item gehaald | `dialogue`, `got`, `have` |
+| `quest_end` | Einde van elke quest-poging, hoe ook | `quest`, `outcome` (done, failed, gather, roof, died, override), `step`, `helperStep`, `stage`, `tries`, `reason`, `minutes`, `attempt` |
+| `levels` | Per bot, elk uur (Fase 6) | `levels` (per skill), `total`, `combat` |
+| `server` (aanvulling) | Serverregel elke 5 min | `questsBlocked` (automatisch, 3 uur), `questsHeld` (met de hand, `questHold` in adventurers.json) |
 | `barrows_run` | Eén Barrows-run | kosten en lootwaarde |
 | `skills` | Elke 5 min: welke skills getraind, door wie, `untouched` | |
 | `server` | Elke 5 min: aantallen, tick-duur, geheugen, `questsBlocked` | |
@@ -131,6 +134,27 @@ print("gathering vrij gem", round(sum(r["freeSlots"] for r in g) / max(1, len(g)
       "loadoutBanked", sum(r["events"].get("loadoutBanked", 0) for r in bots))
 print("vooraf uitgesloten", C.Counter((k, v["why"]) for r in dec for k, v in (r.get("blocked") or {}).items()).most_common(10))
 print("waarom niet", C.Counter(((r.get("failure") or {}).get("why"), r["chosen"]["mode"]) for r in dec if not r["started"]).most_common(10))
+# Skills (Fase 6): tijd per klus, XP/uur van de hoofdskill, en skills die niemand traint
+mins = C.Counter(); mx = C.defaultdict(C.Counter)
+for r in rows:
+    if r["kind"] != "bot": continue
+    m = r.get("mode") or r.get("phase") or "?"; mins[m] += r.get("minutes", 0)
+    for s, v in (r.get("xpGained") or {}).items(): mx[m][s] += v
+for m, mn in mins.most_common(15):
+    if mx[m]: s, v = mx[m].most_common(1)[0]; print(f"{m:20} {mn:6.0f} min {s:12} {v / (mn / 60):9.0f} xp/u")
+win = [r for r in rows if r["kind"] == "skills" and "untouched" in r]
+un = C.Counter(s for r in win for s in r["untouched"])
+print("onaangeroerd (vensters van", len(win), "):", dict(un.most_common(10)))
+lv = {r["bot"]: r for r in rows if r["kind"] == "levels"}  # laatste levels per bot
+print("laagste skills gemiddeld:", sorted(((s, round(sum(r["levels"][s] for r in lv.values()) / len(lv))) for s in next(iter(lv.values()))["levels"]), key=lambda x: x[1])[:8] if lv else "nog geen levels-regels")
+# Quests (vanaf de versie met quest_end): slagingskans per quest, en waar mislukte pogingen stopten
+qe = [r for r in rows if r["kind"] == "quest_end"]
+print("quest uitkomst", C.Counter(r["outcome"] for r in qe))
+per = C.defaultdict(C.Counter)
+for r in qe: per[r["quest"]][r["outcome"]] += 1
+for q, c in sorted(per.items(), key=lambda x: -sum(x[1].values()))[:15]:
+    print(f"{q:32} n={sum(c.values()):3} done={c['done']:3} {round(c['done'] / sum(c.values()) * 100)}% {dict(c)}")
+print("mislukt op", C.Counter((r["quest"], r["helperStep"] or r["step"], (r["reason"] or "")[:40]) for r in qe if r["outcome"] == "failed").most_common(10))
 ```
 
 ## Gaten ten opzichte van de constitution

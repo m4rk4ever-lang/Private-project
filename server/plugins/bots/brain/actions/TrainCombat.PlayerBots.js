@@ -134,6 +134,10 @@ function createTrainCombatAction(spec, world) {
   const excludedNames = new Set((spec.excludeNames ?? []).map((name) => String(name).toLowerCase()));
   // `onlyNames`: fight these and nothing else (a boss: the Giant Mole, Sarachnis).
   const onlyNames = new Set((spec.onlyNames ?? []).map((name) => String(name).toLowerCase()));
+  // How far from its spot a target may be: further for a boss that roams its lair (the Giant
+  // Mole burrows to anywhere in it; at the default 24 the bots lost it and stood idle until the
+  // stuck check sent them off, "Kon bij boss giant mole niets doen", 21-11-2026).
+  const siteRadius = Math.max(SITE_RADIUS, Number(spec.siteRadius ?? SITE_RADIUS));
   const opponentLevel = (definition) => {
     const level = definition?.getCombatLevel?.() ?? 0;
     const name = String(definition?.getName?.() ?? "").toLowerCase();
@@ -532,7 +536,7 @@ function createTrainCombatAction(spec, world) {
     const at = npc.getLocation();
     const anchor = bot.site.anchor;
     if (at.getZ() !== anchor.z ||
-        Math.max(Math.abs(at.getX() - anchor.x), Math.abs(at.getY() - anchor.y)) > SITE_RADIUS) return false;
+        Math.max(Math.abs(at.getX() - anchor.x), Math.abs(at.getY() - anchor.y)) > siteRadius) return false;
     const level = targetsFor(state).level(npc.getCurrentDefinition(player));
     if (level === null || level < bot.site.npcLevels.min || level > bot.site.npcLevels.max) return false;
     if ((bot.avoided.get(npc) ?? 0) > nowMs) return false;
@@ -593,7 +597,7 @@ function createTrainCombatAction(spec, world) {
           bot.avoided.set(blockedNpc, nowMs + SITE_STALL_MS);
           dropTarget(player, bot, nowMs);
           bot.approachNpc = null;
-        } else if (anchor && fromAnchor <= SITE_RADIUS) {
+        } else if (anchor && fromAnchor <= siteRadius) {
           // As close to the centre as the map allows (centre on water/a fence): train from here.
           bot.settled = true;
         } else if (anchor) {
@@ -691,7 +695,7 @@ function createTrainCombatAction(spec, world) {
         bot.retryAt = nowMs + TARGET_RETRY_MS;
         prepare(player, state);
         // Every NPC near the cluster, not just those in regions active around real players.
-        const candidates = world.core.World.getNpcsNear(location, SITE_RADIUS + ATTACK_DISTANCE, player.getPrivateArea?.() ?? null)
+        const candidates = world.core.World.getNpcsNear(location, siteRadius + ATTACK_DISTANCE, player.getPrivateArea?.() ?? null)
           .filter((npc) => available(player, npc, bot, nowMs, state))
           .sort((a, b) => location.getDistance(a.getLocation()) - location.getDistance(b.getLocation()))
           .slice(0, TARGET_SPREAD * 2);

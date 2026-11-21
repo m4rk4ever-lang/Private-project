@@ -86,7 +86,7 @@ function bossesFor(adventurer, bosses = []) {
 
 function chooseNext(adventurer, quests, {
   available = null, questChance = 0.45, questGapChance = 0.25, moneyChance = 0, bosses = [], bossChance = 0, random = Math.random,
-  focus = {}, busyModes = new Set(), exclude = new Set(), goal = null, explain = null,
+  focus = {}, busyModes = new Set(), exclude = new Set(), goal = null, explain = null, endgame = null,
   // Unlock values (unlock-values.json, Progression.PlayerBots.js, Phase 5): with them a ready
   // quest is picked by its value, and with `unlockChance` a pick works toward the unlock with the
   // best value for the effort. Without them the planner is as before.
@@ -104,8 +104,17 @@ function chooseNext(adventurer, quests, {
   };
   const open = quests.filter((quest) => !adventurer.done.has(quest.name) && (!available || available.has(quest.name)));
   const fightable = bossesFor(adventurer, bosses);
+  // A maxed account (most skills at 99): its levels are done, so its time goes to upgrades and a
+  // bigger bank, by bossing and money-making (the owner, 20-11-2026). Combat 126 bots with billions
+  // spent 31% thieving for 1-7k gp/h and chose a boss 5 times in 4 hours.
+  const late = isEndgame(adventurer, endgame);
+  if (late) {
+    if (bossChance > 0) bossChance = Math.max(bossChance, endgame.bossChance ?? 0.6);
+    moneyChance = Math.max(moneyChance, endgame.moneyChance ?? 0.6);
+    questChance = Math.min(questChance, endgame.questChance ?? questChance);
+  }
   if (fightable.length > 0 && random() < bossChance) {
-    return decided({ kind: "boss", boss: fightable[Math.floor(random() * fightable.length)] }, "boss", { candidates: fightable.length });
+    return decided({ kind: "boss", boss: fightable[Math.floor(random() * fightable.length)], ...(late ? { reason: "eindspel: loot en upgrades" } : {}) }, "boss", { candidates: fightable.length, endgame: late || undefined });
   }
   const ready = open.filter((quest) => isReady(quest, adventurer));
   if (ready.length > 0 && random() < questChance) {
@@ -128,13 +137,14 @@ function chooseNext(adventurer, quests, {
     // A way that earned nothing (or cost) when it tried it is no way to make money.
     const earners = options.filter((option) => MONEY_MODES.has(option.mode) && !(rate(option.mode) !== null && rate(option.mode) <= 0));
     const untried = earners.filter((option) => rate(option.mode) === null);
-    if (fightable.length > 0 && random() < 0.25) {
+    if (fightable.length > 0 && random() < (late ? endgame.moneyBossShare ?? 0.5 : 0.25)) {
       return decided({ kind: "boss", boss: fightable[Math.floor(random() * fightable.length)], reason: "geld verdienen" }, "money_boss", { candidates: fightable.length });
     }
     // Something new now and then (one pick in ten), else what it knows earns best: an untried
     // way's guess counts for half against a measured rate ("eens proberen" came up too often).
     const score = (option) => rate(option.mode) ?? (MONEY_GUESS[option.mode] ?? 0) / (earners.some((other) => rate(other.mode) > 0) ? 2 : 1);
-    const pick = untried.length > 0 && random() < 0.1
+    // Maxed: no "eens proberen" (thieving for a few thousand an hour); what it knows earns best.
+    const pick = untried.length > 0 && random() < (late ? 0 : 0.1)
       ? untried[Math.floor(random() * untried.length)]
       : [...earners].sort((a, b) => score(b) - score(a))[0];
     if (pick) {
@@ -215,6 +225,16 @@ function chooseNext(adventurer, quests, {
  * - a mode another adventurer already does weighs half (no clump), unless they are a group;
  * - a skill it has gathered the materials for (logs to fletch, bars to smith) weighs triple.
  */
+/**
+ * Whether it is a maxed account: at least `share` of its skills at 99 (adventurers.json "endgame").
+ */
+function isEndgame(adventurer, endgame) {
+  if (!endgame) return false;
+  const levels = Object.values(adventurer.levels ?? {}).filter((level) => Number.isFinite(level));
+  if (levels.length === 0) return false;
+  return levels.filter((level) => level >= 99).length / levels.length >= (endgame.share ?? 0.8);
+}
+
 function trainingWeight(option, options, adventurer, { focus = {}, busyModes = new Set() } = {}) {
   const average = options.reduce((sum, entry) => sum + entry.level, 0) / options.length;
   let weight = 1;
@@ -266,4 +286,4 @@ function bestActivity(mode, level, definitions) {
   return best?.id ?? null;
 }
 
-module.exports = { trainingWeight, chooseNext, bossesFor, missing, isReady, trainingOptions, bestActivity, TRAINABLE, COMBAT };
+module.exports = { isEndgame, trainingWeight, chooseNext, bossesFor, missing, isReady, trainingOptions, bestActivity, TRAINABLE, COMBAT };

@@ -160,6 +160,35 @@ candle), Fase 5 (unlock-waarde).
   score (`decision.path = "unlock"`, met `unlock`, `value`, `effort`). Nulmeting (ce581ab):
   ~47% van de gestarte keuzes diende een quest of doel, ~51% balanceren.
 
+### Fase 6: Skills compleet en efficiënt (afgesproken 21-11-2026)
+
+Doel: elke skill wordt getraind, op een eerlijke en goede manier, en geen skill blijft zonder reden
+ver achter. Volgorde: meten, dan de grootste gaten.
+
+**Stap 1, meten (21-11-2026):** metric `levels` (per bot, elk uur: alle levels en totaal) naast
+de bestaande `skills` (per 5 min: welke skills getraind/onaangeroerd) en `bot.xpGained` per
+`mode`. Recept "Skills" in OBSERVABILITY.
+
+**Nulmeting 20-11-2026, 17:05-22:25 UTC (60 bots, 57 vensters van 5 min):**
+
+| Skill | Vensters zonder enige XP | Tijd / XP | Oordeel |
+| --- | --- | --- | --- |
+| Slayer | 57/57 | klus bestaat (`slayer`) | lukt nooit: meesters in Morytania/Stronghold onbereikbaar (routes) |
+| Runecrafting | 57/57 | buy-to-train bestaat | nooit gekozen of gestart: uitzoeken |
+| Farming, Construction, Sailing | 57/57 | geen klus | bouwen (Construction: wens eigenaar 17-11) |
+| Hunter | 56/57 | 8,2% van de tijd, 1.700 XP totaal | kapot: uitzoeken |
+| Ranged, Crafting | 52/57 | 105k / 94k XP | zelden |
+
+**Verdachte XP-snelheden (eerlijkheid):** buy-to-train fletching ~1,0M, herblore ~1,4M,
+firemaking ~1,6M XP/uur; agility ~160k gemiddeld, Eeshwar 59.550 in 5 min (>700k/uur) op een
+rooftop. `experienceMultiplier` is 1. Eerst nagaan of de acties te snel gaan (ticks), dan pas
+methodes kiezen op XP/uur.
+
+**Volgende stappen:** (2) Hunter repareren; (3) Runecrafting en Slayer laten starten; (4)
+XP-snelheden toetsen aan OSRS; (5) Construction, Farming, Sailing als klus; (6) methode per level
+uit de skill-guides (`osrs-guides.md`), gekozen op gemeten XP/uur.
+**Klaar als:** geen skill 57/57 onaangeroerd, en XP/uur per methode binnen de OSRS-bandbreedte.
+
 ### Later, op volgorde van bewijs
 
 - Survivability: eten mee bij combat (24 van 24 doden zonder eten).
@@ -186,6 +215,17 @@ candle), Fase 5 (unlock-waarde).
   **Stap 1 en de Kourend-helft van stap 2 gebouwd 20-11-2026** (Veos, games necklace na een
   bezoek, Wintertodt via `kourendWay`). Geen Kourend-hubs: binnen Kourend lopen naar verre plekken
   kan nog stranden.
+  **Linklengtes zonder server:** BFS op de collision map van Shortest Path (`src/main/resources/collision-map.zip`, 64×64-regio's, per tegel bits noord/oost open; diagonaal alleen als beide zijden open), met de deuren/ladders uit `transports.json` zonder item- of level-eis. 18 gemeten links geven mediaan 1,38 × de BFS-lengte; nieuwe links krijgen BFS × 1,38. Liefst daarna nog met `plan_route` ingame.
+  **Audit 20-11-2026 (BFS, alle 162 links en 134 bestemmingen):** alle links zijn te lopen (Tree Gnome Village-links 2,2-2,7× de BFS: het doolhof). Gevonden en opgelost: Karamja te voet bereikbaar gerekend (eiland; nu per boot: `boats` in travel-hubs.json, `byBoat`, `TravelHubs.boatFor`, `walkTo` vaart via het NPC-menu en loopt na de landing verder, loopplank bij een dek; transportplan stap 1 algemeen); Morytania via Digsite over de Salve (nu `enterVia: canifis, mort_ton`, hub `mort_ton`, link canifis-mort_ton 551). Open: Feldip Hills en Corsair Cove vanaf Yanille geen route zonder quest-transport (logs: Feldip toch 16× aangekomen); Barbarian Assault 342 vanaf gnome_agility; Kourend, Zanaris, Prifddinas, TzHaar, woestijn voorbij de pass: geen hub (verwacht).
+  **Meting 20-11-2026 (17:08-20:28 UTC, versies 1fe6907 t/m 450f871), volgorde voor stap 2-5:**
+  | Wat | Mislukte loopjes | Stap / status |
+  | --- | --- | --- |
+  | Morytania (Mazchna, Slayer Tower, Mort'ton, Canifis Rooftop) | ~110 van 117, 201 min | Link `paterdomus`-`canifis` (228) toegevoegd 20-11-2026, geteld op de collision map: valluik 3405,3506, gang, Holy barrier naar 3423,3485 (165 tegels × 1,38). Controleren in de logs: errands naar Morytania `arrived`. |
+  | Ondergronds vast met een doel boven (Seers 2716,3483: 24; Edgeville: 18) | 42 | Stap 5: de ladder kiezen die vanuit de huidige tunnel bereikbaar is. Raakt de kern van de navigatie: alleen met een test op de server bouwen. |
+  | Gnome Stronghold (agility, Nieve) | 16 van 16, vast rond 2693,3426 (219 tegels direct lopen) | Links `fishing_guild_road`-`gnome_stronghold_gate` (251) en `gnome_stronghold_gate`-`gnome_agility` (81) toegevoegd 20-11-2026. Slayer ring als voorkeur voor Nieve. Glider/spirit tree: stap 4. |
+  | Wintertodt | 225× vooraf uitgesloten | Stap 2/3 (skills necklace, memoirs). Kost geen looptijd. |
+  | Sourhog-grot (3164,9677) | 54 | Geen transport: quest-logica (Blockage 40331 met dialoog, touw 40330). Staat niet in Shortest Path, ook niet upstream (8bd3cc6). A Porcine of Interest staat in `questHold`. |
+- **Gebouwd 20-11-2026:** gear uit de bank (`Trade.bankUpgrades` bij bank en GE, event `gearFromBank`) en `trade()` draagt de stijl van de klus (`planStyle`). Hieronder de oorspronkelijke melding.
 - **Gear uit de bank (§20, gemeld door de eigenaar 20-11-2026):** hoge-level bots dragen een
   Torva-helm met een rune sq shield en een dragon scimitar terwijl de bank beter heeft.
   `Trade.wearBest` kijkt alleen in de tas (`inventoryIds`), en `fillEmptySlots(fromBank)` vult

@@ -144,6 +144,60 @@ test("found gear it may wear goes on; it keeps coins, food and tools and sells t
   }
 });
 
+test("better gear in the bank is found for wearing: the best its levels allow, not what it already has", () => {
+  const Trade = require("../plugins/bots/adventurers/Trade.PlayerBots");
+  // High-level bots fought with a dragon scimitar while a whip lay in the bank (20-11-2026).
+  const f = tradeFixture([["IRON_SCIMITAR", 1]], ["BRONZE_SCIMITAR"]);
+  try {
+    const bank = new Set([f.ids.RUNE_SCIMITAR, f.ids.MITHRIL_SCIMITAR, f.ids.SHRIMPS]);
+    const rules = (attack) => ({ levelOf: (skill) => (skill === "ATTACK" ? attack : 1), questDone: () => false });
+    assert.deepEqual(Trade.bankUpgrades(f.player, f.core, rules(45), "melee", bank), [f.ids.RUNE_SCIMITAR]);
+    assert.deepEqual(Trade.bankUpgrades(f.player, f.core, rules(25), "melee", bank), [f.ids.MITHRIL_SCIMITAR]);
+    // Nothing better than its bag's iron scimitar at Attack 10; no weapon while a tool is in hand.
+    assert.deepEqual(Trade.bankUpgrades(f.player, f.core, rules(10), "melee", bank), []);
+    assert.deepEqual(Trade.bankUpgrades(f.player, f.core, rules(45), "melee", bank, { skipWeapon: true }), []);
+  } finally {
+    f.restore();
+  }
+});
+
+test("between jobs the gear follows the weapon it wears: a staff keeps magic, not melee armour", () => {
+  const Trade = require("../plugins/bots/adventurers/Trade.PlayerBots");
+  const Shopping = require("../plugins/bots/adventurers/Shopping.PlayerBots");
+  const staff = (Shopping.gear.styles.magic.weapon ?? []).map((entry) => entry.item).find(Boolean);
+  const bow = (Shopping.gear.styles.ranged.weapon ?? []).map((entry) => entry.item).find(Boolean);
+  const ids = { [staff]: 9001, [bow]: 9002, RUNE_SCIMITAR: 1333 };
+  const core = { ItemIdentifiers: ids };
+  const wearing = (name) => ({ getEquipment: () => ({ getItems: () => [{ getId: () => ids[name] }] }) });
+  assert.equal(Trade.wornStyle(wearing(staff), core), "magic");
+  assert.equal(Trade.wornStyle(wearing(bow), core), "ranged");
+  assert.equal(Trade.wornStyle(wearing("RUNE_SCIMITAR"), core), "melee");
+});
+
+test("spare copies of gear in the bank are sold; one of each piece stays (worn, bag or bank)", () => {
+  const Trade = require("../plugins/bots/adventurers/Trade.PlayerBots");
+  // Better than it wears (kept by keepIds), five in the bank: four for sale, one stays.
+  const f = tradeFixture([], ["BRONZE_SCIMITAR"]);
+  try {
+    assert.equal(Trade.spareGear(f.player, f.core, f.ids.RUNE_SCIMITAR, 5), 4);
+    assert.equal(Trade.spareGear(f.player, f.core, f.ids.RUNE_SCIMITAR, 1), 0);
+    // Worn already: every banked copy is spare.
+    assert.equal(Trade.spareGear(f.player, f.core, f.ids.BRONZE_SCIMITAR, 3), 3);
+    // Not gear (coins, shrimps) or a tool (an axe): none.
+    assert.equal(Trade.spareGear(f.player, f.core, f.ids.SHRIMPS, 50), 0);
+    assert.equal(Trade.spareGear(f.player, f.core, f.ids.BRONZE_AXE, 3), 0);
+  } finally {
+    f.restore();
+  }
+  // One in the bag: all banked copies are spare.
+  const g = tradeFixture([["RUNE_SCIMITAR", 1]], []);
+  try {
+    assert.equal(Trade.spareGear(g.player, g.core, g.ids.RUNE_SCIMITAR, 2), 2);
+  } finally {
+    g.restore();
+  }
+});
+
 test("one of each kept piece of gear or tool stays; spare copies are goods, not a full bag for ever", () => {
   const Trade = require("../plugins/bots/adventurers/Trade.PlayerBots");
   // As Markbot 14 and Jorgbot 18 stood at a bank for hours: a bag of identical kept things.
@@ -312,4 +366,33 @@ test("a quest's combat gap is not picked again once combat could not start (excl
   assert.notEqual(plan.mode, "combat_training");
   const first = chooseNext(adventurer({}, { combat: 10 }), [quest], { random: () => 0.99, questGapChance: 1 });
   assert.equal(first.mode, "combat_training", "without the exclude it is still the pick");
+});
+
+test("a maxed account bosses and makes money for upgrades; others as before", () => {
+  const { chooseNext, isEndgame } = require("../plugins/bots/adventurers/Planner.PlayerBots");
+  const data = require("../plugins/bots/data/adventurers.json");
+  const skills = ["ATTACK", "STRENGTH", "DEFENCE", "HITPOINTS", "RANGED", "MAGIC", "PRAYER", "WOODCUTTING", "MINING", "FISHING", "THIEVING", "AGILITY"];
+  const maxed = { levels: Object.fromEntries(skills.map((s) => [s, 99])), combat: 126, done: new Set(), questPoints: 0 };
+  const mid = { levels: Object.fromEntries(skills.map((s) => [s, 60])), combat: 80, done: new Set(), questPoints: 0 };
+  assert.equal(isEndgame(maxed, data.endgame), true);
+  assert.equal(isEndgame(mid, data.endgame), false);
+  assert.equal(isEndgame(maxed, null), false);
+  const boss = { id: "boss_test", kind: "test", name: "Test", combat: 3, x: 3200, y: 3200, z: 0 };
+  // A roll of 0.5 is under the endgame's 0.6 boss chance, over the usual 0.25.
+  const pick = (adventurer) => chooseNext(adventurer, [], { bosses: [boss], bossChance: 0.25, endgame: data.endgame, questChance: 0, random: () => 0.5 });
+  const late = pick(maxed);
+  assert.equal(late.kind, "boss");
+  assert.match(late.reason, /eindspel/);
+  assert.notEqual(pick(mid).kind, "boss");
+  // After a failed attempt (bossChance 0) no boss is forced, maxed or not.
+  assert.notEqual(chooseNext(maxed, [], { bosses: [boss], bossChance: 0, endgame: data.endgame, questChance: 0, random: () => 0.5 }).kind, "boss");
+});
+
+test("the Giant Mole's lair is multi-combat (OSRS Wiki: Mole Hole), so two adventurers both fight her", () => {
+  const world = require("../data/definitions/world.json");
+  const data = require("../plugins/bots/data/adventurers.json");
+  const mole = data.bosses.find((boss) => boss.name === "Giant Mole");
+  const multi = world.zones.filter((zone) => (zone.tags ?? []).includes("multi-combat") && zone.z === (mole.z ?? 0)
+    && mole.x >= zone.minX && mole.x <= zone.maxX && mole.y >= zone.minY && mole.y <= zone.maxY);
+  assert.equal(multi.length, 1);
 });

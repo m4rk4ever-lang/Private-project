@@ -11,6 +11,8 @@
  * A basement is reached by its ladder (`places`): the long-route walk stays on one plane.
  */
 const data = require("../data/quest-playthroughs.json");
+/** What it fetched for a quest is not sold for this long, as the quest may be picked up again. */
+const QUEST_KEEP_MS = 6 * 60 * 60_000;
 
 /** Close enough to click stairs or a ladder (the click walks the rest), past an errand's arrival. */
 const CLICK_TILES = 4;
@@ -202,7 +204,7 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     for (let dx = -3; dx <= 3; dx += 1) {
       for (let dy = -3; dy <= 3; dy += 1) {
         for (const candidate of core.MapObjects?.mapObjects?.get?.(core.MapObjects.getHash(x + dx, y + dy, z)) ?? []) {
-          if (!step.ids.includes(candidate.getId())) continue;
+          if (!matchesIds(core, candidate.getId(), step.ids)) continue;
           const away = Math.max(Math.abs(dx), Math.abs(dy));
           if (away < best) { best = away; object = candidate; }
         }
@@ -529,6 +531,8 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     const player = entry.player;
     const before = ids.reduce((sum, id) => sum + (player.getInventory().getAmount(id) ?? 0), 0);
     (run.fetching ??= []).push({ ids, amount, name, why, before, since: nowMs });
+    // Kept from the bank's sales for a while (Adventurers.workingMaterials), also if the quest waits.
+    for (const id of ids) (entry.questKeep ??= new Map()).set(id, nowMs + QUEST_KEEP_MS);
   }
 
   function checkFetched(entry, run, nowMs) {
@@ -537,7 +541,7 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
     for (const job of run.fetching.splice(0)) {
       const have = job.ids.reduce((sum, id) => sum + (player.getInventory().getAmount(id) ?? 0), 0);
       const got = have >= job.amount || have > job.before;
-      note?.(player, got ? `Heeft ${job.name} voor ${run.name}.` : `Kon ${job.name} niet halen voor ${run.name}; gaat zonder verder.`, "quest");
+      note?.(player, got ? `Heeft ${countedName(job)} voor ${run.name}.` : `Kon ${countedName(job)} niet halen voor ${run.name}; gaat zonder verder.`, "quest");
       metric({ kind: "quest_fetch", bot: entry.name, quest: run.name, item: job.name, why: job.why, amount: job.amount,
         have, got, minutes: Math.round((nowMs - job.since) / 600) / 100 });
     }
@@ -621,6 +625,21 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
         run.reason = step.reason;
         return "failed";
       }
+      // What the quest requires that it lacks (the helper's item requirements: Doric's clay and
+      // ores, the Apothecary's cadava berries): fetched, bought or gathered first, as a player
+      // packs before setting off. One it cannot get now (a quest item made on the way) is left
+      // to the steps, not a reason to stop.
+      const required = (helper.required?.(player) ?? []).filter((req) => !(run.reqTried ??= new Set()).has(req.name));
+      if (required.length > 0 && run.reqTried.size < 8 && nowMs >= (run.reqAt ?? 0)) {
+        const req = required[0];
+        run.reqTried.add(req.name);
+        run.reqAt = nowMs + 5_000;
+        if (acquire(entry, req.ids, req.amount, req.name)) {
+          note?.(player, `Gaat ${countedName(req)} halen voor ${run.name} (nodig voor de quest).`, "quest");
+          fetching(entry, run, req.ids, req.amount, req.name, "required", nowMs);
+          return "running";
+        }
+      }
       // What the guide recommends bringing (food for the fights, a teleport, an antipoison):
       // each fetched or bought once at the start, as a player packs before setting off; one it
       // cannot get (too dear, sold nowhere) is left out, not a reason to stop.
@@ -633,7 +652,7 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
         run.recTried.add(rec.name);
         run.recAt = nowMs + 5_000;
         if (acquire(entry, rec.ids, rec.amount, rec.name)) {
-          note?.(player, `Gaat ${rec.amount > 1 ? `${rec.amount} x ` : ""}${rec.name} halen voor ${run.name} (aangeraden).`, "quest");
+          note?.(player, `Gaat ${countedName(rec)} halen voor ${run.name} (aangeraden).`, "quest");
           fetching(entry, run, rec.ids, rec.amount, rec.name, "recommended", nowMs);
           return "running";
         }
@@ -842,4 +861,28 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
   return { start, tick, talkTick, has, ready, questOf, describeFailure };
 }
 
-module.exports = { createQuestPlay, chooseOption, nextHop, placeOf, stepDone, data };
+/**
+ * Whether a map object is one of the step's ids: itself, or a multi-loc whose forms include one.
+ * The Quest Helper names the form the player sees (the Lumbridge mill's full flour bin, 1782);
+ * the map holds the base object, so "object not found at 3166,3306" ended Cook's Assistant 12
+ * times (20-11-2026). The server's own click matching does the same (ObjectActionPacketListener).
+ */
+/**
+ * An item for a note: "20 x balls of wool", once. The helper's names may carry their count
+ * already ("20 x Balls of wool", "1 x Egg"): it said "Gaat 20 x 20 x Balls of wool halen" (21-11-2026).
+ */
+function countedName({ amount = 1, name = "" } = {}) {
+  const bare = String(name).replace(/^\s*\d+\s*x\s+/i, "");
+  return amount > 1 ? `${amount} x ${bare}` : bare;
+}
+
+function matchesIds(core, id, ids) {
+  if (ids.includes(id)) return true;
+  try {
+    return (core.CacheDefinitions?.getObject?.(id)?.transforms ?? []).some((form) => ids.includes(form));
+  } catch {
+    return false;
+  }
+}
+
+module.exports = { matchesIds, countedName, QUEST_KEEP_MS, createQuestPlay, chooseOption, nextHop, placeOf, stepDone, data };

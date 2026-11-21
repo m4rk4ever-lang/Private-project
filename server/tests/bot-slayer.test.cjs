@@ -39,8 +39,14 @@ test("an adventurer asks the best Slayer master its levels allow and it can walk
   assert.deepEqual(Slayer.mastersFor({ combat: 3, slayer: 1 }, walkable(false)).map((m) => m.name).sort(), ["Spria", "Turael"]);
   // Mazchna is in Canifis: across the Salve, only after Priest in Peril.
   assert.ok(!Slayer.mastersFor({ combat: 40, slayer: 1 }, walkable(false)).some((m) => m.name === "Mazchna"));
+  // After Priest in Peril it walks there: through the Paterdomus temple (paterdomus-canifis link).
   assert.equal(Slayer.mastersFor({ combat: 40, slayer: 1 }, walkable(true))[0].combat, 20);
-  // Nieve (the Gnome Stronghold) from combat 85; Vannaka (Edgeville Dungeon) is underground.
+  // An area marked not on foot ("onFoot": false in lockedAreas) is left out even after its quest.
+  const data = JSON.parse(JSON.stringify(require("../plugins/bots/data/travel-hubs.json")));
+  for (const locked of data.lockedAreas) if (locked.name === "Morytania") locked.onFoot = false;
+  assert.ok(!Slayer.mastersFor({ combat: 40, slayer: 1 }, (place) => Hubs.onFoot(place, data, () => true)).some((m) => m.name === "Mazchna"));
+  // Nieve (the Gnome Stronghold) from combat 85, on foot by the stronghold's gate; Vannaka
+  // (Edgeville Dungeon) is underground.
   const high = Slayer.mastersFor({ combat: 90, slayer: 1 }, walkable(false));
   assert.equal(high[0].combat, 85);
   assert.ok(!high.some((m) => m.name === "Vannaka"));
