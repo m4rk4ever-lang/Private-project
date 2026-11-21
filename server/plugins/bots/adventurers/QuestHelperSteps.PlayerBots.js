@@ -169,11 +169,15 @@ function createHelperSteps({ core, now = () => Date.now(), log = () => {} }) {
           }
             : toBotStep(core, result?.activeStep);
         // What the guide recommends bringing (food, teleports, an antipoison) and the bot lacks.
+        const unmet = (list) => list.filter((req) => req && req.met === false && Array.isArray(req.ids) && req.ids.length > 0)
+          .map((req) => ({ ids: req.ids, amount: Math.max(1, Number(req.quantity) || 1), name: req.name }));
         const recommended = result?.overview?.itemRecommended;
-        if (Array.isArray(recommended)) {
-          state.recommended = recommended.filter((req) => req && req.met === false && Array.isArray(req.ids) && req.ids.length > 0)
-            .map((req) => ({ ids: req.ids, amount: Math.max(1, Number(req.quantity) || 1), name: req.name }));
-        }
+        if (Array.isArray(recommended)) state.recommended = unmet(recommended);
+        // What the quest itself requires (6 clay, 4 copper ore and 2 iron ore for Doric; cadava
+        // berries for the Apothecary) and the bot lacks: its steps often do not list them, so it
+        // talked to Doric and the Apothecary empty-handed, again and again (20-11-2026).
+        const required = result?.overview?.itemRequirements;
+        if (Array.isArray(required)) state.required = unmet(required);
         state.error = null;
         failures = 0;
       }, (error) => {
@@ -204,7 +208,12 @@ function createHelperSteps({ core, now = () => Date.now(), log = () => {} }) {
     return asked.get(player)?.recommended ?? [];
   }
 
-  return { available, keyOf, current, status, recommended };
+  /** The quest's required items the bot lacks (the helper's overview), as recommended(). */
+  function required(player) {
+    return asked.get(player)?.required ?? [];
+  }
+
+  return { available, keyOf, current, status, recommended, required };
 }
 
 module.exports = { createHelperSteps, toBotStep, sceneOf };
