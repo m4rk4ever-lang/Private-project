@@ -1029,6 +1029,19 @@
    "onFoot": false,
    "onFootWhy": "Een eiland: geen looproute van het vasteland (BFS op de collision map, 20-11-2026). Bereikbaar per boot (boats hieronder, 30 gp) of teleport.",
    "byBoat": true
+  },
+  {
+   "name": "Gnome Stronghold",
+   "area": [
+    2370,
+    3386,
+    2498,
+    3518
+   ],
+   "enterVia": [
+    "gnome_agility"
+   ],
+   "enterWhy": "Binnen de muren, alleen door de grote poort (Open Gate 2461,3382-3385, Shortest Path). Naar binnen via de hub bij de poort; de poort zelf gaat via shortcutHop (21-11-2026: 1 van 14 tochten kwam aan)."
   }
  ],
  "boats": [
