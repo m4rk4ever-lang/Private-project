@@ -174,6 +174,30 @@ test("between jobs the gear follows the weapon it wears: a staff keeps magic, no
   assert.equal(Trade.wornStyle(wearing("RUNE_SCIMITAR"), core), "melee");
 });
 
+test("spare copies of gear in the bank are sold; one of each piece stays (worn, bag or bank)", () => {
+  const Trade = require("../plugins/bots/adventurers/Trade.PlayerBots");
+  // Better than it wears (kept by keepIds), five in the bank: four for sale, one stays.
+  const f = tradeFixture([], ["BRONZE_SCIMITAR"]);
+  try {
+    assert.equal(Trade.spareGear(f.player, f.core, f.ids.RUNE_SCIMITAR, 5), 4);
+    assert.equal(Trade.spareGear(f.player, f.core, f.ids.RUNE_SCIMITAR, 1), 0);
+    // Worn already: every banked copy is spare.
+    assert.equal(Trade.spareGear(f.player, f.core, f.ids.BRONZE_SCIMITAR, 3), 3);
+    // Not gear (coins, shrimps) or a tool (an axe): none.
+    assert.equal(Trade.spareGear(f.player, f.core, f.ids.SHRIMPS, 50), 0);
+    assert.equal(Trade.spareGear(f.player, f.core, f.ids.BRONZE_AXE, 3), 0);
+  } finally {
+    f.restore();
+  }
+  // One in the bag: all banked copies are spare.
+  const g = tradeFixture([["RUNE_SCIMITAR", 1]], []);
+  try {
+    assert.equal(Trade.spareGear(g.player, g.core, g.ids.RUNE_SCIMITAR, 2), 2);
+  } finally {
+    g.restore();
+  }
+});
+
 test("one of each kept piece of gear or tool stays; spare copies are goods, not a full bag for ever", () => {
   const Trade = require("../plugins/bots/adventurers/Trade.PlayerBots");
   // As Markbot 14 and Jorgbot 18 stood at a bank for hours: a bag of identical kept things.

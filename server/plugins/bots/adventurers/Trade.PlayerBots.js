@@ -179,6 +179,23 @@ function keepIds(player, core, { isFood = () => false } = {}) {
   return keep;
 }
 
+/**
+ * Copies of a piece of gear in its bank beyond the one it keeps: one of each piece is enough,
+ * worn, in the bag or banked; the rest is money for its next upgrade. keepIds kept every copy
+ * of anything better than it wears, per style, so a melee fighter kept all its magic and ranged
+ * pieces and a bot saving for a twisted bow sat on spare elite gear (the owner, 21-11-2026).
+ * Not tools (axes, pickaxes), nor supplies (ammunition, charged jewellery, tablets).
+ */
+function spareGear(player, core, itemId, inBank) {
+  if (!(inBank > 0) || isSupply(core, itemId)) return 0;
+  const { slots = {}, styles = {} } = Shopping.gear;
+  const lists = [...Object.values(slots), ...Object.values(styles).flatMap((style) => Object.values(style))];
+  const isGear = lists.some((list) => (list ?? []).some((entry) => Shopping.idOf(core, entry.item) === itemId));
+  if (!isGear) return 0;
+  const elsewhere = (player.getInventory().getAmount?.(itemId) ?? 0) + (equippedIds(player).has(itemId) ? 1 : 0);
+  return Math.max(0, inBank - Math.max(0, 1 - elsewhere));
+}
+
 /** Food it carries for itself; more than this (a bag of fish it caught and cooked) is stock. */
 const FOOD_CARRY = 10;
 /**
@@ -289,4 +306,4 @@ function finishedOffers(player, emit) {
 }
 
 module.exports = {
-  slotsOf, listsFor, twoHanded, isSupply, isPrayerRestore, wearBest, wornStyle, bankUpgrades, keepIds, goodsToSell, sellAtExchange, buyAtExchange, finishedOffers, COINS, KEEP_TOOLS };
+  slotsOf, listsFor, twoHanded, isSupply, isPrayerRestore, wearBest, wornStyle, bankUpgrades, spareGear, keepIds, goodsToSell, sellAtExchange, buyAtExchange, finishedOffers, COINS, KEEP_TOOLS };
