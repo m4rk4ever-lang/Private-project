@@ -116,6 +116,8 @@ const DANGER_MODES = new Set(["combat_training", "combat_ranged", "combat_magic"
 const BID_WAIT_MS = 3 * 60_000;
 /** How much further than a bank it walks to the Grand Exchange to sell (saving up, offers in). */
 const SELL_DETOUR_TILES = 120;
+/** This near a bank (or the Grand Exchange) it banks there, without a walk: a bag is never emptied on the floor beside one. */
+const AT_BANK_TILES = 12;
 /** At most this many bags of materials bought at once for a buy-to-train job (half its coins at most). */
 const BUY_LOADS_MAX = 30;
 /** Coins a clanmate always keeps for itself before it chips in toward another's goal. */
@@ -2477,6 +2479,32 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
   }
 
+  /** The world's multi-combat zones (data/definitions/world.json), loaded once. */
+  let multiZones = null;
+  function bossInMulti(boss) {
+    if (!multiZones) {
+      try {
+        multiZones = (require("../../../data/definitions/world.json").zones ?? []).filter((zone) => (zone.tags ?? []).includes("multi-combat"));
+      } catch {
+        multiZones = [];
+      }
+    }
+    const z = boss.z ?? 0;
+    return multiZones.some((zone) => (zone.z ?? 0) === z && boss.x >= zone.minX && boss.x <= zone.maxX && boss.y >= zone.minY && boss.y <= zone.maxY);
+  }
+
+  /** Another online adventurer at (or on its way to) this boss where only one fights it, or null. */
+  function bossTakenBy(entry, boss) {
+    // Barrows: each player raises its own brothers, so a second one is no trouble.
+    if (bossInMulti(boss) || boss.kind === "barrows") return null;
+    for (const other of adventurers.values()) {
+      if (other === entry || !other.player?.isRegistered?.()) continue;
+      const busyWith = other.phase === "boss" || (other.phase === "errand" && other.plan?.kind === "boss");
+      if (busyWith && (other.plan?.boss?.id ?? null) === boss.id) return other.name;
+    }
+    return null;
+  }
+
   /** Adventurers whose stretch is over or nearly so, and that are online: free to join a group. */
   function freeCompanions(entry, nowMs) {
     return [...adventurers.values()].filter((other) => other !== entry && other.player?.isRegistered?.()
@@ -2492,7 +2520,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (companions.length === 0) return false;
     const members = [entry, ...companions];
     // A boss all of them can take on, together.
-    const shared = (data.bosses ?? []).filter((boss) => members.every((member) => snapshot(member.player).combat >= boss.combat));
+    // Only where they can all fight it at once (multi-combat, as the Giant Mole's lair): at a
+    // single-combat boss one stood idle beside the other (21-11-2026).
+    const shared = (data.bosses ?? []).filter((boss) => bossInMulti(boss) && members.every((member) => snapshot(member.player).combat >= boss.combat));
     if (shared.length > 0 && random() < 0.5) {
       const boss = shared[Math.floor(random() * shared.length)];
       for (const member of members) {
@@ -2948,7 +2978,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const fightable = bosses.filter((boss) => {
       const result = Requirements.canExecute({ kind: "boss", boss }, ctx);
       if (!result.ok) blocked[`boss:${boss.id}`] = { why: result.why, ...(result.detail ? { detail: result.detail } : {}) };
-      return result.ok;
+      // Taken: another adventurer fights it where only one can (single combat), as a player
+      // hops world or does something else (the owner, 21-11-2026).
+      const by = result.ok ? bossTakenBy(entry, boss) : null;
+      if (by) blocked[`boss:${boss.id}`] = { why: "boss_taken", detail: { by } };
+      return result.ok && !by;
     });
     return { blocked, bosses: fightable };
   }
@@ -4938,8 +4972,18 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const inventory = player.getInventory();
     const room = (data.fullSlots ?? 4) + 1;
     if (inventory.getFreeSlots() >= room) return true;
-    const stock = Trade.goodsToSell(player, core, Trade.keepIds(player, core, { isFood }), { isFood, worthless: true })
+    // Its boss kit and the job's materials stay too (keepAtExchange): Markbot 18 stood at the
+    // Grand Exchange with a bag of mole skins and dropped the spade it had just bought for the
+    // Giant Mole (21-11-2026).
+    const stock = Trade.goodsToSell(player, core, keepAtExchange(player), { isFood, worthless: true })
       .sort((a, b) => a.value - b.value);
+    // Standing at a bank (the exchange has one): into the bank, not on the floor.
+    const bank = nearestBank(player);
+    if (distanceTo(player, data.grandExchange) <= AT_BANK_TILES || (bank && bank.away <= AT_BANK_TILES)) {
+      const stored = deposit(player, stock);
+      if (stored.length > 0) note(player, `Zet op de bank: ${stored.slice(0, 4).map((good) => itemName(good.itemId)).join(", ")}${stored.length > 4 ? ` en ${stored.length - 4} meer` : ""}.`, "activity");
+      if (inventory.getFreeSlots() >= room) return true;
+    }
     const dropped = [];
     for (const good of stock) {
       if (inventory.getFreeSlots() >= room) break;

@@ -387,3 +387,12 @@ test("a maxed account bosses and makes money for upgrades; others as before", ()
   // After a failed attempt (bossChance 0) no boss is forced, maxed or not.
   assert.notEqual(chooseNext(maxed, [], { bosses: [boss], bossChance: 0, endgame: data.endgame, questChance: 0, random: () => 0.5 }).kind, "boss");
 });
+
+test("the Giant Mole's lair is multi-combat (OSRS Wiki: Mole Hole), so two adventurers both fight her", () => {
+  const world = require("../data/definitions/world.json");
+  const data = require("../plugins/bots/data/adventurers.json");
+  const mole = data.bosses.find((boss) => boss.name === "Giant Mole");
+  const multi = world.zones.filter((zone) => (zone.tags ?? []).includes("multi-combat") && zone.z === (mole.z ?? 0)
+    && mole.x >= zone.minX && mole.x <= zone.maxX && mole.y >= zone.minY && mole.y <= zone.maxY);
+  assert.equal(multi.length, 1);
+});
