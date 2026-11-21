@@ -5,6 +5,14 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 21-11-2026 14:55: Taverley-poort en candle (Markbot 18 "geen spade")
+
+- **Vraag:** waarom kon Markbot 18 geen spade krijgen? Niet door een volle tas (`freeSlots` 25).
+- **Oorzaak 1:** bij elk GE-bezoek zette hij spade en candle op de bank en daarna te koop (09:16, 11:04 UTC). De spade staat sinds #40 in `KEEP_TOOLS`; de candle nog niet. Nu wel: `CANDLE`, `LIT_CANDLE`.
+- **Oorzaak 2:** om 11:20 liep hij vast bij Burthorpe (2876,3546) op weg naar de GE. Daarna was de GE "versperd" (`exchange_blocked`) en kon hij niets kopen: spade, candle, harpoon, rope.
+- **Taverley-poort:** de `walk_blocked.door`-data (v 1c9f840) gaf bij 2936,3450 steeds `none_helps`, met als `target` een doel honderden tegels verder. De waypoint van de route ligt een tegel voorbij de poort; staat de bot op de poorttegel, dan verving `maybeOpenDoor` die door het verre doel. Binnen het venster van de route finder hielp de poort daar niet meetbaar. Fix: eerst het segment als maatstaf, het verre doel alleen als tweede. Test in `bot-brain.test.cjs` (draait hier niet zonder `dist`; los nagespeeld: oude code `none_helps`, nieuwe klikt).
+- **Burthorpe 2876,3546:** zelfde patroon is niet bewezen (geen `door`-data, oude versie). Na de update kijken of het terugkomt.
+
 ## Sessie 21-11-2026 (14:45): talisman op de ruïnes, zaad op de patch (branch `adventurers/rc-ruins`)
 
 - **Eigenaar:** "runecrafting bots lopen vast omdat ze de air talisman niet gebruiken met Use op de ruins."

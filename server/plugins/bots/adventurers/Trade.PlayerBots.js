@@ -22,7 +22,10 @@ const PLATINUM_TOKEN = 13204;
 // The air talisman: bought for Runecrafting (buyToTrain), its tool for the Air altar every trip.
 const KEEP_TOOLS = ["TINDERBOX", "HAMMER", "CHISEL", "NEEDLE", "KNIFE", "FEATHER", "FISHING_BAIT", "POT", "BUCKET", "JUG", "AIR_TALISMAN",
   // Farming and Construction tools (farm runs, building in its house).
-  "RAKE", "SEED_DIBBER", "SPADE", "SAW"];
+  "RAKE", "SEED_DIBBER", "SPADE", "SAW",
+  // The Giant Mole's light: banked between runs and put up for sale, then not to be had when the
+  // exchange was out of reach (Markbot 18, "geen candle", 21-11-2026).
+  "CANDLE", "LIT_CANDLE"];
 
 /** A gear list in this adventurer's own taste (a battleaxe for a scimitar: Shopping.variantOf). */
 function tasted(list, core, player) {

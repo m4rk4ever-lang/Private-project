@@ -14,6 +14,8 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Avonturiers bleven voor de poort van Taverley staan en liepen niet verder naar het westen. Ze openen de poort nu.
+- Avonturiers verkochten de candle voor de Giant Mole op de GE. Die houden ze nu, net als hun spade.
 - Rijke avonturiers namen bij elk bankbezoek al hun runes, tablets en sieraden mee. Met hun eten was de tas dan vol en liepen ze steeds opnieuw naar de bank. Ze nemen nu een kleine reisset mee: twee sieraden, runes als ze de spreuken kennen, en een of twee soorten tablets.
 - Van de zes jachtplekken in de Feldip Hills leverden er vier niets op. Die zijn weggehaald; op de twee die wel werken mogen nu drie jagers tegelijk.
 - Avonturiers die runes wilden maken, stonden bij de Air-ruïnes zonder hun air talisman te gebruiken. Ze houden de talisman nu bij de ruïnes en gaan naar binnen. Bij het tuinieren zaaien ze nu ook echt na het wieden.

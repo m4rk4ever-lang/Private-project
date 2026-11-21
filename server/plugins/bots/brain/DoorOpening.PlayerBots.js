@@ -399,29 +399,43 @@ function maybeOpenDoor({ player, state, world, request, select = false }) {
   // could leave its own tile (an exhausted plan, a pen the raw router cannot see
   // out of) - so the real destination is the yardstick instead, or the gate that
   // traps the bot is never tested.
-  let targetX = Number.isFinite(request.lastSegmentX) ? request.lastSegmentX : request.x;
-  let targetY = Number.isFinite(request.lastSegmentY) ? request.lastSegmentY : request.y;
+  // The segment first: a route's door waypoint is the tile just past the gate, one tile from a
+  // bot standing in front of it. Swapped for the far destination there, the gate made no
+  // measurable progress inside the route finder's window and stayed shut ("none_helps" at
+  // Taverley, 2936,3450: 25 walks west in two hours, 21-11-2026). The destination is the
+  // yardstick only when the segment says nothing (on the bot's tile, or no door helps it).
   const botLoc = player.getLocation();
-  if (
-    Number.isFinite(targetX) && Number.isFinite(targetY) &&
-    Math.max(Math.abs(botLoc.getX() - targetX), Math.abs(botLoc.getY() - targetY)) <= 1 &&
-    Number.isFinite(request.x) && Number.isFinite(request.y)
-  ) {
-    targetX = request.x;
-    targetY = request.y;
+  const yardsticks = [];
+  const segmentX = Number.isFinite(request.lastSegmentX) ? request.lastSegmentX : request.x;
+  const segmentY = Number.isFinite(request.lastSegmentY) ? request.lastSegmentY : request.y;
+  if (Number.isFinite(segmentX) && Number.isFinite(segmentY)) {
+    const onBot = segmentX === botLoc.getX() && segmentY === botLoc.getY();
+    if (!onBot) yardsticks.push([segmentX, segmentY]);
+    const near = Math.max(Math.abs(botLoc.getX() - segmentX), Math.abs(botLoc.getY() - segmentY)) <= 1;
+    if (near && Number.isFinite(request.x) && Number.isFinite(request.y) && (request.x !== segmentX || request.y !== segmentY)) {
+      yardsticks.push([request.x, request.y]);
+    }
+  } else if (Number.isFinite(request.x) && Number.isFinite(request.y)) {
+    yardsticks.push([request.x, request.y]);
   }
-  if (!Number.isFinite(targetX) || !Number.isFinite(targetY)) {
+  if (!yardsticks.length) {
     return false;
   }
-  const candidates = findDoorCandidates(player, state, targetX, targetY, nowMs);
+  const [firstX, firstY] = yardsticks[0];
+  const candidates = findDoorCandidates(player, state, firstX, firstY, nowMs);
   if (!candidates.length) {
-    noteDoor(state, null, "none_near", { target: [targetX, targetY] });
+    noteDoor(state, null, "none_near", { target: [firstX, firstY] });
     return false;
   }
   const routeFinder = sharedRouteFinder(core);
-  const picked = findUnblockingDoor(core, routeFinder, player, candidates, targetX, targetY);
+  let picked = null;
+  for (const [targetX, targetY] of yardsticks) {
+    picked = findUnblockingDoor(core, routeFinder, player, candidates, targetX, targetY);
+    if (picked) break;
+  }
   if (!picked) {
-    noteDoor(state, null, "none_helps", { target: [targetX, targetY], near: candidates.length });
+    const [lastX, lastY] = yardsticks[yardsticks.length - 1];
+    noteDoor(state, null, "none_helps", { target: [lastX, lastY], near: candidates.length });
     return false;
   }
   state.doorAttempt = {
