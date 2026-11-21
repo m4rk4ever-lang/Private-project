@@ -477,6 +477,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const memory = process.memoryUsage();
     metric({ kind: "server", adventurers: adventurers.size, bots, tickAvgMs: tickCost.count ? Math.round(tickCost.totalMs / tickCost.count * 10) / 10 : null,
       tickMaxMs: Math.round(tickCost.maxMs), heapMb: Math.round(memory.heapUsed / 1048576), rssMb: Math.round(memory.rss / 1048576),
+      // Route, stairs and cave-exit searches since the last line: count, total and longest ms.
+      planning: (() => { try { return require("../behaviours/navigation/LongRoutePlanner.PlayerBots").takePlanSpent(); } catch { return null; } })(),
       questsBlocked: [...questsBlocked].filter(([, until]) => until > nowMs).map(([name]) => name),
       questsHeld: (data.questHold?.quests ?? []).map((quest) => quest.name) });
     Object.assign(tickCost, { count: 0, totalMs: 0, maxMs: 0 });

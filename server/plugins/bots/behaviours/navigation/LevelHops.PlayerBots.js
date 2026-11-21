@@ -3,7 +3,7 @@
  * Mole's lair), from Shortest Path's transport rows (plugins/agent/data/transports.json), and the
  * choice of one for a walk. Pure: the adventurers' walkTo clicks the one chosen.
  */
-const { planRoute } = require("./LongRoutePlanner.PlayerBots");
+const { planRoute, chargePlan } = require("./LongRoutePlanner.PlayerBots");
 
 /**
  * From this y the map is off the surface: the underground above, and the closed areas between
@@ -71,10 +71,14 @@ function reachableOnFoot(from, tile, getFlag, nowMs = Date.now()) {
   const known = reachCache.get(key);
   if (known && nowMs - known.at < REACH_CACHE_MS) return known.ok;
   let ok = true;
+  // Counted in the shared planning budget (it is not held back by it: the way out is needed now).
+  const startedAt = Date.now();
   try {
     ok = planRoute({ from, to: { x: tile.x, y: tile.y }, getFlag, exactOnly: true, maxExpansions: 20_000 }) !== null;
   } catch {
     ok = true;
+  } finally {
+    chargePlan("exit", Date.now() - startedAt);
   }
   if (reachCache.size > 2_000) reachCache.clear();
   reachCache.set(key, { ok, at: nowMs });
