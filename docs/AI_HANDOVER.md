@@ -5,6 +5,13 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 21-11-2026 (10:15): Mole Hole multi-combat; volle tas bij de bank (branch `adventurers/occupancy`)
+
+- **Eigenaar (screenshot 09:06):** 2 bots bij de Giant Mole, één staat erbij; "dit zie ik bij meer activiteiten". Wereld-hoppen/tweede wereld staat sinds 17-11 op de lijst; besproken: groot werk (één wereld, `GatewayTarget.WORLD_ID` = 1, gedeelde saves, wereldlijst, dubbele serverlast). Afgesproken: eerst de Mole-fix, dan een bezettingscontrole (bot kiest iets anders als een single-combat boss/plek bezet is). Tweede wereld later.
+- **Mole Hole:** OSRS Wiki noemt "Mole Hole" bij de multicombat-gebieden; `world.json` had hem niet. Zone toegevoegd: [1728-1791, 5120-5247], z 0 (regio's 6992-6993; alle mol-spawns 1734-1783, 5152-5241; Lunar-droomwereld ernaast is z 2). `world.json` is handwerk (geen generator). Test in `bot-adventurers`.
+- **Markbot 18 (screenshot 09:10):** op de GE met een tas vol mole skins: "Kon geen bank bereiken; laat het goedkoopste vallen: spade" (net gekocht voor de Mole). `clearBag` (na `trade()` die niets deed, vermoedelijk de lusbewaking op de GE) gebruikte `Trade.keepIds` (zonder boss-kit) en keek niet of hij al bij een bank stond. Nu: `keepAtExchange` (boss-kit, werkmaterialen) en binnen `AT_BANK_TILES` (12) van de GE of een bank eerst storten. Open: waarom de mole skins niet verkocht werden (logs).
+- **Validatie:** suite 147 tests, 16 fails (deze branch zonder PR #32: 14 omgeving + de 2 oude). 
+
 ## Sessie 21-11-2026 (09:20): waarom lange wandelingen stilvallen (branch `adventurers/long-legs`)
 
 - **Offline met de echte `LongRoutePlanner`** op de collision map van Shortest Path (`/tmp/route/plan.cjs`, niet in de repo; vlaggen: WALL_* uit de noord/oost-bits, LOC als een tegel nergens heen kan; geen deuren):

@@ -116,6 +116,8 @@ const DANGER_MODES = new Set(["combat_training", "combat_ranged", "combat_magic"
 const BID_WAIT_MS = 3 * 60_000;
 /** How much further than a bank it walks to the Grand Exchange to sell (saving up, offers in). */
 const SELL_DETOUR_TILES = 120;
+/** This near a bank (or the Grand Exchange) it banks there, without a walk: a bag is never emptied on the floor beside one. */
+const AT_BANK_TILES = 12;
 /** At most this many bags of materials bought at once for a buy-to-train job (half its coins at most). */
 const BUY_LOADS_MAX = 30;
 /** Coins a clanmate always keeps for itself before it chips in toward another's goal. */
@@ -4938,8 +4940,18 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const inventory = player.getInventory();
     const room = (data.fullSlots ?? 4) + 1;
     if (inventory.getFreeSlots() >= room) return true;
-    const stock = Trade.goodsToSell(player, core, Trade.keepIds(player, core, { isFood }), { isFood, worthless: true })
+    // Its boss kit and the job's materials stay too (keepAtExchange): Markbot 18 stood at the
+    // Grand Exchange with a bag of mole skins and dropped the spade it had just bought for the
+    // Giant Mole (21-11-2026).
+    const stock = Trade.goodsToSell(player, core, keepAtExchange(player), { isFood, worthless: true })
       .sort((a, b) => a.value - b.value);
+    // Standing at a bank (the exchange has one): into the bank, not on the floor.
+    const bank = nearestBank(player);
+    if (distanceTo(player, data.grandExchange) <= AT_BANK_TILES || (bank && bank.away <= AT_BANK_TILES)) {
+      const stored = deposit(player, stock);
+      if (stored.length > 0) note(player, `Zet op de bank: ${stored.slice(0, 4).map((good) => itemName(good.itemId)).join(", ")}${stored.length > 4 ? ` en ${stored.length - 4} meer` : ""}.`, "activity");
+      if (inventory.getFreeSlots() >= room) return true;
+    }
     const dropped = [];
     for (const good of stock) {
       if (inventory.getFreeSlots() >= room) break;
