@@ -621,6 +621,21 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
         run.reason = step.reason;
         return "failed";
       }
+      // What the quest requires that it lacks (the helper's item requirements: Doric's clay and
+      // ores, the Apothecary's cadava berries): fetched, bought or gathered first, as a player
+      // packs before setting off. One it cannot get now (a quest item made on the way) is left
+      // to the steps, not a reason to stop.
+      const required = (helper.required?.(player) ?? []).filter((req) => !(run.reqTried ??= new Set()).has(req.name));
+      if (required.length > 0 && run.reqTried.size < 8 && nowMs >= (run.reqAt ?? 0)) {
+        const req = required[0];
+        run.reqTried.add(req.name);
+        run.reqAt = nowMs + 5_000;
+        if (acquire(entry, req.ids, req.amount, req.name)) {
+          note?.(player, `Gaat ${req.amount > 1 ? `${req.amount} x ` : ""}${req.name} halen voor ${run.name} (nodig voor de quest).`, "quest");
+          fetching(entry, run, req.ids, req.amount, req.name, "required", nowMs);
+          return "running";
+        }
+      }
       // What the guide recommends bringing (food for the fights, a teleport, an antipoison):
       // each fetched or bought once at the start, as a player packs before setting off; one it
       // cannot get (too dear, sold nowhere) is left out, not a reason to stop.

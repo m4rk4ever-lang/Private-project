@@ -55,7 +55,8 @@ test("a generated account owns tools for its levels, coins (mostly banked) and s
   const state = {};
   const got = generateAccount(b, state, { core, mode: "woodcutting", random: () => 0.5 });
   assert.equal(state.honest, true);
-  assert.ok(b.inventory.contains(IDS.RUNE_AXE), "rune axe at 61 Woodcutting");
+  // The dragon axe takes 61 Woodcutting (adventurer-gear.json tools.axe; the test still said rune).
+  assert.ok(b.inventory.contains(IDS.DRAGON_AXE), "dragon axe at 61 Woodcutting");
   assert.ok(b.inventory.contains(IDS.RUNE_PICKAXE), "rune pickaxe at 41 Mining");
   assert.ok(b.inventory.getAmount(995) > 0 && b.bank.getAmount(995) > b.inventory.getAmount(995));
   assert.equal(got.coins, b.inventory.getAmount(995) + b.bank.getAmount(995));
