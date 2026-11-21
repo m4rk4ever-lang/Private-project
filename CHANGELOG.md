@@ -13,6 +13,9 @@ Indeling per versie:
 
 ## [Nog niet uitgebracht]
 
+### Toegevoegd
+- Avonturiers kiezen vaker iets dat een unlock oplevert in plaats van alleen skills bij te trainen. Van de quests die ze kunnen doen kiezen ze de waardevolste (zoals X Marks the Spot voor Kourend, Priest in Peril voor Morytania en de Barrows), en ze trainen gericht naar levels die iets openen (Agility 10 voor de daken en Graceful, Prayer 43 voor de Barrows). De waardes staan in een bestand dat zonder code aan te passen is.
+
 ### Opgelost
 - Een quest bracht avonturiers soms met een boot naar een plek zonder weg terug, zoals Corsair Cove of het eiland van Misthalin Mystery. Mislukte de quest daar, dan zaten ze tot een half uur vast. Ze nemen nu bij het begin van een quest een teleport uit de bank mee. Lopen ze na een mislukte quest vast, dan teleporteren ze bij de eerste keer naar huis.
 - Avonturiers stonden bij de Giant Mole vaak werkloos zodra ze zich ingroef en elders in het hol opdook. Ze zoeken haar nu in het hele hol en vechten door.

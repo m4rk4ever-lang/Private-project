@@ -15,6 +15,7 @@
  *   Wintertodt for Firemaking from level 50) and the best activity of that mode for its level.
  */
 const { goalWeight, describe } = require("./Goals.PlayerBots");
+const Progression = require("./Progression.PlayerBots");
 
 const TRAINABLE = Object.freeze({
   WOODCUTTING: "woodcutting",
@@ -86,6 +87,10 @@ function bossesFor(adventurer, bosses = []) {
 function chooseNext(adventurer, quests, {
   available = null, questChance = 0.45, questGapChance = 0.25, moneyChance = 0, bosses = [], bossChance = 0, random = Math.random,
   focus = {}, busyModes = new Set(), exclude = new Set(), goal = null, explain = null, endgame = null,
+  // Unlock values (unlock-values.json, Progression.PlayerBots.js, Phase 5): with them a ready
+  // quest is picked by its value, and with `unlockChance` a pick works toward the unlock with the
+  // best value for the effort. Without them the planner is as before.
+  unlocks = null, unlockChance = 0,
 } = {}) {
   // How it chose, for the `decision` metric (AI_Constitution §32): which way through this function
   // (`path`) and the options it weighed, best first. The plan returned is the same with or without.
@@ -113,6 +118,13 @@ function chooseNext(adventurer, quests, {
   }
   const ready = open.filter((quest) => isReady(quest, adventurer));
   if (ready.length > 0 && random() < questChance) {
+    if (unlocks) {
+      // The ready quest worth most (its unlocks, what it opens the way to); the path order breaks ties.
+      const valued = ready.map((quest, order) => ({ quest, order, value: Progression.questValue(quest, { adventurer, quests, data: unlocks }) }))
+        .sort((a, b) => b.value - a.value || a.order - b.order);
+      return decided({ kind: "quest", quest: valued[0].quest }, "quest", { candidates: ready.length, value: valued[0].value,
+        alternatives: valued.slice(1, 4).map((entry) => ({ quest: entry.quest.name, value: entry.value })) });
+    }
     return decided({ kind: "quest", quest: ready[0] }, "quest", { candidates: ready.length, alternatives: ready.slice(1, 4).map((quest) => ({ quest: quest.name })) });
   }
   // Modes that could not start just now (no tool, no place) are left out of this pick.
@@ -142,6 +154,33 @@ function chooseNext(adventurer, quests, {
         alternatives: [...earners].sort((a, b) => score(b) - score(a)).slice(0, 3)
           .map((option) => ({ mode: option.mode, gpPerHour: Math.round(score(option)), measured: rate(option.mode) !== null })),
       });
+    }
+  }
+  // Toward the unlock with the best value for its effort (Phase 5): a skill unlock (Prayer 43 for
+  // the Barrows) or a quest's missing level, whichever scores best and can be trained now.
+  if (unlocks && random() < unlockChance) {
+    const list = Progression.candidates(adventurer, open, unlocks, { available }).filter((entry) => !entry.ready);
+    const top = list.slice(0, 4).map((entry) => ({ unlock: entry.name, value: entry.value, effort: entry.effort, score: Math.round(entry.score) }));
+    for (const entry of list) {
+      if (entry.kind === "skill") {
+        const option = Progression.optionFor(entry.skill, options);
+        if (!option) continue;
+        return decided({ kind: "train", mode: option.mode, skill: option.skill, reason: `unlock: ${entry.name}`,
+          target: { skill: entry.skill, level: entry.level }, unlock: entry.unlock.id },
+          "unlock", { unlock: entry.name, value: entry.value, effort: entry.effort, alternatives: top });
+      }
+      const gap = entry.gap;
+      if (gap.combat && !exclude.has(COMBAT) && options.some((option) => option.mode === COMBAT)) {
+        return decided({ kind: "train", mode: COMBAT, skill: "COMBAT", reason: `${entry.name} (combat ${gap.combat})`, target: { skill: "COMBAT", level: gap.combat } },
+          "unlock", { unlock: entry.name, value: entry.value, effort: entry.effort, quest: entry.name, missing: gap, alternatives: top });
+      }
+      for (const [skill, level] of Object.entries(gap.skills)) {
+        const option = Progression.optionFor(skill, options);
+        if (!option) continue;
+        return decided({ kind: "train", mode: option.mode, skill, reason: `${entry.name} (${skill.toLowerCase()} ${level})`, target: { skill, level } },
+          "unlock", { unlock: entry.name, value: entry.value, effort: entry.effort, quest: entry.name, missing: gap, alternatives: top });
+      }
+      // Only quests or quest points in the way: the quest path does those, not training.
     }
   }
   // What the nearest quest that is not ready still needs, and that the bots can train: now and
