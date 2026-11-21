@@ -5,6 +5,16 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 21-11-2026 (11:15): Mole vechten, teleport houden, quest-spullen houden (branch `adventurers/teleports-houden`)
+
+- **Controle 10:40 (2f29401, 08:48-09:28 UTC):** Mole-hol 2 bots, 4,5 en 2,5 min binnen, beide met een teleport uit de tas weg (touw nog niet gebruikt). Levels-metric: 60 regels. "20 x 20 x" weg. Strandingen na quests: Patrickbot 13 op het Misthalin-eiland (3 min), Jorgbot 14 in Corsair Cove (21 min, 20 pogingen, home teleport op cooldown sinds 08:39). Jorgbot 13 verkocht soft clay voor Prince Ali Rescue een minuut na het kopen.
+- **Mole:** de bots vochten niet ("Kon bij boss giant mole niets doen"). Oorzaak: `TrainCombat` zoekt doelen binnen `SITE_RADIUS` 24 van het cluster (spawn 1759,5189); de Mole graaft naar vaste plekken tot 43 tegels daarvandaan (`GiantMole.plugin.js` BURROW_LOCATIONS). Nieuw: spec-veld `siteRadius` (minimum 24); `bot-activities.json` (handwerk) Giant Mole `siteRadius` 48. Test `bot-mole-site` leest de plekken uit de plugin.
+- **Teleport houden:** `clearForProcessing` houdt één reismiddel (sieraad, anders tablet) in de tas; `loadShare` rekent een lading als (27 - 1) / materialen. Kruiden: 13 per soort (ongewijzigd), één materiaal: 26.
+- **Quest-spullen:** `QuestPlay.fetching` zet `entry.questKeep` (id → tot, `QUEST_KEEP_MS` 6 u); `workingMaterials` neemt ze mee, dus niet storten of verkopen. Test in `bot-quest-play`. Faalnotitie gebruikt `countedName`.
+- **XP-snelheid (niet opgelost, vraag aan eigenaar):** Jorgbot 13 kreeg 7.812 Herblore-XP voor 14 restore potions (62,5 XP per stuk in `herblore.json`, dus 875 verwacht): ongeveer 9×. Bots gebruiken de eigen skillcode (`Make` → `Mixing.Herblore`, 2 ticks per potion); `world.json` in de repo heeft `experienceMultiplier` 1 en geen league-relics. Vermoedelijk staat de live wereld op een hogere "Experience rate" (admin, `setExperienceRate`). Te controleren door de eigenaar.
+- **Validatie:** suite 154 tests, 14 fails (omgeving).
+- **Open:** wegkomen van quest-plekken zonder looproute (Corsair Cove, Misthalin-eiland) zonder home teleport; Morytania-legkeuze; touw-uitgang in de praktijk bevestigen.
+
 ## Sessie 21-11-2026 (09:35): controle logs, uitgang Mole-hol (branch `adventurers/molshol-uitgang`)
 
 - **Logs:** push 08:32 UTC, versies 784667c (07:52-08:15) en c025568 (08:17-08:32). 61 bots.

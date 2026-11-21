@@ -65,4 +65,7 @@ test("a quest's required items it lacks are fetched before it talks (Doric's cla
   // The next one a moment later, each once.
   play.tick(entry, 7_000);
   assert.deepEqual(fetched, [["Clay", 6], ["Copper ore", 4]]);
+  // What it fetched for the quest is kept from sale for some hours (Jorgbot 13 sold its soft clay).
+  const { QUEST_KEEP_MS } = require("../plugins/bots/adventurers/QuestPlay.PlayerBots");
+  assert.ok(entry.questKeep.get(434) >= 1_000 + QUEST_KEEP_MS);
 });
