@@ -165,6 +165,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Een avonturier kiest geen boss meer waar al een andere avonturier vecht als daar maar één tegelijk kan vechten (single-combat). Hij doet dan iets anders, zoals een speler die van wereld wisselt. Samen met clanleden naar een boss gaan ze alleen nog bij multi-combat bosses, zoals de Giant Mole. Barrows blijft voor iedereen open: daar roept ieder zijn eigen broers op.
 - Avonturiers verkopen nu dubbele uitrusting uit hun bank op de GE. Van elk stuk houden ze er één, gedragen, in de tas of op de bank, ook van stijlen die ze nu niet gebruiken. Tot nu toe bleef alles wat beter was dan hun huidige uitrusting op de bank staan, met alle kopieën. Gereedschap, munitie, sieraden met lading en tablets vallen hier niet onder.
 - Maxed accounts (80% of meer van hun skills op 99) besteden hun tijd nu vooral aan bossen en geld verdienen voor upgrades en een grotere bank, in plaats van thieving of agility. Ze proberen geen geldmakers meer "eens uit" en doen minder quests.
 - Een avonturier die met gekochte materialen traint (zoals rune bars smeden), koopt bij genoeg geld een grote voorraad, tot 30 ladingen, en pendelt tussen de bank en het werkstation. Zijn producten verkoopt hij pas aan het eind van de reeks, niet na elke lading op de GE.
