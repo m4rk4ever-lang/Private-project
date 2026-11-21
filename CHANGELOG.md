@@ -14,6 +14,8 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Een avonturier die ging tuinieren hield het onkruid in zijn tas en bleef na het wieden staan. Hij laat het onkruid nu vallen en gaat door met zaaien.
+- Avonturiers die een air talisman kochten voor Runecrafting gingen daarna iets anders doen. Ze gaan nu direct runes maken.
 - Nieuwe avonturiers trainden nooit Runecrafting: ze misten de air talisman. Ze kopen die nu op de GE en houden hem.
 - Tot vijftien avonturiers stonden tegelijk op één strandje in de Feldip Hills met hun bird snares, waar maar een paar vogels vliegen. Ze vingen bijna niets (zo'n 1.400 Hunter-XP in 7 uur samen). Er zijn nu drie plekken voor crimson swifts en vanaf Hunter 19 drie voor tropical wagtails. Op elke plek jagen er hoogstens twee; zijn alle plekken vol, dan doet een avonturier iets anders.
 - Avonturiers op de oostoever bij Varrock liepen rechtdoor op Canifis af, over de rivier Salve, en kwamen nergens. Ze gaan Morytania nu altijd binnen via de tempel van Paterdomus.
