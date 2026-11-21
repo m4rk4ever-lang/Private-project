@@ -4481,11 +4481,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       for (const item of [...(bank?.getItems?.() ?? [])]) {
         const id = item?.getId?.() ?? -1;
         const amount = item?.getAmount?.() ?? 0;
-        if (!(id > 0) || !(amount > 0) || keep.has(id) || Value.itemValue(core, id, 1) <= 0) continue;
+        // Gear it keeps (better than it wears, any style): one copy stays, the rest is sold.
+        const spare = keep.has(id) ? Trade.spareGear(player, core, id, amount) : 0;
+        if (!(id > 0) || !(amount > 0) || (keep.has(id) && spare <= 0) || Value.itemValue(core, id, 1) <= 0) continue;
         // What it needs stays; only the surplus (or what it has outgrown) is sold.
-        const wanted = need(player, id);
+        const wanted = spare > 0 ? amount - spare : need(player, id);
         let surplus = wanted === Infinity ? 0 : amount - wanted;
-        if (wanted !== Infinity && short > 0 && surplus < amount) {
+        if (spare <= 0 && wanted !== Infinity && short > 0 && surplus < amount) {
           const each = Value.itemValue(core, id, 1);
           const extra = Math.min(amount - Math.max(0, surplus), Math.ceil(short / each));
           surplus = Math.max(0, surplus) + extra;

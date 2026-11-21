@@ -162,6 +162,7 @@ Indeling per versie:
   op het laadscherm. Een codespace met de oude servernaam "Codespace" wordt vanzelf omgezet.
 
 ### Gewijzigd
+- Avonturiers verkopen nu dubbele uitrusting uit hun bank op de GE. Van elk stuk houden ze er één, gedragen, in de tas of op de bank, ook van stijlen die ze nu niet gebruiken. Tot nu toe bleef alles wat beter was dan hun huidige uitrusting op de bank staan, met alle kopieën. Gereedschap, munitie, sieraden met lading en tablets vallen hier niet onder.
 - Maxed accounts (80% of meer van hun skills op 99) besteden hun tijd nu vooral aan bossen en geld verdienen voor upgrades en een grotere bank, in plaats van thieving of agility. Ze proberen geen geldmakers meer "eens uit" en doen minder quests.
 - Een avonturier die met gekochte materialen traint (zoals rune bars smeden), koopt bij genoeg geld een grote voorraad, tot 30 ladingen, en pendelt tussen de bank en het werkstation. Zijn producten verkoopt hij pas aan het eind van de reeks, niet na elke lading op de GE.
 - Avonturiers met geld over kopen nu vaker teleport-sieraden op de GE: van elke soort één (games necklace, ring of dueling, skills necklace, amulet of glory, ring of wealth). Pas vanaf 50.000 gp, een stuk kost hooguit 2% van hun geld en per bezoek hooguit 3%. Bij de bank nemen ze van elke soort één mee, ook als hij al deels gebruikt is. De ring of wealth brengt ze direct naar de Grand Exchange.
