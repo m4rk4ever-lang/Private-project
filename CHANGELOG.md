@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Nieuwe avonturiers trainden nooit Runecrafting: ze misten de air talisman. Ze kopen die nu op de GE en houden hem.
 - Tot vijftien avonturiers stonden tegelijk op één strandje in de Feldip Hills met hun bird snares, waar maar een paar vogels vliegen. Ze vingen bijna niets (zo'n 1.400 Hunter-XP in 7 uur samen). Er zijn nu drie plekken voor crimson swifts en vanaf Hunter 19 drie voor tropical wagtails. Op elke plek jagen er hoogstens twee; zijn alle plekken vol, dan doet een avonturier iets anders.
 - Avonturiers op de oostoever bij Varrock liepen rechtdoor op Canifis af, over de rivier Salve, en kwamen nergens. Ze gaan Morytania nu altijd binnen via de tempel van Paterdomus.
 - Avonturiers kwamen bijna nooit in de Gnome Stronghold (1 van de 14 tochten): ze bleven voor de grote poort staan. Ze lopen nu naar de poort, openen die en gaan naar binnen. Naar buiten gaan ze ook door de poort.
@@ -52,6 +53,9 @@ Indeling per versie:
 - Avonturiers met een tas vol dubbele spullen (acht dezelfde staffs, tientallen gesmede axes) bleven uren bij een bank staan zonder iets te doen. Ze houden nu één exemplaar van elk stuk uitrusting en gereedschap; de rest gaat naar de bank of de GE. Kan de bank toch niets aannemen, dan staat dat in hun log en gaan ze verder met een klus.
 
 ### Toegevoegd
+- Avonturiers doen nu aan Farming: ze kopen een rake, seed dibber en spade en zaden op de GE, wieden de herb patch en de twee allotments bij Falador, Catherby of Ardougne, oogsten wat gegroeid is en zaaien opnieuw. Na ongeveer 80 minuten komen ze terug.
+- Avonturiers doen nu aan Construction: ze kopen een huis bij de makelaar (1.000 gp), een hammer, een saw en planks, gaan via het portaal in Rimmington hun huis binnen in bouwmodus en bouwen en slopen meubels in de parlour tot de planks op zijn.
+- Avonturiers met Hunter 59 of hoger vangen nu red salamanders met een net trap bij Ourania, ten westen van Ardougne. Ze nemen een small fishing net en een rope mee. Eerder konden ze alleen vogels vangen.
 - De logs houden nu elk uur per avonturier alle skill-levels bij. Zo is te zien welke skills achterblijven.
 - Bij een vastgelopen wandeling staat in de logs nu wat de routeplanner deed: via welk knooppunt, of er een route was of niet, of dat hij rechtdoor liep. Zo is te zien waarom tochten naar Morytania en de Gnome Stronghold stranden.
 - Quests kunnen nu met de hand in de wacht worden gezet, met een reden erbij. Avonturiers kiezen ze dan niet meer tot het probleem is opgelost. A Porcine of Interest staat als eerste in de wacht: bots raakten opgesloten in de Sourhog-grot.

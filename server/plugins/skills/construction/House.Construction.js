@@ -1593,6 +1593,31 @@ function selectFurnitureFromInterface(event) {
   return true;
 }
 
+/**
+ * "construction:furniture-menu" { player, choices }: the furniture list a hotspot's Build opened for
+ * the player, as the list shows it: [{ index, key, name, level, experience, ready }] (`ready`: its
+ * level and the materials in the bag allow it). null when no list is open. For the adventurer bots
+ * (bots/brain/actions/Construct.PlayerBots.js), which cannot click the interface.
+ */
+function furnitureMenu(request) {
+  const pending = request?.player ? pendingFurnitureMenus.get(request.player) : null;
+  if (!pending) return;
+  request.choices = pending.choices.map((buildable, index) => ({
+    index: index + 1, key: buildable.key, name: buildable.name ?? formatBuildable(buildable), level: buildable.level,
+    experience: buildable.experience,
+    ready: getBuildMaterials(request.player, pending.house, pending.target, buildable) instanceof Map,
+  }));
+}
+
+/**
+ * "construction:choose-furniture" { player, index, built }: the pick on the open furniture list
+ * (one-based, as the list's own pause button sends it), with the same checks as the click.
+ */
+function chooseFurnitureByEvent(request) {
+  if (!request?.player) return;
+  request.built = selectFurnitureFromInterface({ player: request.player, groupId: FURNITURE_BUILD_INTERFACE, childId: 2, action: request.index });
+}
+
 function openBuildMenu(event) {
   const player = event.player;
   const house = houseFor(player);
@@ -2075,6 +2100,8 @@ function attach(api) {
   api.onCustomEvent("spell:teleport-arrival", houseTeleportArrival);
   api.onCustomEvent("construction:house-tablet", houseTablet);
   api.onCustomEvent("construction:owns-house", ownsHouse);
+  api.onCustomEvent("construction:furniture-menu", furnitureMenu);
+  api.onCustomEvent("construction:choose-furniture", chooseFurnitureByEvent);
   api.onCustomEvent("construction:grant-house", grantHouse);
   api.onCustomEvent("construction:spirit-tree", spiritTreeHouse);
   api.onCustomEvent("construction:spirit-tree-travel", spiritTreeTravel);

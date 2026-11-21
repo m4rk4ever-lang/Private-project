@@ -279,6 +279,8 @@
     "hunter_tropical_wagtail": ["BIRD_SNARE"],
     "hunter_tropical_wagtail_2": ["BIRD_SNARE"],
     "hunter_tropical_wagtail_3": ["BIRD_SNARE"],
+    "hunter_red_salamander": ["SMALL_FISHING_NET", "ROPE"],
+    "hunter_red_salamander_2": ["SMALL_FISHING_NET", "ROPE"],
     "fly_fishing": ["FLY_FISHING_ROD", "FEATHER"],
     "lobster_fishing": ["LOBSTER_POT"],
     "harpoon_fishing": ["HARPOON"],

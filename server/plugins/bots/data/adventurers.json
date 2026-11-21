@@ -320,6 +320,26 @@
   "bankKeep": ["COPPER_ORE", "TIN_ORE", "IRON_ORE", "COAL", "MITHRIL_ORE", "ADAMANTITE_ORE", "RUNITE_ORE",
     "RAW_SHRIMPS", "RAW_ANCHOVIES", "RAW_TROUT", "RAW_SALMON", "RAW_TUNA", "RAW_LOBSTER", "RAW_SWORDFISH", "RAW_SHARK",
     "BIG_BONES", "FEATHER", "POT", "BUCKET", "JUG", "MARK_OF_GRACE"],
+  "farming": {
+    "_comment": "Farm runs (adventurers mode farming, brain/actions/FarmPatches.PlayerBots.js): a herb patch and two allotments per spot (ids and tiles from plugins/skills/data/farming-data.json), visited again after growMinutes. Seeds: the best its Farming level allows, bought on the exchange (herb: one, allotment: three per patch). tools: rake, seed dibber, spade.",
+    "growMinutes": 80,
+    "tools": ["RAKE", "SEED_DIBBER", "SPADE"],
+    "spots": [
+      { "id": "farming_falador", "name": "de moestuin bij Falador", "x": 3054, "y": 3306 },
+      { "id": "farming_catherby", "name": "de moestuin bij Catherby", "x": 2810, "y": 3463 },
+      { "id": "farming_ardougne", "name": "de moestuin bij Ardougne", "x": 2666, "y": 3374 }
+    ],
+    "herbSeeds": [[85, "TORSTOL_SEED"], [79, "DWARF_WEED_SEED"], [73, "LANTADYME_SEED"], [67, "CADANTINE_SEED"], [62, "SNAPDRAGON_SEED"], [56, "KWUARM_SEED"], [50, "AVANTOE_SEED"], [44, "IRIT_SEED"], [38, "TOADFLAX_SEED"], [32, "RANARR_SEED"], [26, "HARRALANDER_SEED"], [19, "TARROMIN_SEED"], [14, "MARRENTILL_SEED"], [9, "GUAM_SEED"]],
+    "allotmentSeeds": [[61, "SNAPE_GRASS_SEED"], [47, "WATERMELON_SEED"], [31, "STRAWBERRY_SEED"], [20, "SWEETCORN_SEED"], [12, "TOMATO_SEED"], [7, "CABBAGE_SEED"], [5, "ONION_SEED"], [1, "POTATO_SEED"]]
+  },
+  "construction": {
+    "_comment": "Construction in its own house (adventurers mode construction, brain/actions/Construct.PlayerBots.js): a starter house from an estate agent (1,000 coins), a hammer and a saw, planks from the exchange, in through the Rimmington portal's Build mode; it builds and removes in the parlour until the planks run out. tiers: [level, planks, amount, nails, amount].",
+    "houseCost": 1000,
+    "portal": { "name": "het huisportaal in Rimmington", "x": 2953, "y": 3224, "z": 0 },
+    "agents": [{ "x": 3240, "y": 3476 }, { "x": 2983, "y": 3369 }, { "x": 2639, "y": 3291 }, { "x": 2737, "y": 3502 }],
+    "tools": ["HAMMER", "SAW"],
+    "tiers": [[19, "OAK_PLANK", 24], [1, "PLANK", 20, "STEEL_NAILS", 60]]
+  },
   "buyToTrain": {
     "SMELTING": { "levelSkill": "SMITHING", "activity": "process_smelting", "amount": 13,
       "station": { "name": "de oven van Falador", "x": 2974, "y": 3369, "z": 0 },

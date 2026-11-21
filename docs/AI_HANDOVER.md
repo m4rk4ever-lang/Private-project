@@ -5,6 +5,30 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 21-11-2026 (12:45): Farming en Construction als klus; Sailing ontwerp (branch `adventurers/salamanders-rc`)
+
+- **Eigenaar:** "bouw deze wel, zet de juiste stappen" (Construction, Farming, Sailing), na de salamanders en Runecrafting, in één update. Niet in de game getest (geen server hier): de stappen hieronder zijn wat in de logs te controleren is.
+- **Farming** (`brain/actions/FarmPatches.PlayerBots.js`, mode `farming`):
+  - Drie plekken in `bot-activities.json` (Falador, Catherby, Ardougne): de herb patch en twee allotments per plek, met id en tegel uit `skills/data/farming-data.json` (een patch is een varbit-object, de basisnaam zegt niets). Test vergelijkt ze.
+  - Per patch: Rake (wied dropt hij), Harvest/Pick, Clear/Dig (dood), ziek (Cure) met de spade erop; dan planten met item-op-object: het beste zaad dat hij draagt (herb 1, allotment 3). Elke patch hoogstens twee keer proberen; klaar of volle tas: `success`.
+  - `adventurers.json` `farming`: tools (rake, seed dibber, spade), zaden per level (herbs vanaf 9, allotments vanaf 1), `growMinutes` 80. `farmSpotDue` (de dichtstbijzijnde plek die nooit of ≥ 80 min geleden geplant is, in geheugen); `packFor` haalt tools en zaden uit de bank of koopt ze (winkel of GE).
+  - Planner: optie `farming` als `farmDue`.
+- **Construction** (`brain/actions/Construct.PlayerBots.js`, mode `construction`):
+  - Plugin-events (regel 5, custom events): `construction:furniture-menu` (de open meubellijst: index, key, level, experience, ready) en `construction:choose-furniture` (de keuze met dezelfde checks als de klik) in `House.Construction.js`; `construction:buy-house` (1.000 gp, naast de makelaar, als "Yes please!") in `EstateAgent.Construction.js`.
+  - Bot: geen huis → naar de dichtstbijzijnde makelaar (Varrock, Falador, Ardougne, Seers), kopen. Dan hammer, saw en planks (tot 18: 20 planks + 60 steel nails; vanaf 19: 24 oak planks) via `packFor`; naar het portaal in Rimmington (2953,3224), optie "Build mode". In huis: "Build" op een lege hotspot, de beste meubel die `ready` is (meeste XP), daarna "Remove" ("Really remove it?" Yes via `MultiChatboxPrompt`), alleen stukken die hij deze keer zelf bouwde; geen planks meer: door het exit-portaal ("Enter").
+  - Planner: optie `construction` als hij een huis heeft of ≥ 11.000 gp (huis plus een lading).
+- **Controleren in de logs:** "Koopt een huis in Rimmington", "Gaat bouwen in zijn huis", Construction-XP; "Gaat op de moestuin bij ... wieden", Farming-XP; `stuck` of `failed` bij `construction_house` / `farming_*`. Mogelijke valkuilen: huisobjecten niet in `MapObjects` met de private area; de portaaloptie heet anders dan "Build mode"; seed dibber nodig voor allotments én herbs.
+- **Sailing (niet gebouwd, ontwerp in de roadmap):** de plugin is groot (boot, roer, zeilen, havenklussen, bergen). Trainen vraagt een eigen boot en varen met het roer; er is geen bot-besturing voor een boot. Stappen staan in ADVENTURER_ROADMAP Fase 6.
+- **Validatie:** `bot-construct-farm` (4 tests met een nep-wereld). Suite 164 tests, 14 fails (omgeving).
+
+## Sessie 21-11-2026 (12:15): red salamanders, Runecrafting-talisman (branch `adventurers/salamanders-rc`)
+
+- **Eigenaar:** "eerst de red salamanders, daarna Rune Mysteries. Construction, Farming en Sailing pas als ze getest kunnen worden." Hier draait geen server (geen node_modules, geen cache), dus die drie wachten op een test in de game.
+- **Red salamanders:** `HuntBirds` kent `trap: "net"`: small fishing net en rope in de tas, `Set-trap` op de dichtstbijzijnde "Young tree" binnen de site, `Check` op een "Net trap", net en rope van de grond terugpakken; volle tas: klaar. Box traps (chinchompa's) vragen Eagles' Peak (`boxTrapsUnlocked`), net traps niet. Twee plekken bij Ourania: [2451,3224] r6 en [2470,3242] r8 (spawns `npc-spawns.json`), Hunter 59, 272 XP. Te voet: `onFoot` true, BFS vanaf Ardougne 211-231 tegels. **Niet gecontroleerd:** of er "Young tree"-objecten binnen die radius staan (kaartobjecten niet in de repo); in de logs: "Gaat red salamanders vangen met een net trap bij Ourania" en daarna XP, anders `stuck`.
+- **Hunter-start:** koopt de ontbrekende tools één voor één (snares 2, net en rope 1), noemt de plek.
+- **Runecrafting:** Rune Mysteries staat in `grantedQuests` (stage op klaar, geen items), dus geen air talisman; `buyToTrain.RUNECRAFTING.ownTool` hield alle 24 nieuwe accounts op 1. Nu mag de talisman gekocht worden als hij op de GE staat (`tradeable` true); `Trade.KEEP_TOOLS` houdt hem. Geen quest-werk nodig.
+- **Validatie:** `bot-hunter-sites` (3 tests). Suite 160 tests, 14 fails (omgeving).
+
 ## Sessie 21-11-2026 (12:00): Hunter-plekken, skills en teleportgebruik meten (branch `adventurers/hunter-plekken`)
 
 - **Eigenaar:** quests zijn geen hoofdprioriteit; eerst skills (Fase 6) en teleportgebruik. "Bots staan op een kluitje in Feldip Hills voor hunter (snares)."

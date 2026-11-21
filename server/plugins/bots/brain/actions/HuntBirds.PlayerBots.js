@@ -6,7 +6,12 @@
  * Check: the plugin pays XP and the catch), and take back a snare that fell over. The plugin owns
  * every rule (level, how many traps, whether a bird comes); this only clicks.
  *
- * spec: { site: [x, y], radius }.
+ * Net traps the same way (spec.trap "net"): a small fishing net and a rope in the bag, Set-trap on a
+ * young tree among the salamanders, Check the net when one hangs in it, and the net and rope
+ * picked up again when the trap collapses. Red salamanders (Hunter 59) need no quest, as box traps
+ * do (Eagles' Peak): bots with Hunter 40 to 99 had nothing better than birds (21-11-2026).
+ *
+ * spec: { site: [x, y], radius, trap: "bird" | "net" }.
  */
 const { requestMovement } = require("../../behaviours/navigation/Navigation.PlayerBots");
 const Loot = require("../Loot.PlayerBots");
@@ -18,6 +23,11 @@ function createHuntBirdsAction(spec, world) {
   const core = world?.core;
   if (!core) throw new Error("[bot activities] huntBirds requires api.core");
   const snare = core.ItemIdentifiers.BIRD_SNARE;
+  const net = spec.trap === "net";
+  // What it lays with: one snare, or a net and a rope.
+  const tools = net ? [core.ItemIdentifiers.SMALL_FISHING_NET, core.ItemIdentifiers.ROPE] : [snare];
+  const carries = (player) => tools.every((id) => player.getInventory().getAmount(id) > 0);
+  const TRAP_NAME = /snare|net trap/i;
   const [siteX, siteY] = spec.site;
   const radius = Math.max(2, Number(spec.radius ?? 6));
   const away = (loc, x, y) => Math.max(Math.abs(loc.getX() - x), Math.abs(loc.getY() - y));
@@ -31,7 +41,7 @@ function createHuntBirdsAction(spec, world) {
         const y = here.getY() + dy;
         for (const object of core.MapObjects?.mapObjects?.get?.(core.MapObjects.getHash(x, y, here.getZ())) ?? []) {
           const definition = core.ObjectDefinition.forId(object.getId());
-          if (!/snare/i.test(String(definition?.getName?.() ?? ""))) continue;
+          if (!TRAP_NAME.test(String(definition?.getName?.() ?? ""))) continue;
           const options = (definition.getInteractions?.() ?? []).map((option) => String(option ?? "").toLowerCase());
           const check = options.indexOf("check");
           if (check >= 0) return [object, check + 1];
@@ -39,6 +49,38 @@ function createHuntBirdsAction(spec, world) {
       }
     }
     return null;
+  }
+
+  /** A young tree near the site it can set a net trap on, as [object, clickType], or null. */
+  function youngTree(player) {
+    const here = player.getLocation();
+    let best = null;
+    let bestAway = Infinity;
+    for (let dx = -radius; dx <= radius; dx += 1) {
+      for (let dy = -radius; dy <= radius; dy += 1) {
+        const x = siteX + dx;
+        const y = siteY + dy;
+        for (const object of core.MapObjects?.mapObjects?.get?.(core.MapObjects.getHash(x, y, 0)) ?? []) {
+          const definition = core.ObjectDefinition.forId(object.getId());
+          if (!/^young tree$/i.test(String(definition?.getName?.() ?? ""))) continue;
+          const options = (definition.getInteractions?.() ?? []).map((option) => String(option ?? "").toLowerCase());
+          const index = options.indexOf("set-trap");
+          if (index < 0) continue;
+          const d = away(here, object.getLocation().getX(), object.getLocation().getY());
+          if (d < bestAway) { best = [object, index + 1]; bestAway = d; }
+        }
+      }
+    }
+    return best;
+  }
+
+  function click(player, [object, clickType]) {
+    const at = object.getLocation();
+    player.getMovementQueue().walkToObject(object, {
+      execute: () => world.emitObjectInteraction?.({
+        player, object, objectId: object.getId(), clickType, location: { x: at.getX(), y: at.getY(), z: at.getZ() }, handled: false,
+      }),
+    });
   }
 
   const BIRD = /swift|wagtail|longtail|warbler|bird/i;
@@ -74,22 +116,31 @@ function createHuntBirdsAction(spec, world) {
         return "running";
       }
       // A bird in a snare: check it (the plugin hands over the catch and the XP).
+      // A full bag: the stretch is done (the catches go to the bank or the exchange).
+      if (player.getInventory().getFreeSlots() <= 0) return "success";
       const trap = caughtTrap(player);
       if (trap) {
-        const [object, clickType] = trap;
-        const at = object.getLocation();
-        player.getMovementQueue().walkToObject(object, {
-          execute: () => world.emitObjectInteraction?.({
-            player, object, objectId: object.getId(), clickType, location: { x: at.getX(), y: at.getY(), z: at.getZ() }, handled: false,
-          }),
-        });
+        click(player, trap);
         return "running";
       }
-      // A snare that fell over lies on the ground: take it back.
+      // A snare that fell over (or a collapsed net trap's net and rope) lies on the ground: take it back.
       const ground = Loot.lootNear(core, player, { radius, minValue: 0, valueOf: () => 1 });
-      if (ground && ground.getItem?.()?.getId?.() === snare) {
+      if (ground && tools.includes(ground.getItem?.()?.getId?.())) {
         Loot.takeStep(core, player, ground, { state, nowMs });
         return "running";
+      }
+      // A net trap on a young tree (the plugin refuses past its limit for the level, or a tree in use).
+      if (net) {
+        if (nowMs >= bot.layAt && carries(player)) {
+          bot.layAt = nowMs + LAY_RETRY_MS;
+          const tree = youngTree(player);
+          if (tree) {
+            click(player, tree);
+            bot.laidAt = "net";
+          }
+          return "running";
+        }
+        return carries(player) || bot.laidAt ? "running" : "failed";
       }
       // Lay one from the bag (the plugin refuses past its limit for the level).
       if (nowMs >= bot.layAt && player.getInventory().getAmount(snare) > 0) {
