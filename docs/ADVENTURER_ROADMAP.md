@@ -154,6 +154,35 @@ candle), Fase 5 (unlock-waarde).
 - Klaar als: de metrics laten zien dat avonturiers unlocks halen (quest_done, goal reached) in
   plaats van alleen XP.
 
+### Fase 6: Skills compleet en efficiënt (afgesproken 21-11-2026)
+
+Doel: elke skill wordt getraind, op een eerlijke en goede manier, en geen skill blijft zonder reden
+ver achter. Volgorde: meten, dan de grootste gaten.
+
+**Stap 1, meten (21-11-2026):** metric `levels` (per bot, elk uur: alle levels en totaal) naast
+de bestaande `skills` (per 5 min: welke skills getraind/onaangeroerd) en `bot.xpGained` per
+`mode`. Recept "Skills" in OBSERVABILITY.
+
+**Nulmeting 20-11-2026, 17:05-22:25 UTC (60 bots, 57 vensters van 5 min):**
+
+| Skill | Vensters zonder enige XP | Tijd / XP | Oordeel |
+| --- | --- | --- | --- |
+| Slayer | 57/57 | klus bestaat (`slayer`) | lukt nooit: meesters in Morytania/Stronghold onbereikbaar (routes) |
+| Runecrafting | 57/57 | buy-to-train bestaat | nooit gekozen of gestart: uitzoeken |
+| Farming, Construction, Sailing | 57/57 | geen klus | bouwen (Construction: wens eigenaar 17-11) |
+| Hunter | 56/57 | 8,2% van de tijd, 1.700 XP totaal | kapot: uitzoeken |
+| Ranged, Crafting | 52/57 | 105k / 94k XP | zelden |
+
+**Verdachte XP-snelheden (eerlijkheid):** buy-to-train fletching ~1,0M, herblore ~1,4M,
+firemaking ~1,6M XP/uur; agility ~160k gemiddeld, Eeshwar 59.550 in 5 min (>700k/uur) op een
+rooftop. `experienceMultiplier` is 1. Eerst nagaan of de acties te snel gaan (ticks), dan pas
+methodes kiezen op XP/uur.
+
+**Volgende stappen:** (2) Hunter repareren; (3) Runecrafting en Slayer laten starten; (4)
+XP-snelheden toetsen aan OSRS; (5) Construction, Farming, Sailing als klus; (6) methode per level
+uit de skill-guides (`osrs-guides.md`), gekozen op gemeten XP/uur.
+**Klaar als:** geen skill 57/57 onaangeroerd, en XP/uur per methode binnen de OSRS-bandbreedte.
+
 ### Later, op volgorde van bewijs
 
 - Survivability: eten mee bij combat (24 van 24 doden zonder eten).

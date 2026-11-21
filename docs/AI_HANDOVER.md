@@ -5,6 +5,14 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 21-11-2026 (09:40): Fase 6 stap 1, skills meten (branch `adventurers/fase-6-meten`)
+
+- **Eigenaar:** "waar komen alle skills en progressie terug?" Antwoord: niet als fase; voorgesteld en akkoord: Fase 6, skills compleet en efficiënt (roadmap). Eerste stap: meten.
+- **Bouw:** metric `levels` (elk uur per bot: alle levels, totaal, combat; `SKILLS_METRIC_MS`). Bestaande aggregaat-metric heet `skills` (trained/untouched per 5 min), vandaar een eigen naam. Recept "Skills" in OBSERVABILITY.
+- **Nulmeting (20-11, 17:05-22:25 UTC):** Slayer, Runecrafting, Farming, Construction, Sailing 57/57 vensters onaangeroerd; Hunter 56/57 met 8,2% van de tijd voor 1.700 XP (kapot); Ranged en Crafting 52/57. Verdacht hoge XP/uur (fletching ~1,0M, herblore ~1,4M, firemaking ~1,6M, agility tot >700k) bij `experienceMultiplier` 1: eerlijkheid nagaan.
+- **Volgende (roadmap Fase 6):** Hunter repareren, Runecrafting/Slayer laten starten, XP-snelheden toetsen, Construction/Farming/Sailing, methodes per level.
+- **Validatie:** suite 148 tests, 14 fails (omgeving). Geen gedragswijziging behalve de nieuwe metric.
+
 ## Sessie 21-11-2026 (10:15): Mole Hole multi-combat; volle tas bij de bank (branch `adventurers/occupancy`)
 
 - **Eigenaar (screenshot 09:06):** 2 bots bij de Giant Mole, één staat erbij; "dit zie ik bij meer activiteiten". Wereld-hoppen/tweede wereld staat sinds 17-11 op de lijst; besproken: groot werk (één wereld, `GatewayTarget.WORLD_ID` = 1, gedeelde saves, wereldlijst, dubbele serverlast). Afgesproken: eerst de Mole-fix, dan een bezettingscontrole (bot kiest iets anders als een single-combat boss/plek bezet is). Tweede wereld later.
