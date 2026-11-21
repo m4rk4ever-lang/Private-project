@@ -3676,14 +3676,19 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   /** To the Grand Exchange for one thing it needs (a tool no shop near sells), then the job again. */
   function buyOnExchange(entry, itemId, name, amount = 1, { replan = true } = {}) {
     const { player } = entry;
-    const notBuyable = (why) => { entry.refusal = { why: "not_buyable", detail: { item: String(name), because: why } }; return false; };
+    const notBuyable = (why, numbers = {}) => { entry.refusal = { why: "not_buyable", detail: { item: String(name), because: why, ...numbers } }; return false; };
     if ((entry.noExchangeBuyUntil ?? 0) > now()) return notBuyable("exchange_resting");
     if (!onExchange(itemId)) return notBuyable("not_exchangeable");
     const guide = Number(core.ItemDefinition?.forId?.(itemId)?.getGrandExchangeValue?.() ?? 0);
     // Its coins in the bag and in its bank: the exchange has a bank, it takes out what it needs.
     const cost = Math.ceil(guide * 1.05) * amount;
     if (!(guide > 0)) return notBuyable("no_exchange_price");
-    if (Shopping.coinsOf(player) + banked(player, Trade.COINS) < cost + 50) return notBuyable("coins");
+    // The numbers it saw, in the refusal: bots with 56k and with 2 billion coins were refused a
+    // spade or a tinderbox "for coins" (20-11-2026), which these coins cannot explain.
+    if (Shopping.coinsOf(player) + banked(player, Trade.COINS) < cost + 50) {
+      return notBuyable("coins", { bag: Shopping.coinsOf(player), bank: banked(player, Trade.COINS), cost, amount, guide,
+        registered: player.isRegistered?.() ?? null, same: entry.player === player });
+    }
     if (blockedPlace(entry, data.grandExchange)) return notBuyable("exchange_blocked");
     const plan = entry.plan;
     const label = String(name).toLowerCase().replace(/_/g, " ");
