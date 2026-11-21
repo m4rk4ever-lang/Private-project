@@ -631,7 +631,7 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
         run.reqTried.add(req.name);
         run.reqAt = nowMs + 5_000;
         if (acquire(entry, req.ids, req.amount, req.name)) {
-          note?.(player, `Gaat ${req.amount > 1 ? `${req.amount} x ` : ""}${req.name} halen voor ${run.name} (nodig voor de quest).`, "quest");
+          note?.(player, `Gaat ${countedName(req)} halen voor ${run.name} (nodig voor de quest).`, "quest");
           fetching(entry, run, req.ids, req.amount, req.name, "required", nowMs);
           return "running";
         }
@@ -648,7 +648,7 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
         run.recTried.add(rec.name);
         run.recAt = nowMs + 5_000;
         if (acquire(entry, rec.ids, rec.amount, rec.name)) {
-          note?.(player, `Gaat ${rec.amount > 1 ? `${rec.amount} x ` : ""}${rec.name} halen voor ${run.name} (aangeraden).`, "quest");
+          note?.(player, `Gaat ${countedName(rec)} halen voor ${run.name} (aangeraden).`, "quest");
           fetching(entry, run, rec.ids, rec.amount, rec.name, "recommended", nowMs);
           return "running";
         }
@@ -863,6 +863,15 @@ function createQuestPlay({ core, world, walkTo, note, now = () => Date.now(), qu
  * the map holds the base object, so "object not found at 3166,3306" ended Cook's Assistant 12
  * times (20-11-2026). The server's own click matching does the same (ObjectActionPacketListener).
  */
+/**
+ * An item for a note: "20 x balls of wool", once. The helper's names may carry their count
+ * already ("20 x Balls of wool", "1 x Egg"): it said "Gaat 20 x 20 x Balls of wool halen" (21-11-2026).
+ */
+function countedName({ amount = 1, name = "" } = {}) {
+  const bare = String(name).replace(/^\s*\d+\s*x\s+/i, "");
+  return amount > 1 ? `${amount} x ${bare}` : bare;
+}
+
 function matchesIds(core, id, ids) {
   if (ids.includes(id)) return true;
   try {
@@ -872,4 +881,4 @@ function matchesIds(core, id, ids) {
   }
 }
 
-module.exports = { matchesIds, createQuestPlay, chooseOption, nextHop, placeOf, stepDone, data };
+module.exports = { matchesIds, countedName, createQuestPlay, chooseOption, nextHop, placeOf, stepDone, data };
