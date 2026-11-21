@@ -19,7 +19,10 @@ const PLATINUM_TOKEN = 13204;
 /** Tools and bait an adventurer keeps, beside its axes, pickaxes and fishing gear. */
 // A pot, a bucket and a jug too: quests and cooking ask for them (Cook's Assistant), and they
 // fetch next to nothing on the exchange.
-const KEEP_TOOLS = ["TINDERBOX", "HAMMER", "CHISEL", "NEEDLE", "KNIFE", "FEATHER", "FISHING_BAIT", "POT", "BUCKET", "JUG"];
+// The air talisman: bought for Runecrafting (buyToTrain), its tool for the Air altar every trip.
+const KEEP_TOOLS = ["TINDERBOX", "HAMMER", "CHISEL", "NEEDLE", "KNIFE", "FEATHER", "FISHING_BAIT", "POT", "BUCKET", "JUG", "AIR_TALISMAN",
+  // Farming and Construction tools (farm runs, building in its house).
+  "RAKE", "SEED_DIBBER", "SPADE", "SAW"];
 
 /** A gear list in this adventurer's own taste (a battleaxe for a scimitar: Shopping.variantOf). */
 function tasted(list, core, player) {

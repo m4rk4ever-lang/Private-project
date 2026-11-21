@@ -31,6 +31,8 @@ const { createWintertodtAction } = require("./actions/Wintertodt.PlayerBots");
 const { createPickpocketAction } = require("./actions/Pickpocket.PlayerBots");
 const { createCraftRunesAction } = require("./actions/CraftRunes.PlayerBots");
 const { createHuntBirdsAction } = require("./actions/HuntBirds.PlayerBots");
+const { createConstructAction } = require("./actions/Construct.PlayerBots");
+const { createFarmPatchesAction } = require("./actions/FarmPatches.PlayerBots");
 const { createBuryBonesAction } = require("./actions/BuryBones.PlayerBots");
 
 const DEFAULT_DEFINITIONS_PATH = path.join(
@@ -243,6 +245,12 @@ function createAction(spec, world) {
   }
   if (spec.type === "huntBirds") {
     return createHuntBirdsAction(spec, world);
+  }
+  if (spec.type === "construct") {
+    return createConstructAction(spec, world);
+  }
+  if (spec.type === "farmPatches") {
+    return createFarmPatchesAction(spec, world);
   }
   if (spec.type === "wintertodt") {
     return createWintertodtAction(spec, world);

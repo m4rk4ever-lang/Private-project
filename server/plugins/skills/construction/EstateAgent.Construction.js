@@ -76,6 +76,17 @@ function buyHouse(event) {
   say(event, "Thank you. Go through the Rimmington house portal and you will find your house ready for you to start building in it.", () => giveGuide(event));
 }
 
+/**
+ * "construction:buy-house" { player, npc, bought }: the starter house bought from this estate agent
+ * as "Yes please!" buys it (1,000 coins, standing by the agent), for the adventurer bots, which do
+ * not hold the agent's dialogue. `bought` is true when it owns a house afterwards.
+ */
+function buyHouseByEvent(request) {
+  if (!request?.player || !request.npc) return;
+  buyHouse({ player: request.player, npc: request.npc, npcId: request.npc.getId?.() });
+  request.bought = House.houseStateFor(request.player).owned !== false;
+}
+
 function offerHouse(event) {
   say(event, "I can sell you a starting house in Rimmington for 1000 coins. As your Construction level increases, you can have it moved to other areas and redecorated in other styles.", () =>
     api.sendMultiChatboxPrompt(event.player, "Do you want to buy a starter house?",
@@ -349,6 +360,7 @@ function attachEstateAgents(api) {
   api.onNpcInteraction("Estate agent", { "Talk-to": talk, Relocate: relocate, Redecorate: redecorate });
   api.onNpcInteraction("Estate Agent", { "Talk-to": talk, Relocate: relocate, Redecorate: redecorate });
   api.onNpcInteraction("Alwyn", { "Talk-to": talk, Relocate: relocate, Redecorate: redecorate });
+  api.onCustomEvent("construction:buy-house", buyHouseByEvent);
   api.onNpcDialogueCondition(nigelCondition);
   api.onCustomEvent("npc-dialogue:line", nigelThanks);
   api.onPlayerLogin(syncWildernessUnlock);

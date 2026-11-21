@@ -22,3 +22,18 @@ test("hunter: a spot with room, the emptiest of the best tier, none when all are
   assert.equal(leastBusy(options, wagtailsFull, 2), "hunter_crimson_swift_2");
   assert.equal(leastBusy(options, () => 2, 2), null);
 });
+
+test("hunter: red salamanders by net trap at Ourania from Hunter 59, on foot", () => {
+  const TravelHubs = require("../plugins/bots/behaviours/navigation/TravelHubs.PlayerBots");
+  const options = activitiesFor("hunter", 70, definitions);
+  assert.deepEqual(options.slice(0, 2).map((option) => option.id), ["hunter_red_salamander", "hunter_red_salamander_2"]);
+  const list = Array.isArray(definitions) ? definitions : definitions.activities;
+  for (const { id } of options.slice(0, 2)) {
+    const action = list.find((activity) => activity.id === id).actions[0];
+    assert.equal(action.trap, "net");
+    assert.deepEqual(gear.fishingTools[id], ["SMALL_FISHING_NET", "ROPE"]);
+    assert.equal(TravelHubs.onFoot({ x: action.site[0], y: action.site[1], z: 0 }), true, id);
+  }
+  // Below 59 the wagtails stay the best.
+  assert.equal(activitiesFor("hunter", 58, definitions)[0].level, 19);
+});

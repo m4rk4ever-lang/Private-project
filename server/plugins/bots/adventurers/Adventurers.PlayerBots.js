@@ -660,6 +660,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       stocked: stockedSkills(player),
       styles: fightingStyles(player),
       slayer: slayerView(player),
+      // A farm run: a spot whose crops are due (or never planted), with Farming tools it can get.
+      farmDue: farmSpotDue(player) !== null,
+      // Its own house to build in, or the coins for one.
+      construction: canConstruct(player),
       // Only quests a bot can really play (none yet): nothing is simulated.
       available: new Set(questList().filter((quest) => questPlay.ready(quest.name)
         && registered.has(normalize(quest.name)) && !questAside(player, quest.name))
@@ -763,7 +767,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       if (data.buyToTrain[skill].quest && !done(data.buyToTrain[skill].quest)) return false;
       // A tool it cannot buy (the air talisman Sedridor gives back): only with one of its own.
       const recipe = data.buyToTrain[skill];
-      if (recipe.ownTool && !Shopping.ownsAnywhere(player, Shopping.idOf(core, recipe.tool))) return false;
+      // The air talisman: the quest's own one is not there for a bot whose Rune Mysteries is granted
+      // (grantedQuests sets the stage, no items), so all 24 new accounts stayed at Runecrafting 1.
+      // The talisman trades on the exchange, as players buy one.
+      const toolId = Shopping.idOf(core, recipe.tool);
+      if (recipe.ownTool && !Shopping.ownsAnywhere(player, toolId) && !(Number.isInteger(toolId) && onExchange(toolId))) return false;
       const plan = buyPlan(player, skill);
       // Its own stock (the logs it chopped, the ore it smelted) is enough; else coins to buy.
       // Enough for a smaller lot (ten at least) is enough to start: it buys what it can pay.
@@ -897,6 +905,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (mode === "woodcutting") return { any: names(gear.tools.axe), all: [] };
     if (mode === "mining") return { any: names(gear.tools.pickaxe), all: [] };
     if (mode === "fishing" || mode === "hunter") return { any: [], all: gear.fishingTools[activityId] ?? [] };
+    if (mode === "farming") return { any: [], all: data.farming?.tools ?? [] };
+    if (mode === "construction") return { any: [], all: data.construction?.tools ?? [] };
     if (String(mode).startsWith("buy_") || mode === "wintertodt") {
       const recipe = data.buyToTrain?.[skill];
       return { any: recipe?.tool ? [recipe.tool] : bySkill[skill] ?? [], all: [] };
@@ -1803,6 +1813,176 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   }
   const placeOf = (place) => (place ? { x: place.x, y: place.y, z: place.z ?? 0 } : null);
 
+  /** The adventurer entry of a player, or null. */
+  const entryOf = (player) => [...adventurers.values()].find((other) => other.player === player) ?? null;
+
+  /**
+   * The farming spot to visit now (adventurers.json farming.spots): one never planted this session,
+   * or whose crops have had their growMinutes; the nearest of those. null when none is due.
+   */
+  function farmSpotDue(player) {
+    const cfg = data.farming;
+    if (!cfg?.spots?.length) return null;
+    const planted = entryOf(player)?.farmPlanted ?? new Map();
+    const due = cfg.spots.filter((spot) => !planted.has(spot.id) || now() - planted.get(spot.id) >= (cfg.growMinutes ?? 80) * 60_000);
+    const at = player.getLocation();
+    const away = (spot) => Math.max(Math.abs(spot.x - at.getX()), Math.abs(spot.y - at.getY()));
+    return due.sort((a, b) => away(a) - away(b))[0] ?? null;
+  }
+
+  /** The best seed of `tiers` ([[level, name], ...], best first) its Farming level allows, or null. */
+  function seedFor(player, tiers) {
+    const level = levelOf(player, "FARMING");
+    const pick = (tiers ?? []).find(([need, name]) => level >= need && Number.isInteger(Shopping.idOf(core, name)));
+    return pick ? { name: pick[1], id: Shopping.idOf(core, pick[1]) } : null;
+  }
+
+  /** Whether it has a house, or the coins for one and a first load of planks. */
+  function canConstruct(player) {
+    const owns = { player, owns: false };
+    emit("construction:owns-house", owns);
+    if (owns.owns) return true;
+    return Shopping.coinsOf(player) + banked(player, Trade.COINS) >= (data.construction?.houseCost ?? 1000) + 10_000;
+  }
+
+  /** The planks (and nails) its Construction level builds with: { planks: {id, name, amount}, nails } or null. */
+  function constructionLoad(player) {
+    const level = levelOf(player, "CONSTRUCTION");
+    const tier = (data.construction?.tiers ?? []).find(([need]) => level >= need);
+    if (!tier) return null;
+    const [, plank, amount, nails, nailAmount] = tier;
+    const item = (name, count) => (name && Number.isInteger(Shopping.idOf(core, name)) ? { id: Shopping.idOf(core, name), name, amount: count } : null);
+    return { planks: item(plank, amount), nails: item(nails, nailAmount) };
+  }
+
+  /**
+   * What a job needs in its bag before it sets off, in order: from its bank when banked (one trip
+   * for all of them), else bought (a shop near, or the exchange). True while on the way; false
+   * when all is there; null when one cannot be had.
+   */
+  function packFor(entry, plan, wants) {
+    const { player } = entry;
+    const missing = wants.filter(({ id, amount }) => player.getInventory().getAmount(id) < Math.max(1, Math.ceil(amount / 3)));
+    if (missing.length === 0) return false;
+    const inBank = missing.filter(({ id }) => banked(player, id) > 0).map(({ id }) => id);
+    if (inBank.length > 0) return fetchTools(entry, plan, inBank) ? true : null;
+    const first = missing[0];
+    if (shopFor(entry, first.id, first.name, first.amount)) {
+      entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, remainingMs: 0, savedAt: now() };
+      return true;
+    }
+    return null;
+  }
+
+  /**
+   * A farm run: its rake, seed dibber and spade and the seeds for the spot (a herb seed from
+   * Farming 9, six allotment seeds), then the walk there and the patches (FarmPatches).
+   */
+  function startFarming(entry, plan, nowMs) {
+    const { player } = entry;
+    const cfg = data.farming;
+    const spot = farmSpotDue(player);
+    if (!spot) return cannot(entry, "not_due", { mode: "farming" });
+    const tools = (cfg.tools ?? []).map((name) => ({ id: Shopping.idOf(core, name), name, amount: 1 })).filter((tool) => Number.isInteger(tool.id));
+    const herb = seedFor(player, cfg.herbSeeds);
+    const allotment = seedFor(player, cfg.allotmentSeeds);
+    const seeds = [...(herb ? [{ ...herb, amount: 1 }] : []), ...(allotment ? [{ ...allotment, amount: 6 }] : [])];
+    const packing = packFor(entry, plan, [...tools, ...seeds]);
+    if (packing === true) return true;
+    if (packing === null) return cannot(entry, "tool_unbuyable", { mode: "farming" });
+    startActivity(player, spot.id, { home: { x: spot.x, y: spot.y, z: 0 }, nowMs });
+    walkTo(entry, { x: spot.x, y: spot.y, z: 0, name: spot.name }, { reason: "training", replan: false });
+    (entry.farmPlanted ??= new Map()).set(spot.id, nowMs);
+    entry.activity = spot.id;
+    entry.phase = "training";
+    entry.plan = plan;
+    entry.until = nowMs + 15 * 60_000;
+    entry.walkedMs = 0;
+    note(player, `Gaat op ${spot.name} wieden, oogsten en zaaien${herb ? ` (${herb.name.toLowerCase().replace(/_/g, " ")})` : ""}.`);
+    return true;
+  }
+
+  /**
+   * Construction: a starter house from the nearest estate agent when it has none, its hammer and
+   * saw and the planks its level builds with, then the Rimmington portal's Build mode and the
+   * parlour (Construct).
+   */
+  function startConstruction(entry, plan, nowMs) {
+    const { player } = entry;
+    const cfg = data.construction;
+    const owns = { player, owns: false };
+    emit("construction:owns-house", owns);
+    if (!owns.owns) {
+      const cost = cfg.houseCost ?? 1000;
+      if (Shopping.coinsOf(player) < cost) {
+        if (banked(player, Trade.COINS) < cost) return cannot(entry, "too_poor", { mode: "construction", cost });
+        const bank = nearestBank(player, entry);
+        if (!bank) return cannot(entry, "no_bank_near", { mode: "construction" });
+        return walkTo(entry, { ...bank, name: bank.name ?? bank.id }, { reason: "withdraw", arrive: (banker) => withdraw(banker, Trade.COINS, cost) });
+      }
+      const at = player.getLocation();
+      const agent = [...(cfg.agents ?? [])].sort((a, b) => Math.max(Math.abs(a.x - at.getX()), Math.abs(a.y - at.getY()))
+        - Math.max(Math.abs(b.x - at.getX()), Math.abs(b.y - at.getY())))[0];
+      if (!agent) return cannot(entry, "no_site", { mode: "construction" });
+      return walkTo(entry, { x: agent.x, y: agent.y, z: 0, name: "de makelaar" }, {
+        reason: "shop",
+        arrive: (buyer) => {
+          const npc = (core.World?.getNpcsNear?.(buyer.getLocation(), 8, null) ?? [])
+            .find((candidate) => /^estate agent$/i.test(String(candidate.getDefinition?.()?.getName?.() ?? "")));
+          const request = { player: buyer, npc, bought: false };
+          if (npc) emit("construction:buy-house", request);
+          note(buyer, request.bought ? "Koopt een huis in Rimmington bij de makelaar (1.000 gp)." : "Kon bij de makelaar geen huis kopen.", "activity");
+        },
+      });
+    }
+    const load = constructionLoad(player);
+    if (!load?.planks) return cannot(entry, "no_buy_plan", { mode: "construction" });
+    const tools = (cfg.tools ?? []).map((name) => ({ id: Shopping.idOf(core, name), name, amount: 1 })).filter((tool) => Number.isInteger(tool.id));
+    const packing = packFor(entry, plan, [...tools, load.planks, ...(load.nails ? [load.nails] : [])]);
+    if (packing === true) return true;
+    if (packing === null) return cannot(entry, "not_buyable", { mode: "construction", item: load.planks.name });
+    const portal = cfg.portal;
+    startActivity(player, "construction_house", { home: { x: portal.x, y: portal.y, z: 0 }, nowMs });
+    walkTo(entry, { ...portal }, {
+      reason: "training", replan: false,
+      arrive: (builder) => {
+        // The portal's third option: Build mode (House.Construction.js enterBuildingHouse).
+        const object = findObjectNear(builder, /^portal$/i, "build mode", 4);
+        if (object) {
+          const loc = object.object.getLocation();
+          builder.getMovementQueue().walkToObject(object.object, {
+            execute: () => world.emitObjectInteraction?.({ player: builder, object: object.object, definition: object.definition,
+              objectId: object.object.getId(), clickType: object.clickType, location: { x: loc.getX(), y: loc.getY(), z: loc.getZ() }, handled: false }),
+          });
+        } else note(builder, "Vond het huisportaal niet.", "activity");
+      },
+    });
+    entry.activity = "construction_house";
+    entry.phase = "training";
+    entry.plan = plan;
+    entry.until = nowMs + randomBetween(data.trainMinutes, random) * 60_000;
+    entry.walkedMs = 0;
+    note(player, `Gaat bouwen in zijn huis met ${load.planks.name.toLowerCase().replace(/_/g, " ")}s.`);
+    return true;
+  }
+
+  /** An object near it with `option` (a portal's Build mode): { object, definition, clickType } or null. */
+  function findObjectNear(player, name, option, radius) {
+    const at = player.getLocation();
+    for (let dx = -radius; dx <= radius; dx += 1) {
+      for (let dy = -radius; dy <= radius; dy += 1) {
+        for (const object of core.MapObjects?.mapObjects?.get?.(core.MapObjects.getHash(at.getX() + dx, at.getY() + dy, at.getZ())) ?? []) {
+          let definition;
+          try { definition = core.ObjectDefinition.forPlayer?.(object.getId(), player) ?? core.ObjectDefinition.forId(object.getId()); } catch { definition = core.ObjectDefinition.forId(object.getId()); }
+          if (!name.test(String(definition?.getName?.() ?? ""))) continue;
+          const index = (definition?.getInteractions?.() ?? []).findIndex((entry) => String(entry ?? "").toLowerCase() === option);
+          if (index >= 0) return { object, definition, clickType: index + 1 };
+        }
+      }
+    }
+    return null;
+  }
+
   function startTraining(entry, plan, nowMs) {
     const { player } = entry;
     const view = snapshot(player);
@@ -1815,6 +1995,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       return startTraining(entry, { kind: "train", mode: "fishing", skill: "FISHING", reason: "eten vangen" }, nowMs);
     }
     if (plan.mode === "slayer") return startSlayer(entry, plan, nowMs);
+    if (plan.mode === "farming") return startFarming(entry, plan, nowMs);
+    if (plan.mode === "construction") return startConstruction(entry, plan, nowMs);
     if (getTravelFood(entry, plan, nowMs)) return true;
     if (plan.mode.startsWith("buy_")) {
       return startBuyTraining(entry, plan, nowMs);
@@ -1879,7 +2061,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         return cannot(entry, "site_full", { mode: "hunter", sites: options.map((option) => option.id) });
       }
       const activity = id ? registry?.byId?.get(id) ?? null : null;
-      const site = definitions.activities.find((entry) => entry.id === id)?.actions?.[0]?.site;
+      const spot = definitions.activities.find((entry) => entry.id === id)?.actions?.[0];
+      const site = spot?.site;
+      const where = spot?.place ? (spot.place === "Ourania" ? "bij Ourania" : `in ${spot.place}`) : "in de Feldip Hills";
       if (!activity || !site) {
         note(player, `Kan niet gaan jagen: geen jachtplek voor zijn level (${id ?? "geen"}).`, "activity");
         return cannot(entry, "no_activity", { mode: "hunter", activity: id ?? null });
@@ -1892,20 +2076,22 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       }
       const bankedTools = toolsInBank(player, "hunter", id);
       if (bankedTools.length > 0) return fetchTools(entry, plan, bankedTools);
+      // Its trap's tools, one at a time (two bird snares; a net trap's small fishing net and rope).
       const snare = Shopping.missingTools(player, core, id)[0];
       if (snare) {
-        if (shopFor(entry, snare.itemId, snare.name, 2)) return true;
+        if (shopFor(entry, snare.itemId, snare.name, /snare/i.test(String(snare.name)) ? 2 : 1)) return true;
         note(player, `Kan niet gaan jagen: kon geen ${String(snare.name).toLowerCase().replace(/_/g, " ")} kopen.`, "activity");
         return cannot(entry, "tool_unbuyable", { tool: snare.name });
       }
       startActivity(player, id, { home: place, nowMs });
-      walkTo(entry, { ...place, name: "de Feldip Hills" }, { reason: "training", replan: false });
+      walkTo(entry, { ...place, name: spot?.place ?? "de Feldip Hills" }, { reason: "training", replan: false });
       entry.activity = id;
       entry.phase = "training";
       entry.plan = plan;
       entry.until = nowMs + randomBetween(data.trainMinutes, random) * 60_000;
       entry.walkedMs = 0;
-      note(player, `Gaat vogels vangen met een bird snare in de Feldip Hills (${id.replace(/^hunter_/, "").replace(/_/g, " ")}).`);
+      const prey = id.replace(/^hunter_/, "").replace(/_\d+$/, "").replace(/_/g, " ");
+      note(player, spot?.trap === "net" ? `Gaat ${prey}s vangen met een net trap ${where}.` : `Gaat vogels vangen met een bird snare ${where} (${prey}).`);
       return true;
     }
     if (plan.mode === "wintertodt") {
@@ -5037,6 +5223,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       // for this job, so they are not goods to bank or sell. They went into the bank at the
       // exchange and straight out again, hundreds of times (Markbot 10: 439 in 29 minutes,
       // v ad1c718, 20-11-2026).
+      // A farm run's seeds and a building job's planks and nails: bought for it, not goods.
+      if (mode === "farming") for (const tiers of [data.farming?.herbSeeds, data.farming?.allotmentSeeds]) for (const [, name] of tiers ?? []) { const id = Shopping.idOf(core, name); if (Number.isInteger(id)) ids.add(id); }
+      if (mode === "construction") for (const [, plank, , nails] of data.construction?.tiers ?? []) for (const name of [plank, nails]) { const id = name ? Shopping.idOf(core, name) : null; if (Number.isInteger(id)) ids.add(id); }
       const style = plan ? planStyle(entry, plan) : null;
       if (style === "ranged" || style === "magic") for (const id of styleSupplyIds(style)) ids.add(id);
       if (!mode.startsWith("buy_") || !plan.skill) continue;

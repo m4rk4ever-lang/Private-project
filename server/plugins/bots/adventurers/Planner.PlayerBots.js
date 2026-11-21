@@ -62,6 +62,11 @@ function trainingOptions(adventurer) {
   if (adventurer.slayer) options.push({ mode: "slayer", skill: "SLAYER", level: adventurer.levels.SLAYER ?? 1 });
   // Agility: laps on the best course its level allows (adventurers.json agilityCourses).
   options.push({ mode: "agility", skill: "AGILITY", level: adventurer.levels.AGILITY ?? 1 });
+  // Farming: a farm run when a spot's crops are due (adventurer.farmDue); Construction in its own
+  // house, when it has one or the coins for one (adventurer.construction). Both stood at 1 for
+  // every account (Fase 6, 21-11-2026).
+  if (adventurer.farmDue) options.push({ mode: "farming", skill: "FARMING", level: adventurer.levels.FARMING ?? 1 });
+  if (adventurer.construction) options.push({ mode: "construction", skill: "CONSTRUCTION", level: adventurer.levels.CONSTRUCTION ?? 1 });
   if ((adventurer.levels.FIREMAKING ?? 1) >= WINTERTODT_LEVEL) {
     options.push({ mode: "wintertodt", skill: "FIREMAKING", level: adventurer.levels.FIREMAKING });
   }

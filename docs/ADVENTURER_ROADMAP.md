@@ -183,6 +183,19 @@ XP-snelheden toetsen aan OSRS; (5) Construction, Farming, Sailing als klus; (6) 
 uit de skill-guides (`osrs-guides.md`), gekozen op gemeten XP/uur.
 **Klaar als:** geen skill 57/57 onaangeroerd, en XP/uur per methode binnen de OSRS-bandbreedte.
 
+**Stand 21-11-2026 (middag):** Hunter over zes Feldip-plekken plus red salamanders (net trap, Hunter 59);
+Runecrafting met een gekochte air talisman; Farming (farm runs Falador, Catherby, Ardougne) en
+Construction (eigen huis, parlour) als klus; nog niet in de game bevestigd.
+
+**Sailing, stappen (nog te bouwen, eerst met de eigenaar in de game):**
+1. Meten wat de plugin een speler laat doen zonder boot: Pandemonium (de quest die de eerste boot
+   geeft) en of `grantedQuests` die boot meegeeft.
+2. Een bot aan boord en aan het roer: `sailing:take-helm`, koers en zeilen via de plugin-events
+   (Helm.Sailing.js, Trim.Helm.js); eerst één vaste route tussen twee havens (Port Sarim, Pandemonium).
+3. Havenklussen (PortTasks.Sailing.js: koeriersladingen) als klus: oppakken, varen, afleveren.
+4. Bergen (Salvaging) en daarna zeegevechten pas als 2 en 3 werken.
+Elke stap met een metric (`sailing`: boarded, route, arrived, xp) en een test in de game.
+
 ### Later, op volgorde van bewijs
 
 - Survivability: eten mee bij combat (24 van 24 doden zonder eten).
