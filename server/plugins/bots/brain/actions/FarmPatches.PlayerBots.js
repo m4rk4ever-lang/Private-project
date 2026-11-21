@@ -65,12 +65,15 @@ function createFarmPatchesAction(spec, world) {
     const slot = items.findIndex((item) => item?.getId?.() === itemId);
     if (slot < 0) return false;
     const at = patch.object.getLocation();
-    player.getMovementQueue().walkToObject(patch.object, {
-      execute: () => world.emitItemOnObject?.({
-        player, object: patch.object, objectId: patch.object.getId(), itemId, item: items[slot], itemSlot: slot, interfaceType: 0,
-        location: { x: at.getX(), y: at.getY(), z: at.getZ() }, handled: false,
-      }),
+    const use = () => world.emitItemOnObject?.({
+      player, object: patch.object, objectId: patch.object.getId(), itemId, item: items[slot], itemSlot: slot, interfaceType: 0,
+      location: { x: at.getX(), y: at.getY(), z: at.getZ() }, handled: false,
     });
+    // Beside the patch (an allotment is a large object): the seed on it at once, as at the
+    // runecrafting ruins, where the walk to the object never got to its "execute" (21-11-2026).
+    const here = player.getLocation();
+    if (Math.max(Math.abs(here.getX() - at.getX()), Math.abs(here.getY() - at.getY())) <= 4) use();
+    else player.getMovementQueue().walkToObject(patch.object, { execute: use });
     return true;
   }
 

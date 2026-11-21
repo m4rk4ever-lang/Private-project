@@ -79,12 +79,16 @@ function createCraftRunesAction(spec, world) {
       bot.step = `talisman on ruins ${ruins.getId()} (${(bot.tries = (bot.tries ?? 0) + 1)}x)`;
       const slot = (player.getInventory().getItems() ?? []).findIndex((item) => item?.getId?.() === talisman);
       const item = player.getInventory().getItems()[slot];
-      player.getMovementQueue().walkToObject(ruins, {
-        execute: () => world.emitItemOnObject?.({
-          player, object: ruins, objectId: ruins.getId(), item, itemId: talisman, itemSlot: slot,
-          interfaceType: 0, location: { x: ruinsX, y: ruinsY, z: 0 }, handled: false,
-        }),
+      const at = ruins.getLocation();
+      const use = () => world.emitItemOnObject?.({
+        player, object: ruins, objectId: ruins.getId(), item, itemId: talisman, itemSlot: slot,
+        interfaceType: 0, location: { x: at.getX(), y: at.getY(), z: at.getZ() }, handled: false,
       });
+      // Beside the ruins (they are a large object): Use the talisman on them at once. The walk to
+      // the object never ended in its "execute" there, so the talisman was never used and three
+      // bots stood at the Air ruins with a bag of essence (owner, 21-11-2026).
+      if (NEAR(here, at.getX(), at.getY(), 3) || (bot.tries ?? 0) >= 2) use();
+      else player.getMovementQueue().walkToObject(ruins, { execute: use });
       bot.nextAt = nowMs + 6000;
       return "running";
     },

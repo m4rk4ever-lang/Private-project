@@ -70,12 +70,18 @@ const KIT_RUNES = Object.freeze(["LAW_RUNE", "AIR_RUNE", "FIRE_RUNE"]);
  * it owns. Travel things held 3.6 slots in a gathering bag after step 1 (metrics 20-11-2026): five
  * kinds of rune, four kinds of tablet and the jewellery. One charged jewellery piece if it has one
  * (one slot, several destinations), else the runes for Varrock Teleport with the Magic for it,
- * else one kind of tablet. Null for other jobs: they keep all.
+ * else one kind of tablet. Other jobs: two jewellery pieces, the runes with the Magic, a tablet or two.
  * Used both where it takes travel things from the bank and where it banks what is off the
  * loadout, so the two never undo each other.
  */
 function travelKit({ mode, magic = 1, hasJewellery = false, tablets = [] } = {}) {
-  if (!GATHERING.has(mode)) return null;
+  // Any other job: a small set, not all it owns. Markbot 18 (2B coins) took five kinds of rune,
+  // ten kinds of tablet and his jewellery from the bank, and with his food the bag was full: every
+  // bank visit took it all back, and he went to the bank for two hours (21-11-2026).
+  if (!GATHERING.has(mode)) {
+    const runes = magic >= 25 ? [...TRAVEL_RUNES] : [];
+    return { jewellery: 2, runes, tablets: tablets.slice(0, runes.length ? 1 : 2), text: "een kleine reisset" };
+  }
   if (hasJewellery) return { jewellery: 1, runes: [], tablets: [], text: "één geladen sieraad" };
   if (magic >= 25) return { jewellery: 0, runes: [...KIT_RUNES], tablets: [], text: "runes voor Varrock Teleport" };
   if (tablets.length > 0) return { jewellery: 0, runes: [], tablets: [tablets[0]], text: "één soort tablet" };
