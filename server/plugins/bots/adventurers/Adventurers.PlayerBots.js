@@ -31,7 +31,7 @@ const GAME_VERSION = (() => {
  */
 const definitions = require("../../../data/definitions/bot-activities.json");
 const data = require("../data/adventurers.json");
-const { chooseNext, bestActivity, isReady, trainingOptions } = require("./Planner.PlayerBots");
+const { chooseNext, bestActivity, isReady, trainingOptions, activitiesFor, leastBusy } = require("./Planner.PlayerBots");
 const { createQuestList } = require("./Quests.PlayerBots");
 const Goals = require("./Goals.PlayerBots");
 const { startActivity } = require("../brain/BrainActivities.PlayerBots");
@@ -156,6 +156,8 @@ const TRAVEL_TABLETS = [
   { name: "MORTTON_TELEPORT" }, { name: "CATHERBY_TELEPORT" }, { name: "FISHING_GUILD_TELEPORT" }, { name: "KHAZARD_TELEPORT" },
 ];
 const TABLET_STACK = 5;
+/** Hunters on one bird-snaring spot at most (a beach has three to seven birds). */
+const HUNT_SITE_CAP = 2;
 /** After a quest that stopped, this long its first blocked walk sends it home. */
 const QUEST_STRAND_MS = 15 * 60_000;
 /** No jewellery beyond the first under this many coins; one piece at most this share of its coins, and per visit this share. */
@@ -720,6 +722,17 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function travelItemIn(player) {
     const ids = (player.getInventory().getItems() ?? []).map((item) => item?.getId?.() ?? -1).filter((id) => id > 0);
     return ids.find((id) => isJewellery(id)) ?? ids.find((id) => isTeleportTablet(id)) ?? null;
+  }
+  /** Its ways to teleport in the bag, by name (jewellery, tablets, and "spells" with law runes), for the errand metric. */
+  function travelCarried(player) {
+    const names = new Set();
+    for (const item of player.getInventory().getItems() ?? []) {
+      const id = item?.getId?.() ?? -1;
+      if (id > 0 && (isJewellery(id) || isTeleportTablet(id))) names.add(itemName(id).toLowerCase());
+    }
+    const law = Shopping.idOf(core, "LAW_RUNE");
+    if (Number.isInteger(law) && player.getInventory().getAmount(law) > 0) names.add("spells");
+    return [...names];
   }
   /** Materials per kind for one load: the bag less its coins and the teleport it keeps. */
   const loadShare = (player, buy) => Math.floor((27 - (travelItemIn(player) ? 1 : 0)) / buy.materials.length);
@@ -1570,7 +1583,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const at = player.getLocation();
       metric({ kind: "errand", bot: entry.name, reason, to: placeName(to), ended, why: outcome?.why ?? null,
         seconds: Math.round((outcome?.ms ?? 0) / 1000), tilesLeft: outcome?.tilesLeft ?? null,
-        teleport: outcome?.teleport ?? null, hop: hopped || undefined, where: [at.getX(), at.getY(), at.getZ()] });
+        teleport: outcome?.teleport ?? null, hop: hopped || undefined, where: [at.getX(), at.getY(), at.getZ()],
+        // A long walk without a teleport: what it had to teleport with (OBSERVABILITY: why 8 in 10
+        // long errands went on foot: nothing carried, or nothing landing near enough).
+        carried: !outcome?.teleport && (outcome?.ms ?? 0) >= 60_000 ? travelCarried(player) : undefined });
     };
     const started = errands.go(run, to, {
       reason,
@@ -1854,7 +1870,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (plan.mode === "hunter") {
       // Bird snaring where its level's birds live (bot-activities.json: the action's site): its
       // snares first (bank, shop or GE), then the walk there, and the stretch from arrival.
-      const id = bestActivity("hunter", levelOf(player, "HUNTER"), definitions);
+      // Of the spots for its level, one with room: a few hunters to a beach, as the birds are few.
+      const options = activitiesFor("hunter", levelOf(player, "HUNTER"), definitions);
+      const occupied = (activityId) => [...adventurers.values()].filter((other) => other !== entry && other.activity === activityId).length;
+      const id = leastBusy(options, occupied, HUNT_SITE_CAP);
+      if (!id && options.length > 0) {
+        note(player, "Kan niet gaan jagen: alle jachtplekken voor zijn level zijn bezet.", "activity");
+        return cannot(entry, "site_full", { mode: "hunter", sites: options.map((option) => option.id) });
+      }
       const activity = id ? registry?.byId?.get(id) ?? null : null;
       const site = definitions.activities.find((entry) => entry.id === id)?.actions?.[0]?.site;
       if (!activity || !site) {
@@ -1882,7 +1905,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       entry.plan = plan;
       entry.until = nowMs + randomBetween(data.trainMinutes, random) * 60_000;
       entry.walkedMs = 0;
-      note(player, "Gaat vogels vangen met een bird snare in de Feldip Hills.");
+      note(player, `Gaat vogels vangen met een bird snare in de Feldip Hills (${id.replace(/^hunter_/, "").replace(/_/g, " ")}).`);
       return true;
     }
     if (plan.mode === "wintertodt") {
