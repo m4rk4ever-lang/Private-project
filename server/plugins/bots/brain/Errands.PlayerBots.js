@@ -256,6 +256,10 @@ function createErrands({ now = () => Date.now(), log = () => {}, core = null, mo
     try {
       if (ok) errand.arrive(player, outcome);
       else errand.fail(player, outcome);
+    } catch (error) {
+      // One bot's arrival failing does not stop the others' errands this tick: an error here
+      // used to leave the loop over every bot (idOfName, 21-11-2026).
+      console.error(`[errands] ${errand.reason} for ${player.getUsername?.() ?? "?"} failed:`, error);
     } finally {
       log("bot_errand", { username: player.getUsername?.() ?? null, reason: errand.reason, ok, ms: now() - errand.since });
     }

@@ -62,12 +62,23 @@ function chooseLevelHop(hops, here, to, levelOf = () => 99, reachable = null) {
  * Whether `tile` can be walked to from `from` on its floor, for a way out. `getFlag(x, y, z)` gives
  * the game's collision flags (core.RegionManager.getClipping). An error counts as reachable.
  */
-function reachableOnFoot(from, tile, getFlag) {
+// Each answer is a route search (up to 20,000 tiles): kept for a while per 8x8 area of the start
+// and the exit's tile, so a cave's bots do not search again on every walk (tick time, 21-11-2026).
+const REACH_CACHE_MS = 10 * 60_000;
+const reachCache = new Map();
+function reachableOnFoot(from, tile, getFlag, nowMs = Date.now()) {
+  const key = `${from.x >> 3},${from.y >> 3},${from.z ?? 0}>${tile.x},${tile.y}`;
+  const known = reachCache.get(key);
+  if (known && nowMs - known.at < REACH_CACHE_MS) return known.ok;
+  let ok = true;
   try {
-    return planRoute({ from, to: { x: tile.x, y: tile.y }, getFlag, exactOnly: true, maxExpansions: 40_000 }) !== null;
+    ok = planRoute({ from, to: { x: tile.x, y: tile.y }, getFlag, exactOnly: true, maxExpansions: 20_000 }) !== null;
   } catch {
-    return true;
+    ok = true;
   }
+  if (reachCache.size > 2_000) reachCache.clear();
+  reachCache.set(key, { ok, at: nowMs });
+  return ok;
 }
 
 /** Ways between the surface and what lies off it, from Shortest Path's transport rows (see LEVEL_HOPS). */
