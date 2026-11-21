@@ -5,6 +5,13 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 21-11-2026 (14:40): lag na 1c9f840 (branch `adventurers/lag`)
+
+- **Eigenaar:** "hele erge laggs sinds de voorgaande update". Log: `BotBehaviorTask` 2-8 s per tick, elke ~10 ticks, en de ReferenceError bij elk GE-bezoek.
+- **Waarschijnlijke oorzaak:** de fout in `arrive` (PR #43 al gefixt) gooide uit `Errands.tick`, dat in één lus over alle bots loopt: de rest van de errands van die tick viel weg en bots bleven opnieuw beginnen. Fix: `end()` vangt een fout in `arrive`/`fail` en logt hem, de lus gaat door.
+- **Ook:** `reachableOnFoot` (uitgang uit een grot, tot 4 routezoektochten per wandeling) nu met cache (10 min per 8x8-vak en uitgangstegel) en 20.000 i.p.v. 40.000 tegels.
+- **Niet gemeten:** hier draait geen server. Na de update: aantal `tick_overrun`-regels per minuut vergelijken; blijft het, dan meten met de perf-tools (server/docs/agents/perf.md).
+
 ## Sessie 21-11-2026 (14:35): fout "idOfName is not defined" (branch `adventurers/fix-idofname`)
 
 - **Eigenaar (serverlog na update naar 1c9f840):** bij elk GE-bezoek van een bot met lange tochten `ReferenceError: idOfName is not defined` in `tabletLandings` (gebruikte een lokale helper van `bidForSupplies`). Daardoor brak `atExchange` af: geen aankopen of verkopen op de GE. Fix: `Shopping.idOf`; de landingsplekken één keer berekend.
