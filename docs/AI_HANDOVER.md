@@ -5,6 +5,12 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 21-11-2026 (14:35): fout "idOfName is not defined" (branch `adventurers/fix-idofname`)
+
+- **Eigenaar (serverlog na update naar 1c9f840):** bij elk GE-bezoek van een bot met lange tochten `ReferenceError: idOfName is not defined` in `tabletLandings` (gebruikte een lokale helper van `bidForSupplies`). Daardoor brak `atExchange` af: geen aankopen of verkopen op de GE. Fix: `Shopping.idOf`; de landingsplekken één keer berekend.
+- **Controle:** eslint `no-undef` op alle gewijzigde bestanden (vond precies deze fout op main, nu schoon). Voortaan na elke wijziging draaien: `npx eslint --no-eslintrc --env node,es2022 --parser-options=ecmaVersion:2022 --rule '{"no-undef":"error"}' <bestanden>`.
+- **Inloggen lukt niet (eigenaar):** in het log geen fout bij inloggen; wel tick-overruns van 2-8 s door `BotBehaviorTask` vlak na de start (61 bots plannen tegelijk). Oorzaak nog niet vastgesteld.
+
 ## Sessie 21-11-2026 (14:10): snares, Taverley-poort, tablets voor lange tochten (branch `adventurers/hunter-poort`)
 
 - **Eigenaar (screenshots):** Patrickbot 10 bij de wagtails zet geen snares neer (2 in de tas); Kram539 staat bij de poort van Taverley: "Kwam niet bij de Feldip Hills: de weg was versperd. Poort handelt hij niet meer ineens?"

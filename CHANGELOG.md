@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Na de vorige update konden avonturiers bij de GE niets meer kopen of verkopen door een fout in de code. Dat werkt weer.
 - Een avonturier die een huis kocht voor Construction ging daarna iets anders doen. Hij gaat nu door naar zijn huis om te bouwen.
 - Een avonturier die vogels ving, bleef soms staan op een plek waar geen snare mag staan (gras, varens) en zette niets neer. Hij zoekt nu een tegel waar het wel mag.
 

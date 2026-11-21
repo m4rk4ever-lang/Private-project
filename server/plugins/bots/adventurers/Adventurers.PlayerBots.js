@@ -723,15 +723,21 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   }
 
   /** Where each travel tablet lands: [{ name, x, y }] (its spell's destination, any spellbook). */
+  // (Shopping.idOf, not bidForSupplies' own idOfName: that one is not in scope here, and the GE
+  // visit threw "idOfName is not defined" on every bot with long walks, 21-11-2026.)
+  let landingsCache = null;
   function tabletLandings() {
+    if (landingsCache) return landingsCache;
     const spells = [...(core.SpellTeleports?.getTeleportDestinations?.() ?? []), ...(core.ArceuusSpells?.getTeleportDestinations?.() ?? []),
       ...(core.LunarSpells?.getTeleportDestinations?.() ?? [])];
     const landing = new Map(spells.map((spell) => [String(spell.name).toLowerCase(), spell.destination]));
-    return TRAVEL_TABLETS.map(({ name }) => {
-      const id = idOfName(name);
+    landingsCache = TRAVEL_TABLETS.map(({ name }) => {
+      const id = Shopping.idOf(core, name);
       const at = Number.isInteger(id) ? landing.get(itemName(id).toLowerCase()) : null;
       return at ? { name, x: at.getX(), y: at.getY() } : null;
     }).filter((spot) => spot && !inWilderness(spot.x, spot.y));
+    landingsCache = landingsCache.length ? landingsCache : null;
+    return landingsCache ?? [];
   }
 
   /** A teleport tablet by its name ("Varrock teleport", "Salve graveyard teleport"). */
