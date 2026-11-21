@@ -75,7 +75,8 @@ function createCraftRunesAction(spec, world) {
         return "running";
       }
       const ruins = objectAt(core, ruinsX, ruinsY, 0, "Mysterious ruins");
-      if (!ruins) return "failed";
+      if (!ruins) { bot.step = "no ruins object"; return "failed"; }
+      bot.step = `talisman on ruins ${ruins.getId()} (${(bot.tries = (bot.tries ?? 0) + 1)}x)`;
       const slot = (player.getInventory().getItems() ?? []).findIndex((item) => item?.getId?.() === talisman);
       const item = player.getInventory().getItems()[slot];
       player.getMovementQueue().walkToObject(ruins, {
@@ -86,6 +87,10 @@ function createCraftRunesAction(spec, world) {
       });
       bot.nextAt = nowMs + 6000;
       return "running";
+    },
+    describe(ctx) {
+      const bot = ctx?.state?.craftRunes;
+      return `craftRunes ${bot?.step ?? "-"} talisman=${ctx?.player?.getInventory?.().getAmount?.(talisman) ?? "?"} essence=${ctx?.player ? essenceIn(ctx.player) : "?"}`;
     },
     stop(ctx) {
       if (ctx?.state) ctx.state.craftRunes = null;

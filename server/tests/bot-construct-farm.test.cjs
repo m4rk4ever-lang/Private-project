@@ -123,3 +123,4 @@ test("farm patches: the weeds go from the bag, the farm run goes on", () => {
   assert.equal(inventory[6055], 0);
   assert.deepEqual(clicks.at(-1), { kind: "object", name: "Herb patch", clickType: 1 });
 });
+

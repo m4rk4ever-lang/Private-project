@@ -5,6 +5,21 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## Sessie 21-11-2026 (14:10): snares, Taverley-poort, tablets voor lange tochten (branch `adventurers/hunter-poort`)
+
+- **Eigenaar (screenshots):** Patrickbot 10 bij de wagtails zet geen snares neer (2 in de tas); Kram539 staat bij de poort van Taverley: "Kwam niet bij de Feldip Hills: de weg was versperd. Poort handelt hij niet meer ineens?"
+- **Snares:** Patrickbot 10 stond 22,5 min op 2502,2890 voor 8 XP. `canLay` weigert een tegel met een object type 10 of 22 (gras, varens) of een geblokkeerde tegel; de bot zette `laidAt` ook bij een weigering en bleef. Nu: `layable` met dezelfde check vooraf (`core.MapObjects.getType`, `RegionManager.blocked`), een tegel waar de snare in de tas bleef telt als geweigerd, en naar de dichtstbijzijnde toegestane tegel (bij de vogel of op de plek).
+- **Taverley-poort:** niet nieuw: walk_blocked op 2930-2940,3445-3455 sinds 20-11 in elke versie (37×, 9× in da94bfc). Nu vaker omdat Feldip-hunters vanaf Varrock via Taverley/White Wolf lopen (leg `white_wolf_south`, plan ok, 29 waypoints). De poort staat niet in de transports; de deuropener (`DoorOpening.maybeOpenDoor`) zou hem moeten openen. Oorzaak nog onbekend: `walk_blocked.door` (nieuw) zegt wat de opener deed (clicked, open, no_way_to_it, none_near, none_helps).
+- **Tablets:** `Loadout.walkTablets` (puur, getest): van de laatste 12 lange tochten zonder teleport de tablet die er de meeste ≥ 150 tegels had bespaard (minstens 2), een stapel van 5 als hij er minder dan 2 heeft, vanaf 5.000 gp en hoogstens 10% van zijn coins. `walkTo` onthoudt `entry.longWalks` (van, naar); `bidForSupplies` voegt de stapel toe. Landingsplekken uit de spellbooks (`tabletLandings`).
+- **Validatie:** `bot-walk-tablets` (2). Suite 167 tests, 14 fails. De snare-fix kan hier niet getest worden (Navigation laadt de TS-core).
+- **Controle da94bfc (11:40-12:30 UTC):**
+  - Construction: 3 huizen gekocht, 0 keer gebouwd: na de koop geen `savedTask`, dus een andere klus (Patrickbot 4 ging tuinieren). Fix: `savedTask` voor huis of coins.
+  - Farming: 14 starts; wieden werkt (Jorgbot 2 Farming 1 → 8), daarna 3× `stuck` zonder zaaien. Oorzaak onbekend; `describe` toont nu de patches en hun opties.
+  - Runecrafting: 3× `stuck` bij de ruïnes (2983,3291) met een volle tas essence en de talisman: de talisman op de ruïnes brengt hem niet naar binnen. `describe` toont nu de stap en het object-id.
+  - Hunter: crimson swift 2 en 3 en wagtail 2: 0 XP (zie snare-fix). Red salamander 1×: Markbot 13 kwam niet bij Ourania (weg versperd bij 2894,3178).
+  - Quest-teleport 5×.
+  - Nieuwe acties (Construct, FarmPatches, CraftRunes, HuntBirds) hebben `describe` voor de stuck-metric.
+
 ## Sessie 21-11-2026 (12:35): eerste controle Fase 6-update (branch `adventurers/fase-6-fixes`)
 
 - **Logs:** da32947 van 11:15 tot 11:34 UTC (20 min).

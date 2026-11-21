@@ -14,6 +14,11 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Een avonturier die een huis kocht voor Construction ging daarna iets anders doen. Hij gaat nu door naar zijn huis om te bouwen.
+- Een avonturier die vogels ving, bleef soms staan op een plek waar geen snare mag staan (gras, varens) en zette niets neer. Hij zoekt nu een tegel waar het wel mag.
+
+### Gewijzigd
+- Avonturiers die vaak ver lopen naar dezelfde streek, zoals de Feldip Hills, kopen een stapel teleport-tablets die daar in de buurt uitkomen (bijvoorbeeld Watchtower), als ze een paar duizend gp hebben.
 - Een avonturier die ging tuinieren hield het onkruid in zijn tas en bleef na het wieden staan. Hij laat het onkruid nu vallen en gaat door met zaaien.
 - Avonturiers die een air talisman kochten voor Runecrafting gingen daarna iets anders doen. Ze gaan nu direct runes maken.
 - Nieuwe avonturiers trainden nooit Runecrafting: ze misten de air talisman. Ze kopen die nu op de GE en houden hem.

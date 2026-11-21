@@ -316,6 +316,16 @@ function clickDoor(player, state, world, attempt) {
   });
 }
 
+/**
+ * What the door opener last did (for the walk_blocked metric: why a walk stood at a gate, as at
+ * Taverley's, where 37 walks west ended "versperd" in two days): clicked, open (by another),
+ * no_way_to_it, none_near, none_helps.
+ */
+function noteDoor(state, object, outcome, extra = {}) {
+  const loc = object?.getLocation?.();
+  state.lastDoor = { outcome, id: object?.getId?.() ?? null, at: loc ? [loc.getX(), loc.getY()] : null, ...extra, ms: Date.now() };
+}
+
 /** Walks the in-flight attempt to its stand tile and clicks once adjacent. */
 function continueDoorAttempt(core, player, state, world) {
   const attempt = state.doorAttempt;
@@ -327,10 +337,12 @@ function continueDoorAttempt(core, player, state, world) {
   ) <= 1;
   if (adjacent && isClosedDoor(attempt.object, player)) {
     clickDoor(player, state, world, attempt);
+    noteDoor(state, attempt.object, "clicked");
     return true;
   }
   if (!isClosedDoor(attempt.object, player)) {
     // Another bot opened it; the next dispatch can route through.
+    noteDoor(state, attempt.object, "open");
     state.doorAttempt = null;
     return true;
   }
@@ -340,6 +352,7 @@ function continueDoorAttempt(core, player, state, world) {
   attempt.routes += 1;
   const steps = core.PathFinder.calculateWalkRoute(player, attempt.stand.x, attempt.stand.y);
   if (!Number.isFinite(steps) || steps <= 0 || attempt.routes >= MAX_APPROACH_ROUTES) {
+    noteDoor(state, attempt.object, "no_way_to_it");
     state.doorAttempt = null;
   }
   return true;
@@ -402,11 +415,13 @@ function maybeOpenDoor({ player, state, world, request, select = false }) {
   }
   const candidates = findDoorCandidates(player, state, targetX, targetY, nowMs);
   if (!candidates.length) {
+    noteDoor(state, null, "none_near", { target: [targetX, targetY] });
     return false;
   }
   const routeFinder = sharedRouteFinder(core);
   const picked = findUnblockingDoor(core, routeFinder, player, candidates, targetX, targetY);
   if (!picked) {
+    noteDoor(state, null, "none_helps", { target: [targetX, targetY], near: candidates.length });
     return false;
   }
   state.doorAttempt = {
