@@ -382,6 +382,27 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * own account of itself (TrainCombat: site, target, approach, failures), the NPCs around it by
    * name and level, its HP and free slots. Enough to see why, not only that.
    */
+  // Long bot turns in the behaviour task, as they happen (SlowEntries): who, doing what. The
+  // server stood still 2 to 27 s after restarts (21-11-2026) and the route searches were not it.
+  try {
+    require("../runtime/SlowEntries.PlayerBots").onSlow("adventurers", (event) => {
+      if (event.kind === "tick") {
+        metric({ kind: "slow_tick", ms: event.ms, slowestBotMs: event.slowestEntryMs, bots: event.entries });
+        return;
+      }
+      const player = event.entry?.player;
+      const name = player?.getUsername?.() ?? null;
+      const adventurer = name ? adventurers.get(name) : null;
+      const at = player?.getLocation?.();
+      metric({ kind: "slow_bot", bot: name, ms: event.ms, planMs: event.planMs, urgent: event.urgent,
+        before: event.before, after: event.after, where: at ? [at.getX(), at.getY(), at.getZ()] : null,
+        phase: adventurer?.phase ?? null, plan: adventurer?.plan ? { kind: adventurer.plan.kind, mode: adventurer.plan.mode ?? null, activity: adventurer.activity ?? null } : null,
+        errand: adventurer?.errand?.reason ?? null, ...(adventurer ? brainSnapshot(adventurer) : {}) });
+    });
+  } catch {
+    // A help, not a must.
+  }
+
   function brainSnapshot(entry) {
     const player = entry.player;
     const out = { hp: player.getHitpoints?.() ?? null, freeSlots: player.getInventory().getFreeSlots() };

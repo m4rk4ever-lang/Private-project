@@ -5,6 +5,14 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 21-11-2026 15:20: meting van lange botbeurten (branch `adventurers/slow-bot`)
+
+- **Logs na #47 (14:03-14:08 UTC):** `planning` gaf route 155x samen 1.551 ms (max 132), stairs 3x (max 9), exit 1x. De stiltes van 23 en 27 s (14:05:11, 14:06:36) kwamen dus niet van de zoektochten. #47 blijft (geen schade, wel een eerlijker budget).
+- **Nieuw:** `runtime/SlowEntries`: BehaviorTask meet elke botbeurt; vanaf 500 ms gaat er een `slow_bot`-metric uit (bot, ms, `planMs` in die beurt, `before`/`after` mode en behaviour, plan, errand, plus `brainSnapshot`: action en `describe`). Een tick vanaf 1 s geeft `slow_tick` met `slowestBotMs`: is dat veel kleiner dan `ms`, dan zit de tijd tussen de bots (taakcode zelf), niet in één bot.
+- **Hint uit de logs:** Patrickbot 18 (herblore bij de GE, kwuarm potion + limpwurt) stond vlak voor 5 van de stiltes, ook die van 23 s. Niet bewezen.
+- **Bijvangst:** `restorePvpBot` gebruikte `isHonest` zonder import (ReferenceError voor een PvP-bot zonder wapen). Import toegevoegd.
+- **Validatie:** suite 157 pass, 14 fail (baseline); `bot-slow-entries.test.cjs` 2 pass; eslint no-undef schoon op de gewijzigde bestanden.
+
 ## 21-11-2026 15:10: lag na elke herstart, planningsbudget (branch `adventurers/plan-budget`)
 
 - **Eigenaar:** "ik merk nog lag", met de serverconsole van 13:2x tot 13:57 UTC.

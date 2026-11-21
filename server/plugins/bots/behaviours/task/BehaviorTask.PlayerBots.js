@@ -1,3 +1,6 @@
+const SlowEntries = require("../../runtime/SlowEntries.PlayerBots");
+// restorePvpBot used isHonest without importing it (a ReferenceError for any PvP bot that lost its weapon).
+const { isHonest } = require("../../brain/Honest.PlayerBots");
 const { Task } = require("../../../../src/main/typescript/elvarg/game/task/Task");
 const { Location } = require("../../../../src/main/typescript/elvarg/game/model/Location");
 const { Wilderness } = require("../../../../src/main/typescript/elvarg/game/content/wilderness/Wilderness");
@@ -1118,6 +1121,10 @@ class BotBehaviorTask extends Task {
     const metricsStartNs = this.tickMetrics.enabled
       ? process.hrtime.bigint()
       : 0n;
+    // Every turn is timed (a clock read); a long one is reported with what the brain was doing.
+    const slowStartMs = Date.now();
+    const slowBefore = SlowEntries.brainNow(entry);
+    const slowPlanMs = SlowEntries.planMs();
     try {
       const state = entry?.state;
       const player = entry?.player;
@@ -1191,6 +1198,20 @@ class BotBehaviorTask extends Task {
           Number(process.hrtime.bigint() - metricsStartNs)
         );
       }
+      const slowMs = Date.now() - slowStartMs;
+      this._slowestEntryMs = Math.max(this._slowestEntryMs ?? 0, slowMs);
+      if (slowMs >= SlowEntries.SLOW_ENTRY_MS) {
+        SlowEntries.report({ kind: "entry", ms: slowMs, entry, before: slowBefore, after: SlowEntries.brainNow(entry),
+          planMs: Math.round(SlowEntries.planMs() - slowPlanMs), urgent: Boolean(urgentPhasePrefix) });
+      }
+    }
+  }
+
+  /** A long tick, and how much of it the slowest single bot took (the rest: between bots). */
+  reportSlowTick(startedAtMs, entries) {
+    const ms = Date.now() - startedAtMs;
+    if (ms >= SlowEntries.SLOW_TICK_MS) {
+      SlowEntries.report({ kind: "tick", ms, slowestEntryMs: this._slowestEntryMs ?? 0, entries });
     }
   }
 
@@ -1205,6 +1226,7 @@ class BotBehaviorTask extends Task {
     }
 
     const startedAtMs = Date.now();
+    this._slowestEntryMs = 0;
     this.tickMetrics.beginCycle(now);
     // Every entry each tick, not just the brain's strided turns: the face flag is
     // one-shot, and a bot's click-face on its walk-ending tick is dropped by the
@@ -1256,6 +1278,7 @@ class BotBehaviorTask extends Task {
       }
     );
     if (budgetYielded === true) {
+      this.reportSlowTick(startedAtMs, totalEntries);
       this.flushTaskProfileIfDue(now);
       this.tickMetrics.endCycle(
         Date.now(),
@@ -1265,6 +1288,7 @@ class BotBehaviorTask extends Task {
     }
 
     this._entryCursor = (startIndex + processedRegularEntries) % totalEntries;
+    this.reportSlowTick(startedAtMs, totalEntries);
     this.flushTaskProfileIfDue(now);
     this.tickMetrics.endCycle(
       Date.now(),
