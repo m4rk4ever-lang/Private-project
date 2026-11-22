@@ -9,6 +9,7 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 - **Vraag eigenaar:** max-level bots op lage vijanden of lage acties; gem stalls voor geld; Barrows-deuren.
 - **Gevonden:** 73% van de skill-tijd is de beste activiteit voor het level; afwijkingen door de clay-lus van Doric's Quest (1.037 bot-min), plafonds in de data (Prayer alleen big bones, Agility tot Seers, Herblore tot 55, smelten tot 30) en vechtstijlen die per botnaam vastliggen (`styleFor`), met de band op het laagste melee-level. Geld: 160 van 177 keuzes "eens proberen"; gem stalls 2.792 gp/uur gemeten. Barrows 0 van 13: reizen zonder tablet kan niet meer sinds #53 (Markbot 18 start elke 10 s een run), en in de tunnels vast op gewone open deuren (de bot kent `openDoors` wel).
+- **"Eens proberen":** 188 van 215 geldklussen (87%, bedoeld 10%). Oorzaken: `entry.earn` niet opgeslagen (weg bij elke herstart), metingen pas na 3 min, label bij elke ongemeten keuze, `MONEY_GUESS.thieving` 30.000. Ontwerp gedeelde kennistabel per activiteit (§25) in sectie 3c.
 - **Details en pakketten A1-A7:** [analysis/2026-11-22-actiekeuze.md](analysis/2026-11-22-actiekeuze.md).
 - **Volgende stap:** A1 (Barrows alleen met reisweg), daarna A2 (tunnel-telemetrie) en A4 (clay-lus).
 

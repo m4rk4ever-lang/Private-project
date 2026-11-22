@@ -100,6 +100,69 @@ Bij een thieving-level van 75 kiest de bot gem stalls, de hoogste stall in de da
 leveren het minst op van alle gemeten methodes. De opbrengst wordt wel gemeten, maar per bot
 (`entry.earn`), en "eens proberen" blijft winnen. Andere bots leren er niets van (§25).
 
+### 3b. Te veel "eens proberen": het is bedoeld als 1 op 10, het is 87%
+
+De planner (`Planner.PlayerBots.js`, r. 126-150) bedoelt: "Something new now and then (one pick in
+ten), else what it knows earns best". Gemeten over 21-11 en 22-11:
+
+| Meting | Waarde |
+| --- | --- |
+| Geldklussen (`job.reason` begint met "geld verdienen") | 215 |
+| Waarvan "eens proberen" | 188 (87%), samen 1.444 bot-minuten |
+| Combinaties bot × activiteit die meer dan één keer "geprobeerd" werden | 49 van 84 (Patrickbot 17 probeerde gem stalls 9×) |
+| Verschillende bots die dezelfde activiteit "probeerden" | silver stalls 26, knights 11, gem stalls 9, silk stalls 8 |
+| Mediaan gp/uur van de geprobeerde klussen | 1.761 |
+
+Dat iets 9 keer "eens geprobeerd" wordt, betekent dat het resultaat niet blijft hangen. In de code
+zie ik vier oorzaken:
+
+1. **De meting verdwijnt bij elke herstart.** `entry.earn` wordt in `trackJob` gevuld
+   (`Adventurers.PlayerBots.js`, r. 354-355), maar nergens opgeslagen of teruggezet. Bij 17
+   serverversies in een dag begint elke bot steeds opnieuw.
+2. **Korte klussen meten niets.** Een meting telt pas na 3 minuten (`hours >= 3 / 60`). Een
+   klus die eerder vastloopt of wordt vervangen, laat de methode op "niet geprobeerd" staan.
+3. **Het label is niet de 1-op-10.** De reden "eens proberen" staat bij élke keuze zonder meting.
+   Zonder meting telt de vaste gok `MONEY_GUESS` (r. 32): thieving 30.000 gp/uur, het hoogst van
+   allemaal. Daardoor wint thieving telkens op de score, niet alleen bij de 10% nieuwe keuzes. De
+   gemeten werkelijkheid is 1,8-9,5k gp/uur.
+4. **De meting is per skill, niet per activiteit.** `earn.thieving` mengt gem stalls (2,8k) met
+   knights (9,5k). Wat de bot op een hoger level kiest (gem stalls) is juist de slechtste.
+
+### 3c. Ontwerp: clans delen hun kennis (§24, §25)
+
+De constitution vraagt het al: "Adventurers mogen leren van andere Adventurers … Success Rates,
+Profitability, Travel Durations, Failure Rates. Gebruik geaggregeerde data." Een opzet die
+aansluit op wat er is:
+
+- **Eén gedeelde tabel per activiteit**, niet per bot of skill: `data/saves/adventurer-knowledge.json`,
+  naast het bestaande `adventurer-achievements.json`, en bewaard over herstarts heen.
+
+  ```json
+  { "gem_stalls": { "gpPerHour": { "median": 2792, "n": 22 }, "xpPerHour": { "median": "<gemeten>", "n": 22 },
+                    "stuckRate": "<aandeel stuck>", "travelMin": "<reistijd>", "deathsPerHour": "<doden>",
+                    "byLevel": { "75-84": { "gpPerHour": "<gemeten>", "n": "<aantal>" } },
+                    "updatedAt": "<tijd>" } }
+  ```
+
+- **Wie schrijft:** elke beëindigde klus (`trackJob`) voegt zijn gp/uur, XP/uur en afloop toe aan
+  de activiteit, met een lopend gemiddelde per levelband. Een klus korter dan 3 minuten telt mee
+  als falen, niet als "niets".
+- **Wie leest:** de planner gebruikt eerst de eigen meting, dan de clanmeting, dan pas de gok. Een
+  methode is pas "nieuw" als de clan er minder dan 5 metingen van heeft. Zo probeert één bot gem
+  stalls en weten de andere 59 het daarna.
+- **Per clan of voor iedereen:** het makkelijkst is één tabel voor alle avonturiers. Als de race
+  tussen clans moet blijven, krijgt elke clan een eigen tabel plus een vertraagde gezamenlijke
+  (bijvoorbeeld 2 uur oud). Dat is een keuze van de eigenaar.
+- **Andere tips die er al half zijn:** gevaarlijke plekken worden al 2 uur gedeeld (`Loadout`:
+  "een plek waar avonturiers de laatste 2 uur vluchtten of stierven"). Dezelfde tabel kan ook
+  onbereikbare plekken, vastgelopen quest-stappen (nu `questsBlocked`) en reistijden dragen. Dat
+  is één gedeeld geheugen in plaats van losse lijsten (zie pakket 15 van de runtime-analyse).
+- **Zichtbaar maken:** in `::volg` de reden "geld verdienen (~9.500 gp/uur, clan, 25 metingen)" en
+  op het dashboard een tabel per activiteit, zodat de eigenaar kan zien wat de clans geleerd hebben.
+
+Dit is hetzelfde mechanisme als Activity Health (pakket 4 van de runtime-analyse), met geld als
+extra meting. Het hoeft dus niet twee keer gebouwd te worden.
+
 ## 4. Barrows: 13 runs, 0 met loot
 
 | Afloop | Aantal |
@@ -142,7 +205,7 @@ Die staat niet in deze logs.
 | --- | --- | --- |
 | P0 | **A1. Barrows niet kiezen zonder reisweg** (regressie #53): in `canExecute` alleen Barrows als de bot een Barrows-tablet heeft of kan kopen; anders reden `no_travel` en een afkoeling | Geen Barrows-start meer die binnen 1 min op "kan de Barrows niet bereiken" eindigt |
 | P1 | **A2. Barrows-tunnels meetbaar maken, daarna repareren**: bij "komt niet verder (tunnel …)" loggen: kamer, deur-varbit, zijtegel, tegel van de bot, in gevecht ja/nee, NPC's in de buurt, laatste klik en het antwoord van de plugin ("This door is locked", puzzel, oversteek). Daarna in game met de agent-MCP | ≥ 80% van de Barrows-runs met loot (pakketpoort PvM) |
-| P1 | **A3. Geld kiezen op gemeten clan-opbrengst**: "eens proberen" alleen voor methodes zonder genoeg metingen in de clan (minder dan 5 klussen), en in hooguit 20% van de geldkeuzes; anders de hoogste mediaan gp/uur van de clan die de bot kan doen. Methodes onder een ondergrens (bijv. 5.000 gp/uur) vallen af | Gem stalls niet meer gekozen voor geld; mediaan gp/uur van geldklussen stijgt |
+| P1 | **A3. Geld kiezen op gemeten clan-opbrengst** (ontwerp in 3c): (a) `earn` per activiteit in plaats van per skill, en opslaan over herstarts; (b) een gedeelde kennistabel per activiteit; (c) "eens proberen" alleen als de clan minder dan 5 metingen heeft, in hooguit 10% van de geldkeuzes, en het label alleen op die keuzes; (d) `MONEY_GUESS` vervangen door de clanmediaan, zodat thieving niet meer op een gok van 30.000 wint | "eens proberen" ≤ 10% van de geldklussen; gem stalls niet meer gekozen voor geld; mediaan gp/uur van geldklussen stijgt |
 | P1 | **A4. Questlus Doric's Quest**: clay alleen halen als er minder dan 6 in tas en bank zijn; na een `gather` zonder voortgang reden loggen en de quest-stap blokkeren (pakket 5 van de runtime-analyse) | Geen clay-klussen meer boven de 6 per bot |
 | P2 | **A5. Plafonds in de data wegwerken**: Prayer (hogere botten), Agility (Pollnivneach, Rellekka, Ardougne), Herblore (hogere potions), smelten (mithril, adamant, rune, Blast Furnace), Thieving (vyres, elves na quests) | Geen bot-minuten meer ≥ 15 levels boven de hoogste activiteit van de skill |
 | P2 | **A6. Vechtstijl kiezen in plaats van hashen**: de stijl volgt het doel (een unlock die Ranged of Magic vraagt) of de achterstand; melee-band op het level van de stat die getraind wordt, niet het laagste van de drie | Geen bot meer met een stijl die zijn doel niet dient; aandeel combinaties ≥ 2 stages onder het combat level < 10% |
@@ -151,9 +214,16 @@ Die staat niet in deze logs.
 A3 sluit aan op Activity Health (pakket 4 van de runtime-analyse): dezelfde gemeten cijfers, nu
 voor geld. A5 overlapt met S2 uit de skill-progressie-analyse.
 
+## Open vraag voor de eigenaar
+
+- [ ] Gedeelde kennis: één tabel voor alle avonturiers, of per clan (met een vertraagde
+  gezamenlijke tabel, zodat de race tussen clans blijft)?
+
 ## Findings, Risks, Recommendations, Priority, Expected Value
 
-1. **Findings:** 73% van de skill-tijd past bij het level; de rest komt door een questlus (1.037
+1. **Findings:** "eens proberen" is 87% van de geldklussen in plaats van de bedoelde 10%: de
+   meting verdwijnt bij elke herstart, korte klussen meten niets, het label staat bij elke ongemeten
+   keuze en thieving wint op een gok van 30.000 gp/uur. 73% van de skill-tijd past bij het level; de rest komt door een questlus (1.037
    min clay), plafonds in de data en vechtstijlen die per naam vastliggen. Geld kiest in 90% van
    de gevallen "eens proberen", met gem stalls als laagste opbrengst (2.792 gp/uur). Barrows faalt
    13 van 13 keer: reizen kan sinds #53 niet zonder tablet, en in de tunnels blijft de bot hangen
