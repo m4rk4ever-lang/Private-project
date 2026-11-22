@@ -5,6 +5,15 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 22-11-2026 21:00: voorwerk, oorzaken van vier vastlopers (branch `analysis/voorwerk`)
+
+- **Wat:** code-onderzoek (geen wijzigingen) naar pakket 13, 17, 18 en A2, met de logs als bewijs. [analysis/2026-11-22-voorwerk-oorzaken.md](analysis/2026-11-22-voorwerk-oorzaken.md).
+- **13, combat:** buitlus. `Loot.takeStep` geeft `walking` terug als oprapen naast het item mislukt, `bot.loot` slaat de tascontrole van `lootNear` over, en de buitstap zet `lastProgressAt` op nu. De doelwitkeuze en de vangnet-timer worden zo overgeslagen tot het item verdwijnt (past bij `idle=0s` in de logs).
+- **17, Runecrafting:** `CraftRunes` r. 61 geeft elke beurt `running` (bewegingsqueue of `busy`); de loop gaat naar de geblokkeerde oorsprongstegel van de ruïnes (2984,3291). Het stapje blijft `-`.
+- **18, Giant Mole:** graven werkt alleen precies op een molshoop (`onMoleHill`); de bot graaft na een errand-aankomst binnen 3 tegels en controleert niet of hij in het hol is.
+- **A2, Barrows:** `useDoor` weigert stil als de bot niet precies op een zijtegel staat; na een oversteek in een gang (`roomAt` = -1) wacht de bot (`if (room < 0) return "running"`). De koppeling 0↔2 is een lange gang.
+- **Volgende stap:** 13 eerst (grootste winst), dan 18, 17, A2.
+
 ## 22-11-2026 20:00: validatie `4101cc8` (PR #54) en correctie XP-snelheden (branch `analysis/validatie-4101cc8`)
 
 - **Logs:** `4101cc8` 19:02-19:39 UTC (37 min). #57 staat op `main` maar draaide nog niet.
