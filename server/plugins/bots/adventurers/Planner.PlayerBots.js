@@ -245,7 +245,7 @@ function bestActivity(mode, level, definitions) {
     fields.set(activity.id, own);
     const template = activity.template ? definitions.templates?.[activity.template] : null;
     const activityMode = activity.mode ?? template?.mode;
-    if (activityMode !== mode) continue;
+    if (activityMode !== mode || activity.hold) continue;
     const required = Number(own.level ?? 1);
     if (required <= level && (!best || required > best.level)) best = { id: activity.id, level: required };
   }
@@ -263,7 +263,8 @@ function activitiesFor(mode, level, definitions) {
     const own = activity.fieldsFrom ? { ...fields.get(activity.fieldsFrom), ...activity.fields } : activity.fields ?? {};
     fields.set(activity.id, own);
     const template = activity.template ? definitions.templates?.[activity.template] : null;
-    if ((activity.mode ?? template?.mode) !== mode) continue;
+    // "hold": off for now, with the reason (an activity that gives no XP; runtime analysis 21-11-2026).
+    if ((activity.mode ?? template?.mode) !== mode || activity.hold) continue;
     const required = Number(own.level ?? 1);
     if (required <= level) found.push({ id: activity.id, level: required });
   }
