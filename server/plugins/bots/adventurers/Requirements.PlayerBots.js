@@ -24,7 +24,7 @@
  */
 
 /** Reasons that say a requirement is missing (remembered a while), not a passing hitch. */
-const REQUIREMENT_REASONS = new Set(["tool_unbuyable", "not_buyable", "place_unreachable", "no_site", "no_activity",
+const REQUIREMENT_REASONS = new Set(["on_hold", "tool_unbuyable", "not_buyable", "place_unreachable", "no_site", "no_activity",
   "skill_level", "item_missing", "no_style_gear", "too_poor", "no_agility_course", "no_buy_plan"]);
 /** How long a failed requirement keeps an option out. */
 const REMEMBER_MS = 30 * 60_000;

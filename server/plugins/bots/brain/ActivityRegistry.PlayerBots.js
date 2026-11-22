@@ -285,6 +285,8 @@ function compileActivity(definition, templates, world, options = {}) {
     actions: (merged.actions ?? []).map((action) => createAction(action, world)),
     produces: merged.produces ?? [],
     site: merged.site ?? null,
+    // Off for now, with its reason and when it comes back (the adventurers' heldBy reads it).
+    hold: merged.hold ?? null,
   };
 }
 

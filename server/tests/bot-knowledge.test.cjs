@@ -54,3 +54,16 @@ test("money: its clan's measure beats a guess, and only a way nobody measured is
   assert.equal(own.mode, "thieving");
   assert.match(own.reason, /40\.000 gp\/uur\)$/);
 });
+
+test("money: nothing measured picks any way at random; an unmeasured way never beats the lowest measured (validation #57)", () => {
+  const base = { levels: { WOODCUTTING: 30, MINING: 30, FISHING: 30, THIEVING: 30, FIREMAKING: 1 }, combat: 30, questPoints: 0, done: new Set(), earn: {} };
+  const picks = new Set();
+  for (const roll of [0.01, 0.3, 0.6, 0.95]) {
+    const plan = chooseNext({ ...base, clanEarn: {} }, [], { available: new Set(), questChance: 0, moneyChance: 1, random: () => roll });
+    if (plan.money) { assert.equal(plan.reason, "geld verdienen (nog niets gemeten)"); picks.add(plan.mode); }
+  }
+  assert.ok(picks.size > 1, `spread over ways: ${[...picks]}`);
+  // Fishing measured at 2.000: thieving's guess (30.000) no longer wins.
+  const plan = chooseNext({ ...base, clanEarn: { fishing: { gpPerHour: 2000, n: 6, known: true } } }, [], { available: new Set(), questChance: 0, moneyChance: 1, random: () => 0.9 });
+  assert.equal(plan.mode, "fishing");
+});

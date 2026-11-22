@@ -141,10 +141,16 @@ function chooseNext(adventurer, quests, {
     }
     // Measured ways by their rate; an unmeasured one only by a low guess (a quarter of
     // MONEY_GUESS) once anything is measured, so a guess does not beat what is known.
-    const anyMeasured = earners.some((other) => rate(other.mode) > 0);
-    const score = (option) => rate(option.mode) ?? (MONEY_GUESS[option.mode] ?? 0) / (anyMeasured ? 4 : 1);
+    // An unmeasured way never above the lowest measured one: the guesses were far off (thieving
+    // 30.000 against 1,8-9,5k measured; 8 of 10 money picks "schatting", validation #57).
+    const measured = earners.map((other) => rate(other.mode)).filter((value) => value > 0);
+    const anyMeasured = measured.length > 0;
+    const floor = anyMeasured ? Math.min(...measured) : 0;
+    const score = (option) => rate(option.mode) ?? Math.min((MONEY_GUESS[option.mode] ?? 0) / 4, floor);
     // Maxed: no "eens proberen" (thieving for a few thousand an hour); what it knows earns best.
-    const trying = untried.length > 0 && random() < (late ? 0 : 0.1);
+    // Nothing measured yet, by it or its clan: any way, at random, so the table fills (a guess
+    // would send them all to the same one).
+    const trying = untried.length > 0 && (!anyMeasured || random() < (late ? 0 : 0.1));
     const pick = trying
       ? untried[Math.floor(random() * untried.length)]
       : [...earners].sort((a, b) => score(b) - score(a))[0];
@@ -152,7 +158,8 @@ function chooseNext(adventurer, quests, {
       const own = adventurer.earn?.[pick.mode] ?? null;
       const known = rate(pick.mode);
       const fromClan = own === null && known !== null ? adventurer.clanEarn?.[pick.mode] : null;
-      const reason = trying ? "geld verdienen (eens proberen)"
+      const reason = trying && !anyMeasured ? "geld verdienen (nog niets gemeten)"
+        : trying ? "geld verdienen (eens proberen)"
         : known === null ? "geld verdienen (schatting)"
         : fromClan ? `geld verdienen (~${Math.round(known).toLocaleString("nl-NL")} gp/uur, clan, ${fromClan.n} metingen)`
         : `geld verdienen (~${Math.round(known).toLocaleString("nl-NL")} gp/uur)`;

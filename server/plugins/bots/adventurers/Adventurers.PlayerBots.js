@@ -380,8 +380,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       if (job.mode && job.key.startsWith("training")) {
         const xpPerHour = hours >= 3 / 60 ? (xp - job.xp) / hours : null;
         try {
+          // Gathering for a quest is no way to make money: its coins (clay sold, 33.681 gp/h for
+          // Patrick Clan) do not count, its XP and ending do (validation #57).
+          const forQuest = isQuestGatherReason(job.reason);
           knowledge.record(Clans.clanOf(data, entry.name)?.name ?? null, [`mode:${job.mode}`, (job.activity ?? entry.activity) ? `activity:${job.activity ?? entry.activity}` : null],
-            { gpPerHour: coinsPerHour, xpPerHour, stuck: entry.jobEnd === "stuck" });
+            { gpPerHour: forQuest ? null : coinsPerHour, xpPerHour, stuck: entry.jobEnd === "stuck" });
         } catch {
           // Learning is a help, never a reason a job does not end.
         }
@@ -2124,8 +2127,26 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return null;
   }
 
+  /**
+   * Why this plan is off for now ("hold": a boss, a bought skill or an activity, with its reason and
+   * when it comes back), or null. One check for every way in: a new choice, a resumed job, training
+   * together, a backlog pick. A hold was only kept out of new choices, so Runecrafting and the
+   * Giant Mole came back through resume and group training (validation #57, 22-11-2026).
+   */
+  function heldBy(plan) {
+    if (!plan) return null;
+    if (plan.kind === "boss") return plan.boss?.hold ? `boss:${plan.boss.id}` : null;
+    const skill = String(plan.mode ?? "").startsWith("buy_") ? plan.skill : null;
+    if (skill && data.buyToTrain?.[skill]?.hold) return `buy:${skill}`;
+    const activity = plan.activity ?? plan.planActivity ?? null;
+    if (activity && registry?.byId?.get(activity)?.hold) return `activity:${activity}`;
+    return null;
+  }
+
   function startTraining(entry, plan, nowMs) {
     const { player } = entry;
+    const held = heldBy(plan);
+    if (held) return cannot(entry, "on_hold", { hold: held });
     const view = snapshot(player);
     // Only a Slayer task narrows what it fights; any other job fights what it finds.
     const own = runtimeEntry(player);
@@ -2670,6 +2691,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function startBoss(entry, plan, nowMs) {
     const { player } = entry;
     const { boss } = plan;
+    if (heldBy(plan)) return cannot(entry, "on_hold", { hold: heldBy(plan) });
     // The Barrows only with Protect from Melee (43): the brothers hit too hard without it.
     if (boss.kind === "barrows" && levelOf(player, "PRAYER") < 43) return cannot(entry, "skill_level", { skill: "PRAYER", level: 43, have: levelOf(player, "PRAYER") });
     if (boss.kind !== "barrows" && !registry?.byId?.get(boss.id)) return cannot(entry, "no_activity", { boss: boss.id });
@@ -5586,6 +5608,12 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   }
 
   /** After a restart: the saved job again, for the time it had left. False when it cannot. */
+  /** "clay voor Doric's Quest": the reason gatherFor gives a job that gathers for a quest. */
+  function isQuestGatherReason(reason) {
+    const match = /^.+ voor (.+)$/.exec(String(reason ?? ""));
+    return Boolean(match && questsByName().has(normalize(match[1])));
+  }
+
   function resumeTask(entry, nowMs) {
     const task = entry.savedTask;
     entry.savedTask = null;
@@ -5601,6 +5629,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         forceQuest(entry.name, quest);
         return false;
       }
+    }
+    // A gathering job for a quest ("clay voor Doric's Quest") without its gather state (put by
+    // gatherFor) is not resumed: its quest has had its turn, and without the count nothing stops
+    // it. Jorgbot 7 and Patrickbot 5 resumed it after every bank trip and every quest attempt, 23
+    // jobs to a full bag in 43 min, the clay sold (validation #57, 22-11-2026).
+    if (task?.kind === "train" && !entry.gather && isQuestGatherReason(task.reason)) {
+      metric({ kind: "gather_dropped", bot: entry.name, reason: task.reason });
+      return false;
     }
     const plan = Tasks.planOf(task, (data.bosses ?? []).filter((boss) => boss.onFoot !== false));
     if (!plan) return false;
