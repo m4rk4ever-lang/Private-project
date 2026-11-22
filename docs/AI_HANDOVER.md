@@ -5,6 +5,13 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 22-11-2026: skill-progressie, money making en gevechtskeuzes (branch `analysis/skill-progression-2026-11-22`)
+
+- **Wat:** per skill het progressiepad uit de OSRS Wiki-trainingsgidsen, gefilterd op wat een bot eerlijk kan, naast wat de bots nu doen; een generiek keuzemodel (doel, methode, combineren, geld); money making per accountfase; vijandkeuze op verdediging en elementzwakte; bossladder tegen de plugins op de server. Uitgewerkt tot pakketten S1-S10 in [analysis/2026-11-22-skill-progressie.md](analysis/2026-11-22-skill-progressie.md), met datasets in `docs/analysis/2026-11-22/`.
+- **Belangrijkste vondsten:** de Gemstone Crab (plugin aanwezig) is volgens de wiki de idle-trainingsplek voor melee en ranged vanaf level 30, terwijl 80% van de combat-klussen `stuck` eindigt; `TrainCombat` kiest alleen op combat level terwijl `monsters-complete.json` verdediging en zwakte heeft; de quests die vroege levels overslaan (Restless Ghost, Imp Catcher, Witch's Potion, Knight's Sword, Doric's Quest) zijn precies de geblokkeerde; 50 van de 58 bosses uit de wiki-ladder bestaan als plugin, bots gebruiken er 3.
+- **Aangepast:** geen productiecode.
+- **Volgende stap:** S1 (Gemstone Crab) en S3 (vijandkeuze op verdediging en zwakte).
+
 ## 22-11-2026: runtime-analyse en bouwspecificatie (branch `analysis/runtime-2026-11-21`)
 
 - **Wat:** analyse van `bot-logs` (21-11 08:48-14:50 UTC, 60 avonturiers, 12.503 bot-min, `2f294017e` t/m `e75bbc441`). Uitgewerkt tot 16 werkpakketten met bewijs, bouwstappen en "Klaar als" in [analysis/2026-11-21-runtime-analyse.md](analysis/2026-11-21-runtime-analyse.md). Datasets en een reproduceerbaar script staan in `docs/analysis/`.

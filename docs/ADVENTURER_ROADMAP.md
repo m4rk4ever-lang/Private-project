@@ -12,6 +12,10 @@ Stand: 20-11-2026. Runtime-basis: metrics van versie `7a8e40b` (17-11-2026 17:13
 [analysis/2026-11-21-runtime-analyse.md](analysis/2026-11-21-runtime-analyse.md). Waar die
 afwijkt van de stand hieronder, telt de analyse.
 
+**Skill-progressie 22-11-2026:** methode per skill, money making, vijandkeuze en bossladder in
+[analysis/2026-11-22-skill-progressie.md](analysis/2026-11-22-skill-progressie.md) (pakketten S1-S10,
+aanvulling op Fase 6).
+
 ## Gap-analyse
 
 Legenda: **Er** = werkt en is in de logs gezien. **Deels** = bestaat, met bekende gaten.
