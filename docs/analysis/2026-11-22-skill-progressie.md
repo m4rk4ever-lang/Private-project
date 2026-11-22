@@ -16,6 +16,9 @@ Dit document vertaalt dat naar data en werkpakketten die de developer kan bouwen
   van 21-11 (zie de vorige analyse).
 - **Datasets:** [`2026-11-22/`](https://github.com/m4rk4ever-lang/private-project/tree/main/docs/analysis/2026-11-22),
   gemaakt met [`scripts/skill_progression_datasets.py`](https://github.com/m4rk4ever-lang/private-project/blob/main/docs/analysis/scripts/skill_progression_datasets.py).
+- **XP-tiers:** de server vermenigvuldigt XP met `TieredExperience` (x25 tot 49, x15 tot 79, x10
+  tot 89, x5 vanaf 90). Wiki-snelheden in dit document zijn OSRS-snelheden; vergelijk een gemeten
+  snelheid altijd na deling door de tier-factor.
 - **Grens:** de wiki beschrijft het echte OSRS. Prijzen en gp/uur gelden voor de echte Grand
   Exchange, niet voor de GE op deze server. Methodes met tick-manipulatie, teamwork of hoge
   aandacht zijn bewust weggelaten of als "later" gemarkeerd: een bot moet ze eerlijk kunnen spelen.
@@ -74,7 +77,7 @@ kolom "Nu" staat wat de bot vandaag doet. XP-cijfers alleen waar de wiki ze in d
 | Firemaking | Logs branden bij de GE 1-99; Wintertodt 50+ (winst) | `buy_firemaking` ✓ | Wintertodt na het transportpakket |
 | Fletching | Animal Magnetism, Big Chompy Bird Hunting, Zogre Flesh Eaters → 18; arrow shafts 1-5; **bows 5-99** (goedkoop of winst); darts "zero time" tijdens lopen | `buy_fletching` bows ✓ | Darts tijdens lange wandelingen (S5) |
 | Crafting | Leer 1-20; **gems 20-62**; battlestaves 54+; d'hide bodies 63+; molten glass als rustig alternatief | `buy_crafting` gems ✓, leer | Battlestaves en d'hide als volgende tiers |
-| Herblore | Jungle Potion, Recruitment Drive, The Dig Site → 3-19; potions maken (`Calculator:Herblore/Potions`); herbs schoonmaken als winst | `buy_herblore` ✓ (XP-snelheid verdacht: pakket 9 vorige analyse) | Snelheid toetsen |
+| Herblore | Jungle Potion, Recruitment Drive, The Dig Site → 3-19; potions maken (`Calculator:Herblore/Potions`); herbs schoonmaken als winst | `buy_herblore` ✓ (snelheid past bij de XP-tier van `TieredExperience`) | Snelheid toetsen |
 | Agility | Quests (The Tourist Trap, Recruitment Drive, The Grand Tree) → 26-33; **rooftops 1-99** (rustig, marks of grace); Agility Pyramid 30+ (winst, 10.000 per top) | Rooftops tot Seers 60; Canifis geblokkeerd | Rellekka en Ardougne rooftop; Pyramid als geldmethode |
 | Thieving | Quests → tot 42; men 1-5; **bakery stall 5-25** (~19.200 XP/uur); fruit stalls 25-50 (Hosidius); **knights of Ardougne 55+** | Bakery ✓, silk 20, silver 50 (35 `stuck`), knights 55 ✓ | Fruit stalls na Kourend-transport |
 | Slayer | Hoogste meester die combat en Slayer toelaten: Turael (Burthorpe) → Vannaka (Edgeville Dungeon) → Chaeldar (Zanaris) → Nieve (Gnome Stronghold) → Duradel (Shilo) | Alleen Mazchna (Morytania, 44 van 46 `blocked`) | Meester per bereikbaarheid kiezen (S4) |

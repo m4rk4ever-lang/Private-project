@@ -5,6 +5,15 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 22-11-2026 20:00: validatie `4101cc8` (PR #54) en correctie XP-snelheden (branch `analysis/validatie-4101cc8`)
+
+- **Logs:** `4101cc8` 19:02-19:39 UTC (37 min). #57 staat op `main` maar draaide nog niet.
+- **Correctie:** de "verdachte" XP-snelheden (pakket 9) zijn verklaard: `TieredExperience` staat standaard aan (x25 tot 49, x15 tot 79, x10 tot 89, x5 vanaf 90). Gedeeld door de tier-factor kloppen ze met OSRS (knights ~36k, lobster ~20k, yew ~36k per uur). Pakket 9 en Activity Health moeten met die factor rekenen.
+- **Werkt:** werken 17,6% (beste meting tot nu toe), 0 agility-lag, 0 Morytania, `near` 11%, 0 doden, Hunter-XP > 0 na de hold.
+- **Open:** combat 12 van 18 `stuck` met vrije NPC's in de band en `failed=0` (oorzaak tussen diagnose en doelwitkeuze); trage beurten bij Patrickbot 18 in `roam` (tot 4,3 s, `brainSnapshot` null); Runecrafting en Giant Mole (holds in #57); Barrows; 16 van 18 geldkeuzes "eens proberen" (A3 in #57).
+- **Details:** [analysis/2026-11-22-validatie-4101cc8.md](analysis/2026-11-22-validatie-4101cc8.md).
+- **Volgende stap:** #57 live zetten en 60 min meten.
+
 ## 22-11-2026 21:15: kennistabel per clan, hogere tiers, vechtband, questgids, action_fit (zelfde branch `adventurers/barrows-travel`)
 
 Bovenop de bundel van 20:40; mergen na ≥ 60 min op `4101cc8`. Niets hiervan is in game getest.

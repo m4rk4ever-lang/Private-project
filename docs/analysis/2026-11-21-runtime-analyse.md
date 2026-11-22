@@ -36,7 +36,7 @@ wanneer het klaar is. Elk pakket is één probleem
 | P1 | 13. Combat-training vindt geen doel | 108 van 135 klussen `stuck` | `stuck` < 20% van de klussen | stap 1 gebouwd 22-11 (`npcs=` in describe), oorzaak nog open |
 | P1 | 14. Vast in quest-gebied of instance (§17) | 69 + 10 `walk_blocked`, 5 bots | Geen bot > 10 min vast in een instance | open |
 | P2 | 8. Telemetrie-gaten | `decision` zonder coins, lege `brainSnapshot` | Velden in de nieuwe `v` | open |
-| P2 | 9. XP-bandbreedte | herblore 1,45M XP/uur | Metric `xp_anomaly` bestaat | open |
+| P2 | 9. XP-bandbreedte | ~~herblore 1,45M XP/uur~~ verklaard: `TieredExperience` (x25/x15/x10/x5) staat aan | `xp_anomaly` rekent met de tier-factor | herzien 22-11 ([validatie 4101cc8](2026-11-22-validatie-4101cc8.md)) |
 | P2 | 10. Docs- en logdieet | 106 KB handover; log dekt 5,5 uur | Leeswerk < 60 KB; log ≥ 24 uur | open |
 | P2 | 15. Recovery-mechanismen bundelen | ≥ 9 losse pogingen/afkoelingen; Patrickbot 17 toch 25 vensters bevroren | Eén faalgeheugen | open |
 | P1 | 17. Runecrafting levert niets op (nieuw 22-11) | 113 bot-min, 0 XP; 18× vast bij de air-ruïnes | Runecraft-XP > 0 per venster | **uit (hold) 22-11, moet terug**: oorzaak in game zoeken (agent-MCP: wat gebeurt na Use talisman on ruins), dan `hold` weg in `adventurers.json` `buyToTrain.RUNECRAFTING` ([validatie](2026-11-22-validatie-8b75ca8.md)) |
@@ -334,6 +334,15 @@ vast in een quest-gebied.
 **Klaar als.** Elk veld staat in de eerste `v` na de release en in de tabel van OBSERVABILITY.
 
 ### 9. XP-bandbreedte per activiteit (eerlijkheid)
+
+> **Correctie 22-11-2026.** De snelheden hieronder zijn géén eerlijkheidsprobleem. De plugin
+> `TieredExperience` staat standaard aan (`docs/world-configuration.md`, CHANGELOG "Getrapte
+> XP-rate") en vermenigvuldigt XP per skill: x25 tot level 49, x15 van 50 tot 79, x10 van 80 tot
+> 89, x5 vanaf 90. `experienceMultiplier: 1` in `world.json` zegt dus niet dat er geen boost is.
+> Gedeeld door de tier-factor liggen de gemeten snelheden binnen de OSRS-bandbreedte (voorbeelden
+> in de [validatie van 4101cc8](2026-11-22-validatie-4101cc8.md)). Het pakket blijft nuttig, maar
+> een `xpBand` moet met de tier-factor van het level van de bot rekenen. De oordelen "Verdacht"
+> hieronder zijn vervallen.
 
 | Modus | XP/uur gemeten | Oordeel |
 | --- | --- | --- |
