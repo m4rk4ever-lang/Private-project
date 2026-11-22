@@ -2,7 +2,8 @@
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
 
-const { modeFor, downfall, announceHardcoreDeath, SHARES } = require("../plugins/bots/brain/Ironmen.PlayerBots");
+const Ironmen = require("../plugins/bots/brain/Ironmen.PlayerBots");
+const { modeFor, announceHardcoreDeath, SHARES } = Ironmen;
 const adventurers = require("../plugins/bots/data/adventurers.json");
 
 test("about the configured share of bots are Ironmen, fixed by name", () => {
@@ -24,20 +25,9 @@ test("a Hardcore death is announced with the total level", () => {
   assert.match(said[0], /Slayed Soul has died as a Hardcore Ironman with a total level of 1,234!/);
 });
 
-test("the downfall only takes a fighting Hardcore bot", () => {
-  const hits = [];
-  const bot = (mode, fighting) => ({
-    isRegistered: () => true, getAttribute: (key) => (key === "ironman:mode" ? mode : null), getHitpoints: () => 40,
-    getCombat: () => ({ getTarget: () => (fighting ? {} : null), getAttacker: () => null, getHitQueue: () => ({ addPendingDamage: (h) => hits.push(h) }) }),
-  });
-  const Common = require("../plugins/modes/ironman/Common.Ironman");
-  const fs = require("fs");
-  Common.init({ core: {}, emitCustomEvent() {} });
-  const runtime = { entriesByUsername: new Map([["a", { player: bot("hardcore", false) }], ["b", { player: bot("ironman", true) }]]) };
-  const core = { HitDamage: class { constructor(d) { this.damage = d; } }, HitMask: { RED: 1 } };
-  assert.equal(downfall(core, runtime, () => 0), null, "nobody fighting is a Hardcore");
-  runtime.entriesByUsername.set("c", { player: bot("hardcore", true) });
-  assert.ok(downfall(core, runtime, () => 0));
-  assert.equal(hits[0][0].damage, 45);
-  assert.equal(downfall(core, runtime, () => 0.99), null, "most checks pass by");
+test("a Hardcore bot never dies by chance: no forced hit, only the fight's own (owner, 22-11-2026)", () => {
+  assert.equal(Ironmen.downfall, undefined);
+  const submitted = [];
+  Ironmen.startIronmen({ core: {}, onCustomEvent() {}, getTaskManager: () => ({ submit: (task) => submitted.push(task) }) }, {});
+  assert.deepEqual(submitted, [], "no downfall task");
 });

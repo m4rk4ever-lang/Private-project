@@ -4,6 +4,13 @@ const { test } = require("node:test");
 
 const Hubs = require("../plugins/bots/behaviours/navigation/TravelHubs.PlayerBots");
 const data = require("../plugins/bots/data/travel-hubs.json");
+// The route network as built, without the temporary hold on Morytania (onFoot false until the
+// Paterdomus route is proven in game, runtime analysis 21-11-2026 pakket 6).
+const openData = (() => {
+  const copy = JSON.parse(JSON.stringify(require("../plugins/bots/data/travel-hubs.json")));
+  for (const locked of copy.lockedAreas) if (locked.name === "Morytania") { delete locked.onFoot; delete locked.onFootWhy; }
+  return copy;
+})();
 
 const map = {
   hubs: { a: [0, 0], b: [200, 0], c: [400, 0], d: [600, 0], river: [150, 150] },
@@ -45,8 +52,8 @@ test("the Gnome Stronghold and Canifis are joined to Lumbridge's network (links 
   const joined = Hubs.connectedTo("lumbridge");
   for (const key of ["gnome_stronghold_gate", "gnome_agility", "canifis"]) assert.ok(joined.has(key), key);
   // Canifis on foot only after Priest in Peril.
-  assert.equal(Hubs.onFoot({ x: 3494, y: 3485 }, null, () => false), false);
-  assert.equal(Hubs.onFoot({ x: 3494, y: 3485 }, null, () => true), true);
+  assert.equal(Hubs.onFoot({ x: 3494, y: 3485 }, openData, () => false), false);
+  assert.equal(Hubs.onFoot({ x: 3494, y: 3485 }, openData, () => true), true);
 });
 
 test("into Morytania only by its own hubs: not straight across the Salve from Digsite (collision-map audit, 20-11-2026)", () => {
@@ -58,8 +65,8 @@ test("into Morytania only by its own hubs: not straight across the Salve from Di
   assert.notEqual(first.key, "digsite");
   // Inside Morytania a short walk goes straight.
   assert.equal(Hubs.nextLeg({ x: 3494, y: 3485, z: 0 }, { x: 3428, y: 3537, z: 0 }), null);
-  assert.equal(Hubs.onFoot(mortTon, null, () => true), true);
-  assert.equal(Hubs.onFoot(mortTon, null, () => false), false);
+  assert.equal(Hubs.onFoot(mortTon, openData, () => true), true);
+  assert.equal(Hubs.onFoot(mortTon, openData, () => false), false);
 });
 
 test("Karamja: across by boat (Port Sarim, Ardougne, Rimmington), not on foot (collision-map audit, 20-11-2026)", () => {
@@ -109,4 +116,12 @@ test("travel hubs: out of the Gnome Stronghold by its gate", () => {
   // Nieve to Ardougne (220 tiles, the wall between): first to the agility hub inside, then the gate.
   assert.equal(nextLeg({ x: 2465, y: 3490, z: 0 }, { x: 2662, y: 3305, z: 0 })?.key, "gnome_agility");
   assert.equal(nextLeg({ x: 2474, y: 3438, z: 0 }, { x: 2662, y: 3305, z: 0 })?.key, "gnome_stronghold_gate");
+});
+
+test("Morytania is closed on foot for now, with its reason; teleports decide (runtime analysis 21-11-2026, pakket 6)", () => {
+  const morytania = data.lockedAreas.find((locked) => locked.name === "Morytania");
+  assert.equal(morytania.onFoot, false);
+  assert.match(morytania.onFootWhy, /Paterdomus/);
+  assert.equal(Hubs.onFoot({ x: 3494, y: 3485 }, null, () => true), false, "Canifis, Priest in Peril done");
+  assert.equal(Hubs.onFoot({ x: 3402, y: 3484 }, null, () => true), true, "west of the Salve stays open");
 });

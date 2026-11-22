@@ -35,7 +35,14 @@ test("a task comes from the master through the Slayer plugin's events", () => {
 test("an adventurer asks the best Slayer master its levels allow and it can walk to", () => {
   const Slayer = require("../plugins/bots/adventurers/Slayer.PlayerBots");
   const Hubs = require("../plugins/bots/behaviours/navigation/TravelHubs.PlayerBots");
-  const walkable = (questsDone) => (place) => Hubs.onFoot(place, null, () => questsDone);
+  // The route network as built, without the temporary hold on Morytania (onFoot false until the
+  // Paterdomus route is proven in game, runtime analysis 21-11-2026 pakket 6).
+  const openData = (() => {
+    const copy = JSON.parse(JSON.stringify(require("../plugins/bots/data/travel-hubs.json")));
+    for (const locked of copy.lockedAreas) if (locked.name === "Morytania") { delete locked.onFoot; delete locked.onFootWhy; }
+    return copy;
+  })();
+  const walkable = (questsDone) => (place) => Hubs.onFoot(place, openData, () => questsDone);
   assert.deepEqual(Slayer.mastersFor({ combat: 3, slayer: 1 }, walkable(false)).map((m) => m.name).sort(), ["Spria", "Turael"]);
   // Mazchna is in Canifis: across the Salve, only after Priest in Peril.
   assert.ok(!Slayer.mastersFor({ combat: 40, slayer: 1 }, walkable(false)).some((m) => m.name === "Mazchna"));

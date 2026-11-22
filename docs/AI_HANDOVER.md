@@ -5,6 +5,16 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 22-11-2026 14:45: analysepakketten 6, 7, 13 en de Hardcore-dood (branch `adventurers/analysis-p1`)
+
+Gebundeld; mergen pas na ≥ 60 min op `46cad60` (pakket 3).
+
+- **Hardcore-dood (besluit eigenaar):** `downfall` (8% per 5 min een gedwongen dodelijke klap op een vechtende Hardcore-bot) is weg uit `brain/Ironmen.PlayerBots.js`. Ze sterven alleen nog door een echte klap. Bevestigen: geen `bot-hardcore-downfall`-taak meer; Hardcore-doden alleen met een echte aanvaller.
+- **Morytania (pakket 6):** `travel-hubs.json` `lockedAreas` Morytania `onFoot: false` met `onFootWhy`. Daardoor geen sites, Slayer-meester Mazchna, combat-site Paterdomus (3416,3477) of errand erheen te voet; de walk guard (`lockedAway`) laat een teleport nog toe. Agility kiest Canifis niet meer als hij er niet heen kan (`lockedAway` in de koerskeuze). Tests werken met een kopie zonder de hold. Openzetten: de twee velden weg na 3 geslaagde loopjes Varrock-oost naar Canifis. Bevestigen: 0 errands naar Mazchna/Canifis Rooftop te voet, geen `walk_blocked` rond 3402,3484.
+- **Bankcoördinaten (pakket 7):** de bankplek is de balie; de loop eindigt 4-6 tegels ervoor (`near`: Burthorpe 215, Catherby 88, Seers 83 keer, met `tilesLeft` 4-6) en wachtte dan 45 s. "burthorpe" is geen bestemming maar de naam van de dichtstbijzijnde hub voor de balie in de Warriors' Guild (2846,3543; `nearestBooth`). Errands kennen nu `nearTiles`: bank-errands (6 tegels) komen aan na 3 s stilstaan binnen die afstand. Bevestigen: `near`/totaal per bank < 20%, errandminuten bank fors lager.
+- **Combat-training (pakket 13, stap 1):** de stuck-momentopnamen zeggen `target=none settled=false failed=0` vlak bij het anker. `describe` geeft nu `npcs=` met per NPC rond de site de eerste reden van afvallen (`level`, `busy`, `claimed`, `avoided`, `not_a_target`, `free`), de band en welke NPC's er staan. Daarmee de echte oorzaak kiezen (spawn, level-band of bezetting).
+- **Validatie:** suite 161 pass, 14 fail (baseline); nieuwe tests in `bot-errands`, `bot-ironmen`, `bot-travel-hubs`; eslint no-undef schoon. `whyNoTarget` kon hier niet draaien (TrainCombat vraagt de TS-core); hij zit in try/catch.
+
 ## 22-11-2026 14:10: agility-lag, oorzaak in de objectindex (branch `adventurers/agility-lag`, pakket 1)
 
 - **Bewijs (analyse 21-11, nagerekend):** 27 `slow_bot`, alle `runCourse` (Falador 14, Seers 6, Varrock 5, Canifis 1, Gnome 1); `slow_tick.ms` ≈ `slowestBotMs` (19.613/19.603, 13.030/13.022).

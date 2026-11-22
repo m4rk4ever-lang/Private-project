@@ -547,6 +547,39 @@ function createTrainCombatAction(spec, world) {
     return !claim || claim.player === player || claim.until <= nowMs || claim.player.isRegistered?.() === false;
   }
 
+  /**
+   * Why a site gives no target, for the stuck snapshot (describe): the NPCs round its centre and
+   * the first reason each fails `available`. 108 of 135 combat jobs ended stuck with target=none
+   * and nothing to say why (runtime analysis 21-11-2026, pakket 13). Only read when stuck.
+   */
+  function whyNoTarget(ctx, bot) {
+    try {
+      const { player, state, nowMs } = ctx;
+      const anchor = bot.site.anchor;
+      const centre = new world.core.Location(anchor.x, anchor.y, anchor.z ?? 0);
+      const counts = {};
+      const add = (why) => { counts[why] = (counts[why] ?? 0) + 1; };
+      const names = new Map();
+      for (const npc of world.core.World.getNpcsNear(centre, siteRadius, player.getPrivateArea?.() ?? null) ?? []) {
+        const definition = npc.getCurrentDefinition?.(player);
+        const name = definition?.getName?.() ?? "?";
+        const level = targetsFor(state).level(definition);
+        names.set(name, level);
+        if (!live(npc)) add("dead");
+        else if (level === null) add("not_a_target");
+        else if (level < bot.site.npcLevels.min || level > bot.site.npcLevels.max) add("level");
+        else if ((bot.avoided.get(npc) ?? 0) > nowMs) add("avoided");
+        else if ((npc.getCombat().getTarget() && npc.getCombat().getTarget() !== player) || (npc.getCombat().getAttacker() && npc.getCombat().getAttacker() !== player)) add("busy");
+        else if (!available(player, npc, bot, nowMs, state)) add("claimed");
+        else add("free");
+      }
+      const seen = [...names].slice(0, 4).map(([name, level]) => `${name}(${level ?? "-"})`).join("/");
+      return `${Object.entries(counts).map(([why, n]) => `${why}:${n}`).join(",") || "none"} band=${bot.site.npcLevels.min}-${bot.site.npcLevels.max} seen=${seen || "-"}`;
+    } catch (error) {
+      return `error:${String(error?.message ?? error).slice(0, 40)}`;
+    }
+  }
+
   const action = {
     id: spec.id ?? "trainCombat",
     update(ctx) {
@@ -788,7 +821,8 @@ function createTrainCombatAction(spec, world) {
       const at = (loc) => (loc ? `${loc.getX?.() ?? loc.x},${loc.getY?.() ?? loc.y}` : "none");
       return `train site=${bot.site ? `${bot.site.id}@${at(bot.site.anchor)}` : "none"} ` +
         `target=${bot.target ? `${bot.target.getDefinition?.()?.getName?.()}@${at(bot.target.getLocation())}` : "none"} ` +
-        `approach=${at(bot.approachNpc?.getLocation())} settled=${!!bot.settled} failed=${bot.failedTargets} idle=${Math.round((ctx.nowMs - bot.lastProgressAt) / 1000)}s`;
+        `approach=${at(bot.approachNpc?.getLocation())} settled=${!!bot.settled} failed=${bot.failedTargets} idle=${Math.round((ctx.nowMs - bot.lastProgressAt) / 1000)}s` +
+        (bot.site && !bot.target ? ` npcs=${whyNoTarget(ctx, bot)}` : "");
     },
     madeProgress(ctx) {
       const bot = stateFor(ctx.player);

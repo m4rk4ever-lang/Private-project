@@ -988,7 +988,9 @@
    "enterVia": [
     "canifis",
     "mort_ton"
-   ]
+   ],
+   "onFoot": false,
+   "onFootWhy": "Tijdelijk dicht tot de route bewezen is (runtime-analyse 21-11-2026, pakket 6): Mazchna 44 van 46 en Canifis Rooftop 27 van 27 errands blocked; bij Paterdomus (3402,3484) 36 walk_blocked met door none_helps. De weg gaat via het valluik en de Holy barrier, en die neemt de route niet. Weer openzetten (onFoot en onFootWhy weg) na 3 geslaagde loopjes Varrock-oost naar Canifis met de agent-MCP. Teleports gaan wel."
   },
   {
    "name": "Kharidian Desert (past the Shantay Pass)",

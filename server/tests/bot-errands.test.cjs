@@ -238,3 +238,36 @@ test("a Kourend teleport (Wintertodt Camp) is used only after a first visit to G
   const before = bestTeleport(core, player, wintertodt, { jewelleryData: pieces, visitedKourend: () => false });
   assert.notEqual(before?.name, "Wintertodt Camp", "not before the ship has been taken once");
 });
+
+test("a bank errand that stops in front of the counter (within nearTiles) arrives after settling, not after 45 s", () => {
+  // Runtime analysis 21-11-2026, pakket 7: bank walks ended 4 to 6 tiles short of the booth and
+  // waited out the 45 s stall ("near": 215 of 238 at Burthorpe).
+  let clock = 0;
+  const errands = createErrands({ now: () => clock, move: () => {}, clear: () => {} });
+  const brain = { paused: false, dispatchMovement: () => {} };
+  const banker = walker(3100, 3100);
+  let arrived = null;
+  errands.go({ player: banker, brain }, { x: 3090, y: 3100 }, { nearTiles: 6, arrive: (_, outcome) => { arrived = outcome; } });
+  errands.tick();
+  clock += 1_000;
+  banker.at = loc(3095, 3100);
+  errands.tick();
+  assert.equal(arrived, null, "still walking: just got there");
+  clock += 3_100;
+  errands.tick();
+  assert.ok(arrived, "settled 5 tiles from the booth: there");
+  assert.equal(arrived.why, null);
+  assert.ok(arrived.ms < 10_000);
+
+  // Without nearTiles (any other errand) standing still 5 tiles short is not there.
+  const other = walker(3100, 3100);
+  let otherArrived = false;
+  errands.go({ player: other, brain }, { x: 3090, y: 3100 }, { arrive: () => { otherArrived = true; } });
+  errands.tick();
+  clock += 1_000;
+  other.at = loc(3095, 3100);
+  errands.tick();
+  clock += 3_100;
+  errands.tick();
+  assert.equal(otherArrived, false);
+});

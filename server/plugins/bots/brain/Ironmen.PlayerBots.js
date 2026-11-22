@@ -5,15 +5,13 @@
  * the account type's chat icon (the Ironman plugin's own setMode). Which bot is which is fixed by
  * its name, so it stays the same over restarts. The adventurers are never Ironmen.
  *
- * Hardcores can die. Now and then one that is fighting takes a hit it does not survive: its
- * normal death, so the Ironman plugin turns it into a standard Ironman. Every Hardcore death,
- * a bot's or a player's, is announced to everyone online:
+ * Hardcores can die, but only as a player does: from a real hit in a fight. There is no death
+ * by chance (owner, 22-11-2026; it was a forced hit on a random fighting Hardcore, about one an
+ * hour). Their normal death makes them a standard Ironman. Every Hardcore death, a bot's or a
+ * player's, is announced to everyone online:
  * "<name> has died as a Hardcore Ironman with a total level of 1,234!"
  */
 const SHARES = Object.freeze({ hardcore: 0.05, ultimate: 0.03, ironman: 0.1 });
-const DOWNFALL_CHECK_TICKS = 500;
-/** The chance per check (every 5 minutes) that one fighting Hardcore bot dies: about one an hour. */
-const DOWNFALL_CHANCE = 0.08;
 const DEATH_COLOUR = "ef1020";
 
 function ironman() {
@@ -65,34 +63,9 @@ function announceHardcoreDeath(core, { player }) {
   core.World.sendMessage(`<col=${DEATH_COLOUR}>${player.getDisplayName?.() ?? player.getUsername()} has died as a Hardcore Ironman with a total level of ${total.toLocaleString("en-GB")}!</col>`);
 }
 
-/** Every few minutes, maybe one Hardcore bot in a fight takes a hit it does not survive. */
-function downfall(core, runtime, random = Math.random) {
-  if (random() >= DOWNFALL_CHANCE) return null;
-  const Common = ironman();
-  const fighters = [...(runtime.entriesByUsername?.values?.() ?? [])]
-    .map((entry) => entry.player ?? entry.bot ?? null)
-    .filter((bot) => bot?.isRegistered?.() && Common.modeOf(bot) === "hardcore"
-      && (bot.getCombat?.()?.getTarget?.() || bot.getCombat?.()?.getAttacker?.()));
-  const bot = fighters[Math.floor(random() * fighters.length)];
-  if (!bot) return null;
-  bot.getCombat().getHitQueue().addPendingDamage([new core.HitDamage(bot.getHitpoints() + 5, core.HitMask.RED)]);
-  return bot;
-}
-
-function startIronmen(api, runtime) {
+function startIronmen(api) {
   const core = api.core;
   api.onCustomEvent("ironman:hardcore-death", (event) => announceHardcoreDeath(core, event));
-  const { Task } = core;
-  api.getTaskManager().submit(new (class extends Task {
-    constructor() { super(DOWNFALL_CHECK_TICKS, "bot-hardcore-downfall", false); }
-    execute() {
-      try {
-        downfall(core, runtime);
-      } catch (_) {
-        // The Ironman plugin is not loaded: no Hardcores to fall.
-      }
-    }
-  })());
 }
 
-module.exports = { startIronmen, assignIronMode, modeFor, downfall, announceHardcoreDeath, SHARES };
+module.exports = { startIronmen, assignIronMode, modeFor, announceHardcoreDeath, SHARES };

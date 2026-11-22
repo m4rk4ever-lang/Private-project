@@ -29,6 +29,13 @@ const STALL_MS = 45_000;
 /** Standing still this long on the way: the route planner takes over from the straight walk. */
 const PLAN_AFTER_MS = 6_000;
 /**
+ * With `nearTiles`: standing still this long within that many tiles counts as there. A bank's
+ * spot is its booth, behind the counter: the walk ends 4 to 6 tiles short, and the errand waited
+ * out STALL_MS (45 s) before banking anyway ("near": 215 of 238 at Burthorpe, 89 of 110 at
+ * Seers', 74 of 101 at Catherby; runtime analysis 21-11-2026, pakket 7).
+ */
+const SETTLE_MS = 3_000;
+/**
  * Walking but no closer for this long: a detour round a river or through a gate may lead away
  * for a while, so only a long spell without getting nearer counts as a way that does not lead there.
  */
@@ -204,11 +211,11 @@ function createErrands({ now = () => Date.now(), log = () => {}, core = null, mo
    * Sends `entry`'s bot to `to` ({ x, y, z }); `arrive(player)` runs there. Returns false when it
    * is already on an errand.
    */
-  function go(entry, to, { arrive = () => {}, reason = "errand", fail = () => {} } = {}) {
+  function go(entry, to, { arrive = () => {}, reason = "errand", fail = () => {}, nearTiles = 0 } = {}) {
     const player = entry?.player;
     if (!player || errands.has(player)) return false;
     const nowMs = now();
-    const errand = { entry, to, arrive, fail, reason, since: nowMs, best: Infinity, bestAt: nowMs, walkFrom: nowMs };
+    const errand = { entry, to, arrive, fail, reason, nearTiles, since: nowMs, best: Infinity, bestAt: nowMs, walkFrom: nowMs };
     errands.set(player, errand);
     if (entry.brain) entry.brain.paused = true;
     clear(player);
@@ -301,6 +308,10 @@ function createErrands({ now = () => Date.now(), log = () => {}, core = null, mo
       // Standing still short of the goal: the straight walk ends at a wall (the basic pather walks
       // to the nearest tile it can and calls that a route). Ask the route planner instead, once.
       const idle = nowMs - Math.max(errand.movedAt ?? errand.walkFrom, errand.walkFrom);
+      if (floors === 0 && errand.nearTiles > 0 && away <= errand.nearTiles && idle >= SETTLE_MS) {
+        end(player, errand, true);
+        continue;
+      }
       if (idle > PLAN_AFTER_MS && !errand.planned) {
         let request = null;
         try {
@@ -369,4 +380,4 @@ function errandsFor(api) {
   return shared;
 }
 
-module.exports = { createErrands, errandsFor, bestTeleport, inWilderness, ARRIVE_TILES, ERRAND_SPELLS };
+module.exports = { createErrands, errandsFor, bestTeleport, inWilderness, ARRIVE_TILES, SETTLE_MS, ERRAND_SPELLS };
