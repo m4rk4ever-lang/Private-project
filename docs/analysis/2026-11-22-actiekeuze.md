@@ -150,9 +150,9 @@ aansluit op wat er is:
 - **Wie leest:** de planner gebruikt eerst de eigen meting, dan de clanmeting, dan pas de gok. Een
   methode is pas "nieuw" als de clan er minder dan 5 metingen van heeft. Zo probeert één bot gem
   stalls en weten de andere 59 het daarna.
-- **Per clan of voor iedereen:** het makkelijkst is één tabel voor alle avonturiers. Als de race
-  tussen clans moet blijven, krijgt elke clan een eigen tabel plus een vertraagde gezamenlijke
-  (bijvoorbeeld 2 uur oud). Dat is een keuze van de eigenaar.
+- **Per clan (besluit eigenaar, 22-11):** elke clan heeft een eigen tabel, in het bestand
+  gegroepeerd per clannaam (`{ "Mark Clan": { "gem_stalls": {…} }, … }`). Een bot leest en schrijft
+  alleen die van zijn clan (`Clans.clanOf`). Wie slim leert, wint de race.
 - **Andere tips die er al half zijn:** gevaarlijke plekken worden al 2 uur gedeeld (`Loadout`:
   "een plek waar avonturiers de laatste 2 uur vluchtten of stierven"). Dezelfde tabel kan ook
   onbereikbare plekken, vastgelopen quest-stappen (nu `questsBlocked`) en reistijden dragen. Dat
@@ -209,15 +209,28 @@ Die staat niet in deze logs.
 | P1 | **A4. Questlus Doric's Quest**: clay alleen halen als er minder dan 6 in tas en bank zijn; na een `gather` zonder voortgang reden loggen en de quest-stap blokkeren (pakket 5 van de runtime-analyse) | Geen clay-klussen meer boven de 6 per bot |
 | P2 | **A5. Plafonds in de data wegwerken**: Prayer (hogere botten), Agility (Pollnivneach, Rellekka, Ardougne), Herblore (hogere potions), smelten (mithril, adamant, rune, Blast Furnace), Thieving (vyres, elves na quests) | Geen bot-minuten meer ≥ 15 levels boven de hoogste activiteit van de skill |
 | P2 | **A6. Vechtstijl kiezen in plaats van hashen**: de stijl volgt het doel (een unlock die Ranged of Magic vraagt) of de achterstand; melee-band op het level van de stat die getraind wordt, niet het laagste van de drie | Geen bot meer met een stijl die zijn doel niet dient; aandeel combinaties ≥ 2 stages onder het combat level < 10% |
+| P2 | **A8. Inloggen om en om per clan** (zie hieronder) | Na een herstart staat in de log steeds Mark, Jorg, Patrick, Mark, … |
 | P2 | **A7. Metric `action_fit`** bij elke klus: level van de bot, level-eis, beste activiteit voor dat level en de reden van een lagere keuze (quest, geld, afwisseling, plek vol) | Het script is niet meer nodig; de planner ziet het zelf |
+
+**A8, inlogvolgorde.** Bij het opstarten logt `runPaced(Clans.namesOf(data).map(...))`
+(`Adventurers.PlayerBots.js`, r. 6007) de avonturiers één per tick in, in de volgorde van
+`namesOf`. Die geeft ze clan voor clan, in de volgorde van `adventurers.json` (Jorg, Patrick, Mark),
+met de 15 extra leden per clan (`extraPerClan`) achter de eigen clan. Dus eerst 20 Jorgs, dan 20
+Patricks, dan 20 Marks: de laatste Mark komt ~36 s na de eerste Jorg. Dat is ook oneerlijk voor de
+race: wie eerst binnen is, pakt de vrije plekken (`site_full` bij Hunter) en de eerste GE-slots.
+Voorstel: een `Clans.loginOrder(data, first)` die om en om één naam per clan geeft, beginnend bij de
+clan uit een nieuwe instelling `loginFirstClan` in `adventurers.json` (nu: "Mark Clan"). Alleen de
+spawnregel gebruikt hem; `namesOf` blijft ongewijzigd voor de rest van de code. Test: volgorde
+Mark-Jorg-Patrick herhaald, en bij clans van ongelijke grootte vallen de overgeblevenen achteraan.
 
 A3 sluit aan op Activity Health (pakket 4 van de runtime-analyse): dezelfde gemeten cijfers, nu
 voor geld. A5 overlapt met S2 uit de skill-progressie-analyse.
 
 ## Open vraag voor de eigenaar
 
-- [ ] Gedeelde kennis: één tabel voor alle avonturiers, of per clan (met een vertraagde
-  gezamenlijke tabel, zodat de race tussen clans blijft)?
+- [x] Gedeelde kennis: één tabel voor alle avonturiers, of per clan? **Per clan** (eigenaar,
+  22-11): zo blijft het een race tussen de clans. Elke clan leert alleen van zijn eigen leden;
+  geen gezamenlijke tabel.
 
 ## Findings, Risks, Recommendations, Priority, Expected Value
 
