@@ -141,12 +141,12 @@ function chooseNext(adventurer, quests, {
     }
     // Measured ways by their rate; an unmeasured one only by a low guess (a quarter of
     // MONEY_GUESS) once anything is measured, so a guess does not beat what is known.
-    // An unmeasured way never above the lowest measured one: the guesses were far off (thieving
+    // An unmeasured way stays below the lowest measured one: the guesses were far off (thieving
     // 30.000 against 1,8-9,5k measured; 8 of 10 money picks "schatting", validation #57).
     const measured = earners.map((other) => rate(other.mode)).filter((value) => value > 0);
     const anyMeasured = measured.length > 0;
     const floor = anyMeasured ? Math.min(...measured) : 0;
-    const score = (option) => rate(option.mode) ?? Math.min((MONEY_GUESS[option.mode] ?? 0) / 4, floor);
+    const score = (option) => rate(option.mode) ?? Math.min((MONEY_GUESS[option.mode] ?? 0) / 4, floor - 1);
     // Maxed: no "eens proberen" (thieving for a few thousand an hour); what it knows earns best.
     // Nothing measured yet, by it or its clan: any way, at random, so the table fills (a guess
     // would send them all to the same one).

@@ -25,7 +25,7 @@ function fillsEmptySlot(core, player, itemId) {
 }
 
 /** The nearest of its own drops worth taking that fits in its inventory, or null. */
-function lootNear(core, player, { radius = LOOT_RADIUS, minValue = MIN_VALUE, valueOf } = {}) {
+function lootNear(core, player, { radius = LOOT_RADIUS, minValue = MIN_VALUE, valueOf, skip = null } = {}) {
   const manager = core.ItemOnGroundManager;
   const here = player.getLocation();
   let best = null;
@@ -33,6 +33,7 @@ function lootNear(core, player, { radius = LOOT_RADIUS, minValue = MIN_VALUE, va
     const at = ground.getPosition();
     if (at.getZ() !== here.getZ() || distance(at, here) > radius) continue;
     if (ground.getPrivateArea?.() !== (player.getPrivateArea?.() ?? null)) continue;
+    if (skip?.(ground)) continue;
     const item = ground.getItem();
     if (manager.inventoryCapacity(player, item) <= 0) continue;
     // Cheap but useful: a piece for an empty slot (that wizard hat) is taken whatever it is worth.
@@ -60,7 +61,9 @@ function wearIfFree(core, player, itemId) {
 
 /**
  * One step toward taking `ground`: pick it up when in reach, else walk to it.
- * Returns "taken", "walking" or "gone".
+ * Returns "taken", "walking", "gone" or "refused": next to it and the game would not give it
+ * (bag full, not its own any more, behind a fence). "refused" used to fall through to "walking"
+ * every turn, and a fighting bot never got back to picking a target (runtime analysis pakket 13).
  */
 function takeStep(core, player, ground, { state, nowMs, basicPather = true } = {}) {
   const manager = core.ItemOnGroundManager;
@@ -74,6 +77,8 @@ function takeStep(core, player, ground, { state, nowMs, basicPather = true } = {
       wearIfFree(core, player, itemId);
       return "taken";
     }
+    // Standing on it or right beside it with no walk left to do: the game said no.
+    if (player.getMovementQueue().size() === 0 && !navigation().peekMovementRequest(player)) return "refused";
   }
   if (player.getMovementQueue().size() > 0 || navigation().peekMovementRequest(player)) return "walking";
   // basicPather: false walks round furniture and corners (a quest item behind a table).
