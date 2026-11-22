@@ -1,0 +1,60 @@
+# Source: https://oldschool.runescape.wiki/w/Guide:Bossing_Ladder (CC BY-NC-SA 3.0), joined with server/plugins/bosses and adventurers.json bosses
+tier,boss,recommended,server_plugin,plugin_present,adventurer_support
+easy,Brutus,Hitpoints 20; quest The Ides of Milk,Brutus,yes,no
+easy,Wintertodt,"Firemaking 50, Woodcutting 35",-,minigame/other,no
+easy,Tempoross,Fishing 35,-,minigame/other,no
+easy,Barrows,"Magic 35 (Wind Bolt), Prayer 43+",-,minigame/other,yes (bot)
+easy,Obor / Bryophyta,"Attack/Strength/Defence 40, Prayer 43+",GiantLairs,yes,no
+easy,Deranged archaeologist,Magic 50 (Iban Blast),DerangedArchaeologist,yes,no
+easy,Scurrius,Attack/Strength/Defence 40,Scurrius,yes,no
+medium,Shellbane Gryphon,"Attack/Strength 65+, Slayer 51",ShellbaneGryphon,yes,no
+medium,Barbarian Assault,Attack/Strength/Defence 40,-,minigame/other,no
+medium,Amoxliatl,Attack/Strength 60+,Amoxliatl,yes,no
+medium,The Hueycoatl,Attack/Strength 60+,Hueycoatl,yes,no
+medium,Hespori,Attack/Strength 60+,-,minigame/other,no
+medium,Giant Mole,Attack/Strength 60+ or Magic 60+,GiantMole,yes,yes (bot; 181x blocked on candle)
+medium,Crazy archaeologist,"Magic 50+, Ranged 65+",CrazyArchaeologist,yes,no
+medium,Kraken,"Magic 75+, Slayer 87+",Kraken,yes,no
+medium,Sarachnis,Attack/Strength/Defence 60+,Sarachnis,yes,"yes (bot; Kourend, unreachable on foot)"
+medium,King Black Dragon,Attack/Strength 65+ or Ranged 65+,KingBlackDragon,yes,no
+medium,Zalcano,Quest Song of the Elves,Zalcano,yes,no
+medium,Thermonuclear smoke devil,"Attack/Strength 85+, Slayer 93",ThermonuclearSmokeDevil,yes,no
+medium,The Mimic,Attack/Strength 70+ or Ranged 70+,Mimic,yes,no
+medium,Royal Titans,"Attack/Strength/Defence/Ranged 70+, Magic 75+",RoyalTitans,yes,no
+medium,Moons of Peril,Attack/Strength/Defence 70+,MoonsOfPeril,yes,no
+medium,Mad Angel,Attack/Strength 65+; quest Fallen From Grace,MadAngel,yes,no
+medium,God Wars Dungeon (teams),Attack/Strength/Ranged/Defence/Hitpoints/Agility 70+,GodWars,yes,no
+hard,Scorpia,Magic 79+,WildernessBosses,yes,no
+hard,Chaos Elemental,Attack/Strength 70+,ChaosElemental,yes,no
+hard,Vet'ion,Attack/Strength 70+,WildernessBosses,yes,no
+hard,Venenatis,Attack/Strength 70+,WildernessBosses,yes,no
+hard,Callisto,"Ranged 70+, Magic 79+",WildernessBosses,yes,no
+hard,Dagannoth Kings,"Attack/Strength/Ranged 70+, Magic 60+",DagannothKings,yes,no
+hard,Grotesque Guardians,"Attack/Strength/Defence/Ranged 70+, Slayer 75; Priest in Peril",GrotesqueGuardians,yes,no
+hard,Skotizo,"Attack/Strength 75+, Defence 70+, dark totem",Skotizo,yes,no
+hard,TzTok-Jad,"Ranged 70+, Defence 70+",-,minigame/other,no
+hard,Demonic gorilla,"Attack/Strength 75+, Defence/Ranged 70+; Monkey Madness II",-,minigame/other,no
+hard,Tormented Demon,"Attack/Strength 75+, Defence/Ranged 70+ or Magic 82+; While Guthix Sleeps",TormentedDemons,yes,no
+hard,The Gauntlet,"70+ all, Magic 75+; Song of the Elves",-,minigame/other,no
+hard,Abyssal Sire,"Attack/Strength 85+, Defence 80+, Magic 76+, Slayer 85",AbyssalSire,yes,no
+hard,Cerberus,"Attack/Strength 90+, Defence 85+, Slayer 91",Cerberus,yes,no
+hard,Araxxor,"Attack/Strength 90+, Defence 85+, Slayer 92",Araxxor,yes,no
+hard,Alchemical Hydra,"Ranged 90+, Slayer 95",AlchemicalHydra,yes,no
+hard,Corporeal Beast,Attack/Strength 85+,CorporealBeast,yes,no
+hard,Kalphite Queen,Attack/Strength/Defence/Ranged 70+,KalphiteQueen,yes,no
+hard,Commander Zilyana (solo),"Ranged 85+, Defence/Agility 70+",GodWars,yes,no
+hard,K'ril Tsutsaroth (solo),"Attack/Strength 85+ or Ranged 85+, Defence 80+",GodWars,yes,no
+elite,Zulrah,"Ranged/Magic 75+, Defence 70+; Regicide",Zulrah,yes,no
+elite,Vorkath,"Ranged 80+, Defence 75+; Dragon Slayer II",Vorkath,yes,no
+elite,Phantom Muspah,"Ranged 80+, Defence 70+, Magic 75+; Secrets of the North",PhantomMuspah,yes,no
+elite,Duke Sucellus,"Attack/Strength 75+, Defence 70+; Desert Treasure II",DukeSucellus,yes,no
+elite,Maggot King,"Magic or Ranged 85+, Attack/Strength 85+, Defence 75+; The Blood Moon Rises",MaggotKing,yes,no
+elite,Kree'arra (solo),"Ranged 85+, Defence 80+",GodWars,yes,no
+elite,General Graardor (solo),"Attack/Strength 85+ or Ranged 80+, Defence 80+",GodWars,yes,no
+elite,The Whisperer,Magic 80+; Desert Treasure II,Whisperer,yes,no
+elite,The Leviathan,Ranged 80+; Desert Treasure II,Leviathan,yes,no
+elite,Vardorvis,"Attack/Strength 85+, Defence 80+; Desert Treasure II",Vardorvis,yes,no
+elite,Nex (small teams),"Attack/Strength 90+ or Ranged 90+, Magic 80+; The Frozen Door",Nex,yes,no
+elite,Yama,"Attack/Strength 90+, Defence 85+, Magic 90+; A Kingdom Divided",Yama,yes,no
+master,The Nightmare,Attack/Strength/Magic 90+; Priest in Peril,Nightmare,yes,no
+master,Doom of Mokhaiotl,Ranged/Magic 90+; The Final Dawn,DoomOfMokhaiotl,yes,no
