@@ -25,20 +25,22 @@ wanneer het klaar is. Elk pakket is één probleem
 
 | Prio | Pakket | Bewijs | Klaar als | Status |
 | --- | --- | --- | --- | --- |
-| P0 | 1. Agility-lag | 27× `slow_bot`, alle agility; tick tot 19,6 s | 0 `slow_bot` met agility in 2 uur | gebouwd 22-11 (oorzaak: objectindex, zie AI_HANDOVER), te bevestigen |
+| P0 | 1. Agility-lag | 27× `slow_bot`, alle agility; tick tot 19,6 s | 0 `slow_bot` met agility in 2 uur | gebouwd 22-11; eerste 25 min in `8b75ca8`: 0 agility-`slow_bot` ([validatie](2026-11-22-validatie-8b75ca8.md)) |
 | P0 | 2. Hunter tijdelijk uit | 1.673 bot-min, 0,7% werken, Hunter-XP ~0 | 0 keer gekozen tot pakket 4 bestaat | open |
 | P0 | 3. Deploydiscipline | 13 versies in 6 uur, 3 korter dan 3 min | ≥ 60 min per versie | open |
 | P0 | 12. Granted quests lekken gear (§7) | 7 items achter quests die nooit gespeeld zijn | Geen item achter een granted quest | open |
 | P1 | 4. Activity Health | Hunter, Slayer, Canifis, Wintertodt lekten uren | Slechte activiteit zakt binnen 2 bot-uur | open |
 | P1 | 5. Quest-verificatiecontract | 8 van 119 pogingen gehaald (6,7%) | ≥ 40% `done` op de regressieset | open |
-| P1 | 6. Morytania afsluiten | Mazchna 44/46, Canifis 27/27 `blocked` | 0 errands naar Morytania tot bewezen | gebouwd 22-11 (`onFoot: false`), te bevestigen |
-| P1 | 7. Bankcoördinaten | Burthorpe 215/238 `near` | `near` < 20% per bank | gebouwd 22-11 (aankomst na 3 s stil binnen 6 tegels), te bevestigen |
+| P1 | 6. Morytania afsluiten | Mazchna 44/46, Canifis 27/27 `blocked` | 0 errands naar Morytania tot bewezen | gebouwd 22-11; `8b75ca8`: 0 errands naar Morytania, Slayer-XP > 0 ([validatie](2026-11-22-validatie-8b75ca8.md)) |
+| P1 | 7. Bankcoördinaten | Burthorpe 215/238 `near` | `near` < 20% per bank | gebouwd 22-11; `8b75ca8`: `near` 9% over alle errands ([validatie](2026-11-22-validatie-8b75ca8.md)) |
 | P1 | 13. Combat-training vindt geen doel | 108 van 135 klussen `stuck` | `stuck` < 20% van de klussen | stap 1 gebouwd 22-11 (`npcs=` in describe), oorzaak nog open |
 | P1 | 14. Vast in quest-gebied of instance (§17) | 69 + 10 `walk_blocked`, 5 bots | Geen bot > 10 min vast in een instance | open |
 | P2 | 8. Telemetrie-gaten | `decision` zonder coins, lege `brainSnapshot` | Velden in de nieuwe `v` | open |
 | P2 | 9. XP-bandbreedte | herblore 1,45M XP/uur | Metric `xp_anomaly` bestaat | open |
 | P2 | 10. Docs- en logdieet | 106 KB handover; log dekt 5,5 uur | Leeswerk < 60 KB; log ≥ 24 uur | open |
 | P2 | 15. Recovery-mechanismen bundelen | ≥ 9 losse pogingen/afkoelingen; Patrickbot 17 toch 25 vensters bevroren | Eén faalgeheugen | open |
+| P1 | 17. Runecrafting levert niets op (nieuw 22-11) | 113 bot-min, 0 XP; 18× vast bij de air-ruïnes | Runecraft-XP > 0 per venster | open ([validatie](2026-11-22-validatie-8b75ca8.md)) |
+| P1 | 18. Giant Mole-lus (nieuw 22-11) | 66× graven voor 2 kills; botbeurt 3,1 s; dode zonder eten | ≥ 1 kill per 10 min boss-tijd, 0 doden zonder eten | open ([validatie](2026-11-22-validatie-8b75ca8.md)) |
 | P2 | 16. Schaal en tokens meten | Geen meting van kosten per bot of LLM-tokens | Metrics `server.perBot`, `ai_usage` | open |
 | P3 | 11. Fundamenten A-D | Registry: 6 van 68 met `requires` | Zie sectie Fundamenten | open |
 
