@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Avonturiers bleven bij de bank vaak 45 seconden voor de balie staan voor ze gingen banken. Ze banken nu meteen als ze ervoor staan.
 - Na een herstart stond de server vaak seconden lang stil, soms bijna 20 seconden, als avonturiers op een agility-baan liepen. Dat is opgelost.
 - PvP-bots die hun wapen kwijt waren, kregen geen nieuwe uitrusting omdat de code vastliep. Dat werkt weer.
 - Na een herstart haperde de server vaak seconden lang, soms meer dan 20 seconden, terwijl bots hun routes en trappen zochten. Dat zoeken wordt nu over de ticks verdeeld.
@@ -27,6 +28,8 @@ Indeling per versie:
 - Een avonturier die vogels ving, bleef soms staan op een plek waar geen snare mag staan (gras, varens) en zette niets neer. Hij zoekt nu een tegel waar het wel mag.
 
 ### Gewijzigd
+- Hardcore Ironman-bots gaan niet meer zomaar dood: alleen nog door een echte klap in een gevecht.
+- Avonturiers lopen voorlopig niet naar Morytania (Canifis, Mort Myre), omdat de weg erheen nog niet betrouwbaar werkt. Met een teleport kunnen ze er nog wel komen.
 - Avonturiers die vaak ver lopen naar dezelfde streek, zoals de Feldip Hills, kopen een stapel teleport-tablets die daar in de buurt uitkomen (bijvoorbeeld Watchtower), als ze een paar duizend gp hebben.
 - Een avonturier die ging tuinieren hield het onkruid in zijn tas en bleef na het wieden staan. Hij laat het onkruid nu vallen en gaat door met zaaien.
 - Avonturiers die een air talisman kochten voor Runecrafting gingen daarna iets anders doen. Ze gaan nu direct runes maken.

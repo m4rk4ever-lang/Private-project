@@ -101,6 +101,8 @@ const BARROWS_SESSION_MS = 60 * 60_000;
 const QUEST_TICK_MS = 6_000;
 /** A walk that ends this close to its place has arrived (the exact tile may be in a hut). */
 const NEAR_ENOUGH_TILES = 15;
+/** A bank errand that stops this close to its booth (behind the counter) has arrived (Errands nearTiles). */
+const BANK_REACH_TILES = 6;
 /** A full bag the bank could not take anything from: not back to the bank for it before this. */
 const FULL_BAG_RETRY_MS = 30 * 60_000;
 /** A trip to buy at the exchange that bought nothing: no such trip again before this. */
@@ -1677,6 +1679,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     };
     const started = errands.go(run, to, {
       reason,
+      // A bank is used from in front of its counter: still within this many tiles is there.
+      nearTiles: reason === "bank" ? BANK_REACH_TILES : 0,
       arrive: (player, outcome) => {
         hold();
         entry.errand = null;
@@ -2115,10 +2119,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (plan.mode === "agility") {
       const level = levelOf(player, "AGILITY");
       // The best course its level allows and its quests open (Canifis is in Morytania, behind
-      // Priest in Peril), that it has not found blocked lately.
+      // Priest in Peril), that it has not found blocked lately, and that it can get to: the walk
+      // guard refuses a locked area (Morytania closed on foot, 22-11-2026) unless a teleport lands
+      // near, so the next course instead of a refused walk.
       const course = (data.agilityCourses ?? []).find((option) => level >= option.level
         && (option.quests ?? []).every((name) => questsByName().get(normalize(name))?.isComplete(player) === true)
-        && !blockedPlace(entry, option) && !((troubledCourses.get(option.course) ?? 0) > now()));
+        && !blockedPlace(entry, option) && !((troubledCourses.get(option.course) ?? 0) > now())
+        && !lockedAway(player, { x: option.x, y: option.y, z: option.z ?? 0 }));
       if (!course || !registry?.byId?.get(`agility_${course.course}`)) return cannot(entry, "no_agility_course", { level, course: course?.course ?? null });
       startActivity(player, `agility_${course.course}`, { home: course, nowMs });
       walkTo(entry, course, { reason: "agility", replan: false });

@@ -31,9 +31,9 @@ wanneer het klaar is. Elk pakket is één probleem
 | P0 | 12. Granted quests lekken gear (§7) | 7 items achter quests die nooit gespeeld zijn | Geen item achter een granted quest | open |
 | P1 | 4. Activity Health | Hunter, Slayer, Canifis, Wintertodt lekten uren | Slechte activiteit zakt binnen 2 bot-uur | open |
 | P1 | 5. Quest-verificatiecontract | 8 van 119 pogingen gehaald (6,7%) | ≥ 40% `done` op de regressieset | open |
-| P1 | 6. Morytania afsluiten | Mazchna 44/46, Canifis 27/27 `blocked` | 0 errands naar Morytania tot bewezen | open |
-| P1 | 7. Bankcoördinaten | Burthorpe 215/238 `near` | `near` < 20% per bank | open |
-| P1 | 13. Combat-training vindt geen doel | 108 van 135 klussen `stuck` | `stuck` < 20% van de klussen | open |
+| P1 | 6. Morytania afsluiten | Mazchna 44/46, Canifis 27/27 `blocked` | 0 errands naar Morytania tot bewezen | gebouwd 22-11 (`onFoot: false`), te bevestigen |
+| P1 | 7. Bankcoördinaten | Burthorpe 215/238 `near` | `near` < 20% per bank | gebouwd 22-11 (aankomst na 3 s stil binnen 6 tegels), te bevestigen |
+| P1 | 13. Combat-training vindt geen doel | 108 van 135 klussen `stuck` | `stuck` < 20% van de klussen | stap 1 gebouwd 22-11 (`npcs=` in describe), oorzaak nog open |
 | P1 | 14. Vast in quest-gebied of instance (§17) | 69 + 10 `walk_blocked`, 5 bots | Geen bot > 10 min vast in een instance | open |
 | P2 | 8. Telemetrie-gaten | `decision` zonder coins, lege `brainSnapshot` | Velden in de nieuwe `v` | open |
 | P2 | 9. XP-bandbreedte | herblore 1,45M XP/uur | Metric `xp_anomaly` bestaat | open |
