@@ -5,6 +5,18 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 22-11-2026 21:15: kennistabel per clan, hogere tiers, vechtband, questgids, action_fit (zelfde branch `adventurers/barrows-travel`)
+
+Bovenop de bundel van 20:40; mergen na ≥ 60 min op `4101cc8`. Niets hiervan is in game getest.
+
+- **A3 kennistabel per clan (`adventurers/Knowledge.PlayerBots.js`):** per clan, per `mode:` en `activity:` de laatste 25 klussen (gp/uur, XP/uur, stuck), in `data/saves/adventurer-knowledge.json`, hooguit eens per minuut weggeschreven (async). `trackJob` schrijft elke beëindigde trainingsklus, ook te korte (alleen de afloop). Planner: eigen meting, dan clanmediaan (≥ 5 metingen), dan gok gedeeld door 4. "Eens proberen" alleen in de 10%-keuze voor wat clan én bot niet kennen; anders "schatting" of "(~X gp/uur, clan, n metingen)". Metric `knowledge` per clan elk half uur (Activity Health: XP/uur en stuck-aandeel per activiteit). Automatisch uitzetten op basis daarvan: nog niet.
+- **A5 plafonds:** agility-koersen Pollnivneach (70), Rellekka (80), Ardougne (90) in `adventurers.json` en `bot-activities.json`; starttegels afgeleid uit de koersplugins, **in game te bevestigen**. Prayer: babydragon (30) en dragon bones (50). Herblore: super restore (63), super defence (66), ranging potion (72). Smelten niet: de recepten kennen geen verhouding ore:coal.
+- **A6 vechtband:** voor avonturiers het gemiddelde van Attack, Strength en Defence in plaats van het laagste. De stijl van avonturiers komt al uit de planner (`combat_ranged`/`combat_magic` → `honestStyle`); de naam-hash geldt alleen voor gewone bots. Dat klopt niet met de analyse.
+- **Pakket 5, punt 4:** "quest helper error: fetch failed / ECONNREFUSED" wordt afloop `bridge_down`: 10 min opzij, telt niet als falen, blokkeert niet voor iedereen.
+- **A7:** `job`-metric heeft `fit`: skill, level, eis, beste activiteit voor dat level, `below` (levels eronder).
+- **Uitloggen (eigenaar):** `[World] Deregistering player ... reason=<idle_timeout|socket_close|logout|...>` in de console; de reden stond alleen op de speler.
+- **Validatie:** suite 166 pass, 14 fail (baseline); nieuw `bot-knowledge` (2 pass); eslint no-undef schoon.
+
 ## 22-11-2026 20:40: Barrows-reis, holds, clay-lus, inlogvolgorde (branch `adventurers/barrows-travel`)
 
 Mergen na ≥ 60 min op `4101cc8`.

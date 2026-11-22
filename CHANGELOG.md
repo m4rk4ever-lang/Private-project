@@ -30,6 +30,9 @@ Indeling per versie:
 - Een avonturier die vogels ving, bleef soms staan op een plek waar geen snare mag staan (gras, varens) en zette niets neer. Hij zoekt nu een tegel waar het wel mag.
 
 ### Gewijzigd
+- Avonturiers met één lage vechtstat vechten niet meer op ratten en koeien: ze kiezen tegenstanders bij het gemiddelde van Attack, Strength en Defence.
+- Als de questgids niet reageert, leggen avonturiers een quest maar even weg in plaats van hem 3 uur voor iedereen te blokkeren.
+- In de serverconsole staat nu waarom een speler uitlogt (time-out, verbinding verbroken of zelf uitgelogd).
 - De Giant Mole en Runecrafting staan tijdelijk uit, omdat bots er vastliepen zonder iets op te leveren. Ze komen terug zodra ze werken.
 - Na een herstart loggen de clans om en om in (Mark, Jorg, Patrick), zodat geen clan als eerste alle plekken pakt.
 - Avonturiers jagen voorlopig niet meer op tropical wagtails en red salamanders, omdat ze daar niets vingen. Crimson swifts blijven ze wel vangen.
@@ -77,6 +80,8 @@ Indeling per versie:
 - Avonturiers met een tas vol dubbele spullen (acht dezelfde staffs, tientallen gesmede axes) bleven uren bij een bank staan zonder iets te doen. Ze houden nu één exemplaar van elk stuk uitrusting en gereedschap; de rest gaat naar de bank of de GE. Kan de bank toch niets aannemen, dan staat dat in hun log en gaan ze verder met een klus.
 
 ### Toegevoegd
+- Elke clan onthoudt nu wat zijn leden met een klus verdienen en hoe vaak die vastloopt, ook na een herstart. Avonturiers kiezen geld verdienen op wat hun clan gemeten heeft in plaats van op een gok, en proberen minder vaak iets nieuws.
+- Avonturiers kennen nu de agility-daken van Pollnivneach, Rellekka en Ardougne, betere botten voor Prayer en hogere potions voor Herblore.
 - De botlogs melden nu elke bot die de server langer dan een halve seconde ophoudt, met wat hij op dat moment deed. Zo is te zien waardoor de server na een herstart hapert.
 - Avonturiers doen nu aan Farming: ze kopen een rake, seed dibber en spade en zaden op de GE, wieden de herb patch en de twee allotments bij Falador, Catherby of Ardougne, oogsten wat gegroeid is en zaaien opnieuw. Na ongeveer 80 minuten komen ze terug.
 - Avonturiers doen nu aan Construction: ze kopen een huis bij de makelaar (1.000 gp), een hammer, een saw en planks, gaan via het portaal in Rimmington hun huis binnen in bouwmodus en bouwen en slopen meubels in de parlour tot de planks op zijn.
