@@ -5,6 +5,13 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 22-11-2026: runtime-analyse en bouwspecificatie (branch `analysis/runtime-2026-11-21`)
+
+- **Wat:** analyse van `bot-logs` (21-11 08:48-14:50 UTC, 60 avonturiers, 12.503 bot-min, `2f294017e` t/m `e75bbc441`). Uitgewerkt tot 16 werkpakketten met bewijs, bouwstappen en "Klaar als" in [analysis/2026-11-21-runtime-analyse.md](analysis/2026-11-21-runtime-analyse.md). Datasets en een reproduceerbaar script staan in `docs/analysis/`.
+- **Belangrijkste vondsten:** werken 16,3% (staat stil sinds 17-11); Hunter 13% van de tijd met ~0 Hunter-XP; combat-training 108 van 135 klussen `stuck`; Morytania 100% `blocked`; quests 8 van 119 gehaald; alle 27 `slow_bot` zijn agility (tick tot 19,6 s, `planMs` 0); `grantedQuests` geven dragon scimitar, rune platebody, Fremennik-helmen en crystal tools zonder quest (§7).
+- **Aangepast:** geen productiecode.
+- **Volgende stap:** P0 uit het overzicht van de analyse: agility-lag meten (pakket 1), Hunter in een `activityHold` (pakket 2), deploydiscipline (pakket 3), gear achter granted quests (pakket 12).
+
 ## 21-11-2026 15:20: meting van lange botbeurten (branch `adventurers/slow-bot`)
 
 - **Logs na #47 (14:03-14:08 UTC):** `planning` gaf route 155x samen 1.551 ms (max 132), stairs 3x (max 9), exit 1x. De stiltes van 23 en 27 s (14:05:11, 14:06:36) kwamen dus niet van de zoektochten. #47 blijft (geen schade, wel een eerlijker budget).

@@ -8,6 +8,10 @@ bij als een stap klaar is; de dagelijkse werklijst blijft in `server/docs/agents
 Stand: 20-11-2026. Runtime-basis: metrics van versie `7a8e40b` (17-11-2026 17:13 tot 22:08 UTC,
 60 avonturiers, 26,9 miljoen XP).
 
+**Analyse 21-11-2026:** de nieuwste runtime-meting, de werkpakketten en hun volgorde staan in
+[analysis/2026-11-21-runtime-analyse.md](analysis/2026-11-21-runtime-analyse.md). Waar die
+afwijkt van de stand hieronder, telt de analyse.
+
 ## Gap-analyse
 
 Legenda: **Er** = werkt en is in de logs gezien. **Deels** = bestaat, met bekende gaten.
