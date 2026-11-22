@@ -5,6 +5,13 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 22-11-2026 20:05: eerste logs van 8b75ca8, Hunter deels uit, combat-diagnose (branch `adventurers/combat-diagnose`)
+
+- **Logs 8b75ca8 (13:49-14:14 UTC, 25 min; daarna nog niet gedeeld):** 0 `slow_bot` met agility (was 27 in 2 uur), 2 `slow_tick` (2,0 s `roam`/wander, 3,1 s `trainCombat` bij boss_giant_mole). Planner-tick gem. 41 → 21 ms; planning max 192 ms. Bank `near` 34/175 (19%) → 1/97 (1%), gem. 48 → 41 s. Morytania-errands 30 (28 blocked) → 0.
+- **Combat (pakket 13):** `npcs=` laat bij vastgelopen training 10 tot 42 vrije NPC's in de band zien, en toch `target=none approach=none`. Dus weigert `canAttackPermission` ze allemaal of is er geen `reachable`. De diagnose splitst "free" nu in `deny_<CanAttackResponse>`, `unreachable` en `free`.
+- **Hunter (besluit eigenaar: uit als het niet werkt):** e75bbc4: crimson swift 3 klussen 1.025 XP in 57 min; wagtail 2 klussen 0 XP; salamander 1 klus 0 XP. 8b75ca8: crimson 2 klussen 0 XP in 37 min. Nieuw veld `hold` in `bot-activities.json` (Planner `bestActivity`/`activitiesFor` slaan het over): wagtail en beide salamanders. Crimson swift blijft aan. Weer aan: `hold` weg.
+- **Validatie:** suite 162 pass, 14 fail (baseline); `bot-hunter-sites` 4 pass; eslint no-undef schoon.
+
 ## 22-11-2026 14:45: analysepakketten 6, 7, 13 en de Hardcore-dood (branch `adventurers/analysis-p1`)
 
 Gebundeld; mergen pas na ≥ 60 min op `46cad60` (pakket 3).
