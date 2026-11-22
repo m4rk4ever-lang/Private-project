@@ -571,7 +571,15 @@ function createTrainCombatAction(spec, world) {
         else if ((bot.avoided.get(npc) ?? 0) > nowMs) add("avoided");
         else if ((npc.getCombat().getTarget() && npc.getCombat().getTarget() !== player) || (npc.getCombat().getAttacker() && npc.getCombat().getAttacker() !== player)) add("busy");
         else if (!available(player, npc, bot, nowMs, state)) add("claimed");
-        else add("free");
+        else {
+          // Free for this bot: what the target search does with it next. 22-11-2026: up to 42
+          // free NPCs at a site and still target=none approach=none, so the attack permission
+          // or the reach turns them all down.
+          const response = CombatFactory.canAttackPermission(player, npc, false, CombatFactory.getMethod(player));
+          if (response !== CanAttackResponse.CAN_ATTACK) add(`deny_${CanAttackResponse[response] ?? response}`);
+          else if (!reachable(player, npc)) add("unreachable");
+          else add("free");
+        }
       }
       const seen = [...names].slice(0, 4).map(([name, level]) => `${name}(${level ?? "-"})`).join("/");
       return `${Object.entries(counts).map(([why, n]) => `${why}:${n}`).join(",") || "none"} band=${bot.site.npcLevels.min}-${bot.site.npcLevels.max} seen=${seen || "-"}`;

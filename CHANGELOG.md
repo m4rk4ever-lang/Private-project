@@ -28,6 +28,7 @@ Indeling per versie:
 - Een avonturier die vogels ving, bleef soms staan op een plek waar geen snare mag staan (gras, varens) en zette niets neer. Hij zoekt nu een tegel waar het wel mag.
 
 ### Gewijzigd
+- Avonturiers jagen voorlopig niet meer op tropical wagtails en red salamanders, omdat ze daar niets vingen. Crimson swifts blijven ze wel vangen.
 - Hardcore Ironman-bots gaan niet meer zomaar dood: alleen nog door een echte klap in een gevecht.
 - Avonturiers lopen voorlopig niet naar Morytania (Canifis, Mort Myre), omdat de weg erheen nog niet betrouwbaar werkt. Met een teleport kunnen ze er nog wel komen.
 - Avonturiers die vaak ver lopen naar dezelfde streek, zoals de Feldip Hills, kopen een stapel teleport-tablets die daar in de buurt uitkomen (bijvoorbeeld Watchtower), als ze een paar duizend gp hebben.

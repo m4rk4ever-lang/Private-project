@@ -25,8 +25,8 @@ wanneer het klaar is. Elk pakket is één probleem
 
 | Prio | Pakket | Bewijs | Klaar als | Status |
 | --- | --- | --- | --- | --- |
-| P0 | 1. Agility-lag | 27× `slow_bot`, alle agility; tick tot 19,6 s | 0 `slow_bot` met agility in 2 uur | gebouwd 22-11; eerste 25 min in `8b75ca8`: 0 agility-`slow_bot` ([validatie](2026-11-22-validatie-8b75ca8.md)) |
-| P0 | 2. Hunter tijdelijk uit | 1.673 bot-min, 0,7% werken, Hunter-XP ~0 | 0 keer gekozen tot pakket 4 bestaat | open |
+| P0 | 1. Agility-lag | 27× `slow_bot`, alle agility; tick tot 19,6 s | 0 `slow_bot` met agility in 2 uur | gebouwd 22-11; eerste 25 min in `8b75ca8`: 0 met agility, 2 uur nog te halen ([validatie](2026-11-22-validatie-8b75ca8.md)) |
+| P0 | 2. Hunter tijdelijk uit | 1.673 bot-min, 0,7% werken, Hunter-XP ~0 | 0 keer gekozen tot pakket 4 bestaat | deels 22-11 (#54): Hunter-plekken zonder XP op hold, te controleren |
 | P0 | 3. Deploydiscipline | 13 versies in 6 uur, 3 korter dan 3 min | ≥ 60 min per versie | open |
 | P0 | 12. Granted quests lekken gear (§7) | 7 items achter quests die nooit gespeeld zijn | Geen item achter een granted quest | open |
 | P1 | 4. Activity Health | Hunter, Slayer, Canifis, Wintertodt lekten uren | Slechte activiteit zakt binnen 2 bot-uur | open |
