@@ -5,6 +5,14 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 22-11-2026 20:30: past de actie bij het level, geld, Barrows (branch `analysis/actiekeuze`)
+
+- **Vraag eigenaar:** max-level bots op lage vijanden of lage acties; gem stalls voor geld; Barrows-deuren.
+- **Gevonden:** 73% van de skill-tijd is de beste activiteit voor het level; afwijkingen door de clay-lus van Doric's Quest (1.037 bot-min), plafonds in de data (Prayer alleen big bones, Agility tot Seers, Herblore tot 55, smelten tot 30) en vechtstijlen die per botnaam vastliggen (`styleFor`), met de band op het laagste melee-level. Geld: 160 van 177 keuzes "eens proberen"; gem stalls 2.792 gp/uur gemeten. Barrows 0 van 13: reizen zonder tablet kan niet meer sinds #53 (Markbot 18 start elke 10 s een run), en in de tunnels vast op gewone open deuren (de bot kent `openDoors` wel).
+- **"Eens proberen":** 188 van 215 geldklussen (87%, bedoeld 10%). Oorzaken: `entry.earn` niet opgeslagen (weg bij elke herstart), metingen pas na 3 min, label bij elke ongemeten keuze, `MONEY_GUESS.thieving` 30.000. Ontwerp gedeelde kennistabel per activiteit (§25) in sectie 3c.
+- **Details en pakketten A1-A7:** [analysis/2026-11-22-actiekeuze.md](analysis/2026-11-22-actiekeuze.md).
+- **Volgende stap:** A1 (Barrows alleen met reisweg), daarna A2 (tunnel-telemetrie) en A4 (clay-lus).
+
 ## 22-11-2026 20:05: eerste logs van 8b75ca8, Hunter deels uit, combat-diagnose (branch `adventurers/combat-diagnose`)
 
 - **Logs 8b75ca8 (13:49-14:14 UTC, 25 min; daarna nog niet gedeeld):** 0 `slow_bot` met agility (was 27 in 2 uur), 2 `slow_tick` (2,0 s `roam`/wander, 3,1 s `trainCombat` bij boss_giant_mole). Planner-tick gem. 41 → 21 ms; planning max 192 ms. Bank `near` 34/175 (19%) → 1/97 (1%), gem. 48 → 41 s. Morytania-errands 30 (28 blocked) → 0.
