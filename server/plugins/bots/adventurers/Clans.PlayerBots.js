@@ -70,4 +70,23 @@ function expand(data, extra) {
   return data;
 }
 
-module.exports = { namesOf, clanOf, matesOf, equalSizes, gift, expand };
+/**
+ * The order to log them in after a restart: one of each clan in turn (Mark, Jorg, Patrick, Mark,
+ * ...), starting with `data.loginFirstClan` when set. namesOf gave them clan by clan: twenty Jorgs
+ * first, the last Mark ~36 s later, and the first ones in took the free spots and exchange slots
+ * (action-fit analysis A8, 22-11-2026). Clans of unequal size: the rest come at the end in turn.
+ */
+function loginOrder(data) {
+  const clans = Array.isArray(data.clans) ? [...data.clans] : [];
+  if (clans.length === 0) return namesOf(data);
+  const first = clans.findIndex((clan) => clan.name === data.loginFirstClan);
+  if (first > 0) clans.unshift(...clans.splice(first, 1));
+  const order = [];
+  const longest = Math.max(...clans.map((clan) => clan.members.length));
+  for (let index = 0; index < longest; index += 1) {
+    for (const clan of clans) if (index < clan.members.length) order.push(clan.members[index]);
+  }
+  return order;
+}
+
+module.exports = { namesOf, clanOf, matesOf, equalSizes, gift, expand, loginOrder };

@@ -14,6 +14,8 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Avonturiers zonder Barrows-teleport begonnen elke 10 seconden een Barrows-run die meteen stopte. Zonder weg erheen kiezen ze de Barrows nu even niet.
+- Avonturiers bleven clay hakken voor Doric's Quest (één had er 321) en verkochten die daarna. Ze stoppen nu bij genoeg en bewaren de clay voor de quest.
 - Avonturiers bleven bij de bank vaak 45 seconden voor de balie staan voor ze gingen banken. Ze banken nu meteen als ze ervoor staan.
 - Na een herstart stond de server vaak seconden lang stil, soms bijna 20 seconden, als avonturiers op een agility-baan liepen. Dat is opgelost.
 - PvP-bots die hun wapen kwijt waren, kregen geen nieuwe uitrusting omdat de code vastliep. Dat werkt weer.
@@ -28,6 +30,8 @@ Indeling per versie:
 - Een avonturier die vogels ving, bleef soms staan op een plek waar geen snare mag staan (gras, varens) en zette niets neer. Hij zoekt nu een tegel waar het wel mag.
 
 ### Gewijzigd
+- De Giant Mole en Runecrafting staan tijdelijk uit, omdat bots er vastliepen zonder iets op te leveren. Ze komen terug zodra ze werken.
+- Na een herstart loggen de clans om en om in (Mark, Jorg, Patrick), zodat geen clan als eerste alle plekken pakt.
 - Avonturiers jagen voorlopig niet meer op tropical wagtails en red salamanders, omdat ze daar niets vingen. Crimson swifts blijven ze wel vangen.
 - Hardcore Ironman-bots gaan niet meer zomaar dood: alleen nog door een echte klap in een gevecht.
 - Avonturiers lopen voorlopig niet naar Morytania (Canifis, Mort Myre), omdat de weg erheen nog niet betrouwbaar werkt. Met een teleport kunnen ze er nog wel komen.

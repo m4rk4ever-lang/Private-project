@@ -61,7 +61,7 @@ const Tasks = require("./Tasks.PlayerBots");
 const TravelHubs = require("../behaviours/navigation/TravelHubs.PlayerBots");
 const Sites = require("./Sites.PlayerBots");
 const { createHelperSteps } = require("./QuestHelperSteps.PlayerBots");
-const { createQuestPlay } = require("./QuestPlay.PlayerBots");
+const { createQuestPlay, QUEST_KEEP_MS } = require("./QuestPlay.PlayerBots");
 const { createBarrowsRun } = require("./BarrowsRun.PlayerBots");
 /** A quest a bot could not finish is put aside this long. */
 const QUEST_ASIDE_MS = 60 * 60_000;
@@ -606,6 +606,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const yields = [...(fields.resources ?? []), fields.log, fields.fish].filter(Boolean).map((v) => String(v).toLowerCase());
       if (!yields.includes(name)) continue;
       if (levelOf(entry.player, MODE_SKILL[mode]) < Number(fields.level ?? 1)) continue;
+      // Already has enough (bag and bank): no gathering. The quest step that asked has another
+      // problem; mining more clay does not solve it (Jorgbot 5 mined 321 clay for Doric's Quest,
+      // 6 needed; 1.037 bot-min in the clay loop, action-fit analysis A4, 22-11-2026).
+      const have = entry.player.getInventory().getAmount(itemId) + banked(entry.player, itemId);
+      if (have >= amount) {
+        metric({ kind: "gather_skipped", bot: entry.name, quest: run.name, item: itemName(itemId), have, amount });
+        return false;
+      }
       entry.gather = { itemId, amount, quest: run.name };
       entry.questRun = null;
       const started = startTraining(entry, { kind: "train", mode, skill: MODE_SKILL[mode], activity: activity.id,
@@ -811,6 +819,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const coins = Shopping.coinsOf(player) + banked(player, Trade.COINS);
     const done = questDone(player);
     return Object.keys(data.buyToTrain ?? {}).filter((skill) => {
+      // "hold": off for now, with its reason and when it comes back (adventurers.json).
+      if (data.buyToTrain[skill].hold) return false;
       // Herblore needs Druidic Ritual first, as for a player.
       if (data.buyToTrain[skill].quest && !done(data.buyToTrain[skill].quest)) return false;
       // A tool it cannot buy (the air talisman Sedridor gives back): only with one of its own.
@@ -2588,6 +2598,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     for (const [name, amount] of [["BARROWS_TELEPORT", 6], ["VARROCK_TELEPORT", 3]]) {
       if (fetchTool(entry, name, resume, amount) === true) return true;
     }
+    // With Morytania closed on foot (22-11-2026) the way in is a teleport that lands near: no
+    // tablet to be had, no run. Before, the run started and stopped within a minute ("kan de
+    // Barrows niet bereiken"), every 10 s again (Markbot 18; action-fit analysis A1). As a
+    // missing requirement (place_unreachable) it keeps the Barrows out for 30 min (Requirements).
+    if (lockedAway(player, placeOf(plan.boss))) {
+      return cannot(entry, "place_unreachable", { place: placeOf(plan.boss), need: "BARROWS_TELEPORT" });
+    }
     if (stockFood(entry, plan, nowMs)) {
       resume();
       return true;
@@ -3243,7 +3260,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     view.earn = entry.earn ?? {};
     entry.cannot ??= new Map();
     // What cannot be done now is left out before the pick (canExecute), with its reason.
-    const checked = precheck(entry, view, exclude, (data.bosses ?? []).filter((boss) => boss.onFoot !== false));
+    // A boss on "hold" (off for now, with its reason and when it comes back) is not picked.
+    const checked = precheck(entry, view, exclude, (data.bosses ?? []).filter((boss) => boss.onFoot !== false && !boss.hold));
     for (let attempt = 0; attempt < 4; attempt += 1) {
       let why = null;
       entry.startFailure = null;
@@ -3703,6 +3721,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         const have = entry.player.getInventory().getAmount(entry.gather.itemId) + banked(entry.player, entry.gather.itemId);
         if (have >= entry.gather.amount || nowMs >= entry.until) {
           const quest = entry.gather.quest;
+          // Kept for the quest as what it fetched is (questKeep): not banked as goods and sold at
+          // the exchange before the quest uses it (321 x clay up for sale, Jorgbot 5, 21-11-2026).
+          (entry.questKeep ??= new Map()).set(entry.gather.itemId, nowMs + QUEST_KEEP_MS);
           entry.gather = null;
           note(entry.player, `Heeft genoeg verzameld; terug naar ${quest}.`, "quest");
           forceQuest(entry.name, quest);
@@ -5514,6 +5535,17 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     entry.savedTask = null;
     // A job that gathered for a quest goes back to that quest when it has enough, after a restart too.
     if (task?.gather && !entry.gather) entry.gather = { ...task.gather };
+    // That job is done when it already has enough: back to the quest, not mining on.
+    if (entry.gather) {
+      const have = entry.player.getInventory().getAmount(entry.gather.itemId) + banked(entry.player, entry.gather.itemId);
+      if (have >= entry.gather.amount) {
+        const quest = entry.gather.quest;
+        (entry.questKeep ??= new Map()).set(entry.gather.itemId, nowMs + QUEST_KEEP_MS);
+        entry.gather = null;
+        forceQuest(entry.name, quest);
+        return false;
+      }
+    }
     const plan = Tasks.planOf(task, (data.bosses ?? []).filter((boss) => boss.onFoot !== false));
     if (!plan) return false;
     // Already at the level the job was for (combat 10 at combat 25): something new instead.
@@ -6004,7 +6036,8 @@ function startAdventurers({ api, runtime, world, registry }) {
   api.onCustomEvent?.("xpreward:open", (event) => manager.onXpReward(event));
   api.onServerStartup?.(() => setTimeout(() => {
     // First in, one per tick; the world bots wait until they are in (SpawnPacing).
-    runPaced(Clans.namesOf(data).map((name) => () => manager.spawn(name)));
+    // One of each clan in turn (Clans.loginOrder), so no clan is in first everywhere.
+    runPaced(Clans.loginOrder(data).map((name) => () => manager.spawn(name)));
     const { Task } = api.core;
     api.getTaskManager().submit(new (class extends Task {
       constructor() { super(CHECK_TICKS, "adventurers", false); }

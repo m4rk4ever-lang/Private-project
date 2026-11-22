@@ -39,8 +39,8 @@ wanneer het klaar is. Elk pakket is één probleem
 | P2 | 9. XP-bandbreedte | herblore 1,45M XP/uur | Metric `xp_anomaly` bestaat | open |
 | P2 | 10. Docs- en logdieet | 106 KB handover; log dekt 5,5 uur | Leeswerk < 60 KB; log ≥ 24 uur | open |
 | P2 | 15. Recovery-mechanismen bundelen | ≥ 9 losse pogingen/afkoelingen; Patrickbot 17 toch 25 vensters bevroren | Eén faalgeheugen | open |
-| P1 | 17. Runecrafting levert niets op (nieuw 22-11) | 113 bot-min, 0 XP; 18× vast bij de air-ruïnes | Runecraft-XP > 0 per venster | open ([validatie](2026-11-22-validatie-8b75ca8.md)) |
-| P1 | 18. Giant Mole-lus (nieuw 22-11) | 66× graven voor 2 kills; botbeurt 3,1 s; dode zonder eten | ≥ 1 kill per 10 min boss-tijd, 0 doden zonder eten | open ([validatie](2026-11-22-validatie-8b75ca8.md)) |
+| P1 | 17. Runecrafting levert niets op (nieuw 22-11) | 113 bot-min, 0 XP; 18× vast bij de air-ruïnes | Runecraft-XP > 0 per venster | **uit (hold) 22-11, moet terug**: oorzaak in game zoeken (agent-MCP: wat gebeurt na Use talisman on ruins), dan `hold` weg in `adventurers.json` `buyToTrain.RUNECRAFTING` ([validatie](2026-11-22-validatie-8b75ca8.md)) |
+| P1 | 18. Giant Mole-lus (nieuw 22-11) | 66× graven voor 2 kills; botbeurt 3,1 s; dode zonder eten | ≥ 1 kill per 10 min boss-tijd, 0 doden zonder eten | **uit (hold) 22-11, moet terug**: graven moet tot het hol en een kill leiden, dan `hold` weg bij `boss_giant_mole` in `adventurers.json` ([validatie](2026-11-22-validatie-8b75ca8.md)) |
 | P2 | 16. Schaal en tokens meten | Geen meting van kosten per bot of LLM-tokens | Metrics `server.perBot`, `ai_usage` | open |
 | P3 | 11. Fundamenten A-D | Registry: 6 van 68 met `requires` | Zie sectie Fundamenten | open |
 

@@ -5,6 +5,21 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 22-11-2026 20:40: Barrows-reis, holds, clay-lus, inlogvolgorde (branch `adventurers/barrows-travel`)
+
+Mergen na ≥ 60 min op `4101cc8`.
+
+- **A1 Barrows zonder reisweg (regressie van #53, van mij):** `startBarrows` geeft `place_unreachable` als `lockedAway` de Barrows dicht ziet (geen tablet te krijgen); 30 min onthouden. Was: run start en stopt binnen een minuut, elke 10 s opnieuw (Markbot 18).
+- **Holds (eigenaar: mag uit, maar moet terug):** `boss_giant_mole` (pakket 18) en `buyToTrain.RUNECRAFTING` (pakket 17) krijgen een `hold` met reden en terugkeervoorwaarde; `precheck` slaat boss-holds over, `buyableSkills` skill-holds. `bot-holds.test.cjs` eist bij elke hold een datum en een "weer aan"-voorwaarde.
+- **Uitgezet, moet terug (de werklijst):**
+  - Giant Mole: graven moet tot het hol en een kill leiden; ≥ 1 kill per 10 min, 0 doden zonder eten.
+  - Runecrafting: in game uitzoeken wat er na "Use talisman on ruins" gebeurt; Runecraft-XP > 0.
+  - Hunter wagtail en salamanders: snares/net trap moeten vangen (S2 skill-progressie).
+  - Morytania te voet: Paterdomus-route (valluik, Holy barrier) bewijzen met 3 loopjes.
+- **A4 clay-lus:** `gatherFor` verzamelt niet als tas + bank al genoeg hebben (metric `gather_skipped`); bij klaar en bij herstel na een herstart gaat het item in `questKeep` (6 uur, niet verkopen) en terug naar de quest. Bewijs: Jorgbot 5 mijnde 321 clay en zette ze te koop, 6 nodig.
+- **A8 inloggen om en om:** `Clans.loginOrder` (Mark, Jorg, Patrick, ...; `loginFirstClan` in `adventurers.json`); `namesOf` ongewijzigd.
+- **Validatie:** suite 164 pass, 14 fail (baseline); nieuw `bot-holds`, `bot-clans` +1; eslint no-undef schoon.
+
 ## 22-11-2026 20:30: past de actie bij het level, geld, Barrows (branch `analysis/actiekeuze`)
 
 - **Vraag eigenaar:** max-level bots op lage vijanden of lage acties; gem stalls voor geld; Barrows-deuren.
