@@ -228,7 +228,13 @@ function createTrainCombatAction(spec, world) {
     const style = styleFor(player, state);
     if (style === "ranged") return player.getSkillManager().getMaxLevel(Skill.RANGED);
     if (style === "magic") return player.getSkillManager().getMaxLevel(Skill.MAGIC);
-    return Math.min(...skills.map((skill) => player.getSkillManager().getMaxLevel(skill)));
+    const melee = skills.map((skill) => player.getSkillManager().getMaxLevel(skill));
+    // An honest bot (an adventurer) fights at the mean of its three melee stats: the lowest one
+    // pulled the whole band down (Defence 40 beside Attack and Strength 90: rats and cows; 37 of
+    // 180 bot x style pairs two or more stages under its combat level, action-fit A6, 22-11-2026).
+    // It still trains its lowest stat there (meleeStyleForLowest), as a player does.
+    if (state?.honest || isHonest(player)) return Math.round(melee.reduce((sum, level) => sum + level, 0) / melee.length);
+    return Math.min(...melee);
   };
   // An honest bot (an adventurer) also fights the stage below its own (combat 37: barbarians of
   // 10-17 beside the 20-45 band), as a player does: its own planner may send it to a place
