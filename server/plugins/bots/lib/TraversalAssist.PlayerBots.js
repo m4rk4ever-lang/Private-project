@@ -47,6 +47,14 @@ function distanceSquared(aX, aY, bX, bY) {
 function createTraversalAssist(api, options = {}) {
   const RegionManager = api.getRegionManager();
   const trackedObjectIds = new Set(options.objectIds ?? []);
+  // Ids first asked for after the index was set up (an agility course's obstacles, a furnace).
+  // They used to reset the whole index: a rescan of every region plus a rewrite of the dump, in
+  // the bot's own turn, once per new id. After a restart that was 2,5 s per id and up to 19,6 s
+  // per agility turn (slow_bot, 21-11-2026). Now each is indexed per region when a search first
+  // needs that region, and never written to the dump (its fingerprint stays the boot set).
+  const lateObjectIds = new Set();
+  const lateCovered = new Map();
+  let seedSealed = false;
   const objectsByRegion = new Map();
   const cacheTarget = readCacheTarget();
   let indexInitialized = false;
@@ -96,7 +104,7 @@ function createTraversalAssist(api, options = {}) {
     for (const [regionId, byId] of objectsByRegion.entries()) {
       const regionData = {};
       for (const [objectId, locations] of byId.entries()) {
-        if (!Array.isArray(locations) || locations.length === 0) {
+        if (!Array.isArray(locations) || locations.length === 0 || !trackedObjectIds.has(objectId)) {
           continue;
         }
         const key = String(objectId);
@@ -138,6 +146,7 @@ function createTraversalAssist(api, options = {}) {
     }
 
     objectsByRegion.clear();
+    lateCovered.clear();
     let objectCount = 0;
     for (const [rawRegionId, byId] of Object.entries(regions)) {
       const regionId = parseNumber(rawRegionId);
@@ -190,7 +199,7 @@ function createTraversalAssist(api, options = {}) {
   }
 
   /** Indexes a region that is already loaded; appends to whatever is there. */
-  function scanLoadedRegion(regionId) {
+  function scanLoadedRegion(regionId, ids = trackedObjectIds) {
     const region = RegionManager.getRegionid(regionId);
     if (!region?.isLoaded?.()) {
       return 0;
@@ -210,7 +219,7 @@ function createTraversalAssist(api, options = {}) {
           }
           for (const object of objects) {
             const objectId = object?.getId?.();
-            if (!trackedObjectIds.has(objectId)) {
+            if (!ids.has(objectId)) {
               continue;
             }
             const loc = object.getLocation?.();
@@ -242,19 +251,19 @@ function createTraversalAssist(api, options = {}) {
     return matches;
   }
 
-  function scanRegion(regionId) {
+  function scanRegion(regionId, ids = trackedObjectIds) {
     const region = RegionManager.getRegionid(regionId);
     if (!region) {
       return 0;
     }
-    if (region.isLoaded?.()) return scanLoadedRegion(regionId);
+    if (region.isLoaded?.()) return scanLoadedRegion(regionId, ids);
     // A stale index must not populate the live world with every map's objects and collision grids.
     const template = api.core.readTemplateRegion(regionId);
     if (!template) return 0;
     let matches = 0;
     for (const chunk of template.chunks) {
       for (const loc of chunk) {
-        if (!trackedObjectIds.has(loc.id)) continue;
+        if (!ids.has(loc.id)) continue;
         const bridge = template.settings[(1 << 12) | (loc.localX << 6) | loc.localY] & 2;
         const plane = loc.plane - (bridge ? 1 : 0);
         if (plane < 0 || plane > 3) continue;
@@ -269,10 +278,36 @@ function createTraversalAssist(api, options = {}) {
   function indexLoadedRegion(regionId) {
     objectsByRegion.delete(regionId);
     scanLoadedRegion(regionId);
+    const covered = lateCovered.get(regionId);
+    if (covered?.size) scanLoadedRegion(regionId, covered);
+  }
+
+  /**
+   * Indexes the late ids among `objectIds` in these regions, where not done yet. At most
+   * `maxRegions` regions per call (nearest first, as given): a wide search fills in over calls.
+   */
+  function coverLateIds(regionIds, objectIds, maxRegions = Infinity) {
+    const late = objectIds.filter((id) => lateObjectIds.has(id));
+    if (late.length === 0) return;
+    let scanned = 0;
+    for (const regionId of regionIds) {
+      let covered = lateCovered.get(regionId);
+      const missing = late.filter((id) => !covered?.has(id));
+      if (missing.length === 0) continue;
+      if (scanned >= maxRegions) return;
+      scanned += 1;
+      if (!covered) {
+        covered = new Set();
+        lateCovered.set(regionId, covered);
+      }
+      for (const id of missing) covered.add(id);
+      scanRegion(regionId, new Set(missing));
+    }
   }
 
   function buildPersistentIndexByScanningMap() {
     objectsByRegion.clear();
+    lateCovered.clear();
     const regionIds = [...RegionManager.regions.keys()].sort((a, b) => a - b);
     let objectCount = 0;
     for (const regionId of regionIds) {
@@ -291,6 +326,8 @@ function createTraversalAssist(api, options = {}) {
   }
 
   function initializePersistentIndex(options = {}) {
+    // The boot set is complete once the index is first set up; later ids are late ids.
+    seedSealed = true;
     const forceRescan = options.forceRescan === true;
     const nowMs = Date.now();
     if (indexInitialized && !forceRescan) {
@@ -439,15 +476,14 @@ function createTraversalAssist(api, options = {}) {
   }
 
   function trackObjectId(objectId) {
-    if (!Number.isFinite(objectId) || objectId < 0 || trackedObjectIds.has(objectId)) {
+    if (!Number.isFinite(objectId) || objectId < 0 || trackedObjectIds.has(objectId) || lateObjectIds.has(objectId)) {
+      return;
+    }
+    if (seedSealed) {
+      lateObjectIds.add(objectId);
       return;
     }
     trackedObjectIds.add(objectId);
-    if (indexInitialized) {
-      // A new id kind changes the fingerprint; rebuild on the next index use.
-      indexInitialized = false;
-      nextInitAttemptAtMs = 0;
-    }
   }
 
   function trackObjectIds(objectIds = []) {
@@ -504,6 +540,7 @@ function createTraversalAssist(api, options = {}) {
     let closestDistance = Number.MAX_SAFE_INTEGER;
     const regionIds = regionIdsForBounds(RegionManager, minX, maxX, minY, maxY);
     ensureRegionsLoaded(regionIds);
+    coverLateIds(regionIds, [objectId]);
     const privateArea = player.getPrivateArea?.() ?? null;
 
     for (const regionId of regionIds) {
@@ -671,6 +708,7 @@ function createTraversalAssist(api, options = {}) {
 
     const regionIds = regionIdsAroundPlayer(player, regionRadius);
     ensureRegionsLoaded(regionIds);
+    coverLateIds(regionIds, uniqueIds);
     const candidates = [];
     const privateAreaRef = player.getPrivateArea?.() ?? null;
 
@@ -729,6 +767,16 @@ function createTraversalAssist(api, options = {}) {
     const z = loc.getZ();
     const regionX = loc.getX() >> 6;
     const regionY = loc.getY() >> 6;
+    // Late ids: up to 16 not yet indexed regions per call, nearest first (unloaded ones are read
+    // from the cache). The rest fills in on later calls.
+    if (objectIds.some((id) => lateObjectIds.has(id))) {
+      const around = [];
+      for (let rx = regionX - radius; rx <= regionX + radius; rx += 1) {
+        for (let ry = regionY - radius; ry <= regionY + radius; ry += 1) around.push([Math.max(Math.abs(rx - regionX), Math.abs(ry - regionY)), (rx << 8) + ry]);
+      }
+      around.sort((a, b) => a[0] - b[0]);
+      coverLateIds(around.map((entry) => entry[1]), objectIds, 16);
+    }
     let best = null;
     let bestDistSq = Infinity;
     for (let rx = regionX - radius; rx <= regionX + radius; rx += 1) {

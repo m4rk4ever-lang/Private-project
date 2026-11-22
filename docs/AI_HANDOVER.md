@@ -5,6 +5,15 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 22-11-2026 14:10: agility-lag, oorzaak in de objectindex (branch `adventurers/agility-lag`, pakket 1)
+
+- **Bewijs (analyse 21-11, nagerekend):** 27 `slow_bot`, alle `runCourse` (Falador 14, Seers 6, Varrock 5, Canifis 1, Gnome 1); `slow_tick.ms` ≈ `slowestBotMs` (19.613/19.603, 13.030/13.022).
+- **Oorzaak (uit de code):** `TraversalAssist.trackObjectId` zette bij elk nieuw object-id de hele index op ongeldig. De volgende zoektocht deed dan `buildPersistentIndexByScanningMap`: alle regio's scannen (onbekende uit de cache lezen) en `object-index.json` (448 KB) herschrijven, in de beurt van de bot. Agility-obstakels staan niet in de catalogus waarmee de index bij het opstarten wordt gevuld; de fallback in `RunCourse` (r. 136) zoekt alle obstakels van de baan, dus meerdere nieuwe ids, elk een volledige herbouw, in één beurt. Na een herstart begint dat opnieuw. De 25×25-scan uit de analyse-hypothese kost maar milliseconden en is het niet.
+- **Fix:** ids die na het opstarten voor het eerst gevraagd worden, zijn "late ids". Die worden per regio geïndexeerd zodra een zoektocht die regio nodig heeft (`coverLateIds`), bij `findNearestIndexedLocation` hoogstens 16 regio's per aanroep, dichtstbij eerst. Ze komen niet in de dump; de vingerafdruk blijft de opstartset. Eén keer na deze update wordt de oude dump (met de vroegere late ids) afgekeurd en eenmalig opnieuw gescand bij het opstarten.
+- **Test:** `bot-index-late-ids.test.cjs` (2 pass; faalt op de oude code). Suite 159 pass, 14 fail (baseline); eslint no-undef schoon.
+- **Bevestigen met:** `slow_bot` met `activity` agility_* = 0 en `slow_tick` > 1 s door agility = 0, 2 uur op de nieuwe `v`.
+- **Eigenaar, open vragen analyse:** testprofielen houden hun kapitaal (ja); Hardcore-dood niet per kans (nee, nog te bouwen). Gear achter granted quests: ook bestaande items afnemen, maar per quest pas als die speelbaar is (tot dan niets veranderen). Hunter blijft aan zolang het werkt (beslissen op 60 min logs van de nieuwe `v`). Minimaal 60 min per serverversie: akkoord.
+
 ## 22-11-2026: skill-progressie, money making en gevechtskeuzes (branch `analysis/skill-progression-2026-11-22`)
 
 - **Wat:** per skill het progressiepad uit de OSRS Wiki-trainingsgidsen, gefilterd op wat een bot eerlijk kan, naast wat de bots nu doen; een generiek keuzemodel (doel, methode, combineren, geld); money making per accountfase; vijandkeuze op verdediging en elementzwakte; bossladder tegen de plugins op de server. Uitgewerkt tot pakketten S1-S10 in [analysis/2026-11-22-skill-progressie.md](analysis/2026-11-22-skill-progressie.md), met datasets in `docs/analysis/2026-11-22/`.
