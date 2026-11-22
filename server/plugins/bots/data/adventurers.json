@@ -10,6 +10,7 @@
     "quests": ["Druidic Ritual", "Rune Mysteries", "Priest in Peril", "Nature Spirit", "Lost City", "Fairytale I - Growing Pains", "Fairytale II - Cure a Queen", "Tree Gnome Village", "The Grand Tree", "Plague City", "Bone Voyage", "Monkey Madness I", "Swan Song", "Desert Treasure I", "Desert Treasure II - The Fallen Empire", "The Fremennik Trials", "Song of the Elves", "Dragon Slayer I", "Lunar Diplomacy", "Ghosts Ahoy", "Children of the Sun"]
   },
   "_comment": "Adventurers (adventurers/Adventurers.PlayerBots.js): named bots in three clans of equal size (clans: name, emblem (the clan logo on the adventurers page: colour and symbol axe, skull, star, crown or sword), leader who founds the clan, members; adventurers/Clans.PlayerBots.js), racing each other; within a clan they hand each other materials they really have spare that start as new accounts and play on their own, training toward the quests below and completing them. Their progress is saved. quests: the order they take quests in, by the quest's name as registered on this server; skills and quests are extra requirements on top of the cache's quest table (Quests.PlayerBots.js), combat a recommended combat level. Every other quest on the server follows, easiest first. A quest is done only where a bot playthrough is built (playthrough: true); nothing is simulated, so without one they skip it. trainMinutes / questMinutes: how long one stretch lasts. questChance: the chance to pick a quest when one is ready. groupChance: the chance an adventurer takes the others along (Wintertodt together, or the same training spot). dropValue: the lowest value (coins) of a drop that goes in the drop log. bossLevel: the lowest combat level of a kill that goes in the boss log. bosses: the bosses adventurers fight from their combat level, in the boss's shared lair (x, y: where they arrive); bossChance: the chance to go bossing when one is open to them, alone or with the others. generation: raise it to start every adventurer over (levels, items, quests and journal reset, with the Tutorial Island starter kit). grandExchange: where they sell (the Grand Exchange's centre). shopRadius: they walk to a shop only within this many tiles (a longer walk is not worth one item). Everything is on foot (brain/Errands.PlayerBots.js). agilityCourses: where they run laps, best they may first (activities agility_<course>, brain/actions/RunCourse.PlayerBots.js). bankCap, bankKeep, junkValue: what they keep by need: supplies they use up (runes, arrows, food, teleport tablets and jewellery) all of it; training materials for their levels now or later, and bankKeep, up to bankCap each; a tier they have outgrown and any surplus is sold; unwearable things worth under junkValue each they drop. buyToTrain: skills they may train on bought materials when they can pay (levelSkill: the skill whose level sets the tier when the key is not a skill, SMELTING is Smithing; ownTool: a tool it cannot buy, the air talisman from Rune Mysteries; quest: the quest the skill needs first) (the best tier their level allows, a material or a pair of them, `amount` of each at the Grand Exchange; the product is sold again, often at a loss, as players do to train). banks: where they bank the last job's things; sellValue: from this much, or when the Grand Exchange is about as near, they sell instead (and take banked goods along as notes). keepValue: goods worth less than this stay in its bag between stretches (otherwise it sells them first); fullSlots: or when this few slots are free. Coins only come from sales and finds (adventurers/Trade.PlayerBots.js).",
+  "loginFirstClan": "Mark Clan",
   "clans": [
     { "name": "Jorg Clan", "emblem": { "color": "#b3261e", "symbol": "axe" }, "leader": "Bekoek", "members": ["Bekoek", "Jorgbot 1", "Jorgbot 2", "Jorgbot 3", "Jorgbot 4"] },
     { "name": "Patrick Clan", "emblem": { "color": "#2e7d32", "symbol": "skull" }, "leader": "Slayed Soul", "members": ["Slayed Soul", "Eeshwar", "Patrickbot 1", "Patrickbot 2", "Patrickbot 3"] },
@@ -251,6 +252,7 @@
     },
     {
       "id": "boss_giant_mole",
+      "hold": "Tijdelijk uit (22-11-2026, validatie 8b75ca8 pakket 18): 66x graven voor 2 kills, loop op de molshoop, een dode zonder eten, een botbeurt van 3,1 s. Weer aan als graven tot een kill leidt: >= 1 kill per 10 min boss-tijd en 0 doden zonder eten. Open in docs/analysis/2026-11-21-runtime-analyse.md.",
       "access": "dig into a mole hill in Falador Park with a spade, with a light source for the dark Mole Hole",
       "via": { "kind": "dig", "at": { "x": 2984, "y": 3387, "z": 0 }, "name": "een molshoop in Falador Park", "tool": "SPADE", "light": "LIT_CANDLE", "lightFrom": "CANDLE" },
       "name": "Giant Mole",
@@ -308,6 +310,9 @@
   "sellValue": 5000,
   "bankCap": 10000,
   "agilityCourses": [
+    { "course": "ardougne", "name": "Ardougne Rooftop", "level": 90, "x": 2673, "y": 3296, "z": 0 },
+    { "course": "rellekka", "name": "Rellekka Rooftop", "level": 80, "x": 2625, "y": 3678, "z": 0 },
+    { "course": "pollnivneach", "name": "Pollnivneach Rooftop", "level": 70, "x": 3351, "y": 2961, "z": 0 },
     { "course": "seers", "name": "Seers' Village Rooftop", "level": 60, "x": 2729, "y": 3489, "z": 0 },
     { "course": "falador", "name": "Falador Rooftop", "level": 50, "x": 3036, "y": 3341, "z": 0 },
     { "course": "canifis", "name": "Canifis Rooftop", "level": 40, "x": 3508, "y": 3488, "z": 0, "quests": ["Priest in Peril"] },
@@ -344,7 +349,7 @@
     "SMELTING": { "levelSkill": "SMITHING", "activity": "process_smelting", "amount": 13,
       "station": { "name": "de oven van Falador", "x": 2974, "y": 3369, "z": 0 },
       "tiers": [[30, ["IRON_ORE", "COAL"]], [15, "IRON_ORE"], [1, ["COPPER_ORE", "TIN_ORE"]]] },
-    "RUNECRAFTING": { "tool": "AIR_TALISMAN", "ownTool": true, "quest": "Rune Mysteries", "activity": "process_runecrafting_air", "amount": 25,
+    "RUNECRAFTING": { "hold": "Tijdelijk uit (22-11-2026, validatie 8b75ca8 pakket 17): 113 bot-min, 0 XP, vast bij de air-ruinen (2983,3291) ondanks de talisman-fix van 21-11. Weer aan als een bot in game het altaar in komt en runes maakt. Open in docs/analysis/2026-11-21-runtime-analyse.md.", "tool": "AIR_TALISMAN", "ownTool": true, "quest": "Rune Mysteries", "activity": "process_runecrafting_air", "amount": 25,
       "station": { "name": "de Air-ruïnes ten zuiden van Falador", "x": 2984, "y": 3288, "z": 0 },
       "tiers": [[1, "RUNE_ESSENCE"]] },
     "FLETCHING": { "tool": "KNIFE", "activity": "process_fletching", "amount": 27,
@@ -354,9 +359,9 @@
     "CRAFTING": { "tool": "CHISEL", "activity": "process_crafting_gems", "amount": 27,
       "tiers": [[55, "UNCUT_DRAGONSTONE"], [43, "UNCUT_DIAMOND"], [34, "UNCUT_RUBY"], [27, "UNCUT_EMERALD"], [20, "UNCUT_SAPPHIRE"], [16, "UNCUT_RED_TOPAZ"], [13, "UNCUT_JADE"], [1, "UNCUT_OPAL"]] },
     "PRAYER": { "activity": "process_prayer", "amount": 27,
-      "tiers": [[1, "BIG_BONES"]] },
+      "tiers": [[50, "DRAGON_BONES"], [30, "BABYDRAGON_BONES"], [1, "BIG_BONES"]] },
     "HERBLORE": { "activity": "process_herblore", "amount": 14, "quest": "Druidic Ritual",
-      "tiers": [[55, ["KWUARM_POTION_UNF_", "LIMPWURT_ROOT"]], [45, ["IRIT_POTION_UNF_", "EYE_OF_NEWT"]], [38, ["RANARR_POTION_UNF_", "SNAPE_GRASS"]],
+      "tiers": [[72, ["DWARF_WEED_POTION_UNF_", "WINE_OF_ZAMORAK"]], [66, ["CADANTINE_POTION_UNF_", "WHITE_BERRIES"]], [63, ["SNAPDRAGON_POTION_UNF_", "RED_SPIDERS_EGGS"]], [55, ["KWUARM_POTION_UNF_", "LIMPWURT_ROOT"]], [45, ["IRIT_POTION_UNF_", "EYE_OF_NEWT"]], [38, ["RANARR_POTION_UNF_", "SNAPE_GRASS"]],
         [22, ["HARRALANDER_POTION_UNF_", "RED_SPIDERS_EGGS"]], [12, ["TARROMIN_POTION_UNF_", "LIMPWURT_ROOT"]], [3, ["GUAM_POTION_UNF_", "EYE_OF_NEWT"]]] },
     "COOKING": { "tool": "TINDERBOX", "activity": "process_cooking", "amount": 27, "station": { "name": "de keuken van Lumbridge", "x": 3209, "y": 3215, "z": 0 },
       "tiers": [[80, "RAW_SHARK"], [62, "RAW_MONKFISH"], [45, "RAW_SWORDFISH"], [40, "RAW_LOBSTER"], [30, "RAW_TUNA"], [25, "RAW_SALMON"], [15, "RAW_TROUT"], [1, "RAW_SHRIMPS"]] },

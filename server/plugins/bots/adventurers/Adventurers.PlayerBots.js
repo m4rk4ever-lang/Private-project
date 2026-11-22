@@ -61,7 +61,8 @@ const Tasks = require("./Tasks.PlayerBots");
 const TravelHubs = require("../behaviours/navigation/TravelHubs.PlayerBots");
 const Sites = require("./Sites.PlayerBots");
 const { createHelperSteps } = require("./QuestHelperSteps.PlayerBots");
-const { createQuestPlay } = require("./QuestPlay.PlayerBots");
+const { createQuestPlay, QUEST_KEEP_MS } = require("./QuestPlay.PlayerBots");
+const { createKnowledge } = require("./Knowledge.PlayerBots");
 const { createBarrowsRun } = require("./BarrowsRun.PlayerBots");
 /** A quest a bot could not finish is put aside this long. */
 const QUEST_ASIDE_MS = 60 * 60_000;
@@ -338,6 +339,26 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return null;
   }
 
+  /**
+   * Does the job fit its level (action-fit analysis A7, 22-11-2026)? Its level in the job's skill,
+   * the activity's requirement, and the best activity the data has for that level: a lower pick
+   * is a choice (quest, money, variety, spot full) or a gap in the data (no higher tier).
+   */
+  function actionFit(entry, job) {
+    try {
+      const activity = job.activity ?? entry.activity ?? null;
+      const skill = entry.plan?.skill;
+      if (!activity || !job.mode || !skill || skill === "COMBAT") return null;
+      const level = levelOf(entry.player, skill);
+      const all = activitiesFor(job.mode, 200, definitions);
+      const required = all.find((option) => option.id === activity)?.level ?? null;
+      const best = all.find((option) => option.level <= level) ?? null;
+      return { skill, level, required, best: best?.id ?? null, bestLevel: best?.level ?? null, below: best && required !== null ? best.level - required : null };
+    } catch {
+      return null;
+    }
+  }
+
   function trackJob(entry, nowMs) {
     const key = jobKey(entry);
     const job = entry.job;
@@ -354,7 +375,19 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         const earn = (entry.earn ??= {});
         earn[job.mode] = earn[job.mode] === undefined ? coinsPerHour : Math.round(earn[job.mode] * 0.6 + coinsPerHour * 0.4);
       }
+      // What its clan learns from it (Knowledge.PlayerBots.js): per mode and per activity, also a
+      // job too short to measure (its ending counts: Activity Health).
+      if (job.mode && job.key.startsWith("training")) {
+        const xpPerHour = hours >= 3 / 60 ? (xp - job.xp) / hours : null;
+        try {
+          knowledge.record(Clans.clanOf(data, entry.name)?.name ?? null, [`mode:${job.mode}`, (job.activity ?? entry.activity) ? `activity:${job.activity ?? entry.activity}` : null],
+            { gpPerHour: coinsPerHour, xpPerHour, stuck: entry.jobEnd === "stuck" });
+        } catch {
+          // Learning is a help, never a reason a job does not end.
+        }
+      }
       metric({ kind: "job", bot: entry.name, job: job.key.split(":")[0], mode: job.mode, coinsPerHour, activity: job.activity ?? entry.activity ?? null, reason: job.reason, target: job.target,
+        fit: actionFit(entry, job),
         levelAtStart: job.levelAtStart, levelAtEnd: level, targetMet: job.target ? level >= job.target.level : null,
         minutes: Math.round((nowMs - job.startedAt) / 6000) / 10, xp: Math.round(xp - job.xp),
         ended: entry.jobEnd ?? (key === null ? `then ${entry.phase}` : "replaced") });
@@ -505,7 +538,18 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       questsBlocked: [...questsBlocked].filter(([, until]) => until > nowMs).map(([name]) => name),
       questsHeld: (data.questHold?.quests ?? []).map((quest) => quest.name) });
     Object.assign(tickCost, { count: 0, totalMs: 0, maxMs: 0 });
+    // What each clan has learned (Knowledge), every half hour: per mode and activity the median
+    // coins and XP per hour and how often a job ended stuck (Activity Health).
+    if (nowMs - (knowledgeMetricAt ?? 0) >= 30 * 60_000) {
+      knowledgeMetricAt = nowMs;
+      try {
+        for (const clan of knowledge.clans()) metric({ kind: "knowledge", clan, table: knowledge.summary(clan) });
+      } catch {
+        // A help, not a must.
+      }
+    }
   }
+  let knowledgeMetricAt = null;
 
   /** Quests blocked for every adventurer (noteQuestFailure): name -> until; and recent failures. */
   const questsBlocked = new Map();
@@ -515,6 +559,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   const questFeedback = [];
   /** name -> { name, player, phase, until, plan, startedAt } */
   const adventurers = new Map();
+  // Per clan what its jobs earned and how they went, kept over restarts (Knowledge.PlayerBots.js).
+  const knowledge = createKnowledge();
   // Barrows runs (BarrowsRun.PlayerBots.js): mounds, crypts, tunnels, chest.
   const barrowsRun = createBarrowsRun({
     core, api, world,
@@ -606,6 +652,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       const yields = [...(fields.resources ?? []), fields.log, fields.fish].filter(Boolean).map((v) => String(v).toLowerCase());
       if (!yields.includes(name)) continue;
       if (levelOf(entry.player, MODE_SKILL[mode]) < Number(fields.level ?? 1)) continue;
+      // Already has enough (bag and bank): no gathering. The quest step that asked has another
+      // problem; mining more clay does not solve it (Jorgbot 5 mined 321 clay for Doric's Quest,
+      // 6 needed; 1.037 bot-min in the clay loop, action-fit analysis A4, 22-11-2026).
+      const have = entry.player.getInventory().getAmount(itemId) + banked(entry.player, itemId);
+      if (have >= amount) {
+        metric({ kind: "gather_skipped", bot: entry.name, quest: run.name, item: itemName(itemId), have, amount });
+        return false;
+      }
       entry.gather = { itemId, amount, quest: run.name };
       entry.questRun = null;
       const started = startTraining(entry, { kind: "train", mode, skill: MODE_SKILL[mode], activity: activity.id,
@@ -811,6 +865,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const coins = Shopping.coinsOf(player) + banked(player, Trade.COINS);
     const done = questDone(player);
     return Object.keys(data.buyToTrain ?? {}).filter((skill) => {
+      // "hold": off for now, with its reason and when it comes back (adventurers.json).
+      if (data.buyToTrain[skill].hold) return false;
       // Herblore needs Druidic Ritual first, as for a player.
       if (data.buyToTrain[skill].quest && !done(data.buyToTrain[skill].quest)) return false;
       // A tool it cannot buy (the air talisman Sedridor gives back): only with one of its own.
@@ -2588,6 +2644,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     for (const [name, amount] of [["BARROWS_TELEPORT", 6], ["VARROCK_TELEPORT", 3]]) {
       if (fetchTool(entry, name, resume, amount) === true) return true;
     }
+    // With Morytania closed on foot (22-11-2026) the way in is a teleport that lands near: no
+    // tablet to be had, no run. Before, the run started and stopped within a minute ("kan de
+    // Barrows niet bereiken"), every 10 s again (Markbot 18; action-fit analysis A1). As a
+    // missing requirement (place_unreachable) it keeps the Barrows out for 30 min (Requirements).
+    if (lockedAway(player, placeOf(plan.boss))) {
+      return cannot(entry, "place_unreachable", { place: placeOf(plan.boss), need: "BARROWS_TELEPORT" });
+    }
     if (stockFood(entry, plan, nowMs)) {
       resume();
       return true;
@@ -2775,6 +2838,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         dialogue: run.dialogue ?? [] });
       endQuestRun(entry, run, "done");
       entry.jobEnd = "quest done";
+    } else if (/^quest helper error: .*(fetch failed|ECONNREFUSED|engine hasn't been started|not configured)/i.test(String(run.reason ?? ""))) {
+      // The Quest Helper bridge is down: not the quest's failure. It blocked quests for every
+      // adventurer for 3 h (80 "fetch failed" in the feedback log, runtime analysis pakket 5).
+      // Put aside a short while, not counted, not blocked for the others.
+      (entry.questsAside ??= new Map()).set(run.name, nowMs + 10 * 60_000);
+      endQuestRun(entry, run, "bridge_down", run.reason);
+      entry.jobEnd = "quest bridge_down";
+      note(entry.player, `Legt ${run.name} even weg: de questgids reageert niet.`, "quest");
     } else {
       // Stuck: put aside (longer each time it fails) and written down why, so the cause can be
       // fixed (logs/adventurer-quest-feedback.jsonl; also on the page's feedback list).
@@ -3241,9 +3312,12 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // Fled hurt and hungry lately: no fights or thieving until it carries food again.
     if (nowMs < (entry.dangerUntil ?? 0) && !carriesFood(entry.player)) for (const mode of DANGER_MODES) exclude.add(mode);
     view.earn = entry.earn ?? {};
+    // What its clan measured (Knowledge): the planner's second source after its own.
+    view.clanEarn = knowledge.moneyByMode(Clans.clanOf(data, entry.name)?.name ?? null);
     entry.cannot ??= new Map();
     // What cannot be done now is left out before the pick (canExecute), with its reason.
-    const checked = precheck(entry, view, exclude, (data.bosses ?? []).filter((boss) => boss.onFoot !== false));
+    // A boss on "hold" (off for now, with its reason and when it comes back) is not picked.
+    const checked = precheck(entry, view, exclude, (data.bosses ?? []).filter((boss) => boss.onFoot !== false && !boss.hold));
     for (let attempt = 0; attempt < 4; attempt += 1) {
       let why = null;
       entry.startFailure = null;
@@ -3703,6 +3777,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         const have = entry.player.getInventory().getAmount(entry.gather.itemId) + banked(entry.player, entry.gather.itemId);
         if (have >= entry.gather.amount || nowMs >= entry.until) {
           const quest = entry.gather.quest;
+          // Kept for the quest as what it fetched is (questKeep): not banked as goods and sold at
+          // the exchange before the quest uses it (321 x clay up for sale, Jorgbot 5, 21-11-2026).
+          (entry.questKeep ??= new Map()).set(entry.gather.itemId, nowMs + QUEST_KEEP_MS);
           entry.gather = null;
           note(entry.player, `Heeft genoeg verzameld; terug naar ${quest}.`, "quest");
           forceQuest(entry.name, quest);
@@ -5514,6 +5591,17 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     entry.savedTask = null;
     // A job that gathered for a quest goes back to that quest when it has enough, after a restart too.
     if (task?.gather && !entry.gather) entry.gather = { ...task.gather };
+    // That job is done when it already has enough: back to the quest, not mining on.
+    if (entry.gather) {
+      const have = entry.player.getInventory().getAmount(entry.gather.itemId) + banked(entry.player, entry.gather.itemId);
+      if (have >= entry.gather.amount) {
+        const quest = entry.gather.quest;
+        (entry.questKeep ??= new Map()).set(entry.gather.itemId, nowMs + QUEST_KEEP_MS);
+        entry.gather = null;
+        forceQuest(entry.name, quest);
+        return false;
+      }
+    }
     const plan = Tasks.planOf(task, (data.bosses ?? []).filter((boss) => boss.onFoot !== false));
     if (!plan) return false;
     // Already at the level the job was for (combat 10 at combat 25): something new instead.
@@ -6004,7 +6092,8 @@ function startAdventurers({ api, runtime, world, registry }) {
   api.onCustomEvent?.("xpreward:open", (event) => manager.onXpReward(event));
   api.onServerStartup?.(() => setTimeout(() => {
     // First in, one per tick; the world bots wait until they are in (SpawnPacing).
-    runPaced(Clans.namesOf(data).map((name) => () => manager.spawn(name)));
+    // One of each clan in turn (Clans.loginOrder), so no clan is in first everywhere.
+    runPaced(Clans.loginOrder(data).map((name) => () => manager.spawn(name)));
     const { Task } = api.core;
     api.getTaskManager().submit(new (class extends Task {
       constructor() { super(CHECK_TICKS, "adventurers", false); }

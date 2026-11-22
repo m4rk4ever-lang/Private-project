@@ -391,6 +391,9 @@
     {"id":"agility_canifis","mode":"agility","capacity":64,"repeat":true,"manual":true,"failureCooldownSeconds":5,"fields":{"level":40},"actions":[{"type":"runCourse","course":"canifis","start":{"x":3508,"y":3488,"z":0}}]},
     {"id":"agility_falador","mode":"agility","capacity":64,"repeat":true,"manual":true,"failureCooldownSeconds":5,"fields":{"level":50},"actions":[{"type":"runCourse","course":"falador","start":{"x":3036,"y":3341,"z":0}}]},
     {"id":"agility_seers","mode":"agility","capacity":64,"repeat":true,"manual":true,"failureCooldownSeconds":5,"fields":{"level":60},"actions":[{"type":"runCourse","course":"seers","start":{"x":2729,"y":3489,"z":0}}]},
+    {"id":"agility_pollnivneach","mode":"agility","capacity":64,"repeat":true,"manual":true,"failureCooldownSeconds":5,"fields":{"level":70},"actions":[{"type":"runCourse","course":"pollnivneach","start":{"x":3351,"y":2961,"z":0}}]},
+    {"id":"agility_rellekka","mode":"agility","capacity":64,"repeat":true,"manual":true,"failureCooldownSeconds":5,"fields":{"level":80},"actions":[{"type":"runCourse","course":"rellekka","start":{"x":2625,"y":3678,"z":0}}]},
+    {"id":"agility_ardougne","mode":"agility","capacity":64,"repeat":true,"manual":true,"failureCooldownSeconds":5,"fields":{"level":90},"actions":[{"type":"runCourse","course":"ardougne","start":{"x":2673,"y":3296,"z":0}}]},
     {"id":"process_cooking","mode":"processing","capacity":64,"repeat":true,"manual":true,"failureCooldownSeconds":5,"actions":[{"type":"cook"}]},
     {
       "id": "bank_trip",
