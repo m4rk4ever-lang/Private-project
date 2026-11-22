@@ -8,7 +8,7 @@
  *
  * spec: { talisman, essence: [names], ruins: [x, y], inside: [x, y], altar: [x, y], portal: [x, y] }.
  */
-const { requestMovement } = require("../../behaviours/navigation/Navigation.PlayerBots");
+const { requestMovement, clearMovementRequest } = require("../../behaviours/navigation/Navigation.PlayerBots");
 
 const RETRY_MS = 3000;
 const NEAR = (a, x, y, tiles) => Math.max(Math.abs(a.getX() - x), Math.abs(a.getY() - y)) <= tiles;
@@ -58,8 +58,19 @@ function createCraftRunesAction(spec, world) {
       const { player, state, nowMs } = ctx;
       if (!player || !state) return "failed";
       const bot = (state.craftRunes ??= { nextAt: 0 });
-      if (nowMs < bot.nextAt || player.busy?.() || player.getMovementQueue().size() > 0) return "running";
       const here = player.getLocation();
+      // Beside the ruins a walk still under way is the walk to the ruins' own tile, under the
+      // object, which never ends: it kept every turn at "running" and the talisman was never
+      // used (2983,3291; 113 bot-min, 0 XP; voorwerk 22-11-2026, pakket 17). Stop it and go on.
+      const besideRuins = here.getZ() === 0 && NEAR(here, ruinsX, ruinsY, 3);
+      if (besideRuins && (player.getMovementQueue().size() > 0 || bot.walkingToRuins)) {
+        clearMovementRequest(player);
+        player.getMovementQueue().reset?.();
+        bot.walkingToRuins = false;
+      }
+      bot.queue = player.getMovementQueue().size();
+      bot.busy = Boolean(player.busy?.());
+      if (nowMs < bot.nextAt || bot.busy || bot.queue > 0) return "running";
       const inside = NEAR(here, insideX, insideY, 30);
       const left = essenceIn(player);
       bot.nextAt = nowMs + RETRY_MS;
@@ -72,6 +83,7 @@ function createCraftRunesAction(spec, world) {
       if (player.getInventory().getAmount(talisman) <= 0) return "failed";
       if (!NEAR(here, ruinsX, ruinsY, 2)) {
         requestMovement(player, ruinsX, ruinsY, { state, nowMs, z: 0, reason: "brain_runecraft", basicPather: true });
+        bot.walkingToRuins = true;
         return "running";
       }
       const ruins = objectAt(core, ruinsX, ruinsY, 0, "Mysterious ruins");
@@ -94,7 +106,9 @@ function createCraftRunesAction(spec, world) {
     },
     describe(ctx) {
       const bot = ctx?.state?.craftRunes;
-      return `craftRunes ${bot?.step ?? "-"} talisman=${ctx?.player?.getInventory?.().getAmount?.(talisman) ?? "?"} essence=${ctx?.player ? essenceIn(ctx.player) : "?"}`;
+      const at = ctx?.player?.getLocation?.();
+      const near = at ? Math.max(Math.abs(at.getX() - ruinsX), Math.abs(at.getY() - ruinsY)) : "?";
+      return `craftRunes ${bot?.step ?? "-"} talisman=${ctx?.player?.getInventory?.().getAmount?.(talisman) ?? "?"} essence=${ctx?.player ? essenceIn(ctx.player) : "?"} queue=${bot?.queue ?? "?"} busy=${bot?.busy ?? "?"} near=${near}`;
     },
     stop(ctx) {
       if (ctx?.state) ctx.state.craftRunes = null;
