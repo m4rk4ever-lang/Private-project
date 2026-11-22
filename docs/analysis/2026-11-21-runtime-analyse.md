@@ -25,7 +25,7 @@ wanneer het klaar is. Elk pakket is één probleem
 
 | Prio | Pakket | Bewijs | Klaar als | Status |
 | --- | --- | --- | --- | --- |
-| P0 | 1. Agility-lag | 27× `slow_bot`, alle agility; tick tot 19,6 s | 0 `slow_bot` met agility in 2 uur | open |
+| P0 | 1. Agility-lag | 27× `slow_bot`, alle agility; tick tot 19,6 s | 0 `slow_bot` met agility in 2 uur | gebouwd 22-11 (oorzaak: objectindex, zie AI_HANDOVER), te bevestigen |
 | P0 | 2. Hunter tijdelijk uit | 1.673 bot-min, 0,7% werken, Hunter-XP ~0 | 0 keer gekozen tot pakket 4 bestaat | open |
 | P0 | 3. Deploydiscipline | 13 versies in 6 uur, 3 korter dan 3 min | ≥ 60 min per versie | open |
 | P0 | 12. Granted quests lekken gear (§7) | 7 items achter quests die nooit gespeeld zijn | Geen item achter een granted quest | open |
@@ -605,11 +605,11 @@ registries en dependency-graphs; richt je op schaalbaarheid en token-efficiënti
 
 ## Open vragen voor de eigenaar
 
-- [ ] Mag Hunter tijdelijk uit (pakket 2)?
-- [ ] Akkoord met minimaal 60 minuten per serverversie (pakket 3)?
-- [ ] Gear achter granted quests: nieuwe aankopen blokkeren en bestaande houden, of ook bestaande afnemen (pakket 12)?
-- [ ] Blijft de dood per kans voor de gewone Hardcore-bots (ADR)?
-- [ ] Mogen de testprofielen met 720M-4,39 miljard coins blijven?
+- [x] Mag Hunter tijdelijk uit (pakket 2)? **Alleen als het niet werkt** (eigenaar, 22-11): aan laten voor test- en skilldata. De snare-fixes van #45 draaiden maar ~1 uur in het venster. Beslissen op 60 min logs van de nieuwe `v`: nog steeds ~0 Hunter-XP, dan `activityHold`.
+- [x] Akkoord met minimaal 60 minuten per serverversie (pakket 3)? **Ja** (eigenaar, 22-11), langer mag ook.
+- [x] Gear achter granted quests: nieuwe aankopen blokkeren en bestaande houden, of ook bestaande afnemen (pakket 12)? **Ook bestaande afnemen, maar per quest pas als die quest speelbaar is** (eigenaar, 22-11). Zolang een quest granted is, is afnemen oneerlijk en helpt het het testen niet. Pakket 12 wordt daarmee: zodra een quest uit `grantedQuests` gaat, telt hij voor gear-eisen alleen nog als hij echt gespeeld is, en nemen bots zonder die quest het item terug naar de bank.
+- [x] Blijft de dood per kans voor de gewone Hardcore-bots (ADR)? **Nee** (eigenaar, 22-11): geen dood per kans; alleen een echte klap in het spel. Nog te bouwen (`DOWNFALL_CHANCE` in `brain/Ironmen.PlayerBots.js`) en vast te leggen in een ADR.
+- [x] Mogen de testprofielen met 720M-4,39 miljard coins blijven? **Ja** (eigenaar, 22-11): daarmee wordt ook getest.
 - [ ] Waar hoort de bank "burthorpe" vandaan te komen?
 - [ ] Drempel voor Activity Health: quarantaine (gewicht × 0,1) of helemaal uit?
 

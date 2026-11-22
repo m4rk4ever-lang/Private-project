@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Na een herstart stond de server vaak seconden lang stil, soms bijna 20 seconden, als avonturiers op een agility-baan liepen. Dat is opgelost.
 - PvP-bots die hun wapen kwijt waren, kregen geen nieuwe uitrusting omdat de code vastliep. Dat werkt weer.
 - Na een herstart haperde de server vaak seconden lang, soms meer dan 20 seconden, terwijl bots hun routes en trappen zochten. Dat zoeken wordt nu over de ticks verdeeld.
 - Avonturiers bleven voor de poort van Taverley staan en liepen niet verder naar het westen. Ze openen de poort nu.
