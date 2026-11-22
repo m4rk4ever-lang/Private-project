@@ -12,6 +12,14 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 - **Hunter (besluit eigenaar: uit als het niet werkt):** e75bbc4: crimson swift 3 klussen 1.025 XP in 57 min; wagtail 2 klussen 0 XP; salamander 1 klus 0 XP. 8b75ca8: crimson 2 klussen 0 XP in 37 min. Nieuw veld `hold` in `bot-activities.json` (Planner `bestActivity`/`activitiesFor` slaan het over): wagtail en beide salamanders. Crimson swift blijft aan. Weer aan: `hold` weg.
 - **Validatie:** suite 162 pass, 14 fail (baseline); `bot-hunter-sites` 4 pass; eslint no-undef schoon.
 
+## 22-11-2026 19:00: validatie `8b75ca8` (PR #52, #53) (branch `analysis/validatie-8b75ca8`)
+
+- **Logs:** `8b75ca8` 13:49-14:14 UTC (25 min, net na herstart; na 14:14 geen nieuwe logs op `bot-logs`). Voorlopig: RUNTIME_POLICY vraagt 60 min.
+- **Werkt:** agility (0 `slow_bot` door agility), Morytania dicht (0 errands, Slayer-XP 12.100 via Spria), banken (`near` 9%).
+- **Nieuw:** Runecrafting 0 XP in 113 bot-min, vast bij de air-ruïnes (pakket 17); Giant Mole 66× graven voor 2 kills, `loop`, 3,1 s botbeurt, dode zonder eten (pakket 18); trage beurten in `roam` (2 s). Combat: `npcs=` toont vrije NPC's terwijl `target=none` blijft.
+- **Details:** [analysis/2026-11-22-validatie-8b75ca8.md](analysis/2026-11-22-validatie-8b75ca8.md).
+- **Volgende stap:** 60 min logs na de volgende start; pakketten 17 en 18 in game bekijken; Hunter beslissen volgens de regel van de eigenaar.
+
 ## 22-11-2026 14:45: analysepakketten 6, 7, 13 en de Hardcore-dood (branch `adventurers/analysis-p1`)
 
 Gebundeld; mergen pas na ≥ 60 min op `46cad60` (pakket 3).
