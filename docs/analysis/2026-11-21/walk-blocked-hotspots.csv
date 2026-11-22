@@ -1,0 +1,27 @@
+x8,y8,z,events,bots,door_outcome,route_plan,top_destinations
+1632,4800,0,69,4,none 69,ok 58; none 11,"1615, 4828 (29); Veos (26)"
+3264,3224,0,41,18,none 33; none_helps 8,ok 41,Mazchna (7); Canifis Rooftop (6)
+3400,3480,0,36,17,none_helps 22; none 14,none 36,Mazchna (14); Canifis Rooftop (14)
+3192,3392,3,25,8,none 14; none_near 11,none 21; ok 4,de Grand Exchange (7); Canifis Rooftop (6)
+2936,3448,0,23,13,none 12; none_helps 11,ok 23,de Feldip Hills (13); ardougne market stalls (5)
+2568,2864,0,20,1,none 20,none 20,"3240, 3142 (8); Veos (8)"
+3208,3256,0,20,1,none 20,ok 20,Al Kharid (4); Draynor (2)
+3144,3144,0,17,6,none_helps 13; none 4,none 17,wizards tower (17)
+2928,3448,0,17,10,none 11; none_helps 6,ok 17,de Grand Exchange (6); Falador West (6)
+2736,3496,0,13,2,none 13,none 13,"1619, 4815 (11); 1615, 4828 (2)"
+2752,3472,0,11,1,none 11,ok 11,Seers' Village (11)
+2648,3464,0,10,2,clicked 6; none 4,ok 10,"2631, 3496 (9); 2662, 3500 (1)"
+8200,1608,0,10,1,none_near 10,ok 10,Doric (6); de Grand Exchange (1)
+3288,3424,0,9,8,none 9,ok 6; none 3,Mazchna (6); mort ton (1)
+3312,3464,0,8,7,none 5; none_helps 3,ok 8,Mazchna (4); Canifis Rooftop (2)
+2656,3304,0,7,6,none 7,ok 6; none 1,de Feldip Hills (6); Gnome Stronghold (1)
+2632,3304,0,7,2,none 7,ok 7,Ardougne Noord (4); Ardougne Zuid (2)
+2992,3176,0,6,2,none 6,ok 6,Draynor (6)
+2872,3544,0,6,5,none 4; none_helps 2,ok 6,burthorpe (4); sorcerers tower magics (1)
+3288,3432,0,5,5,none 5,none 5,Mazchna (4); Canifis Rooftop (1)
+3136,3352,0,5,1,none 5,ok 5,Ned (3); ardougne market stalls (1)
+2496,3520,0,5,1,none 5,ok 3; none 2,fishing guild (3); Grand Tree Groceries (1)
+2488,3384,0,5,3,none 5,none 5,"Gnome Stronghold (4); 3190, 3273 (1)"
+1640,4824,0,5,1,none 5,ok 5,Redbeard Frank (5)
+2464,3432,0,5,1,none 5,ok 5,Ardougne Noord (2); Ardougne Zuid (2)
+2496,3384,0,5,3,none_helps 4; none 1,none 5,Gnome Stronghold (5)

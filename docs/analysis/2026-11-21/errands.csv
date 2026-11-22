@@ -1,0 +1,192 @@
+reason,to,n,minutes,avg_seconds,arrived,near,blocked,near_pct,blocked_pct
+buy_materials,de Grand Exchange,327,685,126,300,2,24,1,7
+training,de Feldip Hills,115,635,331,53,30,32,26,28
+training,ardougne market stalls,155,277,107,137,1,16,1,10
+bank,burthorpe,238,180,45,21,215,2,90,1
+exchange,de Grand Exchange,211,169,48,199,3,9,1,4
+training,varrock west mine,151,161,64,150,0,1,0,1
+slayer,Mazchna,46,155,202,1,0,44,0,96
+bank,Draynor,104,129,75,94,3,7,3,7
+training,ardougne knights,54,109,121,50,1,3,2,6
+bank,Ardougne Zuid,197,105,32,162,29,6,15,3
+training,edgeville,86,98,68,79,6,1,7,1
+bank,Varrock West,125,87,42,112,12,1,10,1
+station,de oven van Falador,159,87,33,151,6,2,4,1
+bank,Catherby,101,87,51,25,74,2,73,2
+training,lumbridge swamp,68,81,72,58,1,7,1,10
+agility,Gnome Stronghold,30,81,162,8,0,18,0,60
+training,catherby,92,80,52,74,16,2,17,2
+bank,Seers' Village,110,79,43,20,89,1,81,1
+bank,Falador West,174,73,25,167,1,6,1,3
+agility,Canifis Rooftop,27,60,134,0,0,27,0,100
+bank,Falador East,52,60,69,20,26,6,50,12
+agility,Falador Rooftop,35,57,97,27,1,7,3,20
+agility,Seers' Village Rooftop,29,53,110,24,0,5,0,17
+quest,"3240, 3142",38,50,78,27,0,11,0,29
+training,rimmington,50,49,59,49,1,0,2,0
+withdraw,Ardougne Zuid,80,47,35,44,32,4,40,5
+station,de keuken van Lumbridge,47,42,53,47,0,0,0,0
+withdraw,Yanille,16,39,148,10,5,1,31,6
+withdraw,Draynor,26,35,81,23,0,3,0,12
+training,sorcerers tower magics,16,35,131,7,1,8,6,50
+quest,"3190, 3273",24,33,83,22,1,1,4,4
+training,taverley,26,33,77,25,1,0,4,0
+bank,Yanille,18,32,108,16,1,1,6,6
+bank,Ardougne Noord,31,32,62,18,5,8,16,26
+station,de Air-ruïnes ten zuiden van Falador,24,31,78,21,0,3,0,12
+quest,Veos,38,31,49,3,1,34,3,89
+training,barbarian village,16,29,110,8,8,0,50,0
+withdraw,Falador East,30,27,55,3,25,2,83,7
+training,slayer tower,14,26,113,6,1,7,7,50
+quest,Seers' Village,22,25,69,5,1,16,5,73
+training,mort ton,10,25,152,0,0,10,0,100
+quest,"1615, 4828",33,25,45,2,0,31,0,94
+bank,Al Kharid,45,24,32,36,5,4,11,9
+bank,wizards tower,27,21,48,0,0,27,0,100
+quest,"3250, 3194",17,20,69,11,6,0,35,0
+agility,Varrock Rooftop,15,19,77,12,0,3,0,20
+shop,Farming Supplies,27,19,42,21,5,1,19,4
+training,de moestuin bij Falador,10,19,114,9,0,1,0,10
+quest,Doric,17,18,65,11,0,6,0,35
+training,canifis,12,18,92,0,0,12,0,100
+quest,Apothecary,7,18,153,7,0,0,0,0
+bank,de Grand Exchange,27,18,40,23,3,1,11,4
+boss,een molshoop in Falador Park,20,17,51,19,0,1,0,5
+training,de boot (Port Sarim naar Musa Point),8,16,124,8,0,0,0,0
+withdraw,Al Kharid,16,16,61,13,1,2,6,12
+quest,"2995, 3341",9,16,109,3,0,6,0,67
+withdraw,de Grand Exchange,51,16,19,46,5,0,10,0
+training,al kharid mine,6,16,158,6,0,0,0,0
+withdraw,Falador West,11,15,84,9,2,0,18,0
+quest,"1619, 4815",11,14,75,0,0,11,0,100
+quest,Draynor,9,12,82,9,0,0,0,0
+agility,Draynor Village Rooftop,5,12,144,4,1,0,20,0
+quest,null,5,12,138,5,0,0,0,0
+quest,"2631, 3496",9,12,77,0,0,9,0,100
+quest,"2955, 3497",5,11,136,5,0,0,0,0
+quest,Lumbridge General Store,12,11,56,5,7,0,58,0
+withdraw,Catherby,14,11,48,5,9,0,64,0
+bank,fishing guild,4,11,164,0,0,4,0,100
+shop,Richard's Farming shop.,14,11,46,13,1,0,7,0
+withdraw,Varrock West,10,11,63,2,3,5,30,50
+withdraw,burthorpe,5,10,126,1,1,3,20,60
+training,de moestuin bij Ardougne,1,10,613,0,1,0,100,0
+training,ardougne,21,10,29,20,1,0,5,0
+quest,Al Kharid,12,9,45,12,0,0,0,0
+quest,Shop keeper,8,9,66,8,0,0,0,0
+quest,Father Aereck,3,9,172,3,0,0,0,0
+bank,Canifis Rooftop,9,8,57,4,0,5,0,56
+training,falador,4,8,127,2,0,2,0,50
+boat,Veos in Port Sarim,4,8,126,3,0,1,0,25
+quest,Falador West,8,8,61,6,0,2,0,25
+station,de aambeelden van Varrock West,10,8,47,9,0,1,0,10
+quest,Rat,6,8,78,6,0,0,0,0
+bank,Varrock East,7,8,65,4,0,3,0,43
+quest,Hetty,3,7,149,3,0,0,0,0
+shop,de makelaar,6,7,74,6,0,0,0,0
+quest,Redbeard Frank,7,7,60,1,0,6,0,86
+training,karamja musa point,8,7,51,5,3,0,38,0
+quest,"2993, 3341",3,7,134,3,0,0,0,0
+grave,zijn graf,5,7,79,3,0,2,0,40
+bank,de boot (Brimhaven naar Ardougne),6,7,66,6,0,0,0,0
+quest,Ardougne Zuid,10,6,38,5,4,1,40,10
+training,burthorpe,3,6,124,3,0,0,0,0
+boss,de Barrows,3,6,124,1,0,2,0,67
+quest,Sheep,11,6,34,11,0,0,0,0
+slayer,Nieve,3,6,116,3,0,0,0,0
+shop,Vanessa's Farming shop.,5,6,69,4,0,1,0,20
+quest,Ned,7,6,49,2,0,5,0,71
+quest,Cook,5,5,66,5,0,0,0,0
+withdraw,fishing guild,5,5,65,0,0,5,0,100
+quest,Yanille,3,5,108,3,0,0,0,0
+bank,Edgeville,13,5,23,12,0,1,0,8
+training,yanille,5,5,59,4,0,1,0,20
+withdraw,Seers' Village,6,5,47,2,1,3,17,50
+quest,"2662, 3500",3,4,90,0,2,1,67,33
+training,Ourania,3,4,84,1,1,1,33,33
+quest,fishing guild,4,4,63,0,0,4,0,100
+quest,"3108, 3353",4,4,61,4,0,0,0,0
+withdraw,Edgeville,8,4,29,7,1,0,12,0
+training,al kharid,4,4,58,4,0,0,0,0
+quest,"3165, 3306",2,4,114,1,0,1,0,50
+shop,Varrock General Store,4,4,56,4,0,0,0,0
+shop,Horvik's Armour Shop.,4,4,54,4,0,0,0,0
+withdraw,Varrock East,2,4,106,2,0,0,0,0
+quest,"2717, 3482",3,3,67,3,0,0,0,0
+quest,Almera,1,3,199,1,0,0,0,0
+shop,Lumbridge General Store,5,3,39,5,0,0,0,0
+withdraw,Canifis Rooftop,4,3,46,0,0,4,0,100
+shop,Aleck's Hunter Emporium.,5,3,37,5,0,0,0,0
+withdraw,Ardougne Noord,7,3,26,5,2,0,29,0
+quest,Falador East,6,3,30,6,0,0,0,0
+quest,Father Urhney,2,3,84,2,0,0,0,0
+quest,Lady Servil,1,3,167,1,0,0,0,0
+quest,Betty's Magic Emporium,3,3,55,3,0,0,0,0
+quest,Varrock General Store,2,3,82,2,0,0,0,0
+quest,Catherby,3,3,52,0,3,0,100,0
+quest,Fred the Farmer,1,3,155,1,0,0,0,0
+quest,de Grand Exchange,4,2,36,4,0,0,0,0
+quest,Elena,1,2,140,1,0,0,0,0
+quest,onderweg,3,2,46,0,0,3,0,100
+quest,Canifis Rooftop,3,2,46,0,0,3,0,100
+quest,Varrock East,2,2,66,0,2,0,100,0
+quest,Arhein's General Goods,2,2,61,2,0,0,0,0
+quest,"2715, 3478",4,2,30,4,0,0,0,0
+bank,onderweg,2,2,58,0,0,2,0,100
+quest,Captain Tock,3,2,38,3,0,0,0,0
+withdraw,grand exchange,3,2,38,1,2,0,67,0
+quest,"3166, 3305",3,2,37,3,0,0,0,0
+quest,"2512, 3467",1,2,106,0,1,0,100,0
+training,tree gnome village,1,2,104,0,0,1,0,100
+shop,Sarah's Farming shop.,2,2,48,1,0,1,0,50
+quest,Aemad's Adventuring Supplies.,4,2,24,4,0,0,0,0
+training,lumbridge,2,2,46,2,0,0,0,0
+withdraw,wizards tower,2,2,46,0,0,2,0,100
+training,rellekka,2,2,46,0,0,2,0,100
+quest,Grand Tree Groceries,2,2,46,0,0,2,0,100
+quest,"3177, 3296",2,2,46,2,0,0,0,0
+quest,"3172, 3316",4,2,23,4,0,0,0,0
+training,seers village,4,1,22,4,0,0,0,0
+bank,grand exchange,1,1,64,0,1,0,100,0
+shop,Varrock Swordshop,1,1,61,1,0,0,0,0
+training,de moestuin bij Catherby,1,1,61,0,1,0,100,0
+withdraw,onderweg,1,1,60,0,0,1,0,100
+training,draynor,2,1,28,1,0,1,0,50
+bank,de boot (Musa Point naar Port Sarim),2,1,28,2,0,0,0,0
+quest,"2510, 3494",2,1,26,1,1,0,50,0
+quest,"2518, 3431",1,1,52,1,0,0,0,0
+shop,Lovecraft's Tackle,1,1,52,1,0,0,0,0
+quest,Lovecraft's Tackle,1,1,52,1,0,0,0,0
+quest,"2512, 3469",1,1,50,0,1,0,100,0
+shop,Aemad's Adventuring Supplies.,2,1,25,2,0,0,0,0
+buy_materials,de boot (Brimhaven naar Rimmington),1,1,50,1,0,0,0,0
+training,tree gnome stronghold,1,1,46,0,0,1,0,100
+agility,Al Kharid Rooftop,1,1,46,0,0,1,0,100
+training,corsair cove,1,1,46,0,0,1,0,100
+quest,Varrock West,1,1,46,0,0,1,0,100
+quest,Ardougne Noord,2,1,22,2,0,0,0,0
+quest,"3117, 3358",3,1,14,3,0,0,0,0
+quest,Ardougne Spice Stall.,1,1,40,1,0,0,0,0
+quest,Sarah's Farming shop.,1,1,40,1,0,0,0,0
+shop,Burthorpe Supplies,1,1,39,1,0,0,0,0
+shop,Zaff's Superior Staffs!,1,1,37,1,0,0,0,0
+shop,Draynor Seed Market,1,1,37,1,0,0,0,0
+quest,Head Guard,1,1,36,1,0,0,0,0
+quest,"3157, 3437",1,1,35,1,0,0,0,0
+quest,Romeo,2,1,18,2,0,0,0,0
+quest,Sir Prysin,1,1,35,1,0,0,0,0
+shop,Candle Shop,1,1,33,1,0,0,0,0
+quest,Pie Shop,1,1,32,1,0,0,0,0
+quest,"2613, 3190",1,0,30,1,0,0,0,0
+shop,Harry's Fishing Shop.,3,0,9,3,0,0,0,0
+quest,"1619, 4817",2,0,14,2,0,0,0,0
+quest,"3204, 3498",2,0,12,2,0,0,0,0
+quest,"2952, 3508",4,0,6,4,0,0,0,0
+boss,Giant Mole,1,0,18,1,0,0,0,0
+shop,Shantay Pass Shop,1,0,18,1,0,0,0,0
+quest,Aris,2,0,8,2,0,0,0,0
+training,grand exchange,2,0,8,2,0,0,0,0
+training,port sarim,1,0,14,1,0,0,0,0
+quest,"3100, 3268",2,0,6,2,0,0,0,0
+quest,"1616, 4829",1,0,10,1,0,0,0,0
+quest,"3202, 3496",1,0,4,1,0,0,0,0
