@@ -731,7 +731,7 @@ export class Player extends Mobile {
     onLogout() {
         // Notify us
         if (!this.isPlayerBot()) {
-            console.log("[World] Deregistering player - [username, host] : [" + this.getUsername() + ", " + this.getHostAddress() + "]");
+            console.log("[World] Deregistering player - [username, host] : [" + this.getUsername() + ", " + this.getHostAddress() + "] reason=" + (this.getDisconnectSource() ?? "logout"));
         }
 
         // Return offered items to both players before this player is saved.

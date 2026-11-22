@@ -339,6 +339,26 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return null;
   }
 
+  /**
+   * Does the job fit its level (action-fit analysis A7, 22-11-2026)? Its level in the job's skill,
+   * the activity's requirement, and the best activity the data has for that level: a lower pick
+   * is a choice (quest, money, variety, spot full) or a gap in the data (no higher tier).
+   */
+  function actionFit(entry, job) {
+    try {
+      const activity = job.activity ?? entry.activity ?? null;
+      const skill = entry.plan?.skill;
+      if (!activity || !job.mode || !skill || skill === "COMBAT") return null;
+      const level = levelOf(entry.player, skill);
+      const all = activitiesFor(job.mode, 200, definitions);
+      const required = all.find((option) => option.id === activity)?.level ?? null;
+      const best = all.find((option) => option.level <= level) ?? null;
+      return { skill, level, required, best: best?.id ?? null, bestLevel: best?.level ?? null, below: best && required !== null ? best.level - required : null };
+    } catch {
+      return null;
+    }
+  }
+
   function trackJob(entry, nowMs) {
     const key = jobKey(entry);
     const job = entry.job;
@@ -367,6 +387,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         }
       }
       metric({ kind: "job", bot: entry.name, job: job.key.split(":")[0], mode: job.mode, coinsPerHour, activity: job.activity ?? entry.activity ?? null, reason: job.reason, target: job.target,
+        fit: actionFit(entry, job),
         levelAtStart: job.levelAtStart, levelAtEnd: level, targetMet: job.target ? level >= job.target.level : null,
         minutes: Math.round((nowMs - job.startedAt) / 6000) / 10, xp: Math.round(xp - job.xp),
         ended: entry.jobEnd ?? (key === null ? `then ${entry.phase}` : "replaced") });
@@ -2817,6 +2838,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         dialogue: run.dialogue ?? [] });
       endQuestRun(entry, run, "done");
       entry.jobEnd = "quest done";
+    } else if (/^quest helper error: .*(fetch failed|ECONNREFUSED|engine hasn't been started|not configured)/i.test(String(run.reason ?? ""))) {
+      // The Quest Helper bridge is down: not the quest's failure. It blocked quests for every
+      // adventurer for 3 h (80 "fetch failed" in the feedback log, runtime analysis pakket 5).
+      // Put aside a short while, not counted, not blocked for the others.
+      (entry.questsAside ??= new Map()).set(run.name, nowMs + 10 * 60_000);
+      endQuestRun(entry, run, "bridge_down", run.reason);
+      entry.jobEnd = "quest bridge_down";
+      note(entry.player, `Legt ${run.name} even weg: de questgids reageert niet.`, "quest");
     } else {
       // Stuck: put aside (longer each time it fails) and written down why, so the cause can be
       // fixed (logs/adventurer-quest-feedback.jsonl; also on the page's feedback list).
