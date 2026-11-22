@@ -62,6 +62,7 @@ const TravelHubs = require("../behaviours/navigation/TravelHubs.PlayerBots");
 const Sites = require("./Sites.PlayerBots");
 const { createHelperSteps } = require("./QuestHelperSteps.PlayerBots");
 const { createQuestPlay, QUEST_KEEP_MS } = require("./QuestPlay.PlayerBots");
+const { createKnowledge } = require("./Knowledge.PlayerBots");
 const { createBarrowsRun } = require("./BarrowsRun.PlayerBots");
 /** A quest a bot could not finish is put aside this long. */
 const QUEST_ASIDE_MS = 60 * 60_000;
@@ -354,6 +355,17 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         const earn = (entry.earn ??= {});
         earn[job.mode] = earn[job.mode] === undefined ? coinsPerHour : Math.round(earn[job.mode] * 0.6 + coinsPerHour * 0.4);
       }
+      // What its clan learns from it (Knowledge.PlayerBots.js): per mode and per activity, also a
+      // job too short to measure (its ending counts: Activity Health).
+      if (job.mode && job.key.startsWith("training")) {
+        const xpPerHour = hours >= 3 / 60 ? (xp - job.xp) / hours : null;
+        try {
+          knowledge.record(Clans.clanOf(data, entry.name)?.name ?? null, [`mode:${job.mode}`, (job.activity ?? entry.activity) ? `activity:${job.activity ?? entry.activity}` : null],
+            { gpPerHour: coinsPerHour, xpPerHour, stuck: entry.jobEnd === "stuck" });
+        } catch {
+          // Learning is a help, never a reason a job does not end.
+        }
+      }
       metric({ kind: "job", bot: entry.name, job: job.key.split(":")[0], mode: job.mode, coinsPerHour, activity: job.activity ?? entry.activity ?? null, reason: job.reason, target: job.target,
         levelAtStart: job.levelAtStart, levelAtEnd: level, targetMet: job.target ? level >= job.target.level : null,
         minutes: Math.round((nowMs - job.startedAt) / 6000) / 10, xp: Math.round(xp - job.xp),
@@ -505,7 +517,18 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       questsBlocked: [...questsBlocked].filter(([, until]) => until > nowMs).map(([name]) => name),
       questsHeld: (data.questHold?.quests ?? []).map((quest) => quest.name) });
     Object.assign(tickCost, { count: 0, totalMs: 0, maxMs: 0 });
+    // What each clan has learned (Knowledge), every half hour: per mode and activity the median
+    // coins and XP per hour and how often a job ended stuck (Activity Health).
+    if (nowMs - (knowledgeMetricAt ?? 0) >= 30 * 60_000) {
+      knowledgeMetricAt = nowMs;
+      try {
+        for (const clan of knowledge.clans()) metric({ kind: "knowledge", clan, table: knowledge.summary(clan) });
+      } catch {
+        // A help, not a must.
+      }
+    }
   }
+  let knowledgeMetricAt = null;
 
   /** Quests blocked for every adventurer (noteQuestFailure): name -> until; and recent failures. */
   const questsBlocked = new Map();
@@ -515,6 +538,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   const questFeedback = [];
   /** name -> { name, player, phase, until, plan, startedAt } */
   const adventurers = new Map();
+  // Per clan what its jobs earned and how they went, kept over restarts (Knowledge.PlayerBots.js).
+  const knowledge = createKnowledge();
   // Barrows runs (BarrowsRun.PlayerBots.js): mounds, crypts, tunnels, chest.
   const barrowsRun = createBarrowsRun({
     core, api, world,
@@ -3258,6 +3283,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     // Fled hurt and hungry lately: no fights or thieving until it carries food again.
     if (nowMs < (entry.dangerUntil ?? 0) && !carriesFood(entry.player)) for (const mode of DANGER_MODES) exclude.add(mode);
     view.earn = entry.earn ?? {};
+    // What its clan measured (Knowledge): the planner's second source after its own.
+    view.clanEarn = knowledge.moneyByMode(Clans.clanOf(data, entry.name)?.name ?? null);
     entry.cannot ??= new Map();
     // What cannot be done now is left out before the pick (canExecute), with its reason.
     // A boss on "hold" (off for now, with its reason and when it comes back) is not picked.

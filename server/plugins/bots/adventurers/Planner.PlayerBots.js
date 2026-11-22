@@ -126,26 +126,40 @@ function chooseNext(adventurer, quests, {
   // Now and then a stretch only to make money: what earned it the most per hour so far (its own
   // measure, adventurer.earn), a mode it has not tried yet now and then, a boss when it can.
   if (random() < moneyChance) {
-    const rate = (mode) => adventurer.earn?.[mode] ?? null;
-    // A way that earned nothing (or cost) when it tried it is no way to make money.
+    // What it knows a way earns: its own measure first (adventurer.earn), then its clan's
+    // (adventurer.clanEarn, Knowledge.PlayerBots.js: a median of 5 or more jobs), else nothing.
+    // Only a way neither it nor its clan has measured is "untried"; it gets one pick in ten, and
+    // only those picks say "eens proberen". 87% of the money jobs said so (meant 1 in 10), and
+    // thieving won on a guess of 30.000 gp/h against measured 1,8-9,5k (action-fit A3, 22-11-2026).
+    const clan = (mode) => (adventurer.clanEarn?.[mode]?.known ? adventurer.clanEarn[mode].gpPerHour : null);
+    const rate = (mode) => adventurer.earn?.[mode] ?? clan(mode) ?? null;
+    // A way that earned nothing (or cost) when it or its clan tried it is no way to make money.
     const earners = options.filter((option) => MONEY_MODES.has(option.mode) && !(rate(option.mode) !== null && rate(option.mode) <= 0));
     const untried = earners.filter((option) => rate(option.mode) === null);
     if (fightable.length > 0 && random() < (late ? endgame.moneyBossShare ?? 0.5 : 0.25)) {
       return decided({ kind: "boss", boss: fightable[Math.floor(random() * fightable.length)], reason: "geld verdienen" }, "money_boss", { candidates: fightable.length });
     }
-    // Something new now and then (one pick in ten), else what it knows earns best: an untried
-    // way's guess counts for half against a measured rate ("eens proberen" came up too often).
-    const score = (option) => rate(option.mode) ?? (MONEY_GUESS[option.mode] ?? 0) / (earners.some((other) => rate(other.mode) > 0) ? 2 : 1);
+    // Measured ways by their rate; an unmeasured one only by a low guess (a quarter of
+    // MONEY_GUESS) once anything is measured, so a guess does not beat what is known.
+    const anyMeasured = earners.some((other) => rate(other.mode) > 0);
+    const score = (option) => rate(option.mode) ?? (MONEY_GUESS[option.mode] ?? 0) / (anyMeasured ? 4 : 1);
     // Maxed: no "eens proberen" (thieving for a few thousand an hour); what it knows earns best.
-    const pick = untried.length > 0 && random() < (late ? 0 : 0.1)
+    const trying = untried.length > 0 && random() < (late ? 0 : 0.1);
+    const pick = trying
       ? untried[Math.floor(random() * untried.length)]
       : [...earners].sort((a, b) => score(b) - score(a))[0];
     if (pick) {
+      const own = adventurer.earn?.[pick.mode] ?? null;
       const known = rate(pick.mode);
-      return decided({ kind: "train", mode: pick.mode, skill: pick.skill, money: true,
-        reason: known ? `geld verdienen (~${Math.round(known).toLocaleString("nl-NL")} gp/uur)` : "geld verdienen (eens proberen)" }, "money", {
+      const fromClan = own === null && known !== null ? adventurer.clanEarn?.[pick.mode] : null;
+      const reason = trying ? "geld verdienen (eens proberen)"
+        : known === null ? "geld verdienen (schatting)"
+        : fromClan ? `geld verdienen (~${Math.round(known).toLocaleString("nl-NL")} gp/uur, clan, ${fromClan.n} metingen)`
+        : `geld verdienen (~${Math.round(known).toLocaleString("nl-NL")} gp/uur)`;
+      return decided({ kind: "train", mode: pick.mode, skill: pick.skill, money: true, reason }, "money", {
+        trying,
         alternatives: [...earners].sort((a, b) => score(b) - score(a)).slice(0, 3)
-          .map((option) => ({ mode: option.mode, gpPerHour: Math.round(score(option)), measured: rate(option.mode) !== null })),
+          .map((option) => ({ mode: option.mode, gpPerHour: Math.round(score(option)), measured: rate(option.mode) !== null, clan: adventurer.earn?.[option.mode] === undefined && clan(option.mode) !== null })),
       });
     }
   }
