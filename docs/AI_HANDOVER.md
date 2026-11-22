@@ -5,6 +5,21 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 22-11-2026 22:30: validatie #57 en voorwerk verwerkt (branch `adventurers/analysis-p2`)
+
+Uit `docs/analysis/2026-11-22-validatie-3f8a803.md` en `2026-11-22-voorwerk-oorzaken.md`. Niet in game getest.
+
+- **Hold-lek:** `heldBy(plan)` in `startTraining` en `startBoss`: boss-`hold`, `buyToTrain[skill].hold`, activiteit-`hold` (de registry bewaart `hold` nu). Elke weg naar een klus (hervatten, samen trainen, achterstand) loopt daarlangs; reden `on_hold` (30 min onthouden).
+- **Clay-lus (A4, opnieuw):** oorzaak in de logs: de klus komt terug via `resumeTask` (na elk bankbezoek "Gaat verder met clay rocks") zonder `entry.gather`, dus zonder teller. Een hervatte klus met reden "<item> voor <quest>" zonder gather-stand wordt niet hervat (`gather_dropped`). Questverzamelen telt niet als geldmethode in de clankennis (gp `null`).
+- **Geldgok (A3):** niets gemeten (bot en clan): willekeurig onder de onbekende, reden "nog niets gemeten". Wel iets gemeten: een onbekende scoort onder de laagste gemeten waarde.
+- **13 buitlus:** `Loot.takeStep` geeft `refused` als oprapen naast het item mislukt. TrainCombat: buit die geweigerd wordt of 20 s achterna gelopen, 2 min negeren; `bot.loot` elke beurt opnieuw getoetst; alleen `taken` telt als voortgang; `describe` toont `loot=`.
+- **18 molshoop:** na aankomst naar de molshoop zelf (id uit `GiantMole.plugin` `MOLE_HILL_ID`, binnen 5 tegels) via `walkToGroundItem`, dan pas Dig. 3 digs binnen 10 min zonder succes: `place_unreachable` (30 min). Hold blijft tot een in-game check.
+- **17 ruïnes:** binnen 3 tegels van de ruïnes wordt een lopende loop gestopt (die naar de tegel onder het object eindigde nooit); `describe` toont `queue`, `busy`, `near`. Hold blijft tot een in-game check.
+- **Doden bij zakkenrollen:** een eerlijke bot at alleen cake (de standaard voor gewone bots). Nu: elk eten via de Eat van het spel; gewond zonder eten: de klus stopt (`failed`).
+- **Pakket 8:** `slow_bot.brainSnapshot` als eigen veld (de velden stonden er al los in).
+- **Validatie:** suite 168 pass, 14 fail (baseline); nieuw `bot-loot-refused`, `bot-knowledge` +1; eslint no-undef schoon.
+- **Open:** A2 Barrows-tunnels (eerst reden-telemetrie in de plugin), Rellekka-vastlopers, `roam`-trage beurten (nu met snapshot te zien), quests (pakket 5).
+
 ## 22-11-2026 21:15: validatie bundel #57 (`b943103`/`3f8a803`) (branch `analysis/validatie-3f8a803`)
 
 - **Logs:** 20:04-20:47 UTC (43 min). Werken **20,0%** (beste tot nu toe).
