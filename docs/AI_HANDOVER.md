@@ -5,6 +5,14 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 22-11-2026 21:15: validatie bundel #57 (`b943103`/`3f8a803`) (branch `analysis/validatie-3f8a803`)
+
+- **Logs:** 20:04-20:47 UTC (43 min). Werken **20,0%** (beste tot nu toe).
+- **Werkt:** A1 (geen "kan de Barrows niet bereiken"), A5 (Rellekka in gebruik), A7 (`job.fit`), clankennis (16-24 gemeten activiteiten per clan na 40 min).
+- **Lekt:** holds Giant Mole/Runecrafting via hervatten ("verder"), samen trainen ("samen") en "achterstand" (Slayed Soul 17 min Runecrafting); A4 clay-lus loopt door (23 klussen, alle `full bag`), en clay telt in de clankennis als 33.681 gp/uur; zonder clandata wint thieving nog op de gok van 30.000 ("schatting" 8 van 10).
+- **Verder:** combat 18 van 22 `stuck` (buitlus); Eeshwar 2× dood door een Paladin zonder eten, daarna in brons; 7 trage beurten, 3× in `roam`, `brainSnapshot` nog `null`.
+- **Details:** [analysis/2026-11-22-validatie-3f8a803.md](analysis/2026-11-22-validatie-3f8a803.md).
+
 ## 22-11-2026 21:00: voorwerk, oorzaken van vier vastlopers (branch `analysis/voorwerk`)
 
 - **Wat:** code-onderzoek (geen wijzigingen) naar pakket 13, 17, 18 en A2, met de logs als bewijs. [analysis/2026-11-22-voorwerk-oorzaken.md](analysis/2026-11-22-voorwerk-oorzaken.md).
