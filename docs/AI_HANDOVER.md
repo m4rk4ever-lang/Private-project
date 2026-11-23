@@ -5,6 +5,15 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 23-11-2026 09:45: validatie `4baf1a2` (#61, #63, #64) (branch `analysis/validatie-4baf1a2`)
+
+- **Logs:** 08:46-09:27 UTC (41 min).
+- **Werkt:** combat-training 0 van 13 `stuck` (was 80%), 0 trage beurten, 0 doden, holds en clay goed, Farming plant weer (4.725 XP), geldkeuzes op clanmetingen.
+- **Nieuw:** lopen 39,3% (was 19,8%), vooral mining: 17 bots op mithril/adamantite die tussen Lumbridge Swamp en Al Kharid pendelen (81% lopen); `capacity` 160/80 remt niets af; de clankennis (mining ~32k gp/uur) trekt meerdere bots tegelijk. 14× een shortcut die niet gevonden wordt ("jump-to broken raft").
+- **Verder:** Seers obstakel 5 (11× `stuck`), Wizards' Tower nog steeds `walk_blocked`, quests 1 van 12.
+- **Script:** `version_report.py` telt spaardoelen niet meer als questklussen.
+- **Details:** [analysis/2026-11-23-validatie-4baf1a2.md](analysis/2026-11-23-validatie-4baf1a2.md).
+
 ## 23-11-2026 10:10: Barrows-tunnels (A2) (branch `adventurers/barrows-tunnels`)
 
 Ontwerp uit `docs/analysis/2026-11-22-voorwerk-oorzaken.md` A2. Niet in game getest.
