@@ -296,6 +296,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
   }
 
+  const WORKING_XP_MS = 60_000;
   /** Where this tick's time went for this adventurer, and an idle note when it stands still. */
   function account(entry, nowMs, dt) {
     const m = (entry.metrics ??= { since: nowMs, time: {}, xp: xpBySkill(entry.player), coins: null, events: {} });
@@ -308,7 +309,12 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     let kind;
     if (entry.phase === "quest") kind = "quest";
     else if (errands.busy(entry.player)) kind = "errand";
-    else if ((entry.phase === "training" || entry.phase === "boss") && awayFromJob(entry)) kind = "walking";
+    // XP in the last minute is working, also off the job's spot: between yews, after a monster.
+    // On movement alone 27% of the XP fell in blocks without "working" (yews 95%, combat 73%),
+    // and "working" stood at 17% for three days while XP rose 39% (analysis voortgang 23-11-2026).
+    else if ((entry.phase === "training" || entry.phase === "boss") && awayFromJob(entry)) {
+      kind = nowMs - (entry.xpAt ?? -Infinity) <= WORKING_XP_MS ? "working" : "walking";
+    }
     else if (entry.phase === "training" || entry.phase === "boss") kind = nowMs - (entry.xpAt ?? nowMs) > 20_000 ? "idle" : "working";
     else kind = entry.phase ?? "other";
     m.time[kind] = (m.time[kind] ?? 0) + dt;
@@ -1579,12 +1585,29 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    * loop: a log line, event `loop`, metric `loop` with its last errands and what drove the choice
    * (plan, saved job, goal, and for a trade trip why it went), and the errand is refused a while.
    */
+  const LOOP_ESCALATE_MS = 2 * 60 * 60_000;
+  const LOOP_BLOCK_MS = 2 * 60 * 60_000;
   function noteLoop(entry, reason, to) {
     const report = loopGuard.record(entry, reason, placeKey(to), { to: placeName(to), progressAt: entry.xpAt ?? 0 });
     if (!report) return;
     const { player } = entry;
     const minutes = Math.max(1, Math.round(report.seconds / 60));
-    note(player, `Ging ${report.repeats} keer in ${minutes} min naar ${placeName(to)} (${reason}) zonder vooruit te komen. Doet dat een kwartier niet en kiest iets anders.`, "activity");
+    // The second loop at the same place within LOOP_ESCALATE_MS: that place is out for two hours
+    // (a bank: nearestBank picks another). The 15-minute rest alone came back 11 times in 2,2 hours
+    // at Seers' bank for Markbot 12, 0 XP (analysis voortgang 23-11-2026, #1).
+    const key = placeKey(to);
+    entry.loopsAt ??= new Map();
+    const earlier = (entry.loopsAt.get(key) ?? []).filter((at) => now() - at < LOOP_ESCALATE_MS);
+    earlier.push(now());
+    entry.loopsAt.set(key, earlier);
+    // Not the Grand Exchange: there is no other, and two hours without it is no buying at all.
+    const escalate = earlier.length >= 2 && !/grand exchange/i.test(placeName(to));
+    if (escalate) {
+      entry.blockedPlaces ??= new Map();
+      entry.blockedPlaces.set(key, now() + LOOP_BLOCK_MS);
+      entry.loopsAt.delete(key);
+    }
+    note(player, `Ging ${report.repeats} keer in ${minutes} min naar ${placeName(to)} (${reason}) zonder vooruit te komen. ${escalate ? "Gaat daar twee uur niet meer heen" : "Doet dat een kwartier niet"} en kiest iets anders.`, "activity");
     countEvent(entry, "loop");
     let ge = null;
     if (/grand exchange/i.test(placeName(to))) {
@@ -1598,7 +1621,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       plan: entry.plan ? { mode: entry.plan.mode ?? null, reason: entry.plan.reason ?? null } : null,
       savedTask: entry.savedTask ? { kind: entry.savedTask.kind ?? null, mode: entry.savedTask.mode ?? null } : null,
       goal: Goals.describe(player.getAttribute(GOAL_ATTRIBUTE) ?? null) ?? null,
-      trade: fresh ? entry.lastTrade : null, ge, coins: Shopping.coinsOf(player), freeSlots: player.getInventory().getFreeSlots() });
+      trade: fresh ? entry.lastTrade : null, ge, coins: Shopping.coinsOf(player), freeSlots: player.getInventory().getFreeSlots(), escalated: escalate });
   }
 
   /**

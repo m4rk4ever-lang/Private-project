@@ -5,6 +5,17 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 23-11-2026 13:00: voortgangsanalyse (#69) verwerkt: mijnplek, lus-escalatie, werkmaatstaf (branch `adventurers/analysis-p6`)
+
+Uit `docs/analysis/2026-11-23-voortgang-en-aandachtspunten.md`. Niet in game getest.
+
+- **Mithril zonder erts (Jorgbot 14, Patrickbot 11):** de oorzaak was de plek. `lumbridge_swamp` (3228,3150) is de oostmijn (koper/tin); de coal/mithril/adamant-rotsen staan bij 3143-3148,3144-3153 (object-index: 5 mithril, 2 adamant). Daar kwam geen rots binnen bereik, de zoekloop liep naar het westen of naar Al Kharid (2 mithril, bezet) en terug. Nieuwe bestemming `lumbridge_swamp_mine` (3146,3148, minLevel 30, `activities` coal/mithril/adamantite); `activitySites` daarop omgezet.
+- **Wachten op respawn:** `interactObject` krijgt `crowdWaitSeconds` (standaard 60); `mine_rocks` wacht 300 s bij een bezette mijn.
+- **Lus-escalatie (Markbot 12, Seers):** tweede `loop` naar dezelfde plek binnen 2 uur zet die plek 2 uur in `blockedPlaces` (nearestBank kiest dan een andere). Niet voor de Grand Exchange. Metric `loop` heeft `escalated`.
+- **Werkmaatstaf:** weg van de klusplek met XP in de laatste 60 s telt als `working`, niet `walking`. Bij de klus blijft idle na 20 s. Cijfers vanaf deze versie zijn dus niet 1-op-1 te vergelijken: lopen daalt en werken stijgt door de meting.
+- **Niet gedaan:** gem stalls als geldbron, Herblore/Fletching-gewichten, boss voor maxed accounts, pakket 5, transport als route-optie.
+- **Validatie:** suite 170 pass, 14 fail (baseline); eslint no-undef schoon; JSON geldig.
+
 ## 23-11-2026 11:30: voortgang sinds 21-11 en aandachtspunten (branch `analysis/voortgang-23-11`)
 
 - **Beter:** OSRS-XP per bot-uur 15,0k → 20,9k (+39%); tijd in blokken met XP 54% → 62%; combat `stuck` 76% → 3%; vastlopers per bot-uur −50%, `walk_blocked` −43%, `stranded` −56%.

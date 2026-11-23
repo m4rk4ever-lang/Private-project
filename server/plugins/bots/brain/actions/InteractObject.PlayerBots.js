@@ -101,6 +101,8 @@ function createInteractObjectAction(spec, world) {
   const option = spec.option ?? "Chop down";
   const routeExists = world.routes?.canReachSpot ?? canReachSpot;
   const stallMs = Math.max(5, Number(spec.stallSeconds ?? 120)) * 1000;
+  // How long a crowd is waited out before it goes on to the next spot (spec.crowdWaitSeconds).
+  const crowdWaitMs = Number.isFinite(Number(spec.crowdWaitSeconds)) ? Math.max(10, Number(spec.crowdWaitSeconds)) * 1000 : CROWDED_MOVE_ON_MS;
   const untilAnyItem = (spec.until?.hasAnyItem ?? []).filter(Number.isInteger);
   const stateFor = (player) =>
     playerState(action, player, () => ({
@@ -211,7 +213,7 @@ function createInteractObjectAction(spec, world) {
       bot.crowdedSince = null;
     } else {
       bot.crowdedSince ??= nowMs;
-      if (nowMs - bot.crowdedSince < CROWDED_MOVE_ON_MS) {
+      if (nowMs - bot.crowdedSince < crowdWaitMs) {
         return; // a rock is about to respawn or be freed: wait here
       }
       if (!bot.movingOn) {
