@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Als een avonturier een shortcut niet kon vinden (zoals het vlot naar Al Kharid), probeerde elke andere avonturier het daarna ook. Die shortcut wordt nu een half uur overgeslagen.
 - Avonturiers bleven in de Barrows-tunnels hangen: in een gang tussen twee kamers, of voor een deur waar een monster stond. Ze lopen nu door naar de volgende kamer, vechten eerst de monsters weg en openen de deur vanaf de goede tegel.
 - Avonturiers bleven bij een moestuin eindeloos op "rake" klikken zonder dat er iets gebeurde. Ze gebruiken de moestuin nu als ze ernaast staan, raken alleen met een hark en slaan een patch over als het niet lukt.
 - Wat tijdelijk uit staat (Giant Mole, Runecrafting, enkele jachtplekken) kwam via een hervatte of gezamenlijke klus toch terug. Dat kan niet meer.
@@ -36,6 +37,7 @@ Indeling per versie:
 - Een avonturier die vogels ving, bleef soms staan op een plek waar geen snare mag staan (gras, varens) en zette niets neer. Hij zoekt nu een tegel waar het wel mag.
 
 ### Gewijzigd
+- Avonturiers kiezen minder vaak een klus waar al veel anderen mee bezig zijn. Bij mithril en adamantite stonden er 17 tegelijk, die vooral heen en weer liepen tussen de mijnen.
 - Avonturiers met één lage vechtstat vechten niet meer op ratten en koeien: ze kiezen tegenstanders bij het gemiddelde van Attack, Strength en Defence.
 - Als de questgids niet reageert, leggen avonturiers een quest maar even weg in plaats van hem 3 uur voor iedereen te blokkeren.
 - In de serverconsole staat nu waarom een speler uitlogt (time-out, verbinding verbroken of zelf uitgelogd).

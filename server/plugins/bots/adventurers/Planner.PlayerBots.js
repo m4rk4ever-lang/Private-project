@@ -29,6 +29,8 @@ const FEEDS = Object.freeze({ FLETCHING: "WOODCUTTING", FIREMAKING: "WOODCUTTING
 const WINTERTODT_LEVEL = 50;
 /** Modes that earn coins (loot, stolen goods, produce to sell); a first guess before it has measured. */
 const MONEY_MODES = new Set(["thieving", "combat_training", "combat_ranged", "combat_magic", "slayer", "woodcutting", "mining", "fishing", "hunter"]);
+/** Bots on one way of making money before each one more lowers what it is worth (Planner money). */
+const CROWD_FREE = 4;
 const MONEY_GUESS = Object.freeze({ thieving: 30_000, combat_training: 20_000, slayer: 25_000, woodcutting: 15_000, mining: 15_000, fishing: 12_000, hunter: 10_000, combat_ranged: 15_000, combat_magic: 10_000 });
 
 /** The quest's unmet requirements: { skills: { NAME: level }, combat, quests, questPoints }. */
@@ -146,7 +148,10 @@ function chooseNext(adventurer, quests, {
     const measured = earners.map((other) => rate(other.mode)).filter((value) => value > 0);
     const anyMeasured = measured.length > 0;
     const floor = anyMeasured ? Math.min(...measured) : 0;
-    const score = (option) => rate(option.mode) ?? Math.min((MONEY_GUESS[option.mode] ?? 0) / 4, floor - 1);
+    // Shared by the others already there: up to CROWD_FREE bots a way pays as measured, each one
+    // more takes a share (a crowded mine is a walk between mines, not ore).
+    const crowded = (option) => Math.max(1, ((adventurer.crowd?.[option.mode] ?? 0) + 1) / CROWD_FREE);
+    const score = (option) => (rate(option.mode) ?? Math.min((MONEY_GUESS[option.mode] ?? 0) / 4, floor - 1)) / crowded(option);
     // Maxed: no "eens proberen" (thieving for a few thousand an hour); what it knows earns best.
     // Nothing measured yet, by it or its clan: any way, at random, so the table fills (a guess
     // would send them all to the same one).
@@ -232,6 +237,10 @@ function trainingWeight(option, options, adventurer, { focus = {}, busyModes = n
   weight *= focus[option.mode] ?? 1;
   weight *= 1 + Math.max(0, average - option.level) * 0.2;
   if (busyModes.has(option.mode)) weight *= 0.5;
+  // Crowded (all clans): less often, as for money (17 bots at a few mithril rocks, 23 of them
+  // there for "afwisseling"; validation 4baf1a2, 23-11-2026).
+  const crowd = adventurer.crowd?.[option.mode] ?? 0;
+  if (crowd >= CROWD_FREE) weight *= CROWD_FREE / (crowd + 1);
   // A skill at 99 gives no levels any more: hardly ever trained for its own sake (a maxed bot
   // ran Seers' rooftop for "achterstand"). Fighting and Slayer still bring loot.
   if (option.level >= 99 && option.mode !== COMBAT && option.mode !== "slayer" && !String(option.mode).startsWith("combat_")) weight *= 0.05;

@@ -67,3 +67,14 @@ test("money: nothing measured picks any way at random; an unmeasured way never b
   const plan = chooseNext({ ...base, clanEarn: { fishing: { gpPerHour: 2000, n: 6, known: true } } }, [], { available: new Set(), questChance: 0, moneyChance: 1, random: () => 0.9 });
   assert.equal(plan.mode, "fishing");
 });
+
+test("money: a crowded way is worth less to the next bot (17 at mithril, validation 4baf1a2)", () => {
+  const view = {
+    levels: { WOODCUTTING: 30, MINING: 30, FISHING: 30, THIEVING: 30, FIREMAKING: 1 }, combat: 30, questPoints: 0, done: new Set(), earn: {},
+    clanEarn: { mining: { gpPerHour: 32_000, n: 9, known: true }, fishing: { gpPerHour: 20_000, n: 9, known: true } },
+  };
+  const free = chooseNext({ ...view, crowd: { mining: 2 } }, [], { available: new Set(), questChance: 0, moneyChance: 1, random: () => 0.9 });
+  assert.equal(free.mode, "mining");
+  const crowded = chooseNext({ ...view, crowd: { mining: 16 } }, [], { available: new Set(), questChance: 0, moneyChance: 1, random: () => 0.9 });
+  assert.equal(crowded.mode, "fishing");
+});

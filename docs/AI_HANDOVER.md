@@ -5,6 +5,15 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 23-11-2026 11:20: validatie 4baf1a2 verwerkt: drukte bij mining, ontbrekende shortcut (branch `adventurers/analysis-p4`)
+
+Uit `docs/analysis/2026-11-23-validatie-4baf1a2.md` (41 min: combat 0 van 13 vast, 0 trage beurten, 0 doden; lopen 39%). Niet in game getest.
+
+- **Drukte (17 bots bij mithril/adamantite, 80% lopen):** de view krijgt `crowd` (per mode hoeveel andere avonturiers, alle clans, nu op een trainingsplan zitten). Geldkeuze: score gedeeld door `max(1, (crowd+1)/CROWD_FREE)` (`CROWD_FREE` 4). Gewogen keuze (afwisseling, spaardoelen): gewicht × `CROWD_FREE/(crowd+1)` vanaf 4. De capaciteit in `bot-activities.json` (mithril 160, adamantite 80) is niet aangepast: het echte aantal rotsen per plek is niet zonder cache te tellen.
+- **Ontbrekende shortcut (14x "Vond de jump-to broken raft naar Al Kharid niet"):** `missingShortcuts` (gedeeld, 30 min) bij een niet-gevonden shortcut-object, metric `shortcut_missing`. Was alleen per bot en alleen bij een mislukte landing.
+- **Niet gedaan:** Seers obstakel 5 (11x `stuck`, in game nakijken), Slayer-meester-route rond Draynor, Wizards' Tower-route, pakket 5.
+- **Validatie:** suite 170 pass, 14 fail (baseline); `bot-knowledge` +1; eslint no-undef schoon.
+
 ## 23-11-2026 09:45: validatie `4baf1a2` (#61, #63, #64) (branch `analysis/validatie-4baf1a2`)
 
 - **Logs:** 08:46-09:27 UTC (41 min).
