@@ -5,6 +5,16 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 23-11-2026 15:30: validatie 441b072 (#71) verwerkt: bank-pingpong (branch `adventurers/analysis-p7`)
+
+Niet in game getest.
+
+- **Oorzaak:** `fetchTools` deed `withdraw(id, 1000)`. Voor Construction (packFor: 20 planken) vulde dat de tas met planken; de volle-tas-route (`Trade.keepIds`, zonder klusmateriaal) zette ze terug; packFor miste ze weer. Slayed Soul 155x. Hammers: alle hammers van de bank mee, `clearBag` zette de extra's terug.
+- **Fix:** `fetchTools(entry, plan, ids, amounts)`: 1 per gereedschap of het packFor-aantal, en voor niet-stapelbaar nooit meer dan `vrije vakjes - (fullSlots+1)`. De volle-tas-deposit gebruikt `keepAtExchange` (met `workingMaterials`). `bankUnusedTools` laat `workingMaterials` liggen.
+- **Detector:** zelfde item 3x in 10 min gehaald: metric `bank_pingpong` (item, mode, activity, `lastDeposit` met reden `full_bag`/`clear_bag`, vrije vakjes), event `bankPingpong`, en het item 1 uur in `questKeep` (blijft uit elke deposit).
+- **Niet gedaan:** lus-escalatie op klusniveau (de pingpong-oorzaak is weg; eerst kijken of lussen dalen), Death Plateau (Jorgbot 12 liep van Seers naar 2853,3591 tijdens combat; route onduidelijk, eerst meer data), magic-tree zoekkosten, shark fishing Catherby, walk_blocked "lumbridge swamp mine": dat is niet de mijnplek maar een bank-booth op 3122,3124 (reason `bank`, alleen de naam komt van de nieuwe plek); nakijken of dat een echte bank is, pakket 5.
+- **Validatie:** suite 170 pass, 14 fail (baseline); eslint no-undef schoon.
+
 ## 23-11-2026 14:15: validatie `441b072` (#68, #70) (branch `analysis/validatie-441b072`)
 
 - **Logs:** 11:15-13:07 UTC (112 min, 96 bot-uren). Telt.

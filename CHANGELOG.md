@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Avonturiers haalden planken of een hamer van de bank en zetten die meteen weer terug, soms honderd keer achter elkaar. Ze halen nu alleen wat ze nodig hebben en houden het bij zich.
 - Avonturiers die mithril, adamantite of coal wilden hakken, gingen naar het oostelijke deel van Lumbridge Swamp, waar die rotsen niet staan. Ze gaan nu naar de mijn in het westen van het moeras.
 - Mijnende avonturiers liepen naar een andere mijn zodra alle rotsen bezet waren. Ze wachten nu tot vijf minuten op een vrije rots, zoals een speler.
 - Een avonturier die steeds opnieuw vastliep op weg naar dezelfde plek (zoals de bank van Seers' Village), probeerde het elk kwartier weer. Na de tweede keer gaat hij er twee uur niet heen en kiest hij een andere bank.
