@@ -5,6 +5,14 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 23-11-2026 11:30: voortgang sinds 21-11 en aandachtspunten (branch `analysis/voortgang-23-11`)
+
+- **Beter:** OSRS-XP per bot-uur 15,0k → 20,9k (+39%); tijd in blokken met XP 54% → 62%; combat `stuck` 76% → 3%; vastlopers per bot-uur −50%, `walk_blocked` −43%, `stranded` −56%.
+- **Kritisch:** "werken" deugt niet als maatstaf (27% van de XP in blokken zonder "working"; yew 95%, combat 73%); lopen + errand niet gedaald (55% → 59%); quests staan stil (6-11%); Hunter, Herblore, Fletching, Ranged nauwelijks getraind; maxed accounts (3) hebben geen werkende boss.
+- **Tussenuit:** Markbot 12 2,2 uur vast bij Seers' Village (lusbewaking escaleert niet); Jorgbot 14 en Patrickbot 11 2,2 uur mithril zonder erts (wisselen meteen van mijn); idle bij harpoon fishing en gem stalls.
+- **Nieuw script:** `docs/analysis/scripts/period_compare.py`.
+- **Details:** [analysis/2026-11-23-voortgang-en-aandachtspunten.md](analysis/2026-11-23-voortgang-en-aandachtspunten.md).
+
 ## 23-11-2026 12:30: validatie f0c01e1 verwerkt: Barrows-lus, eten, gilde-bank (branch `adventurers/analysis-p5`)
 
 Uit `docs/analysis/2026-11-23-validatie-f0c01e1.md`. Niet in game getest.
