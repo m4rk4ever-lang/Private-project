@@ -5,6 +5,17 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 23-11-2026 10:10: Barrows-tunnels (A2) (branch `adventurers/barrows-tunnels`)
+
+Ontwerp uit `docs/analysis/2026-11-22-voorwerk-oorzaken.md` A2. Niet in game getest.
+
+- **Gang (kamer -1):** de lange deuren (0-2, 0-6, ...) eindigen in een gang; de bot wachtte daar eeuwig (`if (room < 0) return "running"`). Nu loopt hij naar het midden van de kamer die de route als volgende noemde (`run.nextRoom`, `v.roomCentre`).
+- **Monsters eerst:** wie de bot aanvalt, wordt eerst bevochten (`fight`), dan pas naar de deur.
+- **Deur direct vanaf de zijtegel:** `useDoor` in de plugin neemt de deur alleen van precies die tegel; de klik via `walkToObject` kon hem eraf halen. Nu `emitObjectInteraction` direct, één keer per 3 s.
+- **Reden bij falen:** na 4 klikken op de zijtegel zonder oversteek: `fail` met deur-varbit, kamers, zijtegel, of de deur open staat en hoeveel NPC's dichtbij. Stap 1 van het ontwerp (de reden uit de plugin zelf) is daarmee vanuit de bot gedekt; de plugin is niet aangepast.
+- **Bevestigen:** ≥ 80% van de Barrows-runs met loot; geen "tunnel x→y" die blijft hangen.
+- **Validatie:** suite 169 pass, 14 fail (baseline); eslint no-undef schoon. Geen unit-test: BarrowsRun vraagt de plugin-view; in game nakijken.
+
 ## 23-11-2026 09:55: validatie #61 verwerkt: Farming en Wander (branch `adventurers/analysis-p3`)
 
 Uit `docs/analysis/2026-11-23-validatie-61.md`. Niet in game getest.
