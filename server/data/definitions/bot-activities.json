@@ -59,7 +59,8 @@
           "tier": "$tier",
           "option": "Mine",
           "until": {"inventoryFull":true},
-          "stallSeconds": 120
+          "stallSeconds": 120,
+          "crowdWaitSeconds": 300
         },
         {
           "type": "choose",

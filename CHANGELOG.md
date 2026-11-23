@@ -14,6 +14,12 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Avonturiers die mithril, adamantite of coal wilden hakken, gingen naar het oostelijke deel van Lumbridge Swamp, waar die rotsen niet staan. Ze gaan nu naar de mijn in het westen van het moeras.
+- Mijnende avonturiers liepen naar een andere mijn zodra alle rotsen bezet waren. Ze wachten nu tot vijf minuten op een vrije rots, zoals een speler.
+- Een avonturier die steeds opnieuw vastliep op weg naar dezelfde plek (zoals de bank van Seers' Village), probeerde het elk kwartier weer. Na de tweede keer gaat hij er twee uur niet heen en kiest hij een andere bank.
+
+### Gewijzigd
+- In de statistieken telt hakken tussen bomen en achter een monster aan lopen nu als werken, niet als lopen.
 - Een avonturier die vastliep in de Barrows-tunnels, begon meteen een nieuwe run en liep weer vast. Hij teleporteert nu weg en laat de Barrows een half uur rusten.
 - Een vechtende avonturier zonder eten vocht door tot hij doodging. Hij stopt nu met vechten als zijn HP onder een derde zakt en hij geen eten heeft.
 - Avonturiers onder 68 Fishing liepen naar de bank in de Fishing Guild en kwamen niet langs de deur. Ze kiezen nu een andere bank.
