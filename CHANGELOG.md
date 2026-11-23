@@ -14,6 +14,10 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Een avonturier die vastliep in de Barrows-tunnels, begon meteen een nieuwe run en liep weer vast. Hij teleporteert nu weg en laat de Barrows een half uur rusten.
+- Een vechtende avonturier zonder eten vocht door tot hij doodging. Hij stopt nu met vechten als zijn HP onder een derde zakt en hij geen eten heeft.
+- Avonturiers onder 68 Fishing liepen naar de bank in de Fishing Guild en kwamen niet langs de deur. Ze kiezen nu een andere bank.
+- Vechtende avonturiers lieten de server haperen als monsters achter een hek stonden. Ze onthouden nu een minuut dat ze daar niet bij kunnen.
 - Als een avonturier een shortcut niet kon vinden (zoals het vlot naar Al Kharid), probeerde elke andere avonturier het daarna ook. Die shortcut wordt nu een half uur overgeslagen.
 - Avonturiers bleven in de Barrows-tunnels hangen: in een gang tussen twee kamers, of voor een deur waar een monster stond. Ze lopen nu door naar de volgende kamer, vechten eerst de monsters weg en openen de deur vanaf de goede tegel.
 - Avonturiers bleven bij een moestuin eindeloos op "rake" klikken zonder dat er iets gebeurde. Ze gebruiken de moestuin nu als ze ernaast staan, raken alleen met een hark en slaan een patch over als het niet lukt.

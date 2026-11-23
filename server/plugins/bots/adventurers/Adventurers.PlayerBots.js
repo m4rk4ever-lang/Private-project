@@ -193,6 +193,9 @@ const TRAVEL_FOOD = 8;
 const MAGIC_START_BUDGET = 2500;
 const MAGIC_RUNES = ["AIR_RUNE", "MIND_RUNE", "WATER_RUNE", "EARTH_RUNE", "FIRE_RUNE", "CHAOS_RUNE"];
 const WINTERTODT = travelData.minigames.find((game) => game.id === "wintertodt");
+// Skill guilds (a door that asks a level): their booths are no bank for a bot below it.
+const GUILDS = travelData.destinations.filter((place) => /_guild$/.test(place.id) && place.requires?.skills);
+const GUILD_REACH = 20;
 /** Veos at Port Sarim (npc-spawns.json): his ship sails to Great Kourend (Ferries.plugin.js). */
 const VEOS_PORT_SARIM = Object.freeze({ x: 3054, y: 3245, z: 0 });
 /** Great Kourend and Kebos on the surface (ClientOfKourend.Quest.js inKourend). */
@@ -2677,11 +2680,19 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   /** A Barrows run (adventurers.json boss "kind": "barrows"): a spade, food and prayer potions first. */
   function startBarrows(entry, plan, nowMs) {
     const { player } = entry;
+    // A run that got stuck in the tunnels (BarrowsRun.fail) keeps the Barrows aside 30 min: it
+    // began again at once at the same door, 3 to 6 times a bot (validation f0c01e1).
+    if ((entry.barrowsAsideUntil ?? 0) > now()) {
+      return cannot(entry, "place_unreachable", { place: placeOf(plan.boss), need: "barrows_tunnel" });
+    }
     const resume = () => { entry.savedTask = { kind: "boss", bossId: plan.boss.id, reason: plan.reason ?? "verder", remainingMs: 0, savedAt: now() }; };
     const spade = fetchTool(entry, "SPADE", resume);
     if (spade === true) return true;
     if (spade === null) {
-      note(player, "Kan niet naar de Barrows: geen spade te krijgen.", "boss");
+      // With why: in f0c01e1 all three came right after the GE walk was put to rest ("8 keer in
+      // 2 min naar de Grand Exchange"), not a spade that cannot be had.
+      const because = entry.refusal?.why === "not_buyable" ? entry.refusal.detail?.because : null;
+      note(player, `Kan niet naar de Barrows: geen spade te krijgen${because ? ` (${because})` : ""}.`, "boss");
       return false;
     }
     // Magic, the style against five of the six brothers: a magic weapon and runes for the best
@@ -4734,8 +4745,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   /** The nearest bank booth that opens the bank (Bank or Use), from the bots' object index. */
   function nearestBooth(player) {
     const { BANK_BOOTH_IDS, isUsableBankBooth } = require("../lib/BankBooths.PlayerBots");
+    // Not a booth inside a guild it may not enter: below 68 Fishing it was sent to the Fishing
+    // Guild's bank and stopped at the door, 17 times in f0c01e1 (more each version).
+    const shut = GUILDS.filter((guild) => Object.entries(guild.requires.skills)
+      .some(([skill, level]) => levelOf(player, skill) < level));
     const found = world.objectSearch?.findNearestIndexedLocation?.(player, [...BANK_BOOTH_IDS], {
-      regionRadius: 6, accept: (objectId) => isUsableBankBooth(objectId),
+      regionRadius: 6,
+      accept: (objectId, x, y, z) => isUsableBankBooth(objectId) &&
+        !shut.some((guild) => (guild.z ?? 0) === (z ?? 0) && Math.max(Math.abs(guild.x - x), Math.abs(guild.y - y)) <= GUILD_REACH),
     });
     if (!found) return null;
     // Named after the bank of the list it belongs to, else after where it is.

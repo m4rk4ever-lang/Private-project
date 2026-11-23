@@ -5,6 +5,19 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 23-11-2026 12:30: validatie f0c01e1 verwerkt: Barrows-lus, eten, gilde-bank (branch `adventurers/analysis-p5`)
+
+Uit `docs/analysis/2026-11-23-validatie-f0c01e1.md`. Niet in game getest.
+
+- **Barrows-lus:** `BarrowsRun.fail` onder de grond breekt een Varrock-tablet (anders home) en zet `entry.barrowsAsideUntil` op 30 min. `startBarrows` geeft dan `cannot place_unreachable` (`need: barrows_tunnel`).
+- **Barrows-reden:** `Barrows.plugin` `useDoor` zet `lastDoor` (`crossing`, `not_on_side`, `locked`, `puzzle`, `crossed`, met deur, tegel, kamer) in de bot-view. `barrows_run` failed heeft nu `at`, `room`, `lastDoor`, `openDoors`, `npcsNear`, `attacked`, `doorTries`. Volgende validatie: hieruit de echte deur-oorzaak halen.
+- **Spade:** de drie "geen spade" kwamen direct na "8 keer in 2 min naar de Grand Exchange" (GE-wandeling in rust), niet door een onkoopbare spade. De melding noemt nu de reden (`exchange_blocked`, `coins`, ...).
+- **Eten (Eeshwar):** eerlijke bot zonder eten stopt nu ook midden in een gevecht onder 1/3 HP (was alleen zonder doel onder 1/2).
+- **`reachable()`:** een "nee" wordt 60 s onthouden per NPC (8x8-cel van de bot + tegel van de NPC).
+- **Fishing Guild:** `walk_blocked` ging naar de bank-booth ín het gilde (`nearestBooth`, naam via `describeLocation`). Booths binnen 20 tegels van een `*_guild`-bestemming met onvervulde `requires.skills` tellen niet meer.
+- **Niet gedaan:** Wizards' Tower-route, Seers obstakel 5, pakket 5.
+- **Validatie:** suite 170 pass, 14 fail (baseline); eslint no-undef schoon; `node --check` op alle vier bestanden.
+
 ## 23-11-2026 11:00: `4baf1a2` bevestigd, `f0c01e1` (#66) eerste 45 min (branch `analysis/validatie-f0c01e1`)
 
 - **`4baf1a2` (73 min):** combat 0 van 28 `stuck` (bevestigd), holds en clay goed, Farming plant, 0 doden. Barrows-tunnels (#64) niet opgelost.
