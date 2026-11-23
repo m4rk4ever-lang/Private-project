@@ -14,6 +14,10 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Wat tijdelijk uit staat (Giant Mole, Runecrafting, enkele jachtplekken) kwam via een hervatte of gezamenlijke klus toch terug. Dat kan niet meer.
+- Avonturiers bleven na een bankbezoek clay hakken voor Doric's Quest. Een verzamelklus voor een quest wordt niet meer hervat als hij al klaar is.
+- Vechtende avonturiers bleven soms minutenlang buit najagen die ze niet konden oprapen, en vochten dan niet. Ze laten die buit nu liggen.
+- Avonturiers die zakkenrollen aten alleen cake en gingen dood als ze ander eten bij zich hadden. Ze eten nu wat ze dragen, en stoppen als het op is.
 - Avonturiers zonder Barrows-teleport begonnen elke 10 seconden een Barrows-run die meteen stopte. Zonder weg erheen kiezen ze de Barrows nu even niet.
 - Avonturiers bleven clay hakken voor Doric's Quest (één had er 321) en verkochten die daarna. Ze stoppen nu bij genoeg en bewaren de clay voor de quest.
 - Avonturiers bleven bij de bank vaak 45 seconden voor de balie staan voor ze gingen banken. Ze banken nu meteen als ze ervoor staan.

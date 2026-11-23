@@ -380,8 +380,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       if (job.mode && job.key.startsWith("training")) {
         const xpPerHour = hours >= 3 / 60 ? (xp - job.xp) / hours : null;
         try {
+          // Gathering for a quest is no way to make money: its coins (clay sold, 33.681 gp/h for
+          // Patrick Clan) do not count, its XP and ending do (validation #57).
+          const forQuest = isQuestGatherReason(job.reason);
           knowledge.record(Clans.clanOf(data, entry.name)?.name ?? null, [`mode:${job.mode}`, (job.activity ?? entry.activity) ? `activity:${job.activity ?? entry.activity}` : null],
-            { gpPerHour: coinsPerHour, xpPerHour, stuck: entry.jobEnd === "stuck" });
+            { gpPerHour: forQuest ? null : coinsPerHour, xpPerHour, stuck: entry.jobEnd === "stuck" });
         } catch {
           // Learning is a help, never a reason a job does not end.
         }
@@ -432,7 +435,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       metric({ kind: "slow_bot", bot: name, ms: event.ms, planMs: event.planMs, urgent: event.urgent,
         before: event.before, after: event.after, where: at ? [at.getX(), at.getY(), at.getZ()] : null,
         phase: adventurer?.phase ?? null, plan: adventurer?.plan ? { kind: adventurer.plan.kind, mode: adventurer.plan.mode ?? null, activity: adventurer.activity ?? null } : null,
-        errand: adventurer?.errand?.reason ?? null, ...(adventurer ? brainSnapshot(adventurer) : {}) });
+        errand: adventurer?.errand?.reason ?? null, ...(adventurer ? brainSnapshot(adventurer) : {}),
+        // Under its own name too: the analysis reads slow_bot.brainSnapshot (pakket 8).
+        brainSnapshot: adventurer ? brainSnapshot(adventurer) : null });
     });
   } catch {
     // A help, not a must.
@@ -2124,8 +2129,26 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return null;
   }
 
+  /**
+   * Why this plan is off for now ("hold": a boss, a bought skill or an activity, with its reason and
+   * when it comes back), or null. One check for every way in: a new choice, a resumed job, training
+   * together, a backlog pick. A hold was only kept out of new choices, so Runecrafting and the
+   * Giant Mole came back through resume and group training (validation #57, 22-11-2026).
+   */
+  function heldBy(plan) {
+    if (!plan) return null;
+    if (plan.kind === "boss") return plan.boss?.hold ? `boss:${plan.boss.id}` : null;
+    const skill = String(plan.mode ?? "").startsWith("buy_") ? plan.skill : null;
+    if (skill && data.buyToTrain?.[skill]?.hold) return `buy:${skill}`;
+    const activity = plan.activity ?? plan.planActivity ?? null;
+    if (activity && registry?.byId?.get(activity)?.hold) return `activity:${activity}`;
+    return null;
+  }
+
   function startTraining(entry, plan, nowMs) {
     const { player } = entry;
+    const held = heldBy(plan);
+    if (held) return cannot(entry, "on_hold", { hold: held });
     const view = snapshot(player);
     // Only a Slayer task narrows what it fights; any other job fights what it finds.
     const own = runtimeEntry(player);
@@ -2466,17 +2489,39 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
     if (via.kind === "dig") {
       const spade = Shopping.idOf(core, via.tool);
+      // Digs that did not get it in: three within 10 min and the boss is left for 30 min (a
+      // requirement, remembered). It dug 66 times for 2 kills: the errand arrives within 3 tiles,
+      // and the plugin digs in only on the mole hill itself (validation 8b75ca8, pakket 18).
+      const digs = (entry.digs ??= []).filter((at) => now() - at < 10 * 60_000);
+      entry.digs = digs;
+      if (digs.length >= 3) {
+        entry.digs = [];
+        return cannot(entry, "place_unreachable", { place: via.at, why: "dig_failed", digs: digs.length });
+      }
+      const dig = (digger) => {
+        const items = digger.getInventory().getItems() ?? [];
+        const slot = items.findIndex((item) => item && item.getId() === spade);
+        if (slot < 0) return;
+        // The click names the option by its place in the spade's menu (Dig is not first).
+        const actions = core.CacheDefinitions?.getItem?.(spade)?.inventoryActions ?? [];
+        const index = actions.findIndex((option) => option === "Dig");
+        if (index >= 0) api.emitItemAction?.({ player: digger, interfaceId: core.Inventory.INTERFACE_ID, item: items[slot], itemId: spade, slot,
+          clickType: index + 1, option: "Dig", handled: false });
+      };
       const started = walkTo(entry, { ...via.at, name: via.name }, {
         reason: "boss", replan: false,
         arrive: (digger) => {
-          const items = digger.getInventory().getItems() ?? [];
-          const slot = items.findIndex((item) => item && item.getId() === spade);
-          if (slot >= 0) {
-            // The click names the option by its place in the spade's menu (Dig is not first).
-            const actions = core.CacheDefinitions?.getItem?.(spade)?.inventoryActions ?? [];
-            const index = actions.findIndex((option) => option === "Dig");
-            if (index >= 0) api.emitItemAction?.({ player: digger, interfaceId: core.Inventory.INTERFACE_ID, item: items[slot], itemId: spade, slot,
-              clickType: index + 1, option: "Dig", handled: false });
+          entry.digs.push(now());
+          // Onto the hill itself (a walkable tile with the hill on it), as a player clicks it, and
+          // dig there: the nearest one within 5 tiles of where the errand ended.
+          let hillId = null;
+          try { hillId = require("../../bosses/GiantMole.plugin").MOLE_HILL_ID; } catch { hillId = null; }
+          const hill = plan.boss.id === "boss_giant_mole" ? nearestObjectTile(digger, hillId, 5) : null;
+          if (hill && digger.getMovementQueue().walkToGroundItem) {
+            digger.getMovementQueue().walkToGroundItem(new core.Location(hill.x, hill.y, hill.z), () => dig(digger));
+          } else {
+            metric({ kind: "boss_dig", bot: entry.name, boss: plan.boss.id, found: Boolean(hill) });
+            dig(digger);
           }
           resume();
           entry.until = 0;
@@ -2670,6 +2715,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function startBoss(entry, plan, nowMs) {
     const { player } = entry;
     const { boss } = plan;
+    if (heldBy(plan)) return cannot(entry, "on_hold", { hold: heldBy(plan) });
     // The Barrows only with Protect from Melee (43): the brothers hit too hard without it.
     if (boss.kind === "barrows" && levelOf(player, "PRAYER") < 43) return cannot(entry, "skill_level", { skill: "PRAYER", level: 43, have: levelOf(player, "PRAYER") });
     if (boss.kind !== "barrows" && !registry?.byId?.get(boss.id)) return cannot(entry, "no_activity", { boss: boss.id });
@@ -5586,6 +5632,29 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   }
 
   /** After a restart: the saved job again, for the time it had left. False when it cannot. */
+  /** The nearest tile within `radius` that has an object with this id on the bot's floor, or null. */
+  function nearestObjectTile(player, objectId, radius) {
+    if (!Number.isInteger(objectId)) return null;
+    const here = player.getLocation();
+    const area = player.getPrivateArea?.() ?? null;
+    let best = null;
+    for (let dx = -radius; dx <= radius; dx += 1) {
+      for (let dy = -radius; dy <= radius; dy += 1) {
+        const at = new core.Location(here.getX() + dx, here.getY() + dy, here.getZ());
+        if (!(core.MapObjects.getObjectsAt(at, area) ?? []).some((object) => object.getId() === objectId)) continue;
+        const away = Math.max(Math.abs(dx), Math.abs(dy));
+        if (!best || away < best.away) best = { x: at.getX(), y: at.getY(), z: at.getZ(), away };
+      }
+    }
+    return best;
+  }
+
+  /** "clay voor Doric's Quest": the reason gatherFor gives a job that gathers for a quest. */
+  function isQuestGatherReason(reason) {
+    const match = /^.+ voor (.+)$/.exec(String(reason ?? ""));
+    return Boolean(match && questsByName().has(normalize(match[1])));
+  }
+
   function resumeTask(entry, nowMs) {
     const task = entry.savedTask;
     entry.savedTask = null;
@@ -5601,6 +5670,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         forceQuest(entry.name, quest);
         return false;
       }
+    }
+    // A gathering job for a quest ("clay voor Doric's Quest") without its gather state (put by
+    // gatherFor) is not resumed: its quest has had its turn, and without the count nothing stops
+    // it. Jorgbot 7 and Patrickbot 5 resumed it after every bank trip and every quest attempt, 23
+    // jobs to a full bag in 43 min, the clay sold (validation #57, 22-11-2026).
+    if (task?.kind === "train" && !entry.gather && isQuestGatherReason(task.reason)) {
+      metric({ kind: "gather_dropped", bot: entry.name, reason: task.reason });
+      return false;
     }
     const plan = Tasks.planOf(task, (data.bosses ?? []).filter((boss) => boss.onFoot !== false));
     if (!plan) return false;

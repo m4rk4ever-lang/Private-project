@@ -9,6 +9,10 @@ const Loot = require("../Loot.PlayerBots");
 const HouseParty = require("../HouseParty.PlayerBots");
 const isFood = (itemId) => require("../../../items/Food.plugin").isFoodItem(itemId);
 
+/** How long it walks after one drop before leaving it (TrainCombat loot). */
+const LOOT_CHASE_MS = 20_000;
+/** How long a drop it could not have is left alone. */
+const LOOT_SKIP_MS = 120_000;
 /** The strike or bolt spell it can cast now with the runes it carries, best first. */
 // Best first: the fire spells as far as its level and runes go (Barrows asks for the higher ones).
 const HONEST_SPELLS = ["FIRE_SURGE", "FIRE_WAVE", "FIRE_BLAST", "FIRE_BOLT", "WIND_BOLT", "FIRE_STRIKE", "EARTH_STRIKE", "WATER_STRIKE", "WIND_STRIKE"];
@@ -689,14 +693,30 @@ function createTrainCombatAction(spec, world) {
       }
       if (!bot.target && honest) {
         // An honest bot (an adventurer) takes its own loot between fights: its income.
-        const ground = bot.loot ?? Loot.lootNear(world.core, player, { valueOf: (id, amount) => Value.itemValue(world.core, id, amount) });
+        // A drop it cannot have (refused next to it, or chased for LOOT_CHASE_MS) is left for
+        // LOOT_SKIP_MS; the chase no longer counts as progress. It chased one item for minutes
+        // with idle=0s and never picked a target (runtime analysis pakket 13, voorwerk 22-11-2026).
+        bot.lootSkip ??= new Map();
+        const skipped = (ground) => (bot.lootSkip.get(ground) ?? 0) > nowMs;
+        const valueOf = (id, amount) => Value.itemValue(world.core, id, amount);
+        let ground = bot.loot && !skipped(bot.loot) ? bot.loot : null;
+        // Re-checked each turn as lootNear checks (room in the bag, still there).
+        if (ground && !Loot.lootNear(world.core, player, { valueOf, skip: (other) => other !== ground })) ground = null;
+        ground ??= Loot.lootNear(world.core, player, { valueOf, skip: skipped });
+        if (ground !== bot.loot) bot.lootSince = nowMs;
         if (ground) {
           const step = Loot.takeStep(world.core, player, ground, { state, nowMs });
-          bot.loot = step === "walking" ? ground : null;
-          if (step !== "gone") {
-            bot.lastProgressAt = nowMs;
-            return "running";
+          const tooLong = nowMs - (bot.lootSince ?? nowMs) > LOOT_CHASE_MS;
+          if (step === "refused" || (step === "walking" && tooLong)) {
+            bot.lootSkip.set(ground, nowMs + LOOT_SKIP_MS);
+            bot.loot = null;
+          } else {
+            bot.loot = step === "walking" ? ground : null;
+            if (step === "taken") bot.lastProgressAt = nowMs;
+            if (step !== "gone") return "running";
           }
+        } else {
+          bot.loot = null;
         }
         // Then it buries the bones it picked up, one a click, as a player does between kills.
         const boneSlot = (player.getInventory().getItems() ?? [])
@@ -836,6 +856,7 @@ function createTrainCombatAction(spec, world) {
       return `train site=${bot.site ? `${bot.site.id}@${at(bot.site.anchor)}` : "none"} ` +
         `target=${bot.target ? `${bot.target.getDefinition?.()?.getName?.()}@${at(bot.target.getLocation())}` : "none"} ` +
         `approach=${at(bot.approachNpc?.getLocation())} settled=${!!bot.settled} failed=${bot.failedTargets} idle=${Math.round((ctx.nowMs - bot.lastProgressAt) / 1000)}s` +
+        (bot.loot ? ` loot=${bot.loot.getItem?.()?.getId?.()}@${at(bot.loot.getPosition?.())} for=${Math.round((ctx.nowMs - (bot.lootSince ?? ctx.nowMs)) / 1000)}s` : "") +
         (bot.site && !bot.target ? ` npcs=${whyNoTarget(ctx, bot)}` : "");
     },
     madeProgress(ctx) {
