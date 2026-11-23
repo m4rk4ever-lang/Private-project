@@ -44,7 +44,9 @@ def report(name, rows, activity):
     print("  held activities still running (bot rows):", len(held), C.Counter((r.get("activity"), r.get("reason")) for r in held).most_common(4))
     print("  combat jobs:", len(combat), "stuck:", sum(1 for r in combat if r.get("ended") == "stuck"))
     print("  money decisions:", len(money), C.Counter((r["chosen"].get("reason") or "")[:40] for r in money).most_common(5))
-    gather = [r for r in jobs if " voor " in (r.get("reason") or "") and r.get("ended") == "full bag"]
+    # A quest-gather job reads "<item> voor <quest>"; a savings goal reads "doel: … voor …".
+    gather = [r for r in jobs if " voor " in (r.get("reason") or "") and not (r.get("reason") or "").startswith("doel:")
+              and r.get("ended") == "full bag"]
     print("  quest-gather jobs ending on a full bag:", len(gather), C.Counter(r.get("activity") for r in gather).most_common(3))
     print("  deaths:", [(r["bot"], r.get("killer"), r.get("reason")) for r in rows if r["kind"] == "death"])
     print("  barrows:", C.Counter((r.get("result"), r.get("why")) for r in rows if r["kind"] == "barrows_run"))
