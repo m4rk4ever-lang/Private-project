@@ -5,6 +5,14 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 23-11-2026 11:00: `4baf1a2` bevestigd, `f0c01e1` (#66) eerste 45 min (branch `analysis/validatie-f0c01e1`)
+
+- **`4baf1a2` (73 min):** combat 0 van 28 `stuck` (bevestigd), holds en clay goed, Farming plant, 0 doden. Barrows-tunnels (#64) niet opgelost.
+- **#66:** lopen 39,5% → 31,8%, mithril-bots 13 → 9, ontbrekende shortcut 15× → 1×. Mithril-bots lopen nog 75%.
+- **Barrows:** 16 runs, 0 loot, alle vast in de tunnels (0→3, 0→1). Na het opgeven begint de bot meteen een nieuwe run in de tunnels (Markbot 17 3× op 3535,9706). De reden per deurklik uit het voorwerk zit nog niet in `barrows_run`.
+- **Verder:** trage `trainCombat`-beurten bij onbereikbare NPC's (`reachable()`), Eeshwar dood zonder eten, `walk_blocked` naar de Fishing Guild groeit (17×), 3× geen spade voor Barrows, quests 2 van 18.
+- **Details:** [analysis/2026-11-23-validatie-f0c01e1.md](analysis/2026-11-23-validatie-f0c01e1.md).
+
 ## 23-11-2026 11:20: validatie 4baf1a2 verwerkt: drukte bij mining, ontbrekende shortcut (branch `adventurers/analysis-p4`)
 
 Uit `docs/analysis/2026-11-23-validatie-4baf1a2.md` (41 min: combat 0 van 13 vast, 0 trage beurten, 0 doden; lopen 39%). Niet in game getest.
