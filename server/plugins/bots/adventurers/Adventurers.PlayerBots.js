@@ -1354,6 +1354,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   // player -> Map(shortcut key -> until): one that did not take it across is left for half an hour.
   const failedShortcuts = new WeakMap();
   const shortcutKey = (hop) => `${hop.from.x},${hop.from.y}`;
+  // A shortcut whose object a bot could not find there: out for everyone for 30 min. Every bot
+  // tried the broken raft to Al Kharid again, 14 times in 41 min (validation 4baf1a2, 23-11-2026).
+  const missingShortcuts = new Map();
 
   /** A shortcut near it through a wall between it and `to` (see below), or null. */
   function shortcutHop(player, to) {
@@ -1367,6 +1370,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     for (const hop of SHORTCUT_HOPS) {
       if (away(at, hop.from) > 30 || hop.needs.some(({ level, skill }) => levelOf(player, skill) < level)) continue;
       if ((failedShortcuts.get(player)?.get(shortcutKey(hop)) ?? 0) > now()) continue;
+      if ((missingShortcuts.get(shortcutKey(hop)) ?? 0) > now()) continue;
       // A shortcut goes through a wall the walk would go round: taken when it stands on the near
       // side and the place lies on the far side, and the way through is not much longer in a
       // straight line (the GE to Edgeville is 70 straight, 74 through the tunnel, far more round).
@@ -1678,6 +1682,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         arrive: (player) => {
           if (!clickHop(player, hop)) {
             note(player, `Vond de ${hop.menu.toLowerCase()} naar ${placeName(to)} niet.`, "activity");
+            if (hop.shortcut) {
+              missingShortcuts.set(shortcutKey(hop), now() + 30 * 60_000);
+              metric({ kind: "shortcut_missing", bot: entry.name, menu: hop.menu, from: [hop.from.x, hop.from.y, hop.from.z] });
+            }
             return;
           }
           note(player, `${hop.menu.split(" ")[0].replace(/-/g, " ")} (${hop.menu.split(" ").slice(1).join(" ").toLowerCase()}) op weg naar ${placeName(to)}.`, "activity");
@@ -3360,6 +3368,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     view.earn = entry.earn ?? {};
     // What its clan measured (Knowledge): the planner's second source after its own.
     view.clanEarn = knowledge.moneyByMode(Clans.clanOf(data, entry.name)?.name ?? null);
+    // How many others (all clans) are on each mode now: a measure is for one bot on free rocks,
+    // not for the seventeenth (17 at mithril/adamantite, 80% walking; validation 4baf1a2).
+    const crowd = {};
+    for (const other of adventurers.values()) {
+      if (other === entry || other.plan?.kind !== "train" || !other.plan.mode) continue;
+      crowd[other.plan.mode] = (crowd[other.plan.mode] ?? 0) + 1;
+    }
+    view.crowd = crowd;
     entry.cannot ??= new Map();
     // What cannot be done now is left out before the pick (canExecute), with its reason.
     // A boss on "hold" (off for now, with its reason and when it comes back) is not picked.
