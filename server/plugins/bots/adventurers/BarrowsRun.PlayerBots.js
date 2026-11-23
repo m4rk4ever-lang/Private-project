@@ -337,8 +337,16 @@ function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, 
       run.chestAt = nowMs + 3_000;
       return click(player, chest, 1) ? "running" : fail(entry, "kist niet gevonden");
     }
-    // Between rooms (in a doorway): a moment, the step through ends in the next room.
-    if (room < 0) return "running";
+    // In a corridor (room -1): the long doors (0-2, 0-6 ...) end there, not in the next room, and
+    // it waited for ever (Patrickbot 1 "van kamer 2 naar kamer 0", voorwerk A2, 22-11-2026). On to
+    // the room the route named, as a player walks the corridor.
+    if (room < 0) {
+      if (Number.isInteger(run.nextRoom) && player.getMovementQueue().size() === 0) {
+        const centre = v.roomCentre(run.nextRoom);
+        player.getMovementQueue().requestWalk(new core.Location(centre.x, centre.y, 0));
+      }
+      return "running";
+    }
     if (v.puzzleOpen) {
       api.emitCustomEvent("barrows:bot-answer-puzzle", { player });
       return "running";
@@ -346,7 +354,15 @@ function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, 
     const route = routeRooms(v, room);
     if (!route || route.length === 0) return fail(entry, "geen open deur naar de kist");
     const step = route[0];
+    run.nextRoom = step.to;
     progress(entry, nowMs, `tunnel ${room}→${step.to}`, `In de tunnels: van kamer ${room} naar kamer ${step.to}.`);
+    // Monsters in the room come for it (one spawns each time it enters): fought first, as a
+    // player does, then on to the door. One on the door's side tile kept the click from landing.
+    const attacker = player.getCombat?.()?.getAttacker?.();
+    if (attacker && attacker.isRegistered?.() !== false && (attacker.getHitpoints?.() ?? 0) > 0) {
+      fight(player, attacker);
+      return "running";
+    }
     const door = v.doors.filter((entry2) => entry2.varbit === step.varbit)
       .map((entry2) => ({ door: entry2, side: entry2.sides.find((side) => side.room === room) }))
       .filter((pair) => pair.side)
@@ -357,7 +373,28 @@ function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, 
       return "running";
     }
     const object = objectNear({ x: door.door.x, y: door.door.y, z: 0 }, [door.door.id], 0);
-    return click(player, object, 1) ? "running" : fail(entry, "deur niet aan te klikken");
+    if (!object) return fail(entry, "deur niet aan te klikken");
+    // On the side tile: the door's option at once. The plugin takes a door only from exactly that
+    // tile, and the walk of an object click could take it off it first (voorwerk A2).
+    // One click per 3 s: the plugin's step through takes a moment before it says crossing.
+    if (nowMs < (run.doorAt ?? 0)) return "running";
+    run.doorAt = nowMs + 3_000;
+    const tries = (run.doorTries ??= new Map());
+    const key = `${room}:${step.varbit}`;
+    const count = (tries.get(key) ?? 0) + 1;
+    tries.set(key, count);
+    if (count > 4) {
+      // Why it does not get through, for the log (barrows_run): the door, its tile, what is near.
+      const near = (core.World?.getNpcsNear?.(player.getLocation(), 3, player.getPrivateArea?.() ?? null) ?? []).length;
+      return fail(entry, `deur ${step.varbit} van kamer ${room} naar ${step.to} gaat niet open (4x op de zijtegel ${door.side.x},${door.side.y}; open=${v.run?.openDoors?.includes?.(step.varbit) ?? "?"}, NPC's dichtbij ${near})`);
+    }
+    const definition = (() => {
+      try { return core.ObjectDefinition.forPlayer?.(object.getId(), player) ?? core.ObjectDefinition.forId(object.getId()); } catch { return core.ObjectDefinition.forId(object.getId()); }
+    })();
+    const location = object.getLocation();
+    world.emitObjectInteraction?.({ player, object, definition, objectId: object.getId(), clickType: 1,
+      location: { x: location.getX(), y: location.getY(), z: location.getZ() }, handled: false });
+    return "running";
   }
 
   return { start, tick, view, supplies };
