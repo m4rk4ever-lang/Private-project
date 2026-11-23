@@ -472,23 +472,34 @@ function crossDoor(player, door) {
   movement.addSteps(to.clone());
 }
 
+/**
+ * What became of the last door click, for the bot view (`lastDoor`): crossing, crossed, not_on_side,
+ * locked or puzzle, with the door, the player's tile and when. Bots got stuck at the same door for
+ * minutes (0 to 3, 16 runs without loot) and nothing said why (validation f0c01e1, 23-11-2026).
+ */
+function noteDoor(player, door, outcome) {
+  const at = player.getLocation();
+  session(player).lastDoor = { outcome, varbit: door.varbit, door: [door.x, door.y], at: [at.getX(), at.getY()], room: roomAt(at), time: Date.now() };
+}
+
 function useDoor(player, door) {
   const state = session(player);
-  if (state.crossing || player.getForceMovement()) return;
+  if (state.crossing || player.getForceMovement()) return noteDoor(player, door, "crossing");
   const run = getRun(player);
-  if (!doorSides(door).some((side) => side.equals(player.getLocation()))) return;
+  if (!doorSides(door).some((side) => side.equals(player.getLocation()))) return noteDoor(player, door, "not_on_side");
   const centre = DOOR_LINKS.find(([id]) => id === door.varbit).slice(1).includes(4);
   if (!run.openDoors.includes(door.varbit)) {
     if (!consumeLockpick(player)) {
       player.sendMessage("This door is locked.");
-      return;
+      return noteDoor(player, door, "locked");
     }
   } else if (centre && !run.puzzleSolved && roomAt(player.getLocation()) !== 4 && !run.looted) {
     if (!consumeLockpick(player)) {
       showPuzzle(player, door);
-      return;
+      return noteDoor(player, door, "puzzle");
     }
   }
+  noteDoor(player, door, "crossed");
   crossDoor(player, door);
 }
 
@@ -926,6 +937,7 @@ function botView(request) {
     },
     brother: state.brother,
     crossing: Boolean(state.crossing),
+    lastDoor: state.lastDoor ?? null,
     brothers: BROTHERS.map((brother) => ({
       npcId: brother.npcId, coffin: brother.coffin, stairs: brother.stairs,
       surface: { x: brother.surface.getX(), y: brother.surface.getY(), z: 0 },

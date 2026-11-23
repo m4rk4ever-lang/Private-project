@@ -208,7 +208,22 @@ function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, 
   function fail(entry, why) {
     entry.barrows.why = why;
     note(entry.player, `Stopt met de Barrows-run: ${why}.`, "boss");
-    metric({ kind: "barrows_run", bot: entry.name, result: "failed", why, step: entry.barrows.step, killed: entry.barrows.killed ?? [], minutes: Math.round((Date.now() - entry.barrows.since) / 6000) / 10 });
+    // Where it stood and what the last door click came to (the plugin's lastDoor), so a stuck run
+    // says why: f0c01e1 had 16 runs stuck at a door with only the step in the log.
+    const player = entry.player;
+    const at = player.getLocation();
+    let seen = null;
+    try { seen = view(player); } catch { seen = null; }
+    const near = (core.World?.getNpcsNear?.(at, 3, player.getPrivateArea?.() ?? null) ?? []).length;
+    metric({ kind: "barrows_run", bot: entry.name, result: "failed", why, step: entry.barrows.step, killed: entry.barrows.killed ?? [], minutes: Math.round((Date.now() - entry.barrows.since) / 6000) / 10,
+      at: [at.getX(), at.getY(), at.getZ()], room: seen?.room ?? null, lastDoor: seen?.lastDoor ?? null, openDoors: seen?.run?.openDoors ?? null,
+      npcsNear: near, attacked: Boolean(player.getCombat?.()?.getAttacker?.()), doorTries: entry.barrows.doorTries ? Object.fromEntries(entry.barrows.doorTries) : null });
+    // Stuck in the tunnels: out (a Varrock tablet, else home), and no new run there at once. It
+    // began again in the same second at the same tile, 3 to 6 times a bot (Markbot 17, 18).
+    if (at.getY() > 9600) {
+      if (!breakTablet(player, /^varrock teleport$/i)) castHome(player);
+      entry.barrowsAsideUntil = Date.now() + 30 * 60_000;
+    }
     return "failed";
   }
 

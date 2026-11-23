@@ -261,10 +261,24 @@ function createTrainCombatAction(spec, world) {
   // Wall-aware reach (entity strategy, no moveNear): a tile touching the NPC across
   // a fence or closed gate does not count. Unreachable NPCs are walked towards
   // instead, which lets the brain open the gate.
+  // A failed search runs the whole search space, and the same fenced-off NPCs were searched again
+  // every turn: turns of 1,5 s with unreachable:4 (validation f0c01e1). A "no" is kept a minute
+  // per NPC, for the 8x8 cell the bot stands in and the tile the NPC stands on.
+  const UNREACHABLE_MS = 60_000;
+  const unreachableSeen = new WeakMap();
   const reachable = (player, npc) => {
     const from = player.getLocation();
     const to = npc.getLocation();
     if (from.getZ() !== to.getZ()) return false;
+    const key = `${from.getX() >> 3},${from.getY() >> 3},${to.getX()},${to.getY()},${from.getZ()}`;
+    const seen = unreachableSeen.get(npc);
+    if (seen && seen.key === key && seen.until > Date.now()) return false;
+    const ok = searchReach(player, npc, from, to);
+    if (ok) unreachableSeen.delete(npc);
+    else unreachableSeen.set(npc, { key, until: Date.now() + UNREACHABLE_MS });
+    return ok;
+  };
+  function searchReach(player, npc, from, to) {
     const size = Math.max(1, Math.floor(npc.getSize?.() ?? 1));
     const route = routeFinder.findRoute({
       level: from.getZ(), srcX: from.getX(), srcY: from.getY(),
@@ -275,7 +289,7 @@ function createTrainCombatAction(spec, world) {
       privateArea: player.getPrivateArea?.() ?? null,
     });
     return route.success === true;
-  };
+  }
   const live = (npc) => !!npc && npc.isNpc?.() === true && npc.isRegistered?.() === true &&
     npc.getHitpoints() > 0 && npc.isDyingFunction?.() !== true;
 
@@ -684,10 +698,14 @@ function createTrainCombatAction(spec, world) {
         }
       }
       const honest = state.honest || isHonest(player);
-      if (honest && !bot.target && player.getHitpoints() * 2 < player.getSkillManager().getMaxLevel(Skill.HITPOINTS) &&
+      const hpNow = player.getHitpoints();
+      const hpMax = player.getSkillManager().getMaxLevel(Skill.HITPOINTS);
+      // Hurt and out of food: an honest bot stops before it dies, and restocks first
+      // (Upkeep.PlayerBots.js, or an adventurer's planner). Between fights at half HP; in a fight
+      // at a third: Eeshwar fought a grizzly bear on without food and died (validation f0c01e1).
+      if (honest && (bot.target ? hpNow * 3 < hpMax : hpNow * 2 < hpMax) &&
           !(player.getInventory().getItems() ?? []).some((item) => item && isFood(item.getId()))) {
-        // Hurt and out of food: an honest bot stops before it dies, and restocks first
-        // (Upkeep.PlayerBots.js, or an adventurer's planner).
+        if (bot.target) dropTarget(player, bot, nowMs, SITE_AVOID_MS);
         leaveSite(player, bot, nowMs, SITE_AVOID_MS);
         return "failed";
       }
