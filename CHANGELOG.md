@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Avonturiers bleven bij een moestuin eindeloos op "rake" klikken zonder dat er iets gebeurde. Ze gebruiken de moestuin nu als ze ernaast staan, raken alleen met een hark en slaan een patch over als het niet lukt.
 - Wat tijdelijk uit staat (Giant Mole, Runecrafting, enkele jachtplekken) kwam via een hervatte of gezamenlijke klus toch terug. Dat kan niet meer.
 - Avonturiers bleven na een bankbezoek clay hakken voor Doric's Quest. Een verzamelklus voor een quest wordt niet meer hervat als hij al klaar is.
 - Vechtende avonturiers bleven soms minutenlang buit najagen die ze niet konden oprapen, en vochten dan niet. Ze laten die buit nu liggen.

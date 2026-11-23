@@ -5,6 +5,15 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 23-11-2026 09:55: validatie #61 verwerkt: Farming en Wander (branch `adventurers/analysis-p3`)
+
+Uit `docs/analysis/2026-11-23-validatie-61.md`. Niet in game getest.
+
+- **Farming (6 van 6 vast bij Falador, steeds "rake"):** `FarmPatches.click` stuurt de optie direct binnen 4 tegels (zoals bij de ruïnes; `walkToObject`-execute kwam niet). Rake alleen met een rake in de tas (anders `left: geen rake`). Dezelfde klik op een patch met onveranderde opties telt; na 4 keer wordt die patch deze ronde overgeslagen met reden (`describe`: `left=`, `rake=`). Test in `bot-construct-farm` (de fake world heeft nu een rake).
+- **Wander (4,9 s bij de GE):** `describe` met doel en per keuze `acceptMs` (o.a. de greppel-zoektocht via `findNearestObject`, straal 30) en `chooseMs`. Daarmee volgt de oorzaak uit de volgende `slow_bot`.
+- **Niet gedaan:** de poort bij 2649,3470 (klikt, blijft dicht: in game nakijken), A2 Barrows-tunnels, pakket 5 quests.
+- **Validatie:** suite 169 pass, 14 fail (baseline); eslint no-undef schoon.
+
 ## 23-11-2026 09:00: #57 bevestigd, #61 eerste 13 min (branch `analysis/validatie-61`)
 
 - **#57:** ruim 2 uur over drie versies. A1, A3 (clankennis bewaard over de herstart, geldkeuzes op clanmetingen), A5 en A7 bevestigd.

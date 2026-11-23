@@ -19,7 +19,7 @@ function fakeWorld(objects, { items = {}, emit = () => {} } = {}) {
   const definition = (id) => ({ getName: () => defs.get(id)?.name, getInteractions: () => defs.get(id)?.options ?? [] });
   const clicks = [];
   const core = {
-    ItemIdentifiers: { PLANK: 960, OAK_PLANK: 8778, WEEDS: 6055, SPADE: 952, GUAM_SEED: 5291, POTATO_SEED: 5318 },
+    ItemIdentifiers: { PLANK: 960, OAK_PLANK: 8778, WEEDS: 6055, SPADE: 952, RAKE: 5341, GUAM_SEED: 5291, POTATO_SEED: 5318 },
     MapObjects: { getHash: hash, mapObjects: map },
     ObjectDefinition: { forId: definition, forPlayer: definition },
     MultiChatboxPrompt: { getPending: () => null },
@@ -86,7 +86,7 @@ test("farm patches: rake first, then plant the best seed it carries, then done",
     { id: 8150, x: 3058, y: 3311, name: "Herb patch", options: ["Rake", "Inspect", "Guide"] },
     { id: 8550, x: 3050, y: 3307, name: "Allotment", options: ["Inspect", "Guide"] },
   ];
-  const { world, player, clicks } = fakeWorld(patches, { items: { 5291: 1, 5318: 6 } });
+  const { world, player, clicks } = fakeWorld(patches, { items: { 5291: 1, 5318: 6, 5341: 1 } });
   const action = createFarmPatchesAction({ site: [3054, 3306], patches: [
     { id: 8150, x: 3058, y: 3311, kind: "herb" }, { id: 8550, x: 3050, y: 3307, kind: "allotment" },
   ], seeds: { herb: ["GUAM_SEED"], allotment: ["POTATO_SEED"] } }, world);
@@ -117,10 +117,28 @@ test("farm patches: the spots' patch ids and tiles are the farming plugin's", ()
 });
 
 test("farm patches: the weeds go from the bag, the farm run goes on", () => {
-  const { world, player, clicks, inventory } = fakeWorld([{ id: 8150, x: 3058, y: 3311, name: "Herb patch", options: ["Rake", "Inspect", "Guide"] }], { items: { 6055: 6 } });
+  const { world, player, clicks, inventory } = fakeWorld([{ id: 8150, x: 3058, y: 3311, name: "Herb patch", options: ["Rake", "Inspect", "Guide"] }], { items: { 6055: 6, 5341: 1 } });
   const action = createFarmPatchesAction({ site: [3058, 3311], patches: [{ id: 8150, x: 3058, y: 3311, kind: "herb" }], seeds: { herb: [], allotment: [] } }, world);
   action.update({ player, state: {}, nowMs: 0 });
   assert.equal(inventory[6055], 0);
   assert.deepEqual(clicks.at(-1), { kind: "object", name: "Herb patch", clickType: 1 });
 });
 
+
+test("farm patches: no rake, no raking; the same click without effect is left with why (validation #61)", () => {
+  const patches = [{ id: 8150, x: 3058, y: 3311, name: "Herb patch", options: ["Rake", "Inspect", "Guide"] }];
+  const spec = { site: [3058, 3311], patches: [{ id: 8150, x: 3058, y: 3311, kind: "herb" }], seeds: { herb: [], allotment: [] } };
+  const without = fakeWorld(patches, { items: {} });
+  const noRake = createFarmPatchesAction(spec, without.world);
+  const state = {};
+  assert.equal(noRake.update({ player: without.player, state, nowMs: 0 }), "success");
+  assert.equal(without.clicks.length, 0, "no click without a rake");
+  assert.match(noRake.describe({ state, player: without.player }), /geen rake/);
+  // A rake, and a patch whose options never change: four clicks, then it is left.
+  const stuck = fakeWorld(patches, { items: { 5341: 1 } });
+  const raking = createFarmPatchesAction(spec, stuck.world);
+  const again = {};
+  for (let turn = 0; turn < 6; turn += 1) raking.update({ player: stuck.player, state: again, nowMs: turn * 5_000 });
+  assert.equal(stuck.clicks.filter((click) => click.kind === "object").length, 4);
+  assert.match(raking.describe({ state: again, player: stuck.player }), /rake x4 zonder effect/);
+});

@@ -141,8 +141,14 @@ function createWanderAction(spec, world) {
       hotspotAccept(target) === true && ditchAccept(target) === true;
   }
 
+  /**
+   * Picks the next spot, timed per step (state.roaming.lastPick, shown by describe): a wander turn
+   * took 4,9 s at the GE with nothing to say what it did (validation #61, 23-11-2026).
+   */
   function pickTarget(player, state, nowMs) {
+    const startedAt = Date.now();
     const stateAccept = acceptTargetFor(player, state);
+    const acceptMs = Date.now() - startedAt;
     const regionManager = world?.regionManager ?? null;
     const privateArea = player?.getPrivateArea?.() ?? null;
     const acceptTarget = (target) => {
@@ -160,7 +166,9 @@ function createWanderAction(spec, world) {
     if (bounds) {
       options.bounds = bounds;
     }
+    const chooseAt = Date.now();
     const target = chooseNextTarget(player, state, effectiveRadius(state), options);
+    state.roaming.lastPick = { acceptMs, chooseMs: Date.now() - chooseAt, radius: effectiveRadius(state), bounded: Boolean(bounds), found: Boolean(target) };
     state.roaming.target = target
       ? { x: target.x, y: target.y, z: target.z }
       : null;
@@ -215,6 +223,13 @@ function createWanderAction(spec, world) {
       roaming.target = null;
       pickTarget(player, state, nowMs);
       return "running";
+    },
+    describe(ctx) {
+      const roaming = ctx?.state?.roaming;
+      const target = roaming?.target;
+      const pick = roaming?.lastPick;
+      return `wander target=${target ? `${target.x},${target.y}` : "none"}` +
+        (pick ? ` pick=accept:${pick.acceptMs}ms,choose:${pick.chooseMs}ms r=${pick.radius} bounded=${pick.bounded} found=${pick.found}` : "");
     },
     stop(ctx) {
       if (ctx?.player) {
