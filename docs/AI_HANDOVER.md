@@ -5,6 +5,14 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 23-11-2026 09:00: #57 bevestigd, #61 eerste 13 min (branch `analysis/validatie-61`)
+
+- **#57:** ruim 2 uur over drie versies. A1, A3 (clankennis bewaard over de herstart, geldkeuzes op clanmetingen), A5 en A7 bevestigd.
+- **#61 (13 min):** holds werken (0 Giant Mole/Runecrafting), clay weg, combat 0 van 2 `stuck`, geen doden, `brainSnapshot` gevuld; Mark logt eerst in.
+- **Nieuw:** Farming loopt vast met `rake` zonder effect (`tries=[]`): `walkToObject`-execute bij grote objecten, zoals bij de ruïnes; trage `wander`-beurt 4,9 s bij de GE (`describe` leeg); poort 52/53 bij 2649,3470 klikt maar blijft dicht. Quests 0 gehaald.
+- **Nieuw script:** `docs/analysis/scripts/version_report.py` (kerncijfers per groep versies).
+- **Details:** [analysis/2026-11-23-validatie-61.md](analysis/2026-11-23-validatie-61.md).
+
 ## 22-11-2026 22:30: validatie #57 en voorwerk verwerkt (branch `adventurers/analysis-p2`)
 
 Uit `docs/analysis/2026-11-22-validatie-3f8a803.md` en `2026-11-22-voorwerk-oorzaken.md`. Niet in game getest.
