@@ -1046,15 +1046,49 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return fetch;
   }
 
-  /** To the nearest bank for the job's tools, then the job again (its saved-task resume). */
-  function fetchTools(entry, plan, ids) {
+  /**
+   * Bank ping-pong: the same item fetched three times in ten minutes means something else put it
+   * back each time (the full-bag deposit, the one-of-each rule). It is logged with both sides and
+   * kept for the job for an hour (questKeep: workingMaterials keeps it out of every deposit).
+   */
+  const PINGPONG_FETCHES = 3;
+  const PINGPONG_WINDOW_MS = 10 * 60_000;
+  function notePingpong(entry, id, plan) {
+    entry.fetchedAt ??= new Map();
+    const times = (entry.fetchedAt.get(id) ?? []).filter((at) => now() - at < PINGPONG_WINDOW_MS);
+    times.push(now());
+    entry.fetchedAt.set(id, times);
+    if (times.length < PINGPONG_FETCHES) return;
+    entry.fetchedAt.delete(id);
+    (entry.questKeep ??= new Map()).set(id, now() + 60 * 60_000);
+    countEvent(entry, "bankPingpong");
+    metric({ kind: "bank_pingpong", bot: entry.name, item: itemName(id), itemId: id, fetches: times.length,
+      mode: plan?.mode ?? null, activity: entry.activity ?? null, lastDeposit: entry.lastDeposit ?? null,
+      freeSlots: entry.player.getInventory().getFreeSlots() });
+    note(entry.player, `Haalde ${itemName(id).toLowerCase()} ${times.length} keer van de bank en zette hem steeds terug; houdt hem nu bij zich.`, "activity");
+  }
+
+  /**
+   * To the nearest bank for the job's tools, then the job again (its saved-task resume). One of
+   * each tool, or the amount `amounts` gives (packFor: 20 planks), and never so many that the bag
+   * counts as full. It took 1.000: a bag full of planks went back in at once as "full bag", and
+   * out again, 155 times for Slayed Soul; a bank's hammers likewise (validation 441b072).
+   */
+  function fetchTools(entry, plan, ids, amounts = null) {
     const bank = nearestBank(entry.player, entry);
     if (!bank) return false;
     return walkTo(entry, { ...bank, name: bank.name ?? bank.id }, {
       reason: "withdraw",
       arrive: (banker) => {
         let got = 0;
-        for (const id of ids) got += withdraw(banker, id, 1000);
+        const spare = Math.max(1, banker.getInventory().getFreeSlots() - ((data.fullSlots ?? 4) + 1));
+        for (const id of ids) {
+          const stacks = core.ItemDefinition?.forId?.(id)?.isStackable?.() === true;
+          const want = Math.max(1, amounts?.get(id) ?? 1);
+          const took = withdraw(banker, id, stacks ? want : Math.min(want, spare));
+          if (took > 0) notePingpong(entry, id, plan);
+          got += took;
+        }
         if (got > 0) {
           note(banker, `Haalt zijn ${ids.map(itemName).join(" en ").toLowerCase()} van de bank.`, "activity");
           entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, planActivity: plan.activity ?? null, remainingMs: 0, savedAt: now() };
@@ -1072,8 +1106,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const all = [...Object.values(Shopping.gear.tools ?? {}).flat().map((entry) => entry.item),
       ...Object.values(Shopping.gear.fishingTools ?? {}).flat(), "TINDERBOX", "HAMMER", "CHISEL", "NEEDLE", "KNIFE"];
     const goods = [];
+    const kept = workingMaterials(entry);
     for (const id of new Set(all.map((name) => Shopping.idOf(core, name)).filter(Number.isInteger))) {
-      if (needed.has(id)) continue;
+      if (needed.has(id) || kept.has(id)) continue;
       const amount = banker.getInventory().getAmount(id);
       if (amount > 0) goods.push({ itemId: id, amount });
     }
@@ -2042,7 +2077,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const missing = wants.filter(({ id, amount }) => player.getInventory().getAmount(id) < Math.max(1, Math.ceil(amount / 3)));
     if (missing.length === 0) return false;
     const inBank = missing.filter(({ id }) => banked(player, id) > 0).map(({ id }) => id);
-    if (inBank.length > 0) return fetchTools(entry, plan, inBank) ? true : null;
+    const amounts = new Map(missing.map(({ id, amount }) => [id, Math.max(1, amount - player.getInventory().getAmount(id))]));
+    if (inBank.length > 0) return fetchTools(entry, plan, inBank, amounts) ? true : null;
     const first = missing[0];
     if (shopFor(entry, first.id, first.name, first.amount)) {
       entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, remainingMs: 0, savedAt: now() };
@@ -3364,8 +3400,11 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         reason: "bank",
         urgent: true,
         arrive: (banker) => {
-          const keep = Trade.keepIds(banker, core, { isFood });
+          // Its job's materials and kit stay (keepAtExchange): the planks it had just fetched for
+          // Construction went straight back in here (validation 441b072).
+          const keep = keepAtExchange(banker);
           const stored = deposit(banker, Trade.goodsToSell(banker, core, keep, { isFood, worthless: true }));
+          if (stored.length > 0) entry.lastDeposit = { why: "full_bag", items: stored.map((good) => good.itemId) };
           if (stored.length > 0) note(banker, `Maakt zijn volle tas leeg op de bank: ${stored.slice(0, 5).map((good) => itemName(good.itemId).toLowerCase()).join(", ")}${stored.length > 5 ? ` en ${stored.length - 5} meer` : ""}.`, "activity");
           if (banker.getInventory().getFreeSlots() > (data.fullSlots ?? 4)) return;
           // Still full: it went round this loop silently for hours (15 of 60 adventurers on
@@ -5537,6 +5576,8 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     const bank = nearestBank(player);
     if (distanceTo(player, data.grandExchange) <= AT_BANK_TILES || (bank && bank.away <= AT_BANK_TILES)) {
       const stored = deposit(player, stock);
+      const owner = adventurers.get(player.getUsername?.());
+      if (owner && stored.length > 0) owner.lastDeposit = { why: "clear_bag", items: stored.map((good) => good.itemId) };
       if (stored.length > 0) note(player, `Zet op de bank: ${stored.slice(0, 4).map((good) => itemName(good.itemId)).join(", ")}${stored.length > 4 ? ` en ${stored.length - 4} meer` : ""}.`, "activity");
       if (inventory.getFreeSlots() >= room) return true;
     }
