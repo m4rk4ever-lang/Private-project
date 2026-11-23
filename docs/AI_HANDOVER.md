@@ -5,6 +5,14 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 23-11-2026 14:15: validatie `441b072` (#68, #70) (branch `analysis/validatie-441b072`)
+
+- **Logs:** 11:15-13:07 UTC (112 min, 96 bot-uren). Telt.
+- **Beter:** 25.472 OSRS-XP per bot-uur (+70% t.o.v. 21-11), 68% van de tijd met XP, combat 0 van 45 vast, `walk_blocked` 1,18 per bot-uur, mining-lopen 51% (was 75-81%), lus-escalatie werkt.
+- **Nieuw, belangrijkst:** bank-pingpong. Slayed Soul haalde 155× een plank en zette hem 156× terug, Jorgbot 7 105× een hammer ("hammer, hammer" terug). De escalatie verplaatst de lus naar de volgende bank: lussen per bot-uur 0,40 → 0,91. Zelfde soort fout als op 20-11 en ADR-0005.
+- **Verder:** quests 0 van 31; Markbot 12, Jorgbot 14 en Patrickbot 13 opnieuw 0 XP; trage magic-tree-beurten (4,5-5 s, `far` target); shark fishing vast bij Catherby; Jorgbot 12 dood op Death Plateau (combat-training-site); `lumbridge_swamp_mine` geeft `walk_blocked` vanaf de eigen tegel.
+- **Details:** [analysis/2026-11-23-validatie-441b072.md](analysis/2026-11-23-validatie-441b072.md).
+
 ## 23-11-2026 13:00: voortgangsanalyse (#69) verwerkt: mijnplek, lus-escalatie, werkmaatstaf (branch `adventurers/analysis-p6`)
 
 Uit `docs/analysis/2026-11-23-voortgang-en-aandachtspunten.md`. Niet in game getest.

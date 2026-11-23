@@ -7,10 +7,10 @@ factor at the bot's level then): docs/analysis/2026-11-23-voortgang-en-aandachts
 Edit G below for the periods (name, set of versions).
 """
 import json,collections as C,bisect,sys
-rows=[json.loads(l) for l in open(sys.argv[1])]
+rows=[r for r in (json.loads(l) for l in open(sys.argv[1])) if isinstance(r.get('at'), str)]
 G=[('21-11 nulmeting',{'2f294017e','2cf602e1b','ec676fad1','da3294718','da94bfc0f'}),
    ('22-11 #57',{'b943103e0','3f8a80352'}),
-   ('23-11 #61',{'aa5373793'}),('23-11 #64',{'4baf1a2cc'}),('23-11 #66',{'5eb6f500f','f0c01e14f'})]
+   ('23-11 #61',{'aa5373793'}),('23-11 #64',{'4baf1a2cc'}),('23-11 #66',{'5eb6f500f','f0c01e14f'}),('23-11 #68+70',{'441b07283'})]
 def tier(l): return 25 if l<50 else 15 if l<80 else 10 if l<90 else 5
 lv=C.defaultdict(list)
 for r in rows:
