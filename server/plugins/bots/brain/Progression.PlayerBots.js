@@ -7,7 +7,7 @@
  * (Brain.upgradeRoot). Combat training picks its monsters by level by itself.
  */
 const definitions = require("../../../data/definitions/bot-activities.json");
-const { bestActivity } = require("../adventurers/Planner.PlayerBots");
+const { bestActivity, activitiesFor, pickTier } = require("../adventurers/Planner.PlayerBots");
 
 /** The skill each tiered mode trains. */
 const MODE_SKILLS = Object.freeze({
@@ -28,10 +28,14 @@ function levelOf(activityId) {
   return 1;
 }
 
-/** The better activity a bot doing `current` (mode, id) should move to at `level`, or null. */
-function upgradeFor(current, level) {
+/**
+ * The better activity a bot doing `current` (mode, id) should move to at `level`, or null. With
+ * `statsOf` (what a clan measured per activity, Knowledge.stats), the same rule as an
+ * adventurer's pick (Planner.pickTier): not up to a tier measured worse than a lower one.
+ */
+function upgradeFor(current, level, { statsOf = null, money = false } = {}) {
   if (!current || !MODE_SKILLS[current.mode]) return null;
-  const best = bestActivity(current.mode, level, definitions);
+  const best = statsOf ? pickTier(activitiesFor(current.mode, level, definitions), statsOf, { money }).id : bestActivity(current.mode, level, definitions);
   if (!best || best === current.id || levelOf(best) <= levelOf(current.id)) return null;
   return best;
 }

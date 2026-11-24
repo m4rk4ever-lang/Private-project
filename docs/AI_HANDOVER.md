@@ -5,6 +5,14 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 24-11-2026 13:00: tier op clan-meting (branch `adventurers/tier-op-meting`)
+
+- **Bewijs (job-metric, alle versies t/m `ceefe7a`; analyse 2026-11-22-skill-progressie S2/S5):** yew 22,7k OSRS-XP/u maar 29/50 stuck, willow 19,6k; shark 55k gp/u maar 25/36 stuck, harpoon 20,9k XP / 24,8k gp. `bestActivity` koos toch altijd het hoogste tier.
+- **Oorzaak:** geen keuze tussen tiers; en `Knowledge` bewaarde alleen ruwe XP/u (25x/15x/10x/5x per level), dus niet vergelijkbaar tussen tiers.
+- **Fix:** `Knowledge.record` bewaart nu ook OSRS-XP/u (veld 5, `xpTier`); `stats` geeft `osrsXpPerHour`/`nXp`. `Planner.pickTier`: score = OSRS-XP/u (geldklus `plan.money`: gp/u) × (1 − stuckRate); het hoogste tier blijft tot het ≥5 klussen heeft en een lager tier met ≥5 metingen 10% beter scoort. `measuredTier` in `startTraining` (alleen bereikbare tiers); reden in `plan.tierReason`, de `decision`-metric (`chosen.tier`) en de notitie. `Progression.upgradeFor(current, level, { statsOf, money })` volgt dezelfde regel (wereldbots geven geen `statsOf`: ongewijzigd).
+- **Test:** `tests/bot-tier-choice.test.cjs` (5). Suite 337 pass, 15 fail (baseline 15).
+- **Bevestigen:** `decision` met `chosen.tier`; minder `yew_trees`/`shark_fishing`-klussen met `ended: stuck`; OSRS-XP per bot-uur bij woodcutting/fishing omhoog. Oude knowledge-regels hebben geen OSRS-XP: de keuze start pas na 5 nieuwe metingen per tier.
+- **Risico/volgende:** precheck-tools voor fishing kijken nog naar het hoogste tier; als een lager tier minder vaak vastloopt, wordt het hoogste minder gemeten (venster 25 klussen houdt de oude cijfers wel even vast).
 ## 24-11-2026 13:00: huisportaal niet gevonden bij Construction (branch `adventurers/construction-huis`)
 
 - **Bewijs (bot-logs 23-11, `f0c01e1` + `ceefe7a`):** `construction_house` 6/6 `stuck`, `describe` "construct house=false hotspot=- built=0". `house=false` is `getPrivateArea()` (niet in het huis), niet "geen huis": de bots hadden een huis (ze kwamen langs de `construction:owns-house`-check, kochten planken). Vlak ervoor in de activity-log elke keer "Vond het huisportaal niet." op 2954-2956,3225-3227 (Jorgbot 4, Jorgbot 9, Markbot 6). Eén keer stond Jorgbot 9 op 2955,3225 en kwam binnen (915 XP).
