@@ -25,6 +25,7 @@ Indeling per versie:
 - Een avonturier die steeds opnieuw vastliep op weg naar dezelfde plek (zoals de bank van Seers' Village), probeerde het elk kwartier weer. Na de tweede keer gaat hij er twee uur niet heen en kiest hij een andere bank.
 
 ### Gewijzigd
+- In de keuzelog van de avonturiers staat nu bij elke keuze waarom ze nog geen Sailing doen (Pandemonium niet gespeeld, geen boot, of nog niemand die vaart).
 - Avonturiers kiezen niet meer blind het hoogste tier dat hun level toestaat (yews, sharks): als hun clan meet dat een lager tier meer XP per uur oplevert (of meer geld, bij een geldklus) omdat het hoogste vaak vastloopt, doen ze dat lagere tier. Ze zeggen erbij waarom, bijvoorbeeld "willow trees: 19.600 OSRS-XP/u gemeten, yew trees 22.700 maar 58% vast".
 - In de statistieken telt hakken tussen bomen en achter een monster aan lopen nu als werken, niet als lopen.
 - Een avonturier die vastliep in de Barrows-tunnels, begon meteen een nieuwe run en liep weer vast. Hij teleporteert nu weg en laat de Barrows een half uur rusten.

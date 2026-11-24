@@ -86,4 +86,31 @@ function recall(state, key, nowMs) {
   return memory;
 }
 
-module.exports = { canExecute, remember, recall, keyOf, REQUIREMENT_REASONS, REMEMBER_MS };
+/**
+ * Sailing for a bot (ADVENTURER_ROADMAP Fase 6, "Sailing, stappen" 1): not a job yet, but the
+ * planner says why in `decision.blocked.sailing`, so the first missing step shows in the logs.
+ * The Sailing plugin's order: Pandemonium (Pandemonium.Quest.js) gives the raft, from Junior
+ * Jim's dialogue at stage 28 only (grantRaft). A quest set complete by adventurers.json
+ * `grantedQuests` (stage only) gives no raft; after it a shipwright's Buy-boat sells one. With
+ * a boat it still needs a bot that boards, takes the helm and sails (step 2, not built).
+ *
+ * facts: { pandemonium: { stage, complete, granted, playthrough }, boats: [{ type, dock }], level }
+ * Returns { ok: false, why, detail }: `no_quest_playthrough` (Pandemonium not done and no bot
+ * playthrough), `quest_missing` (not done, but playable), `no_boat` (done, no boat),
+ * `no_sailing_brain` (a boat, nobody to sail it). Never ok until step 2 is built.
+ */
+function sailingReadiness(facts = {}) {
+  const quest = facts.pandemonium ?? {};
+  const boats = Array.isArray(facts.boats) ? facts.boats : [];
+  const level = facts.level ?? 1;
+  if (!quest.complete) {
+    return { ok: false, why: quest.playthrough ? "quest_missing" : "no_quest_playthrough",
+      detail: { quest: "Pandemonium", stage: quest.stage ?? 0, level } };
+  }
+  if (boats.length === 0) {
+    return { ok: false, why: "no_boat", detail: { quest: "Pandemonium", granted: Boolean(quest.granted), level } };
+  }
+  return { ok: false, why: "no_sailing_brain", detail: { boats: boats.map((boat) => `${boat.type}@${boat.dock ?? "?"}`), level } };
+}
+
+module.exports = { canExecute, sailingReadiness, remember, recall, keyOf, REQUIREMENT_REASONS, REMEMBER_MS };
