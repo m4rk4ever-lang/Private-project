@@ -3574,7 +3574,26 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       if (by) blocked[`boss:${boss.id}`] = { why: "boss_taken", detail: { by } };
       return result.ok && !by;
     });
+    // Sailing is not a job yet (Fase 6): say what it lacks first (Requirements.sailingReadiness).
+    const sailing = sailingBlock(player);
+    if (sailing) blocked.sailing = sailing;
     return { blocked, bosses: fightable };
+  }
+
+  /** Why Sailing cannot be trained now, for decision.blocked; null when the facts are unreadable. */
+  function sailingBlock(player) {
+    try {
+      const quest = questsByName().get(normalize("Pandemonium"));
+      const granted = player.getAttribute(GRANTED_ATTRIBUTE);
+      const boats = (player.getSailing?.()?.boats ?? []).map((boat) => ({ type: boat.type,
+        dock: boat.location?.kind === "docked" ? boat.location.dock : boat.location?.kind ?? null }));
+      const result = Requirements.sailingReadiness({ level: levelOf(player, "SAILING"), boats, pandemonium: {
+        stage: quest?.getStage?.(player) ?? 0, complete: quest?.isComplete?.(player) === true,
+        granted: Array.isArray(granted) && granted.includes(normalize("Pandemonium")), playthrough: questPlay.ready("Pandemonium") } });
+      return { why: result.why, detail: result.detail };
+    } catch {
+      return null;
+    }
   }
 
   /**

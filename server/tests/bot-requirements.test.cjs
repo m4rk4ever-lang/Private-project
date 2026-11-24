@@ -51,3 +51,28 @@ test("a job refused while errands rest is left out until the rest ends, not for 
   assert.equal(remember(state, slayer, refused, 0), false, "no rest known: nothing to remember");
   assert.equal(remember(state, slayer, { why: "errand_refused", detail: { why: "busy" } }, 0, { restingUntil: 60_000 }), false, "busy is a passing hitch");
 });
+
+test("Sailing is never a job yet; the planner says the first missing step (Fase 6, Sailing stap 1)", () => {
+  const { sailingReadiness } = require("../plugins/bots/adventurers/Requirements.PlayerBots");
+  // Every adventurer in the bot-logs of 23-11-2026 (ceefe7a16): Sailing 1-99, no boat, Pandemonium not done.
+  assert.deepEqual(sailingReadiness({ level: 1, boats: [], pandemonium: { stage: 0, complete: false, playthrough: false } }),
+    { ok: false, why: "no_quest_playthrough", detail: { quest: "Pandemonium", stage: 0, level: 1 } });
+  assert.equal(sailingReadiness({ pandemonium: { stage: 12, playthrough: true } }).why, "quest_missing");
+  // grantedQuests sets the stage only: complete, but Junior Jim never handed over the raft.
+  assert.deepEqual(sailingReadiness({ level: 40, boats: [], pandemonium: { complete: true, granted: true } }),
+    { ok: false, why: "no_boat", detail: { quest: "Pandemonium", granted: true, level: 40 } });
+  const raft = sailingReadiness({ level: 40, boats: [{ type: "raft", dock: "the_pandemonium" }], pandemonium: { complete: true } });
+  assert.deepEqual(raft, { ok: false, why: "no_sailing_brain", detail: { boats: ["raft@the_pandemonium"], level: 40 } });
+  assert.equal(sailingReadiness().ok, false, "no facts: not ok");
+});
+
+test("Pandemonium's raft comes only from Junior Jim's dialogue, not from the quest stage (why grantedQuests gives no boat)", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const source = fs.readFileSync(path.join(__dirname, "../plugins/quests/quests/Pandemonium.Quest.js"), "utf8");
+  // One giveBoat, inside grantRaft; grantRaft called once (Jim's cup line, stage 28). A login or
+  // stage hook that grants the raft would change sailingReadiness's `no_boat`: update both.
+  assert.equal(source.match(/Sailing\.giveBoat\(/g)?.length, 1);
+  assert.match(source, /function grantRaft\(player\) \{[\s\S]{0,200}Sailing\.giveBoat\(player, "raft"/);
+  assert.equal(source.match(/\bgrantRaft\(player\);/g)?.length, 1);
+});

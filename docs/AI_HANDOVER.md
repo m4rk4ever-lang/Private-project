@@ -5,6 +5,14 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 24-11-2026 13:00: Sailing stap 1, meten (branch `adventurers/sailing-stap1`)
+
+- **Bewijs (bot-logs 23-11, `ceefe7a`):** 60 bots, Sailing gemiddeld 24,7 = startniveaus (33× 1); geen Sailing-XP in `job`/`skills`. 20× `quest_gap` Fallen From Grace mist SAILING 62 en Pandemonium. Pandemonium nergens in de quest-feedback.
+- **Oorzaak:** geen modus voor Sailing. Pandemonium heeft geen bot-playthrough en staat niet in de Quest Helper-catalogus. De raft komt alleen uit Junior Jims dialoog (`grantRaft`, stage 28): `grantedQuests` (alleen de stage) zou de quest voltooien zonder boot. Varen (Board, Navigate, `BoatManager.steerToward`/`setHelmHeading`, dock) is niet voor bots gebouwd; courier-XP vraagt varen (Port Sarim ↔ Pandemonium is een eiland).
+- **Gebouwd:** `Requirements.sailingReadiness` (puur, nooit ok) en `decision.blocked.sailing` met `why` `no_quest_playthrough` / `quest_missing` / `no_boat` / `no_sailing_brain`. Geen nieuwe modus.
+- **Test:** `tests/bot-requirements.test.cjs` (+2): de vier redenen, en dat de raft alleen via `grantRaft` komt. Suite 334 pass, 15 fail (baseline 15); eslint no-undef schoon.
+- **Bevestigen:** `decision.blocked.sailing.why` = `no_quest_playthrough`, `detail.stage` 0 voor alle bots.
+- **Volgende:** stap 2 (één vaste vaarroute Port Sarim ↔ Pandemonium, met de eigenaar in de game). Details: [analysis/2026-11-24-sailing-voor-bots.md](analysis/2026-11-24-sailing-voor-bots.md).
 ## 24-11-2026 13:00: tier op clan-meting (branch `adventurers/tier-op-meting`)
 
 - **Bewijs (job-metric, alle versies t/m `ceefe7a`; analyse 2026-11-22-skill-progressie S2/S5):** yew 22,7k OSRS-XP/u maar 29/50 stuck, willow 19,6k; shark 55k gp/u maar 25/36 stuck, harpoon 20,9k XP / 24,8k gp. `bestActivity` koos toch altijd het hoogste tier.
