@@ -229,7 +229,7 @@
     {"id":"redwood_trees","template":"chop_trees","capacity":60,"fields":{"level":90,"tier":"redwood","log":"redwood_logs"}},
     {"id":"iron_rocks","template":"mine_rocks","capacity":160,"fields":{"level":15,"tier":"iron","resources":["iron_ore"],"bar":"Iron bar","smelted":["iron_bar","iron_ore"]}},
     {"id":"coal_rocks","template":"mine_rocks","capacity":160,"fields":{"level":30,"tier":"coal","resources":["coal"],"bar":"Steel bar","smelted":["steel_bar","coal"]}},
-    {"id":"mithril_rocks","template":"mine_rocks","capacity":160,"fields":{"level":50,"tier":"mithril","resources":["mithril_ore"],"bar":"Mithril bar","smelted":["mithril_bar","mithril_ore"]}},
+    {"id":"mithril_rocks","template":"mine_rocks","capacity":160,"fields":{"level":55,"tier":"mithril","resources":["mithril_ore"],"bar":"Mithril bar","smelted":["mithril_bar","mithril_ore"]}},
     {"id":"adamantite_rocks","template":"mine_rocks","capacity":80,"fields":{"level":70,"tier":"adamantite","resources":["adamantite_ore"],"bar":"Adamantite bar","smelted":["adamantite_bar","adamantite_ore"]}},
     {"id":"runite_rocks","template":"mine_rocks","capacity":40,"fields":{"level":85,"tier":"runite","resources":["runite_ore"],"bar":"Runite bar","smelted":["runite_bar","runite_ore"]}},
     {
