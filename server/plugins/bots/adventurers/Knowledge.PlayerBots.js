@@ -23,6 +23,15 @@ const KEEP = 25;
 const KNOWN_AFTER = 5;
 const SAVE_EVERY_MS = 60_000;
 
+/**
+ * This server's XP rate for a level: 25x below 50, 15x below 80, 10x below 90, 5x after. Raw XP
+ * per hour is no measure between tiers (a level-45 willow cutter gets 25x, a level-65 yew cutter
+ * 15x); OSRS XP (raw / rate) is (skill-progressie analyse 22-11-2026, S2).
+ */
+function xpTier(level) {
+  return level < 50 ? 25 : level < 80 ? 15 : level < 90 ? 10 : 5;
+}
+
 function median(values) {
   const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
   if (sorted.length === 0) return null;
@@ -58,28 +67,36 @@ function createKnowledge({ file = path.join(process.cwd(), "data", "saves", "adv
   /**
    * One finished job: `keys` are what it counts for (`mode:thieving`, `activity:gem_stalls`);
    * `gpPerHour` and `xpPerHour` null when it ran too short to measure; `stuck` when it ended so.
+   * `osrsXpPerHour`: the same XP divided by the rate of its level (xpTier), comparable between tiers.
    */
-  function record(clan, keys, { gpPerHour = null, xpPerHour = null, stuck = false } = {}) {
+  function record(clan, keys, { gpPerHour = null, xpPerHour = null, osrsXpPerHour = null, stuck = false } = {}) {
     if (!clan) return;
     const clanState = (state.clans[clan] ??= {});
     for (const key of keys.filter(Boolean)) {
       const jobs = (clanState[key] ??= []);
-      jobs.push([Number.isFinite(gpPerHour) ? Math.round(gpPerHour) : null, Number.isFinite(xpPerHour) ? Math.round(xpPerHour) : null, stuck ? 1 : 0, Math.round(now() / 60_000)]);
+      jobs.push([Number.isFinite(gpPerHour) ? Math.round(gpPerHour) : null, Number.isFinite(xpPerHour) ? Math.round(xpPerHour) : null, stuck ? 1 : 0, Math.round(now() / 60_000),
+        Number.isFinite(osrsXpPerHour) ? Math.round(osrsXpPerHour) : null]);
       if (jobs.length > KEEP) jobs.splice(0, jobs.length - KEEP);
     }
     dirty = true;
     save();
   }
 
-  /** What the clan knows of one key: { gpPerHour, xpPerHour, stuckRate, n (measured), jobs }. */
+  /**
+   * What the clan knows of one key: { gpPerHour, xpPerHour (raw), osrsXpPerHour, stuckRate,
+   * n (gp measured), nXp (OSRS XP measured), jobs }. Jobs saved before OSRS XP was kept have none.
+   */
   function stats(clan, key) {
     const jobs = state.clans[clan]?.[key] ?? [];
     const gp = jobs.map((job) => job[0]).filter((value) => value !== null);
+    const osrsXp = jobs.map((job) => job[4] ?? null).filter((value) => value !== null);
     return {
       gpPerHour: median(gp),
       xpPerHour: median(jobs.map((job) => job[1]).filter((value) => value !== null)),
+      osrsXpPerHour: median(osrsXp),
       stuckRate: jobs.length ? Math.round((jobs.filter((job) => job[2]).length / jobs.length) * 100) / 100 : null,
       n: gp.length,
+      nXp: osrsXp.length,
       jobs: jobs.length,
     };
   }
@@ -105,4 +122,4 @@ function createKnowledge({ file = path.join(process.cwd(), "data", "saves", "adv
   return { record, stats, moneyByMode, summary, save: () => save(true), clans: () => Object.keys(state.clans) };
 }
 
-module.exports = { createKnowledge, median, KNOWN_AFTER, KEEP };
+module.exports = { createKnowledge, median, xpTier, KNOWN_AFTER, KEEP };
