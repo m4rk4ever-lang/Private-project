@@ -31,10 +31,11 @@ const GAME_VERSION = (() => {
  */
 const definitions = require("../../../data/definitions/bot-activities.json");
 const data = require("../data/adventurers.json");
-const { chooseNext, bestActivity, isReady, trainingOptions, activitiesFor, leastBusy } = require("./Planner.PlayerBots");
+const { chooseNext, bestActivity, isReady, trainingOptions, activitiesFor, leastBusy, pickTier } = require("./Planner.PlayerBots");
 const { createQuestList } = require("./Quests.PlayerBots");
 const Goals = require("./Goals.PlayerBots");
 const { startActivity } = require("../brain/BrainActivities.PlayerBots");
+const { objectsNear } = require("../brain/actions/Construct.PlayerBots");
 const travelData = require("../data/travel-destinations.json");
 
 const LOG_ATTRIBUTE = "adventurers:journal";
@@ -62,7 +63,7 @@ const TravelHubs = require("../behaviours/navigation/TravelHubs.PlayerBots");
 const Sites = require("./Sites.PlayerBots");
 const { createHelperSteps } = require("./QuestHelperSteps.PlayerBots");
 const { createQuestPlay, QUEST_KEEP_MS } = require("./QuestPlay.PlayerBots");
-const { createKnowledge } = require("./Knowledge.PlayerBots");
+const { createKnowledge, xpTier } = require("./Knowledge.PlayerBots");
 const { createBarrowsRun } = require("./BarrowsRun.PlayerBots");
 /** A quest a bot could not finish is put aside this long. */
 const QUEST_ASIDE_MS = 60 * 60_000;
@@ -388,12 +389,19 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       // job too short to measure (its ending counts: Activity Health).
       if (job.mode && job.key.startsWith("training")) {
         const xpPerHour = hours >= 3 / 60 ? (xp - job.xp) / hours : null;
+        // OSRS XP: each skill's XP over its rate at its level now, comparable between tiers.
+        const manager = entry.player.getSkillManager();
+        const osrsXp = job.xpBy ? core.Skill.values().reduce((sum, skill) => {
+          const value = manager.getExperience(skill);
+          return sum + (value - (job.xpBy[skill.getName().toLowerCase()] ?? value)) / xpTier(manager.getMaxLevel(skill));
+        }, 0) : null;
+        const osrsXpPerHour = osrsXp !== null && hours >= 3 / 60 ? osrsXp / hours : null;
         try {
           // Gathering for a quest is no way to make money: its coins (clay sold, 33.681 gp/h for
           // Patrick Clan) do not count, its XP and ending do (validation #57).
           const forQuest = isQuestGatherReason(job.reason);
           knowledge.record(Clans.clanOf(data, entry.name)?.name ?? null, [`mode:${job.mode}`, (job.activity ?? entry.activity) ? `activity:${job.activity ?? entry.activity}` : null],
-            { gpPerHour: forQuest ? null : coinsPerHour, xpPerHour, stuck: entry.jobEnd === "stuck" });
+            { gpPerHour: forQuest ? null : coinsPerHour, xpPerHour, osrsXpPerHour, stuck: entry.jobEnd === "stuck" });
         } catch {
           // Learning is a help, never a reason a job does not end.
         }
@@ -415,7 +423,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     }
     const target = entry.plan?.target ?? null;
     entry.job = { key, mode: entry.plan?.mode ?? null, activity: entry.activity ?? null, coins: wealthOf(entry.player)?.total ?? null, reason: entry.phase === "quest" ? entry.questRun?.name : entry.plan?.reason ?? null, target,
-      startedAt: nowMs, xp: Object.values(xpBySkill(entry.player)).reduce((sum, v) => sum + v, 0),
+      startedAt: nowMs, xp: Object.values(xpBySkill(entry.player)).reduce((sum, v) => sum + v, 0), xpBy: xpBySkill(entry.player),
       levelAtStart: target ? (target.skill === "COMBAT" ? entry.player.getSkillManager().getCombatLevel() : levelOf(entry.player, target.skill)) : null };
   }
 
@@ -2182,21 +2190,12 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return true;
   }
 
-  /** An object near it with `option` (a portal's Build mode): { object, definition, clickType } or null. */
+  /**
+   * An object near it with `option` (a portal's Build mode): { object, definition, clickType } or
+   * null. Measured to the object's footprint, not its south-west tile (Construct.objectsNear).
+   */
   function findObjectNear(player, name, option, radius) {
-    const at = player.getLocation();
-    for (let dx = -radius; dx <= radius; dx += 1) {
-      for (let dy = -radius; dy <= radius; dy += 1) {
-        for (const object of core.MapObjects?.mapObjects?.get?.(core.MapObjects.getHash(at.getX() + dx, at.getY() + dy, at.getZ())) ?? []) {
-          let definition;
-          try { definition = core.ObjectDefinition.forPlayer?.(object.getId(), player) ?? core.ObjectDefinition.forId(object.getId()); } catch { definition = core.ObjectDefinition.forId(object.getId()); }
-          if (!name.test(String(definition?.getName?.() ?? ""))) continue;
-          const index = (definition?.getInteractions?.() ?? []).findIndex((entry) => String(entry ?? "").toLowerCase() === option);
-          if (index >= 0) return { object, definition, clickType: index + 1 };
-        }
-      }
-    }
-    return null;
+    return objectsNear(core, player, option, name, radius)[0] ?? null;
   }
 
   /**
@@ -2345,7 +2344,10 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     } else {
       const level = plan.mode === "combat_training" ? view.combat : view.levels[plan.skill] ?? 1;
       // A quest's own errand names its activity (clay_rocks for Doric's clay); else the best one.
-      const id = plan.activity ?? reachableActivity(player, plan.mode, level);
+      // Of the tiers its level allows, the one its clan measured best (measuredTier), else the best.
+      const tier = plan.activity ? null : measuredTier(entry, plan, level);
+      const id = plan.activity ?? tier?.id ?? null;
+      plan.tierReason = tier?.reason ?? null;
       // Fighting on an empty stomach is how adventurers die: food first, if it can buy some.
       // Thieving too: the knights and guards hit back ("low hp, no food" ended most stretches).
       if ((plan.mode === "combat_training" || plan.mode === "thieving") && stockFood(entry, plan, nowMs)) return true;
@@ -2421,7 +2423,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     entry.plan = plan;
     entry.until = nowMs + randomBetween(data.trainMinutes, random) * 60_000;
     entry.walkedMs = 0;
-    note(player, `Traint ${plan.skill === "COMBAT" ? "combat" : plan.skill.toLowerCase()} (${String(entry.activity).replace(/_/g, " ")}) voor ${plan.reason}.`);
+    note(player, `Traint ${plan.skill === "COMBAT" ? "combat" : plan.skill.toLowerCase()} (${String(entry.activity).replace(/_/g, " ")}) voor ${plan.reason}${plan.tierReason ? ` (${plan.tierReason})` : ""}.`);
     return true;
   }
 
@@ -3236,18 +3238,45 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       if (!id) return null;
       if (id === last) continue;
       last = id;
-      const activity = registry?.byId?.get(id) ?? null;
-      if (!activity) return id;
-      const site = Sites.pickSite(player, activity, {
-        core, random: () => 0, distance: (from, to, who) => siteDistance(from, to, who, mode),
-        meets: (who, requires, place) => travelMeets(who, requires, place), destinations: destinationsFor(id, player),
-      });
-      if (site) return id;
-      // A job done anywhere (no spots of its own) is fine; a tree, rock or fishing spot is not.
-      if (!["woodcutting", "mining", "fishing", "thieving"].includes(mode) && Sites.sitesFor(activity, 99, { meets: () => true }).length === 0) return id;
+      if (reaches(player, mode, id)) return id;
     }
     // Nothing of this kind it can reach now: another job instead.
     return null;
+  }
+
+  /** Whether it can get to a place for activity `id` now (or the job is done anywhere). */
+  function reaches(player, mode, id) {
+    const activity = registry?.byId?.get(id) ?? null;
+    if (!activity) return true;
+    const site = Sites.pickSite(player, activity, {
+      core, random: () => 0, distance: (from, to, who) => siteDistance(from, to, who, mode),
+      meets: (who, requires, place) => travelMeets(who, requires, place), destinations: destinationsFor(id, player),
+    });
+    if (site) return true;
+    // A job done anywhere (no spots of its own) is fine; a tree, rock or fishing spot is not.
+    return !["woodcutting", "mining", "fishing", "thieving"].includes(mode) && Sites.sitesFor(activity, 99, { meets: () => true }).length === 0;
+  }
+
+  /**
+   * The tier of `plan.mode` to do: the best one it can reach, unless its clan measured a lower
+   * one it can reach as better (Planner.pickTier: OSRS XP per hour, coins for a money stretch,
+   * less the share that ended stuck). { id, reason }: reason null when the best tier stays.
+   */
+  function measuredTier(entry, plan, level) {
+    const { player } = entry;
+    const top = reachableActivity(player, plan.mode, level);
+    if (!top) return { id: null, reason: null };
+    const options = activitiesFor(plan.mode, level, definitions);
+    const topLevel = options.find((option) => option.id === top)?.level ?? level;
+    const clan = Clans.clanOf(data, entry.name)?.name ?? null;
+    const lower = options.filter((option) => option.id === top || option.level < topLevel);
+    let candidates = lower;
+    for (let tries = 0; tries < 3; tries += 1) {
+      const tier = pickTier(candidates, (id) => knowledge.stats(clan, `activity:${id}`), { money: plan.money === true, top });
+      if (tier.id === top || reaches(player, plan.mode, tier.id)) return tier;
+      candidates = candidates.filter((option) => option.id !== tier.id);
+    }
+    return { id: top, reason: null };
   }
 
   /** The rooftop course it stands on (up a floor, within 70 tiles of its start), or null. */
@@ -3545,7 +3574,26 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       if (by) blocked[`boss:${boss.id}`] = { why: "boss_taken", detail: { by } };
       return result.ok && !by;
     });
+    // Sailing is not a job yet (Fase 6): say what it lacks first (Requirements.sailingReadiness).
+    const sailing = sailingBlock(player);
+    if (sailing) blocked.sailing = sailing;
     return { blocked, bosses: fightable };
+  }
+
+  /** Why Sailing cannot be trained now, for decision.blocked; null when the facts are unreadable. */
+  function sailingBlock(player) {
+    try {
+      const quest = questsByName().get(normalize("Pandemonium"));
+      const granted = player.getAttribute(GRANTED_ATTRIBUTE);
+      const boats = (player.getSailing?.()?.boats ?? []).map((boat) => ({ type: boat.type,
+        dock: boat.location?.kind === "docked" ? boat.location.dock : boat.location?.kind ?? null }));
+      const result = Requirements.sailingReadiness({ level: levelOf(player, "SAILING"), boats, pandemonium: {
+        stage: quest?.getStage?.(player) ?? 0, complete: quest?.isComplete?.(player) === true,
+        granted: Array.isArray(granted) && granted.includes(normalize("Pandemonium")), playthrough: questPlay.ready("Pandemonium") } });
+      return { why: result.why, detail: result.detail };
+    } catch {
+      return null;
+    }
   }
 
   /**
@@ -3556,7 +3604,9 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
   function decisionMetric(entry, plan, why, { attempt = 0, started = false, exclude = new Set(), failure = null, blocked } = {}) {
     metric({ kind: "decision", bot: entry.name, attempt, started: Boolean(started), path: why?.path ?? null,
       chosen: { kind: plan.kind, mode: plan.mode ?? null, skill: plan.skill ?? null, quest: plan.quest?.name ?? null,
-        boss: plan.boss?.id ?? plan.boss?.name ?? null, reason: plan.reason ?? null },
+        boss: plan.boss?.id ?? plan.boss?.name ?? null, reason: plan.reason ?? null,
+        // A lower tier chosen on its clan's numbers, and why (measuredTier).
+        ...(plan.tierReason ? { tier: plan.tierReason } : {}) },
       // Why it did not start: a requirement (cannot), or "unknown" where no reason is given yet.
       failure: started ? null : failure ?? { why: "unknown" },
       // canExecute before the pick: what it left out and why (first attempt only).
@@ -4396,9 +4446,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    */
   function stockFood(entry, plan, nowMs) {
     const player = entry.player;
-    if (carriesFood(player) || nowMs < (entry.stockFoodAt ?? 0)) return false;
+    if (nowMs < (entry.stockFoodAt ?? 0)) return false;
+    // Tops up a bag with a few pieces left too (Loadout.fightFoodToFetch): with "any food" as
+    // enough, a third of its fights began on 0-2 pieces, most ended out of food (metrics 22/23-11-2026).
+    const carried = foodSlots(player).length;
+    const amount = Loadout.fightFoodToFetch({ carried, want: Shopping.gear.foodAmount ?? 14 });
+    if (amount <= 0) return false;
     entry.stockFoodAt = nowMs + 10 * 60_000;
-    const amount = Shopping.gear.foodAmount ?? 14;
     const resume = () => {
       if (plan?.kind === "train") entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, planActivity: plan.activity ?? null, remainingMs: 0, savedAt: now() };
     };
@@ -4416,12 +4470,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       });
     }
     const food = Shopping.foodToBuy(player, core, levelOf(player, "HITPOINTS"));
-    if (food && Shopping.coinsOf(player) >= Shopping.estimatedPrice(core, food.itemId, food.amount) + 50
-        && shopFor(entry, food.itemId, food.name, food.amount)) {
+    if (food && Shopping.coinsOf(player) >= Shopping.estimatedPrice(core, food.itemId, amount) + 50
+        && shopFor(entry, food.itemId, food.name, amount)) {
       resume();
       entry.needFood = false;
       return true;
     }
+    // A few pieces and no more to be had now: it fights with those (and restocks when they are gone).
+    if (carried > 0) return false;
     // No food to be had now (no coins, no shop near): it catches and cooks its own for a while.
     entry.needFood = true;
     note(player, "Kan nu geen eten krijgen; gaat eerst zelf vissen en koken.", "activity");

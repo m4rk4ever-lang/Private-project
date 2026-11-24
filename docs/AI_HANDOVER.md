@@ -5,6 +5,56 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 24-11-2026 16:00: stand na de sessie (lead), open werk
+
+- **Gemerged vandaag:** #75 Barrows-gang, #76 mithril 55, #77 eten mee bij combat, #78 Farming wieden, #79 Construction-portaal, #80 tierkeuze op gemeten OSRS-XP/gp, #81 Sailing stap 1 (meten).
+- **Omgeving:** de sessie gebruikt de cloud-omgeving `private-project` (archive.openrs2.org toegestaan). Cache: `NODE_USE_ENV_PROXY=1 npx ts-node ./scripts/ensure-cache.ts`; build `npx tsc --build`. Met cache en build is de suite-baseline **15 fail** (347+ tests). Lokale server: `AGENT_MCP=1 ADVENTURER_SHARE_LOGS=0 ADVENTURER_START_BRIDGE=0 node ../scripts/run-with-env.mjs - ./dist/Server.js`.
+- **Open, niet gemerged:** `adventurers/hunter-eigen-strikken` (WIP). Bewijs in game: een strik op het crimson swift-strand ving binnen 25 ticks (opties Check/Reset), maar viel na 100 ticks ongecheckt om. Oorzaak in `HuntBirds`: checkt de eerste gevangen strik in de buurt (vaak van een andere bot), wacht niet op een mislukte strik en legt meer dan de limiet (`refused` telt de limiet als slechte tegel, bot loopt weg). Fix staat erin (eigen strikken via `H.traps`, Reset, limiet uit `Traps.limit`); `tests/bot-hunt-birds.test.cjs` faalt nog op de harness (`installProductionPathResolver` ontbreekt). Afmaken, lokaal valideren, mergen.
+- **Ronde 2, branches van sub-agents (gepusht, nog te mergen na rebase + suite):** `adventurers/agility-stuck`, `adventurers/gathering-stuck`, `adventurers/slayer-stuck`, `adventurers/combat-loadout`, `adventurers/thieving-stuck` (als ze er staan).
+- **Volgende:** bovenstaande mergen; daarna Gemstone Crab (S1), Construction oak larders, Sailing stap 2 (vaste zeeroute Port Sarim - Pandemonium).
+
+## 24-11-2026 13:00: Sailing stap 1, meten (branch `adventurers/sailing-stap1`)
+
+- **Bewijs (bot-logs 23-11, `ceefe7a`):** 60 bots, Sailing gemiddeld 24,7 = startniveaus (33× 1); geen Sailing-XP in `job`/`skills`. 20× `quest_gap` Fallen From Grace mist SAILING 62 en Pandemonium. Pandemonium nergens in de quest-feedback.
+- **Oorzaak:** geen modus voor Sailing. Pandemonium heeft geen bot-playthrough en staat niet in de Quest Helper-catalogus. De raft komt alleen uit Junior Jims dialoog (`grantRaft`, stage 28): `grantedQuests` (alleen de stage) zou de quest voltooien zonder boot. Varen (Board, Navigate, `BoatManager.steerToward`/`setHelmHeading`, dock) is niet voor bots gebouwd; courier-XP vraagt varen (Port Sarim ↔ Pandemonium is een eiland).
+- **Gebouwd:** `Requirements.sailingReadiness` (puur, nooit ok) en `decision.blocked.sailing` met `why` `no_quest_playthrough` / `quest_missing` / `no_boat` / `no_sailing_brain`. Geen nieuwe modus.
+- **Test:** `tests/bot-requirements.test.cjs` (+2): de vier redenen, en dat de raft alleen via `grantRaft` komt. Suite 334 pass, 15 fail (baseline 15); eslint no-undef schoon.
+- **Bevestigen:** `decision.blocked.sailing.why` = `no_quest_playthrough`, `detail.stage` 0 voor alle bots.
+- **Volgende:** stap 2 (één vaste vaarroute Port Sarim ↔ Pandemonium, met de eigenaar in de game). Details: [analysis/2026-11-24-sailing-voor-bots.md](analysis/2026-11-24-sailing-voor-bots.md).
+## 24-11-2026 13:00: tier op clan-meting (branch `adventurers/tier-op-meting`)
+
+- **Bewijs (job-metric, alle versies t/m `ceefe7a`; analyse 2026-11-22-skill-progressie S2/S5):** yew 22,7k OSRS-XP/u maar 29/50 stuck, willow 19,6k; shark 55k gp/u maar 25/36 stuck, harpoon 20,9k XP / 24,8k gp. `bestActivity` koos toch altijd het hoogste tier.
+- **Oorzaak:** geen keuze tussen tiers; en `Knowledge` bewaarde alleen ruwe XP/u (25x/15x/10x/5x per level), dus niet vergelijkbaar tussen tiers.
+- **Fix:** `Knowledge.record` bewaart nu ook OSRS-XP/u (veld 5, `xpTier`); `stats` geeft `osrsXpPerHour`/`nXp`. `Planner.pickTier`: score = OSRS-XP/u (geldklus `plan.money`: gp/u) × (1 − stuckRate); het hoogste tier blijft tot het ≥5 klussen heeft en een lager tier met ≥5 metingen 10% beter scoort. `measuredTier` in `startTraining` (alleen bereikbare tiers); reden in `plan.tierReason`, de `decision`-metric (`chosen.tier`) en de notitie. `Progression.upgradeFor(current, level, { statsOf, money })` volgt dezelfde regel (wereldbots geven geen `statsOf`: ongewijzigd).
+- **Test:** `tests/bot-tier-choice.test.cjs` (5). Suite 337 pass, 15 fail (baseline 15).
+- **Bevestigen:** `decision` met `chosen.tier`; minder `yew_trees`/`shark_fishing`-klussen met `ended: stuck`; OSRS-XP per bot-uur bij woodcutting/fishing omhoog. Oude knowledge-regels hebben geen OSRS-XP: de keuze start pas na 5 nieuwe metingen per tier.
+- **Risico/volgende:** precheck-tools voor fishing kijken nog naar het hoogste tier; als een lager tier minder vaak vastloopt, wordt het hoogste minder gemeten (venster 25 klussen houdt de oude cijfers wel even vast).
+## 24-11-2026 13:00: huisportaal niet gevonden bij Construction (branch `adventurers/construction-huis`)
+
+- **Bewijs (bot-logs 23-11, `f0c01e1` + `ceefe7a`):** `construction_house` 6/6 `stuck`, `describe` "construct house=false hotspot=- built=0". `house=false` is `getPrivateArea()` (niet in het huis), niet "geen huis": de bots hadden een huis (ze kwamen langs de `construction:owns-house`-check, kochten planken). Vlak ervoor in de activity-log elke keer "Vond het huisportaal niet." op 2954-2956,3225-3227 (Jorgbot 4, Jorgbot 9, Markbot 6). Eén keer stond Jorgbot 9 op 2955,3225 en kwam binnen (915 XP).
+- **Oorzaak:** het portaal (loc 15478, 5x2, face 1) staat in `MapObjects` op zijn zuidwesttegel 2951,3222. `findObjectNear(..., 4)` keek alleen naar die tegel; vanaf x=2956 is dat 5 tegels. De huisaankoop (`construction:buy-house`) werkt: "Koopt een huis in Rimmington" (Jorgbot 3).
+- **Fix:** `objectsNear` in `brain/actions/Construct.PlayerBots.js` meet de afstand tot de voetafdruk van het object (grootte, gedraaid met face). Construct (hotspots, uitgangsportaal) en `findObjectNear` in Adventurers gebruiken hem.
+- **Test:** `tests/bot-construct-farm.test.cjs` "house portal is found by its footprint" met de echte tegels uit de logs (faalt op de oude code). Suite bot/player-bot: 333 pass, 15 fail (baseline). ESLint niet gedraaid (geweigerd door permissies), `node --check` ok.
+- **Bevestigen:** geen "Vond het huisportaal niet."; `construction_house`-klussen met XP > 0.
+- **Volgende:** Construct faalt na 20 s buiten het huis, ook als de bot nog onderweg is (stuck op 2727,3273 en 3270,3167 na "de weg was versperd"). Methode per level (oak larders 33-52) vraagt een keuken; bots bouwen nu alleen in de parlour, dus niet gedaan.
+## 24-11-2026 13:00: farming wiedt eindelijk (branch `adventurers/farming-idle`)
+
+- **Bewijs (bot-logs 22/23-11, `f0f7b99` t/m `ceefe7a`):** farming 3,2% van de bot-tijd, 190 OSRS-XP/uur, 57% idle. 64 `idle` + 22 `stuck` met mode farming: vrijwel allemaal `seen=[herb:rake/... allotment:rake/...] tries=[]` en `left={"3058,3311":"rake x4 zonder effect"}`. Klussen van 10-14 min met 100-600 ruwe XP (= 1-6 wieden à 4 OSRS-XP), bijna nooit geplant.
+- **Oorzaak:** `Patches.Farming.js` `objectInteraction` doet `WORK.delete` en `startWork` begint opnieuw: eerste wiet 6 ticks (3,6 s) na de klik, daarna één per 4 ticks. `FarmPatches` klikte elke `STEP_MS` (2,4 s) opnieuw "rake": het wieden begon steeds overnieuw, er kwam (op wat vertraging na) nooit een wiet. Zelfde gold voor oogsten.
+- **Fix (`FarmPatches.PlayerBots.js`):** na een rake/pick-klik `workUntil` = nu + 4,8 s; elke wiet in de tas of Farming-XP-stijging verlengt dat en zet de zelfde-klik-teller terug. Tijdens het lopen naar de patch schuift de wachttijd mee.
+- **Test:** `tests/bot-construct-farm.test.cjs` "one rake click, left alone while the weeds come": beurten om de 2,4 s, wieten op 3,6/6/8,4 s; één klik, daarna zaaien. Faalt op de oude code (meerdere klikken).
+- **Validatie:** suite 333 pass, 15 fail (baseline 15); eslint no-undef schoon. Niet in game getest.
+- **Bevestigen:** farming-`idle` met `rake x4 zonder effect` weg; `tries` gevuld; farming-XP per bot-uur omhoog; `ended` time up neemt af.
+- **Volgende:** zaden ontbreken vaak (15× "wieden, oogsten en zaaien" zonder zaad vs 8× met guam seed): zaden kopen/bewaren. Daarna tree runs (OSRS Wiki: effectiefste Farming-XP vanaf 15, oak sapling), niet gebouwd.
+## 24-11-2026 13:00: eten aanvullen vóór een gevecht (branch `adventurers/combat-eten`)
+
+- **Bewijs (bot-metrics `job` + `bot`, alle versies t/m `441b072`/`ceefe7a`):** 154 `combat_training`-klussen: 46 `out of food`, 9 `low hp, no food`, 45 `full bag`. Eten in de tas bij de eerste `bot`-snapshot van de klus (142 met snapshot): 0-2 stuks → 38 van 50 eindigen zonder eten; 3-4 → 4/12; 5+ → 11/80. Verbruik: mediaan 0,2, p75 0,33 stuk/min; een klus duurt 20-40 min (`trainMinutes`). Combat 53-82; doelwit is geen oorzaak in deze data (plekken divers: Taverley, Ardougne, Seers).
+- **Oorzaak:** `stockFood` (Adventurers.PlayerBots.js) haalde alleen eten als de bot **niets** droeg (`carriesFood`). Eén overgebleven lobster was genoeg om te gaan vechten (Jorgbot 3, Markbot 11, Kram539: 1 stuk, op na 4-8 min).
+- **Fix:** `Loadout.fightFoodToFetch`: minder dan `FIGHT_FOOD_MIN` (= ⌈0,33 × 20⌉ = 7) → aanvullen tot `foodAmount` (14), uit bank of winkel. Met een paar stuks en niets te krijgen vecht hij daarmee (geen vis-omweg). Geldt ook voor Slayer en Barrows (zelfde functie).
+- **Test:** `tests/bot-loadout.test.cjs` (nieuwe test, faalt op de oude code). Suite bot-/player-bot-: 333 pass, 15 fail (baseline 15). eslint no-undef schoon.
+- **Bevestigen:** `job` combat_training `ended: "out of food"` < 15%; "Neemt N x … van de bank mee om te eten" met N ≈ 7-14 ook bij bots met nog eten; geen bank-lus (cooldown `stockFoodAt` 10 min).
+- **Volgende:** `full bag` (45×): de tas zit vol met gereedschap/runes (snapshot mediaan 5 vrije vakken, Taverley 22×); een gevechts-loadout zoals `offLoadout` voor verzamelen.
+
 ## 24-11-2026 11:45: money making uit de OSRS Wiki, met serverprijzen (branch `analysis/money-making-wiki`)
 
 - **Wat:** alle 1.134 "Money making guide/…"-pagina's via de wiki-API; 651 met `{{Mmgtable}}` geparset (invoer, opbrengst, acties per uur, eisen, plek, intensiteit). Winst opnieuw berekend met `item-prices.json` (inkoop hoog, verkoop laag) en de koopgrenzen uit `grand-exchange.json`. 317 zonder vlag `check`; mediaan serverwinst/wiki-winst 1,0.

@@ -14,6 +14,9 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Avonturiers die in hun huis wilden bouwen, stonden naast het huisportaal in Rimmington en zeiden dat ze het niet vonden. Ze vinden het portaal nu en gaan via Build mode naar binnen.
+- Farmende avonturiers klikten zo vaak op "Rake" dat het wieden steeds opnieuw begon: ze stonden minutenlang bij de moestuin zonder onkruid of XP en kwamen niet aan zaaien toe. Ze wieden nu een patch in één keer leeg en zaaien daarna.
+- Avonturiers gingen vechten met nog één of twee stuks eten in hun tas en moesten na een paar minuten stoppen ("geen eten meer"). Met minder dan 7 stuks vullen ze hun eten nu eerst aan tot 14, uit de bank of de winkel.
 - Avonturiers met Mining 50 tot 54 gingen mithril hakken, wat pas vanaf 55 kan, en kregen niets. Ze hakken nu coal tot ze 55 zijn.
 - Avonturiers in de Barrows-tunnels stapten door een deur en meteen weer terug, minutenlang, tot ze opgaven. Ze lopen nu door de gang naar de deur van de volgende kamer en gaan daar naar binnen.
 - Avonturiers haalden planken of een hamer van de bank en zetten die meteen weer terug, soms honderd keer achter elkaar. Ze halen nu alleen wat ze nodig hebben en houden het bij zich.
@@ -22,6 +25,8 @@ Indeling per versie:
 - Een avonturier die steeds opnieuw vastliep op weg naar dezelfde plek (zoals de bank van Seers' Village), probeerde het elk kwartier weer. Na de tweede keer gaat hij er twee uur niet heen en kiest hij een andere bank.
 
 ### Gewijzigd
+- In de keuzelog van de avonturiers staat nu bij elke keuze waarom ze nog geen Sailing doen (Pandemonium niet gespeeld, geen boot, of nog niemand die vaart).
+- Avonturiers kiezen niet meer blind het hoogste tier dat hun level toestaat (yews, sharks): als hun clan meet dat een lager tier meer XP per uur oplevert (of meer geld, bij een geldklus) omdat het hoogste vaak vastloopt, doen ze dat lagere tier. Ze zeggen erbij waarom, bijvoorbeeld "willow trees: 19.600 OSRS-XP/u gemeten, yew trees 22.700 maar 58% vast".
 - In de statistieken telt hakken tussen bomen en achter een monster aan lopen nu als werken, niet als lopen.
 - Een avonturier die vastliep in de Barrows-tunnels, begon meteen een nieuwe run en liep weer vast. Hij teleporteert nu weg en laat de Barrows een half uur rusten.
 - Een vechtende avonturier zonder eten vocht door tot hij doodging. Hij stopt nu met vechten als zijn HP onder een derde zakt en hij geen eten heeft.

@@ -18,6 +18,52 @@ const STEP_MS = 1_800;
 /** After a Build or a pick: the list opens, the nails go in (a tick each). */
 const BUILD_MS = 3_600;
 
+function seenOf(core, object, player) {
+  try {
+    return core.ObjectDefinition.forPlayer?.(object.getId(), player) ?? core.ObjectDefinition.forId(object.getId());
+  } catch {
+    return core.ObjectDefinition.forId(object.getId());
+  }
+}
+
+/** Tiles from `at` to the object's footprint (its south-west tile and its size, turned by its face). */
+function tilesTo(object, definition, at) {
+  const loc = object.getLocation();
+  const turned = (Number(object.getFace?.() ?? 0) & 1) === 1;
+  const sizeX = Math.max(1, Number((turned ? definition?.getSizeY?.() : definition?.getSizeX?.()) ?? 1) || 1);
+  const sizeY = Math.max(1, Number((turned ? definition?.getSizeX?.() : definition?.getSizeY?.()) ?? 1) || 1);
+  const off = (from, start, size) => Math.max(0, start - from, from - (start + size - 1));
+  return Math.max(off(at.getX(), loc.getX(), sizeX), off(at.getY(), loc.getY(), sizeY));
+}
+
+/**
+ * Objects of the player's own area around it with `option` (Build, Remove, Enter, Build mode),
+ * within `radius` tiles of their footprint, nearest first, as { object, definition, clickType, away }.
+ * A big object stands on its south-west tile: the Rimmington house portal (5x2, turned) at 2951,3222 was
+ * "not found" from 2956,3225, a step from its edge (validation ceefe7a, 23-11-2026).
+ */
+function objectsNear(core, player, option, name = null, radius = 8) {
+  const here = player.getLocation();
+  const area = player.getPrivateArea?.() ?? null;
+  const reach = radius + 4; // the largest footprints reach this far back from their south-west tile
+  const found = [];
+  for (let dx = -reach; dx <= radius; dx += 1) {
+    for (let dy = -reach; dy <= radius; dy += 1) {
+      for (const object of core.MapObjects?.mapObjects?.get?.(core.MapObjects.getHash(here.getX() + dx, here.getY() + dy, here.getZ())) ?? []) {
+        if ((object.getPrivateArea?.() ?? null) !== area) continue;
+        const definition = seenOf(core, object, player);
+        if (name && !name.test(String(definition?.getName?.() ?? ""))) continue;
+        const index = (definition?.getInteractions?.() ?? []).findIndex((entry) => String(entry ?? "").toLowerCase() === option);
+        if (index < 0) continue;
+        const away = tilesTo(object, definition, here);
+        if (away > radius) continue;
+        found.push({ object, definition, clickType: index + 1, away });
+      }
+    }
+  }
+  return found.sort((a, b) => a.away - b.away);
+}
+
 function createConstructAction(spec, world) {
   const core = world?.core;
   if (!core) throw new Error("[bot activities] construct requires api.core");
@@ -26,35 +72,7 @@ function createConstructAction(spec, world) {
   const radius = Math.max(8, Number(spec.radius ?? 24));
   const emit = (name, payload) => { world.emit?.(name, payload); return payload; };
 
-  const seenOf = (object, player) => {
-    try {
-      return core.ObjectDefinition.forPlayer?.(object.getId(), player) ?? core.ObjectDefinition.forId(object.getId());
-    } catch {
-      return core.ObjectDefinition.forId(object.getId());
-    }
-  };
-
-  /** Objects of its house around it with `option` (Build, Remove, Enter), nearest first, as [object, definition, clickType]. */
-  function objectsWith(player, option, name = null) {
-    const here = player.getLocation();
-    const area = player.getPrivateArea?.() ?? null;
-    const found = [];
-    for (let dx = -radius; dx <= radius; dx += 1) {
-      for (let dy = -radius; dy <= radius; dy += 1) {
-        const x = here.getX() + dx;
-        const y = here.getY() + dy;
-        for (const object of core.MapObjects?.mapObjects?.get?.(core.MapObjects.getHash(x, y, here.getZ())) ?? []) {
-          if ((object.getPrivateArea?.() ?? null) !== area) continue;
-          const definition = seenOf(object, player);
-          if (name && !name.test(String(definition?.getName?.() ?? ""))) continue;
-          const index = (definition?.getInteractions?.() ?? []).findIndex((entry) => String(entry ?? "").toLowerCase() === option);
-          if (index < 0) continue;
-          found.push({ object, definition, clickType: index + 1, away: Math.max(Math.abs(dx), Math.abs(dy)) });
-        }
-      }
-    }
-    return found.sort((a, b) => a.away - b.away);
-  }
+  const objectsWith = (player, option, name = null) => objectsNear(core, player, option, name, radius);
 
   function click(player, { object, definition, clickType }) {
     const at = object.getLocation();
@@ -143,4 +161,4 @@ function createConstructAction(spec, world) {
   };
 }
 
-module.exports = { createConstructAction };
+module.exports = { createConstructAction, objectsNear };

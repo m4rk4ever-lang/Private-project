@@ -319,4 +319,54 @@ function leastBusy(options, occupied, cap) {
   return best?.id ?? null;
 }
 
-module.exports = { isEndgame, trainingWeight, chooseNext, bossesFor, missing, isReady, trainingOptions, bestActivity, activitiesFor, leastBusy, TRAINABLE, COMBAT };
+/** Jobs a tier needs measured before its clan's numbers count (Knowledge KNOWN_AFTER). */
+const TIER_KNOWN_AFTER = 5;
+/** A lower tier must beat the best one by this much: no flapping on a few hundred XP. */
+const TIER_MARGIN = 0.1;
+
+function tierName(id) {
+  return String(id).replace(/_(trees|rocks|fishing|stalls)$/, (_, kind) => (kind === "fishing" ? "" : ` ${kind}`)).replace(/_/g, " ");
+}
+
+function perHour(value) {
+  return (Math.round(value / 100) * 100).toLocaleString("nl-NL");
+}
+
+/**
+ * Of the tiers its level allows (`options`, activitiesFor: best first), the one to do, by what
+ * its clan measured (`statsOf(id)`: Knowledge.stats of `activity:<id>`): OSRS XP per hour when
+ * training, coins per hour for a money stretch (`money`), times the share of jobs that did not
+ * end stuck. Yews gave 22.700 OSRS XP/h but 29 of 50 jobs ended stuck; willows 19.600 (skill-
+ * progressie analyse 22-11-2026, S2/S5). The best tier (`top`, default the first) stays until
+ * it is measured and a lower measured one beats it by TIER_MARGIN: without numbers, as before.
+ * Returns { id, reason } with `reason` null when it keeps `top`.
+ */
+function pickTier(options, statsOf, { money = false, top = options[0]?.id ?? null, knownAfter = TIER_KNOWN_AFTER } = {}) {
+  if (!top) return { id: null, reason: null };
+  const unit = money ? "gp/u" : "OSRS-XP/u";
+  const measure = (id) => {
+    const stats = statsOf(id) ?? {};
+    const value = money ? stats.gpPerHour : stats.osrsXpPerHour;
+    const n = money ? stats.n ?? 0 : stats.nXp ?? 0;
+    const stuck = Number.isFinite(stats.stuckRate) ? stats.stuckRate : 0;
+    return { id, value: Number.isFinite(value) ? value : null, n, jobs: stats.jobs ?? 0, stuck };
+  };
+  const best = measure(top);
+  // The best tier counts once its jobs are known: also when most ended stuck before measuring.
+  if (best.jobs < knownAfter) return { id: top, reason: null };
+  const bestScore = (best.n >= knownAfter ? best.value ?? 0 : 0) * (1 - best.stuck);
+  let pick = null;
+  for (const option of options) {
+    if (option.id === top) continue;
+    const other = measure(option.id);
+    if (other.n < knownAfter || other.value === null) continue;
+    const score = other.value * (1 - other.stuck);
+    if (score > bestScore * (1 + TIER_MARGIN) && (!pick || score > pick.score)) pick = { ...other, score };
+  }
+  if (!pick) return { id: top, reason: null };
+  const topText = best.n >= knownAfter && best.value !== null ? `${tierName(top)} ${perHour(best.value)}` : tierName(top);
+  const why = best.stuck >= 0.2 ? `${topText} maar ${Math.round(best.stuck * 100)}% vast` : `${topText}`;
+  return { id: pick.id, reason: `${tierName(pick.id)}: ${perHour(pick.value)} ${unit} gemeten, ${why}` };
+}
+
+module.exports = { isEndgame, trainingWeight, chooseNext, bossesFor, missing, isReady, trainingOptions, bestActivity, activitiesFor, leastBusy, pickTier, TRAINABLE, COMBAT };

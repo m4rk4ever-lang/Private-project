@@ -81,6 +81,26 @@ test("construct: builds on an empty hotspot, removes its own piece, leaves when 
   assert.equal(action.update({ player, state, nowMs: 20_000 }), "success");
 });
 
+test("construct: the house portal is found by its footprint, not its south-west tile (validation ceefe7a)", () => {
+  const { objectsNear } = require("../plugins/bots/brain/actions/Construct.PlayerBots");
+  // Rimmington's portal (loc 15478, 5x2, face 1) stands on 2951,3222; Jorgbot 4, Jorgbot 9 and
+  // Markbot 6 stopped at 2954-2956,3225-3227 and said "Vond het huisportaal niet." (23-11-2026).
+  const portal = { getId: () => 15478, getFace: () => 1, getPrivateArea: () => null,
+    getLocation: () => ({ getX: () => 2951, getY: () => 3222, getZ: () => 0 }) };
+  const definition = { getName: () => "Portal", getInteractions: () => ["Enter", "Home", "Build mode", "Friend's house", null], getSizeX: () => 5, getSizeY: () => 2 };
+  const hash = (x, y, z) => `${x},${y},${z}`;
+  const core = { MapObjects: { getHash: hash, mapObjects: new Map([[hash(2951, 3222, 0), [portal]]]) },
+    ObjectDefinition: { forId: () => definition, forPlayer: () => definition } };
+  const at = (x, y) => ({ getLocation: () => ({ getX: () => x, getY: () => y, getZ: () => 0 }), getPrivateArea: () => null });
+  for (const [x, y] of [[2956, 3225], [2956, 3227], [2954, 3227]]) {
+    const found = objectsNear(core, at(x, y), "build mode", /^portal$/i, 4)[0];
+    assert.equal(found?.object, portal, `${x},${y}`);
+    assert.equal(found.clickType, 3);
+  }
+  // Out of reach stays out: five tiles east of its edge.
+  assert.equal(objectsNear(core, at(2958, 3224), "build mode", /^portal$/i, 4).length, 0);
+});
+
 test("farm patches: rake first, then plant the best seed it carries, then done", () => {
   const patches = [
     { id: 8150, x: 3058, y: 3311, name: "Herb patch", options: ["Rake", "Inspect", "Guide"] },
@@ -141,4 +161,23 @@ test("farm patches: no rake, no raking; the same click without effect is left wi
   for (let turn = 0; turn < 6; turn += 1) raking.update({ player: stuck.player, state: again, nowMs: turn * 5_000 });
   assert.equal(stuck.clicks.filter((click) => click.kind === "object").length, 4);
   assert.match(raking.describe({ state: again, player: stuck.player }), /rake x4 zonder effect/);
+});
+
+test("farm patches: one rake click, left alone while the weeds come, then plant (bot-logs 23-11, farming_falador 57% idle)", () => {
+  // The Farming plugin restarts the raking on every click: the first weed 6 ticks (3,6 s) after
+  // it, then one per 4 ticks. A click every 2,4 s never got a weed.
+  const patches = [{ id: 8150, x: 3058, y: 3311, name: "Herb patch", options: ["Rake", "Inspect", "Guide"] }];
+  const { world, player, clicks, inventory } = fakeWorld(patches, { items: { 5291: 1, 5341: 1 } });
+  const action = createFarmPatchesAction({ site: [3058, 3311], patches: [{ id: 8150, x: 3058, y: 3311, kind: "herb" }],
+    seeds: { herb: ["GUAM_SEED"], allotment: [] } }, world);
+  const state = {};
+  const weedAt = [3_600, 6_000, 8_400];
+  for (let nowMs = 0; nowMs <= 9_600; nowMs += 2_400) {
+    for (const at of weedAt) if (at <= nowMs && at > nowMs - 2_400) inventory[6055] = (inventory[6055] ?? 0) + 1;
+    if (nowMs >= 8_400) patches[0].options = ["Inspect", "Guide"];
+    action.update({ player, state, nowMs });
+  }
+  assert.equal(clicks.filter((click) => click.kind === "object").length, 1, "one rake click for the whole patch");
+  for (let nowMs = 12_000; nowMs <= 16_800; nowMs += 2_400) action.update({ player, state, nowMs });
+  assert.deepEqual(clicks.at(-1), { kind: "item", itemId: 5291, name: "Herb patch" });
 });
