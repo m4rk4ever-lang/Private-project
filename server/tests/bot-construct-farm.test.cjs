@@ -142,3 +142,22 @@ test("farm patches: no rake, no raking; the same click without effect is left wi
   assert.equal(stuck.clicks.filter((click) => click.kind === "object").length, 4);
   assert.match(raking.describe({ state: again, player: stuck.player }), /rake x4 zonder effect/);
 });
+
+test("farm patches: one rake click, left alone while the weeds come, then plant (bot-logs 23-11, farming_falador 57% idle)", () => {
+  // The Farming plugin restarts the raking on every click: the first weed 6 ticks (3,6 s) after
+  // it, then one per 4 ticks. A click every 2,4 s never got a weed.
+  const patches = [{ id: 8150, x: 3058, y: 3311, name: "Herb patch", options: ["Rake", "Inspect", "Guide"] }];
+  const { world, player, clicks, inventory } = fakeWorld(patches, { items: { 5291: 1, 5341: 1 } });
+  const action = createFarmPatchesAction({ site: [3058, 3311], patches: [{ id: 8150, x: 3058, y: 3311, kind: "herb" }],
+    seeds: { herb: ["GUAM_SEED"], allotment: [] } }, world);
+  const state = {};
+  const weedAt = [3_600, 6_000, 8_400];
+  for (let nowMs = 0; nowMs <= 9_600; nowMs += 2_400) {
+    for (const at of weedAt) if (at <= nowMs && at > nowMs - 2_400) inventory[6055] = (inventory[6055] ?? 0) + 1;
+    if (nowMs >= 8_400) patches[0].options = ["Inspect", "Guide"];
+    action.update({ player, state, nowMs });
+  }
+  assert.equal(clicks.filter((click) => click.kind === "object").length, 1, "one rake click for the whole patch");
+  for (let nowMs = 12_000; nowMs <= 16_800; nowMs += 2_400) action.update({ player, state, nowMs });
+  assert.deepEqual(clicks.at(-1), { kind: "item", itemId: 5291, name: "Herb patch" });
+});
