@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Avonturiers gingen vechten met nog één of twee stuks eten in hun tas en moesten na een paar minuten stoppen ("geen eten meer"). Met minder dan 7 stuks vullen ze hun eten nu eerst aan tot 14, uit de bank of de winkel.
 - Avonturiers met Mining 50 tot 54 gingen mithril hakken, wat pas vanaf 55 kan, en kregen niets. Ze hakken nu coal tot ze 55 zijn.
 - Avonturiers in de Barrows-tunnels stapten door een deur en meteen weer terug, minutenlang, tot ze opgaven. Ze lopen nu door de gang naar de deur van de volgende kamer en gaan daar naar binnen.
 - Avonturiers haalden planken of een hamer van de bank en zetten die meteen weer terug, soms honderd keer achter elkaar. Ze halen nu alleen wat ze nodig hebben en houden het bij zich.

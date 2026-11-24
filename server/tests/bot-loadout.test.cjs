@@ -80,3 +80,16 @@ test("teleport tablets are bought as a stack of 5, priced as a whole, after the 
   assert.deepEqual(Loadout.travelBuys(list, { coins: 1_000_000, kindOf, priceOf: (name) => price[name], have: new Set(["SALVE_GRAVEYARD_TELEPORT"]) }),
     ["GAMES_NECKLACE_8_", { name: "CATHERBY_TELEPORT", amount: 5 }]);
 });
+
+test("food before a fight: a few pieces left are not enough for a 20-40 minute stretch; it tops up", () => {
+  const { fightFoodToFetch, FIGHT_FOOD_MIN } = require("../plugins/bots/adventurers/Loadout.PlayerBots");
+  // Metrics 22/23-11-2026: fights begun on 0-2 pieces ended "out of food" or "low hp, no food" in
+  // 38 of 50 (Jorgbot 3, Markbot 11, Kram539 with 1 piece); the old rule fetched food only with none.
+  assert.equal(fightFoodToFetch({ carried: 1, want: 14 }), 13, "one lobster left: tops up to 14");
+  assert.equal(fightFoodToFetch({ carried: 0, want: 14 }), 14);
+  assert.equal(fightFoodToFetch({ carried: FIGHT_FOOD_MIN - 1, want: 14 }), 14 - FIGHT_FOOD_MIN + 1);
+  assert.equal(fightFoodToFetch({ carried: FIGHT_FOOD_MIN, want: 14 }), 0, "enough for 20 minutes: straight to the fight");
+  assert.equal(fightFoodToFetch({ carried: 10, want: 14 }), 0);
+  assert.ok(FIGHT_FOOD_MIN >= 5 && FIGHT_FOOD_MIN <= 10, `about a third of a piece a minute for 20 minutes, got ${FIGHT_FOOD_MIN}`);
+  assert.equal(fightFoodToFetch({ carried: 3, want: 4 }), 1, "a small foodAmount is the bar itself");
+});

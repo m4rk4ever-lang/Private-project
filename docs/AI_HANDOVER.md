@@ -5,6 +5,15 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 24-11-2026 13:00: eten aanvullen vóór een gevecht (branch `adventurers/combat-eten`)
+
+- **Bewijs (bot-metrics `job` + `bot`, alle versies t/m `441b072`/`ceefe7a`):** 154 `combat_training`-klussen: 46 `out of food`, 9 `low hp, no food`, 45 `full bag`. Eten in de tas bij de eerste `bot`-snapshot van de klus (142 met snapshot): 0-2 stuks → 38 van 50 eindigen zonder eten; 3-4 → 4/12; 5+ → 11/80. Verbruik: mediaan 0,2, p75 0,33 stuk/min; een klus duurt 20-40 min (`trainMinutes`). Combat 53-82; doelwit is geen oorzaak in deze data (plekken divers: Taverley, Ardougne, Seers).
+- **Oorzaak:** `stockFood` (Adventurers.PlayerBots.js) haalde alleen eten als de bot **niets** droeg (`carriesFood`). Eén overgebleven lobster was genoeg om te gaan vechten (Jorgbot 3, Markbot 11, Kram539: 1 stuk, op na 4-8 min).
+- **Fix:** `Loadout.fightFoodToFetch`: minder dan `FIGHT_FOOD_MIN` (= ⌈0,33 × 20⌉ = 7) → aanvullen tot `foodAmount` (14), uit bank of winkel. Met een paar stuks en niets te krijgen vecht hij daarmee (geen vis-omweg). Geldt ook voor Slayer en Barrows (zelfde functie).
+- **Test:** `tests/bot-loadout.test.cjs` (nieuwe test, faalt op de oude code). Suite bot-/player-bot-: 333 pass, 15 fail (baseline 15). eslint no-undef schoon.
+- **Bevestigen:** `job` combat_training `ended: "out of food"` < 15%; "Neemt N x … van de bank mee om te eten" met N ≈ 7-14 ook bij bots met nog eten; geen bank-lus (cooldown `stockFoodAt` 10 min).
+- **Volgende:** `full bag` (45×): de tas zit vol met gereedschap/runes (snapshot mediaan 5 vrije vakken, Taverley 22×); een gevechts-loadout zoals `offLoadout` voor verzamelen.
+
 ## 24-11-2026 12:30: mithril pas vanaf Mining 55 (branch `adventurers/mithril-55`)
 
 - **Bewijs (bot-logs 23-11, `441b072` + `ceefe7a`):** mining was 8% van de bot-tijd met 17k XP/uur (vissen 223k). `mithril_rocks`: 36 klussen, 848 min, 362 OSRS-XP/uur. Onder Mining 55: 29 klussen, 676 min, **0 XP**; vanaf 55: 44k XP/uur (ruw). `idle` met `failedClicks=6` op mithril-rotsen.
