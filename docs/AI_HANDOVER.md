@@ -5,6 +5,19 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 24-11-2026 12:00: Barrows-tunnels, terugstappen na `crossed` (branch `adventurers/barrows-crossed`)
+
+Uit [analysis/2026-11-24-validatie-ceefe7a.md](analysis/2026-11-24-validatie-ceefe7a.md). Geen nieuwe logs sinds 23-11 15:21 (server staat stil); niet in game getest (geen cache in deze omgeving).
+
+- **Oorzaak (bewezen met `lastDoor`):** elke verbinding heeft twee deurparen, één in de muur van elke kamer. Na `crossed` staat de bot op de deuropening, die `roomAt` (straal 7) nog bij de kamer rekent die hij verliet. De route koos dezelfde deur, de dichtstbijzijnde zijtegel was die waar hij stond, en hij stapte terug.
+- **Fix (`BarrowsRun.PlayerBots.js`):** `doorRoles(v)` geeft per deur de kamer en de binnen- en buitentegel (op de as dwars op de muur). Op een buitentegel of in een gang is de bot "onderweg" (`run.passage`: varbit, van, naar) en loopt hij naar de buitentegel van de deur in de muur van de doelkamer, en klikt die. In een kamer klikt hij de deur alleen vanaf de binnentegel. Stap in de log: `gang 0→1` / "In de gang naar kamer 1". Gevecht en puzzel gaan vóór de gang; de kist alleen echt in kamer 4.
+- **Telemetrie:** `barrows_run` failed schreef de tegel in `at` (de tijdstempel). Nu `where`, plus `passage`. OBSERVABILITY bijgewerkt.
+- **Test:** `tests/bot-barrows-run.test.cjs` (3): korte gang 0→1 met beide deurparen in `roomAt`-bereik (Markbot 18), lange gang 0→2 langs de noordmuur (Markbot 14), `where` i.p.v. `at`. De oude code faalt op alle drie.
+- **Aanname:** de ligging van het tweede deurpaar volgt uit de symmetrie (64 deuren, 16 varbits, 4 per verbinding); zonder cache niet nagemeten. Als de gang in werkelijkheid anders loopt, zegt `passage` + `lastDoor` in `barrows_run` waar het stokt.
+- **Bevestigen in de logs:** `barrows_run` `looted` > 0; geen `failed` met `lastDoor.outcome` `crossed` en dezelfde deur; stappen `gang x→y` gevolgd door `tunnel y→…`.
+- **Validatie:** suite 173 pass, 14 fail (baseline 14); eslint no-undef schoon.
+- **Volgende:** Construction start zonder huis (9× `stuck`, `canExecute`), Fishing Guild `walk_blocked` (18×), Markbot 12 / Kram539 in game nakijken.
+
 ## 24-11-2026 11:15: lokaal draaien op een Mac (branch `docs/mac-lokaal`)
 
 - **Aanleiding:** het Codespaces-tegoed van de eigenaar is op (geen logs sinds 23-11 15:21 UTC). Hij draait het spel nu op zijn Mac.

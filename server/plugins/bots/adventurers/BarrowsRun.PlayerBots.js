@@ -216,7 +216,7 @@ function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, 
     try { seen = view(player); } catch { seen = null; }
     const near = (core.World?.getNpcsNear?.(at, 3, player.getPrivateArea?.() ?? null) ?? []).length;
     metric({ kind: "barrows_run", bot: entry.name, result: "failed", why, step: entry.barrows.step, killed: entry.barrows.killed ?? [], minutes: Math.round((Date.now() - entry.barrows.since) / 6000) / 10,
-      at: [at.getX(), at.getY(), at.getZ()], room: seen?.room ?? null, lastDoor: seen?.lastDoor ?? null, openDoors: seen?.run?.openDoors ?? null,
+      where: [at.getX(), at.getY(), at.getZ()], room: seen?.room ?? null, passage: entry.barrows.passage ?? null, lastDoor: seen?.lastDoor ?? null, openDoors: seen?.run?.openDoors ?? null,
       npcsNear: near, attacked: Boolean(player.getCombat?.()?.getAttacker?.()), doorTries: entry.barrows.doorTries ? Object.fromEntries(entry.barrows.doorTries) : null });
     // Stuck in the tunnels: out (a Varrock tablet, else home), and no new run there at once. It
     // began again in the same second at the same tile, 3 to 6 times a bot (Markbot 17, 18).
@@ -339,8 +339,25 @@ function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, 
 
     // The tunnels.
     if (v.crossing) return "running";
+    if (v.puzzleOpen) {
+      api.emitCustomEvent("barrows:bot-answer-puzzle", { player });
+      return "running";
+    }
     const room = v.room;
-    if (room === 4) {
+    const roles = doorRoles(v);
+    // On a door's outer tile (the doorway, or the corridor tile before a door): between two rooms,
+    // whatever roomAt says. roomAt counts 7 tiles round a room's middle, and the doorway is the
+    // 7th: after "crossed" the bot was still "in" the room it left, planned the same door again
+    // and stepped back through it (Markbot 14, Markbot 18, Patrickbot 15, validatie ceefe7a).
+    const outerOf = roles.find((role) => role.outer.x === at.x && role.outer.y === at.y) ?? null;
+    const inRoom = room >= 0 && !outerOf;
+    if (inRoom) run.passage = null;
+    else if (!run.passage) {
+      const link = outerOf ? v.links.find((entry2) => entry2.varbit === outerOf.varbit) : null;
+      if (link) run.passage = { varbit: link.varbit, from: outerOf.room, to: link.a === outerOf.room ? link.b : link.a };
+      else if (Number.isInteger(run.nextRoom) && Number.isInteger(run.stepVarbit)) run.passage = { varbit: run.stepVarbit, from: run.stepFrom ?? null, to: run.nextRoom };
+    }
+    if (inRoom && room === 4) {
       progress(entry, nowMs, "chest", "Bij de kist in de middelste kamer.");
       // The object on the chest's own tile, whatever id it shows now (shut or open): by the map's
       // id alone the bot's click missed it, where a player's click on the chest worked.
@@ -352,25 +369,6 @@ function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, 
       run.chestAt = nowMs + 3_000;
       return click(player, chest, 1) ? "running" : fail(entry, "kist niet gevonden");
     }
-    // In a corridor (room -1): the long doors (0-2, 0-6 ...) end there, not in the next room, and
-    // it waited for ever (Patrickbot 1 "van kamer 2 naar kamer 0", voorwerk A2, 22-11-2026). On to
-    // the room the route named, as a player walks the corridor.
-    if (room < 0) {
-      if (Number.isInteger(run.nextRoom) && player.getMovementQueue().size() === 0) {
-        const centre = v.roomCentre(run.nextRoom);
-        player.getMovementQueue().requestWalk(new core.Location(centre.x, centre.y, 0));
-      }
-      return "running";
-    }
-    if (v.puzzleOpen) {
-      api.emitCustomEvent("barrows:bot-answer-puzzle", { player });
-      return "running";
-    }
-    const route = routeRooms(v, room);
-    if (!route || route.length === 0) return fail(entry, "geen open deur naar de kist");
-    const step = route[0];
-    run.nextRoom = step.to;
-    progress(entry, nowMs, `tunnel ${room}→${step.to}`, `In de tunnels: van kamer ${room} naar kamer ${step.to}.`);
     // Monsters in the room come for it (one spawns each time it enters): fought first, as a
     // player does, then on to the door. One on the door's side tile kept the click from landing.
     const attacker = player.getCombat?.()?.getAttacker?.();
@@ -378,16 +376,68 @@ function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, 
       fight(player, attacker);
       return "running";
     }
-    const door = v.doors.filter((entry2) => entry2.varbit === step.varbit)
-      .map((entry2) => ({ door: entry2, side: entry2.sides.find((side) => side.room === room) }))
-      .filter((pair) => pair.side)
-      .sort((a, b) => chebyshev(at, a.side) - chebyshev(at, b.side))[0];
-    if (!door) return fail(entry, "deur niet gevonden");
-    if (at.x !== door.side.x || at.y !== door.side.y) {
-      player.getMovementQueue().requestWalk(new core.Location(door.side.x, door.side.y, 0));
+    if (!inRoom) {
+      const passage = run.passage;
+      if (!passage) {
+        // A corridor and no door it came through (a login there): to the room the route named.
+        if (Number.isInteger(run.nextRoom) && player.getMovementQueue().size() === 0) {
+          const centre = v.roomCentre(run.nextRoom);
+          player.getMovementQueue().requestWalk(new core.Location(centre.x, centre.y, 0));
+        }
+        return "running";
+      }
+      // Through the corridor to the door on the far room's wall, from its outer tile: that door
+      // takes it into the room (each link has a pair of doors, one at either room).
+      progress(entry, nowMs, `gang ${passage.from ?? "?"}→${passage.to}`, `In de gang naar kamer ${passage.to}.`);
+      const far = roles.filter((role) => role.varbit === passage.varbit && role.room === passage.to)
+        .sort((a, b) => chebyshev(at, a.outer) - chebyshev(at, b.outer))[0];
+      if (!far) return fail(entry, `geen deur ${passage.varbit} aan kamer ${passage.to}`);
+      return useDoorFrom(entry, nowMs, far, far.outer, `gang:${passage.varbit}:${passage.to}`, passage.from, passage.to);
+    }
+    const route = routeRooms(v, room);
+    if (!route || route.length === 0) return fail(entry, "geen open deur naar de kist");
+    const step = route[0];
+    run.nextRoom = step.to;
+    run.stepVarbit = step.varbit;
+    run.stepFrom = room;
+    progress(entry, nowMs, `tunnel ${room}→${step.to}`, `In de tunnels: van kamer ${room} naar kamer ${step.to}.`);
+    // The door on this room's wall, from its inner tile (the one on the room's side).
+    const near = roles.filter((role) => role.varbit === step.varbit && role.room === room)
+      .sort((a, b) => chebyshev(at, a.inner) - chebyshev(at, b.inner))[0];
+    if (!near) return fail(entry, "deur niet gevonden");
+    return useDoorFrom(entry, nowMs, near, near.inner, `${room}:${step.varbit}`, room, step.to);
+  }
+
+  /**
+   * Each tunnel door with the room whose wall it is in, and its two side tiles: inner (the room's
+   * side) and outer (the doorway or corridor). Told apart on the axis across the wall, as the two
+   * tiles differ only there; roomAt gives both the same room.
+   */
+  function doorRoles(v) {
+    const roles = [];
+    for (const door of v.doors ?? []) {
+      const [a, b] = door.sides ?? [];
+      if (!a || !b) continue;
+      const room = a.room >= 0 ? a.room : b.room;
+      if (!(room >= 0)) continue;
+      const centre = v.roomCentre(room);
+      const axis = a.x !== b.x ? "x" : "y";
+      const aInner = Math.abs(a[axis] - centre[axis]) < Math.abs(b[axis] - centre[axis]);
+      roles.push({ door, varbit: door.varbit, room, inner: aInner ? a : b, outer: aInner ? b : a });
+    }
+    return roles;
+  }
+
+  /** Walks to `side` of this door and clicks it there, one click per 3 s, giving up after 4. */
+  function useDoorFrom(entry, nowMs, role, side, key, from, to) {
+    const run = entry.barrows;
+    const player = entry.player;
+    const at = here(player);
+    if (at.x !== side.x || at.y !== side.y) {
+      player.getMovementQueue().requestWalk(new core.Location(side.x, side.y, 0));
       return "running";
     }
-    const object = objectNear({ x: door.door.x, y: door.door.y, z: 0 }, [door.door.id], 0);
+    const object = objectNear({ x: role.door.x, y: role.door.y, z: 0 }, [role.door.id], 0);
     if (!object) return fail(entry, "deur niet aan te klikken");
     // On the side tile: the door's option at once. The plugin takes a door only from exactly that
     // tile, and the walk of an object click could take it off it first (voorwerk A2).
@@ -395,13 +445,12 @@ function createBarrowsRun({ core, api, world, note, metric, walkTo, errandBusy, 
     if (nowMs < (run.doorAt ?? 0)) return "running";
     run.doorAt = nowMs + 3_000;
     const tries = (run.doorTries ??= new Map());
-    const key = `${room}:${step.varbit}`;
     const count = (tries.get(key) ?? 0) + 1;
     tries.set(key, count);
     if (count > 4) {
       // Why it does not get through, for the log (barrows_run): the door, its tile, what is near.
       const near = (core.World?.getNpcsNear?.(player.getLocation(), 3, player.getPrivateArea?.() ?? null) ?? []).length;
-      return fail(entry, `deur ${step.varbit} van kamer ${room} naar ${step.to} gaat niet open (4x op de zijtegel ${door.side.x},${door.side.y}; open=${v.run?.openDoors?.includes?.(step.varbit) ?? "?"}, NPC's dichtbij ${near})`);
+      return fail(entry, `deur ${role.varbit} van kamer ${from ?? "?"} naar ${to} gaat niet open (4x op de zijtegel ${side.x},${side.y}; open=${view(player)?.run?.openDoors?.includes?.(role.varbit) ?? "?"}, NPC's dichtbij ${near})`);
     }
     const definition = (() => {
       try { return core.ObjectDefinition.forPlayer?.(object.getId(), player) ?? core.ObjectDefinition.forId(object.getId()); } catch { return core.ObjectDefinition.forId(object.getId()); }
