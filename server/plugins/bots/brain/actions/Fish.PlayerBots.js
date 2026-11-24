@@ -300,7 +300,12 @@ function createFishAction(spec, world) {
       const bot = stateFor(ctx.player);
       const moved = bot.moved;
       bot.moved = false;
-      return moved;
+      // A catch is progress too: a bot harpooning sharks stands on one tile for minutes, and
+      // the frame stall (3 min without a step) must not cut it off while the fish come in.
+      const xp = ctx.player.getSkillManager?.()?.getTotalExp?.();
+      const caught = Number.isFinite(xp) && Number.isFinite(bot.progressXp) && xp > bot.progressXp;
+      if (Number.isFinite(xp)) bot.progressXp = xp;
+      return moved || caught;
     },
     describe(ctx) {
       const bot = stateFor(ctx.player);

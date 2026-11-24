@@ -133,6 +133,27 @@ const UNDERGROUND_Y = 6400;
 const { offSurface, chooseLevelHop, levelHopsFrom, reachableOnFoot } = require("../behaviours/navigation/LevelHops.PlayerBots");
 /** No XP and no step for this long while training: it is stuck, it picks something else. */
 const STUCK_MS = 75_000;
+/**
+ * The same while a gathering skill runs (fishing, chopping, mining: `world.isBusy`). A shark at
+ * Fishing 80 comes once per ~23 s on average (rolls 3-40/256 every 6 ticks), a magic log every
+ * 1-3 min: 75 s without XP is ordinary there, and bot-logs 22/23-11 ended 32 of 43 shark and 15
+ * of 18 magic-tree jobs `stuck` with `active=true` beside the spot. A spot or tree that really
+ * gives nothing still ends the job, after this long.
+ */
+const GATHER_STUCK_MS = 5 * 60_000;
+
+/**
+ * Whether a training bot is stuck: no step and no XP (`mark` = tile + total XP) for STUCK_MS, or
+ * GATHER_STUCK_MS while it is gathering (`busy`). Keeps `lastMark`/`lastMarkAt` on `entry`.
+ */
+function markStuck(entry, mark, busy, nowMs) {
+  if (mark !== entry.lastMark) {
+    entry.lastMark = mark;
+    entry.lastMarkAt = nowMs;
+    return false;
+  }
+  return nowMs - (entry.lastMarkAt ?? nowMs) > (busy ? GATHER_STUCK_MS : STUCK_MS);
+}
 /** The longest one Slayer task may take before it gives up on it for now. */
 const SLAYER_TASK_MAX_MS = 90 * 60_000;
 /** Teleport tablets an adventurer may buy for long walks, and the coins it keeps before it does. */
@@ -3653,12 +3674,7 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     if (errands.busy(entry.player)) return false;
     const at = entry.player.getLocation();
     const mark = `${at.getX()},${at.getY()},${at.getZ()}:${Math.floor(entry.player.getSkillManager().getTotalExp?.() ?? 0)}`;
-    if (mark !== entry.lastMark) {
-      entry.lastMark = mark;
-      entry.lastMarkAt = nowMs;
-      return false;
-    }
-    return nowMs - (entry.lastMarkAt ?? nowMs) > STUCK_MS;
+    return markStuck(entry, mark, world?.isBusy?.(entry.player) === true, nowMs);
   }
 
   /**
@@ -6342,4 +6358,4 @@ function startAdventurers({ api, runtime, world, registry }) {
   return manager;
 }
 
-module.exports = { createAdventurers, startAdventurers, unpackCoord, LOG_ATTRIBUTE, TASK_ATTRIBUTE };
+module.exports = { createAdventurers, startAdventurers, unpackCoord, markStuck, STUCK_MS, GATHER_STUCK_MS, LOG_ATTRIBUTE, TASK_ATTRIBUTE };
