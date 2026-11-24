@@ -40,6 +40,25 @@ function foodFor({ danger, bankTiles = Infinity, combat = null } = {}) {
   return { food: near ? DANGER_FOOD_NEAR : DANGER_FOOD_FAR, reason: `${danger.text}, ${bank}` };
 }
 
+/**
+ * Food a fight takes along (combat, Slayer, Barrows): a stretch lasts 20-40 minutes
+ * (adventurers.json trainMinutes) and eats about a third of a piece a minute (p75 of 45 combat
+ * stretches whose food went down, bot metrics 22/23-11-2026), so at least FIGHT_FOOD_MIN pieces;
+ * with fewer it tops up to `want` (gear foodAmount). Before, it fetched food only with none at all:
+ * 50 of 142 combat stretches began with 0-2 pieces, and 38 of them ended "out of food" or "low hp,
+ * no food" (5+ pieces: 11 of 80).
+ */
+const FIGHT_FOOD_PER_MINUTE = 0.33;
+const FIGHT_FOOD_MINUTES = 20;
+const FIGHT_FOOD_MIN = Math.ceil(FIGHT_FOOD_PER_MINUTE * FIGHT_FOOD_MINUTES);
+
+/** How many pieces to fetch before a fight: 0 when it carries enough, else up to `want`. */
+function fightFoodToFetch({ carried = 0, want = 14, min = FIGHT_FOOD_MIN } = {}) {
+  const have = Math.max(0, Math.floor(Number(carried) || 0));
+  if (have >= Math.min(min, want)) return 0;
+  return Math.max(0, want - have);
+}
+
 /** The goods to bank for this job: [{ itemId, amount }]. Empty for jobs without a loadout yet. */
 function offLoadout(items, { mode, kindOf, foodKeep = GATHERING_FOOD } = {}) {
   if (!GATHERING.has(mode) || typeof kindOf !== "function") return [];
@@ -145,4 +164,4 @@ function walkTablets(walks, landings, { coins = 0, held = () => 0, priceOf = () 
   return best ? [{ name: best.name, amount: best.amount, walks: best.walks }] : [];
 }
 
-module.exports = { offLoadout, foodFor, travelKit, travelBuys, walkTablets, GATHERING, GATHERING_FOOD, NEAR_BANK_TILES, TRAVEL_RUNES, KIT_RUNES };
+module.exports = { offLoadout, foodFor, fightFoodToFetch, FIGHT_FOOD_MIN, travelKit, travelBuys, walkTablets, GATHERING, GATHERING_FOOD, NEAR_BANK_TILES, TRAVEL_RUNES, KIT_RUNES };

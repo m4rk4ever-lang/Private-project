@@ -4396,9 +4396,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
    */
   function stockFood(entry, plan, nowMs) {
     const player = entry.player;
-    if (carriesFood(player) || nowMs < (entry.stockFoodAt ?? 0)) return false;
+    if (nowMs < (entry.stockFoodAt ?? 0)) return false;
+    // Tops up a bag with a few pieces left too (Loadout.fightFoodToFetch): with "any food" as
+    // enough, a third of its fights began on 0-2 pieces, most ended out of food (metrics 22/23-11-2026).
+    const carried = foodSlots(player).length;
+    const amount = Loadout.fightFoodToFetch({ carried, want: Shopping.gear.foodAmount ?? 14 });
+    if (amount <= 0) return false;
     entry.stockFoodAt = nowMs + 10 * 60_000;
-    const amount = Shopping.gear.foodAmount ?? 14;
     const resume = () => {
       if (plan?.kind === "train") entry.savedTask = { kind: "train", mode: plan.mode, skill: plan.skill, reason: plan.reason, target: plan.target ?? null, planActivity: plan.activity ?? null, remainingMs: 0, savedAt: now() };
     };
@@ -4416,12 +4420,14 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
       });
     }
     const food = Shopping.foodToBuy(player, core, levelOf(player, "HITPOINTS"));
-    if (food && Shopping.coinsOf(player) >= Shopping.estimatedPrice(core, food.itemId, food.amount) + 50
-        && shopFor(entry, food.itemId, food.name, food.amount)) {
+    if (food && Shopping.coinsOf(player) >= Shopping.estimatedPrice(core, food.itemId, amount) + 50
+        && shopFor(entry, food.itemId, food.name, amount)) {
       resume();
       entry.needFood = false;
       return true;
     }
+    // A few pieces and no more to be had now: it fights with those (and restocks when they are gone).
+    if (carried > 0) return false;
     // No food to be had now (no coins, no shop near): it catches and cooks its own for a while.
     entry.needFood = true;
     note(player, "Kan nu geen eten krijgen; gaat eerst zelf vissen en koken.", "activity");
