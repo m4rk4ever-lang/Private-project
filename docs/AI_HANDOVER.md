@@ -5,6 +5,14 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 24-11-2026 13:00: huisportaal niet gevonden bij Construction (branch `adventurers/construction-huis`)
+
+- **Bewijs (bot-logs 23-11, `f0c01e1` + `ceefe7a`):** `construction_house` 6/6 `stuck`, `describe` "construct house=false hotspot=- built=0". `house=false` is `getPrivateArea()` (niet in het huis), niet "geen huis": de bots hadden een huis (ze kwamen langs de `construction:owns-house`-check, kochten planken). Vlak ervoor in de activity-log elke keer "Vond het huisportaal niet." op 2954-2956,3225-3227 (Jorgbot 4, Jorgbot 9, Markbot 6). Eén keer stond Jorgbot 9 op 2955,3225 en kwam binnen (915 XP).
+- **Oorzaak:** het portaal (loc 15478, 5x2, face 1) staat in `MapObjects` op zijn zuidwesttegel 2951,3222. `findObjectNear(..., 4)` keek alleen naar die tegel; vanaf x=2956 is dat 5 tegels. De huisaankoop (`construction:buy-house`) werkt: "Koopt een huis in Rimmington" (Jorgbot 3).
+- **Fix:** `objectsNear` in `brain/actions/Construct.PlayerBots.js` meet de afstand tot de voetafdruk van het object (grootte, gedraaid met face). Construct (hotspots, uitgangsportaal) en `findObjectNear` in Adventurers gebruiken hem.
+- **Test:** `tests/bot-construct-farm.test.cjs` "house portal is found by its footprint" met de echte tegels uit de logs (faalt op de oude code). Suite bot/player-bot: 333 pass, 15 fail (baseline). ESLint niet gedraaid (geweigerd door permissies), `node --check` ok.
+- **Bevestigen:** geen "Vond het huisportaal niet."; `construction_house`-klussen met XP > 0.
+- **Volgende:** Construct faalt na 20 s buiten het huis, ook als de bot nog onderweg is (stuck op 2727,3273 en 3270,3167 na "de weg was versperd"). Methode per level (oak larders 33-52) vraagt een keuken; bots bouwen nu alleen in de parlour, dus niet gedaan.
 ## 24-11-2026 13:00: farming wiedt eindelijk (branch `adventurers/farming-idle`)
 
 - **Bewijs (bot-logs 22/23-11, `f0f7b99` t/m `ceefe7a`):** farming 3,2% van de bot-tijd, 190 OSRS-XP/uur, 57% idle. 64 `idle` + 22 `stuck` met mode farming: vrijwel allemaal `seen=[herb:rake/... allotment:rake/...] tries=[]` en `left={"3058,3311":"rake x4 zonder effect"}`. Klussen van 10-14 min met 100-600 ruwe XP (= 1-6 wieden à 4 OSRS-XP), bijna nooit geplant.

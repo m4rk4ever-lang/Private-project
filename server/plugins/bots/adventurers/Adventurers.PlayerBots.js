@@ -35,6 +35,7 @@ const { chooseNext, bestActivity, isReady, trainingOptions, activitiesFor, least
 const { createQuestList } = require("./Quests.PlayerBots");
 const Goals = require("./Goals.PlayerBots");
 const { startActivity } = require("../brain/BrainActivities.PlayerBots");
+const { objectsNear } = require("../brain/actions/Construct.PlayerBots");
 const travelData = require("../data/travel-destinations.json");
 
 const LOG_ATTRIBUTE = "adventurers:journal";
@@ -2182,21 +2183,12 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
     return true;
   }
 
-  /** An object near it with `option` (a portal's Build mode): { object, definition, clickType } or null. */
+  /**
+   * An object near it with `option` (a portal's Build mode): { object, definition, clickType } or
+   * null. Measured to the object's footprint, not its south-west tile (Construct.objectsNear).
+   */
   function findObjectNear(player, name, option, radius) {
-    const at = player.getLocation();
-    for (let dx = -radius; dx <= radius; dx += 1) {
-      for (let dy = -radius; dy <= radius; dy += 1) {
-        for (const object of core.MapObjects?.mapObjects?.get?.(core.MapObjects.getHash(at.getX() + dx, at.getY() + dy, at.getZ())) ?? []) {
-          let definition;
-          try { definition = core.ObjectDefinition.forPlayer?.(object.getId(), player) ?? core.ObjectDefinition.forId(object.getId()); } catch { definition = core.ObjectDefinition.forId(object.getId()); }
-          if (!name.test(String(definition?.getName?.() ?? ""))) continue;
-          const index = (definition?.getInteractions?.() ?? []).findIndex((entry) => String(entry ?? "").toLowerCase() === option);
-          if (index >= 0) return { object, definition, clickType: index + 1 };
-        }
-      }
-    }
-    return null;
+    return objectsNear(core, player, option, name, radius)[0] ?? null;
   }
 
   /**
