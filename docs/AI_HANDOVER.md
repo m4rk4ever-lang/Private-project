@@ -5,6 +5,14 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 24-11-2026 16:00: stand na de sessie (lead), open werk
+
+- **Gemerged vandaag:** #75 Barrows-gang, #76 mithril 55, #77 eten mee bij combat, #78 Farming wieden, #79 Construction-portaal, #80 tierkeuze op gemeten OSRS-XP/gp, #81 Sailing stap 1 (meten).
+- **Omgeving:** de sessie gebruikt de cloud-omgeving `private-project` (archive.openrs2.org toegestaan). Cache: `NODE_USE_ENV_PROXY=1 npx ts-node ./scripts/ensure-cache.ts`; build `npx tsc --build`. Met cache en build is de suite-baseline **15 fail** (347+ tests). Lokale server: `AGENT_MCP=1 ADVENTURER_SHARE_LOGS=0 ADVENTURER_START_BRIDGE=0 node ../scripts/run-with-env.mjs - ./dist/Server.js`.
+- **Open, niet gemerged:** `adventurers/hunter-eigen-strikken` (WIP). Bewijs in game: een strik op het crimson swift-strand ving binnen 25 ticks (opties Check/Reset), maar viel na 100 ticks ongecheckt om. Oorzaak in `HuntBirds`: checkt de eerste gevangen strik in de buurt (vaak van een andere bot), wacht niet op een mislukte strik en legt meer dan de limiet (`refused` telt de limiet als slechte tegel, bot loopt weg). Fix staat erin (eigen strikken via `H.traps`, Reset, limiet uit `Traps.limit`); `tests/bot-hunt-birds.test.cjs` faalt nog op de harness (`installProductionPathResolver` ontbreekt). Afmaken, lokaal valideren, mergen.
+- **Ronde 2, branches van sub-agents (gepusht, nog te mergen na rebase + suite):** `adventurers/agility-stuck`, `adventurers/gathering-stuck`, `adventurers/slayer-stuck`, `adventurers/combat-loadout`, `adventurers/thieving-stuck` (als ze er staan).
+- **Volgende:** bovenstaande mergen; daarna Gemstone Crab (S1), Construction oak larders, Sailing stap 2 (vaste zeeroute Port Sarim - Pandemonium).
+
 ## 24-11-2026 13:00: Sailing stap 1, meten (branch `adventurers/sailing-stap1`)
 
 - **Bewijs (bot-logs 23-11, `ceefe7a`):** 60 bots, Sailing gemiddeld 24,7 = startniveaus (33× 1); geen Sailing-XP in `job`/`skills`. 20× `quest_gap` Fallen From Grace mist SAILING 62 en Pandemonium. Pandemonium nergens in de quest-feedback.
