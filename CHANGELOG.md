@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Avonturiers die in hun huis wilden bouwen, stonden naast het huisportaal in Rimmington en zeiden dat ze het niet vonden. Ze vinden het portaal nu en gaan via Build mode naar binnen.
 - Farmende avonturiers klikten zo vaak op "Rake" dat het wieden steeds opnieuw begon: ze stonden minutenlang bij de moestuin zonder onkruid of XP en kwamen niet aan zaaien toe. Ze wieden nu een patch in één keer leeg en zaaien daarna.
 - Avonturiers gingen vechten met nog één of twee stuks eten in hun tas en moesten na een paar minuten stoppen ("geen eten meer"). Met minder dan 7 stuks vullen ze hun eten nu eerst aan tot 14, uit de bank of de winkel.
 - Avonturiers met Mining 50 tot 54 gingen mithril hakken, wat pas vanaf 55 kan, en kregen niets. Ze hakken nu coal tot ze 55 zijn.

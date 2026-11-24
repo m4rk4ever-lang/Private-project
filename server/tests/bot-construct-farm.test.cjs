@@ -81,6 +81,26 @@ test("construct: builds on an empty hotspot, removes its own piece, leaves when 
   assert.equal(action.update({ player, state, nowMs: 20_000 }), "success");
 });
 
+test("construct: the house portal is found by its footprint, not its south-west tile (validation ceefe7a)", () => {
+  const { objectsNear } = require("../plugins/bots/brain/actions/Construct.PlayerBots");
+  // Rimmington's portal (loc 15478, 5x2, face 1) stands on 2951,3222; Jorgbot 4, Jorgbot 9 and
+  // Markbot 6 stopped at 2954-2956,3225-3227 and said "Vond het huisportaal niet." (23-11-2026).
+  const portal = { getId: () => 15478, getFace: () => 1, getPrivateArea: () => null,
+    getLocation: () => ({ getX: () => 2951, getY: () => 3222, getZ: () => 0 }) };
+  const definition = { getName: () => "Portal", getInteractions: () => ["Enter", "Home", "Build mode", "Friend's house", null], getSizeX: () => 5, getSizeY: () => 2 };
+  const hash = (x, y, z) => `${x},${y},${z}`;
+  const core = { MapObjects: { getHash: hash, mapObjects: new Map([[hash(2951, 3222, 0), [portal]]]) },
+    ObjectDefinition: { forId: () => definition, forPlayer: () => definition } };
+  const at = (x, y) => ({ getLocation: () => ({ getX: () => x, getY: () => y, getZ: () => 0 }), getPrivateArea: () => null });
+  for (const [x, y] of [[2956, 3225], [2956, 3227], [2954, 3227]]) {
+    const found = objectsNear(core, at(x, y), "build mode", /^portal$/i, 4)[0];
+    assert.equal(found?.object, portal, `${x},${y}`);
+    assert.equal(found.clickType, 3);
+  }
+  // Out of reach stays out: five tiles east of its edge.
+  assert.equal(objectsNear(core, at(2958, 3224), "build mode", /^portal$/i, 4).length, 0);
+});
+
 test("farm patches: rake first, then plant the best seed it carries, then done", () => {
   const patches = [
     { id: 8150, x: 3058, y: 3311, name: "Herb patch", options: ["Rake", "Inspect", "Guide"] },
