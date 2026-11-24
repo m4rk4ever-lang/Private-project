@@ -5,6 +5,15 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 24-11-2026 13:00: farming wiedt eindelijk (branch `adventurers/farming-idle`)
+
+- **Bewijs (bot-logs 22/23-11, `f0f7b99` t/m `ceefe7a`):** farming 3,2% van de bot-tijd, 190 OSRS-XP/uur, 57% idle. 64 `idle` + 22 `stuck` met mode farming: vrijwel allemaal `seen=[herb:rake/... allotment:rake/...] tries=[]` en `left={"3058,3311":"rake x4 zonder effect"}`. Klussen van 10-14 min met 100-600 ruwe XP (= 1-6 wieden à 4 OSRS-XP), bijna nooit geplant.
+- **Oorzaak:** `Patches.Farming.js` `objectInteraction` doet `WORK.delete` en `startWork` begint opnieuw: eerste wiet 6 ticks (3,6 s) na de klik, daarna één per 4 ticks. `FarmPatches` klikte elke `STEP_MS` (2,4 s) opnieuw "rake": het wieden begon steeds overnieuw, er kwam (op wat vertraging na) nooit een wiet. Zelfde gold voor oogsten.
+- **Fix (`FarmPatches.PlayerBots.js`):** na een rake/pick-klik `workUntil` = nu + 4,8 s; elke wiet in de tas of Farming-XP-stijging verlengt dat en zet de zelfde-klik-teller terug. Tijdens het lopen naar de patch schuift de wachttijd mee.
+- **Test:** `tests/bot-construct-farm.test.cjs` "one rake click, left alone while the weeds come": beurten om de 2,4 s, wieten op 3,6/6/8,4 s; één klik, daarna zaaien. Faalt op de oude code (meerdere klikken).
+- **Validatie:** suite 333 pass, 15 fail (baseline 15); eslint no-undef schoon. Niet in game getest.
+- **Bevestigen:** farming-`idle` met `rake x4 zonder effect` weg; `tries` gevuld; farming-XP per bot-uur omhoog; `ended` time up neemt af.
+- **Volgende:** zaden ontbreken vaak (15× "wieden, oogsten en zaaien" zonder zaad vs 8× met guam seed): zaden kopen/bewaren. Daarna tree runs (OSRS Wiki: effectiefste Farming-XP vanaf 15, oak sapling), niet gebouwd.
 ## 24-11-2026 13:00: eten aanvullen vóór een gevecht (branch `adventurers/combat-eten`)
 
 - **Bewijs (bot-metrics `job` + `bot`, alle versies t/m `441b072`/`ceefe7a`):** 154 `combat_training`-klussen: 46 `out of food`, 9 `low hp, no food`, 45 `full bag`. Eten in de tas bij de eerste `bot`-snapshot van de klus (142 met snapshot): 0-2 stuks → 38 van 50 eindigen zonder eten; 3-4 → 4/12; 5+ → 11/80. Verbruik: mediaan 0,2, p75 0,33 stuk/min; een klus duurt 20-40 min (`trainMinutes`). Combat 53-82; doelwit is geen oorzaak in deze data (plekken divers: Taverley, Ardougne, Seers).

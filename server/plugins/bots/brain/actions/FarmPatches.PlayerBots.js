@@ -21,6 +21,13 @@ const PLANT_TRIES = 2;
 const SAME_CLICK_LIMIT = 4;
 /** Beside a patch (a large object): its option sent at once, as at the ruins (walkToObject's execute did not come). */
 const DIRECT_TILES = 4;
+/**
+ * After a rake or pick click: no new click while the work goes on, i.e. while a weed or Farming
+ * XP came in the last 4.8 s. The Farming plugin restarts the work on every click (the first weed
+ * 6 ticks after it, one per 4 after), and the bot clicked again every 2.4 s: no weed ever came.
+ * 23-11-2026 (441b072, ceefe7a): farming_falador 57% idle, "rake x4 zonder effect", tries=[].
+ */
+const WORK_WAIT_MS = 4_800;
 
 function createFarmPatchesAction(spec, world) {
   const core = world?.core;
@@ -87,6 +94,11 @@ function createFarmPatchesAction(spec, world) {
     return true;
   }
 
+  const farmingXp = (player) => {
+    const xp = player.getSkillManager?.()?.getExperience?.(core.Skill?.FARMING);
+    return Number.isFinite(xp) ? xp : null;
+  };
+
   const key = (patch) => `${patch.object.getLocation().getX()},${patch.object.getLocation().getY()}`;
 
   return {
@@ -95,15 +107,28 @@ function createFarmPatchesAction(spec, world) {
       const { player, state, nowMs } = ctx;
       if (!player || !state) return "failed";
       const bot = (state.farmPatches ??= { at: 0, tries: new Map() });
-      if (nowMs < bot.at || player.busy?.() || player.getMovementQueue().size() > 0) return "running";
+      const moving = player.busy?.() || player.getMovementQueue().size() > 0;
+      // Walking to the patch it clicked: the work has not begun, the wait starts when it is there.
+      if (moving && bot.workUntil) bot.workUntil = nowMs + WORK_WAIT_MS;
+      if (nowMs < bot.at || moving) return "running";
       bot.at = nowMs + STEP_MS;
+      // Progress since the last turn (a weed in the bag, Farming XP): the work goes on, left alone.
+      const xp = farmingXp(player);
+      const raked = player.getInventory().getAmount(weeds) > 0;
+      if (raked || (xp !== null && bot.xp !== undefined && xp > bot.xp)) {
+        if (bot.workUntil) bot.workUntil = nowMs + WORK_WAIT_MS;
+        bot.same?.clear();
+      }
+      bot.xp = xp ?? undefined;
       // The weeds a rake brings up: dropped, as a player does.
       // (As DropItems does: the item's Drop option is not a plugin action; Patrickbot 7 kept raking
       // with a bag of weeds that never went and stood stuck at Falador, 21-11-2026.)
-      if (player.getInventory().getAmount(weeds) > 0) {
+      if (raked) {
         player.getInventory().deleteNumber?.(weeds, player.getInventory().getAmount(weeds));
         player.getInventory().refreshItems?.();
       }
+      if (bot.workUntil && nowMs < bot.workUntil) return "running";
+      bot.workUntil = 0;
       if (player.getInventory().getFreeSlots() <= 0) return "success";
       const here = patches(player);
       if (here.length === 0) return "failed";
@@ -131,11 +156,11 @@ function createFarmPatchesAction(spec, world) {
         if (can("rake")) {
           // Raking takes a rake, as for a player ("Farming Supplies had geen rake").
           if (!(player.getInventory().getAmount(rake) > 0)) { bot.left.set(key(patch), "geen rake"); continue; }
-          if (clickOnce(patch, "rake")) return "running";
+          if (clickOnce(patch, "rake")) { bot.workUntil = nowMs + WORK_WAIT_MS; return "running"; }
           continue;
         }
         const pick = ["harvest", "pick"].find(can);
-        if (pick) { if (clickOnce(patch, pick)) return "running"; continue; }
+        if (pick) { if (clickOnce(patch, pick)) { bot.workUntil = nowMs + WORK_WAIT_MS; return "running"; } continue; }
         // Dead (Clear) or diseased (Cure: it has no cure with it): dug up with the spade.
         if (can("clear") || can("dig")) { if (clickOnce(patch, can("clear") ? "clear" : "dig")) return "running"; continue; }
         if (can("cure") && player.getInventory().getAmount(spade) > 0 && useOn(player, patch, spade)) return "running";
