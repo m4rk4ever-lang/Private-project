@@ -5,6 +5,15 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 24-11-2026 10:45: validatie `ceefe7a` (#72) en Barrows-oorzaak (branch `analysis/validatie-ceefe7a`)
+
+- **Logs:** 23-11 14:11-15:21 UTC (70 min). Daarna geen logs meer: de server staat stil.
+- **Werkt:** bank-pingpong weg (detector 3×), lussen per bot-uur 0,88 → 0,44, OSRS-XP 25.465 per bot-uur.
+- **Barrows-oorzaak (met `lastDoor`):** de oversteek lukt (`crossed`), maar de bot landt op de deurtegel, die volgens `roomAt` (straal 7) nog bij dezelfde kamer hoort. Hij plant opnieuw door dezelfde deur en steekt terug. Fix: na `crossed` doorlopen naar de volgende kamer uit de route.
+- **Telemetriefout:** `barrows_run.at` bevat de positie in plaats van de tijd.
+- **Verder:** Construction start zonder huis (9× `stuck`), Fishing Guild weer 18× `walk_blocked`, Markbot 12 en Kram539 0 XP.
+- **Details:** [analysis/2026-11-24-validatie-ceefe7a.md](analysis/2026-11-24-validatie-ceefe7a.md).
+
 ## 23-11-2026 15:30: validatie 441b072 (#71) verwerkt: bank-pingpong (branch `adventurers/analysis-p7`)
 
 Niet in game getest.
