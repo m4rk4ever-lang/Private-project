@@ -3933,6 +3933,13 @@ function createAdventurers({ api, runtime, world, registry, random = Math.random
         entry.jobEnd = "stuck";
         unstrand(entry, entry.player);
         const stuckAt = entry.player.getLocation();
+        // Stuck on a Slayer task (outside Draynor Manor's front door, the ghosts inside): that
+        // spot and where it stands are left for a while (startSlayer skips spots near them), so
+        // the next pick takes other monsters of its task or leaves Slayer for now with its reason.
+        const leave = Slayer.stuckSpots({ activity: entry.activity, home: stateOf(entry.player)?.home ?? null,
+          at: { x: stuckAt.getX(), y: stuckAt.getY(), z: stuckAt.getZ() } });
+        for (const place of leave) (entry.blockedPlaces ??= new Map()).set(placeKey(place), now() + Slayer.STUCK_SPOT_MS);
+        if (leave.length > 0 && !quiet) note(entry.player, "Komt niet bij de monsters van zijn Slayer-taak hier; zoekt een andere plek.", "activity");
         if (!quiet) metric({ kind: "stuck", bot: entry.name, mode: entry.plan?.mode ?? null, reason: entry.plan?.reason ?? null,
           combat: entry.player.getSkillManager().getCombatLevel(), where: [stuckAt.getX(), stuckAt.getY(), stuckAt.getZ()],
           home: stateOf(entry.player)?.home ?? null, ...brainSnapshot(entry) });

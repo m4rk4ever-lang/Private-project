@@ -129,4 +129,21 @@ function namesNear(targets, at, radius = 40) {
     .map((target) => target.name))];
 }
 
-module.exports = { MASTERS, masters, mastersFor, protectionFor, currentTask, askForTask, taskTargets, nearest, namesNear, NEEDS_FINISHER };
+/** How long a Slayer spot it got stuck at is left: the rest of a task's stretch, as the pause is. */
+const STUCK_SPOT_MS = 60 * 60_000;
+
+/**
+ * Stuck on its Slayer task (no XP and not a step for a while): the places to leave for a while,
+ * so the next pick takes other monsters of its task instead of the same spot again. Its spot
+ * (`home`) and where it stands (`at`): outside Draynor Manor's front door (3109,3353) the ghosts
+ * inside (3094-3123, 3356) were picked again and again, 24 of 51 Slayer "stuck" metrics
+ * (versions 4baf1a2 to ceefe7a, 22/23-11-2026); the walk there never failed, so nothing was left.
+ * Empty when it was not on a Slayer task.
+ */
+function stuckSpots({ activity = null, home = null, at = null } = {}) {
+  if (activity !== "slayer_task") return [];
+  return [home, at].filter((place) => place && Number.isFinite(place.x) && Number.isFinite(place.y))
+    .map((place) => ({ x: place.x, y: place.y, z: place.z ?? 0 }));
+}
+
+module.exports = { MASTERS, STUCK_SPOT_MS, stuckSpots, masters, mastersFor, protectionFor, currentTask, askForTask, taskTargets, nearest, namesNear, NEEDS_FINISHER };
