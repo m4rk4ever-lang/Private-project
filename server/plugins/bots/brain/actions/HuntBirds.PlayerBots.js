@@ -51,6 +51,47 @@ function createHuntBirdsAction(spec, world) {
     return null;
   }
 
+  /**
+   * Its own traps, as the Hunter plugin keeps them (a player knows which traps are his), or null
+   * when the plugin is not loaded. A bot clicked the first caught snare near it, often another
+   * bot's ("This isn't your trap."), and tried to lay more than its level allows, counting the
+   * refusal against the tile and walking off its own snare: 525 bot-minutes for 23 OSRS-XP an hour
+   * on the crimson swift beach (bot-logs 23-11-2026; refused=7..10 in the stuck events). On the
+   * local server a laid snare held a swift ("Check") within 25 ticks, then fell over unchecked.
+   */
+  function ownTraps(player) {
+    try {
+      const { H } = require("../../../skills/hunter/Context.Hunter");
+      return [...(H?.traps ?? [])].filter((trap) => trap.player === player);
+    } catch {
+      return null;
+    }
+  }
+
+  /** How many traps its level allows, as the plugin counts them; 1 when unknown. */
+  function trapLimit(player) {
+    try {
+      return Number(require("../../../skills/hunter/Traps.Hunter").limit(player, net ? "net" : "bird")) || 1;
+    } catch {
+      return 1;
+    }
+  }
+
+  /** Its own trap that wants a click: Check when it caught something, Reset (else Dismantle) when it missed. */
+  function ownTrapToClick(traps) {
+    for (const trap of traps) {
+      const want = trap.state === "caught" ? ["check"] : trap.state === "failed" ? ["reset", "dismantle"] : null;
+      const object = want ? trap.objects?.at?.(-1) : null;
+      if (!object) continue;
+      const options = (core.ObjectDefinition.forId(object.getId())?.getInteractions?.() ?? []).map((option) => String(option ?? "").toLowerCase());
+      for (const name of want) {
+        const index = options.indexOf(name);
+        if (index >= 0) return [object, index + 1];
+      }
+    }
+    return null;
+  }
+
   /** A young tree near the site it can set a net trap on, as [object, clickType], or null. */
   function youngTree(player) {
     const here = player.getLocation();
@@ -144,11 +185,25 @@ function createHuntBirdsAction(spec, world) {
       // A bird in a snare: check it (the plugin hands over the catch and the XP).
       // A full bag: the stretch is done (the catches go to the bank or the exchange).
       if (player.getInventory().getFreeSlots() <= 0) return "success";
-      const trap = caughtTrap(player);
+      const own = ownTraps(player);
+      const trap = own ? ownTrapToClick(own) : caughtTrap(player);
       if (trap) {
         click(player, trap);
+        bot.clicked = (bot.clicked ?? 0) + 1;
         return "running";
       }
+      // As many traps out as its level allows: it waits by them for a catch, not off laying more.
+      if (own && own.length >= trapLimit(player)) {
+        const nearest = own.map((entry) => entry.location).filter(Boolean)
+          .sort((a, b) => away(here, a.getX(), a.getY()) - away(here, b.getX(), b.getY()))[0];
+        if (nearest && away(here, nearest.getX(), nearest.getY()) > 3) {
+          requestMovement(player, nearest.getX(), nearest.getY() - 1, { state, nowMs, z: 0, reason: "brain_hunter", basicPather: true });
+        }
+        bot.tried = null;
+        bot.full = true;
+        return "running";
+      }
+      bot.full = false;
       // A snare that fell over (or a collapsed net trap's net and rope) lies on the ground: take it back.
       const ground = Loot.lootNear(core, player, { radius, minValue: 0, valueOf: () => 1 });
       if (ground && tools.includes(ground.getItem?.()?.getId?.())) {
@@ -217,7 +272,9 @@ function createHuntBirdsAction(spec, world) {
     },
     describe(ctx) {
       const bot = ctx?.state?.huntBirds;
-      return `huntBirds ${net ? "net" : "snare"} laid=${bot?.laidAt ?? "-"} refused=${bot?.refused?.size ?? 0} carries=${ctx?.player ? carries(ctx.player) : "?"}`;
+      const own = ctx?.player ? ownTraps(ctx.player) : null;
+      return `huntBirds ${net ? "net" : "snare"} laid=${bot?.laidAt ?? "-"} refused=${bot?.refused?.size ?? 0} carries=${ctx?.player ? carries(ctx.player) : "?"}`
+        + ` own=${own ? own.map((trap) => trap.state).join("/") || "0" : "?"} limit=${ctx?.player ? trapLimit(ctx.player) : "?"} clicked=${bot?.clicked ?? 0}`;
     },
     stop(ctx) {
       if (ctx?.state) ctx.state.huntBirds = null;
