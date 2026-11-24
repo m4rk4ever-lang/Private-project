@@ -55,6 +55,12 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 - **Bevestigen:** `job` combat_training `ended: "out of food"` < 15%; "Neemt N x … van de bank mee om te eten" met N ≈ 7-14 ook bij bots met nog eten; geen bank-lus (cooldown `stockFoodAt` 10 min).
 - **Volgende:** `full bag` (45×): de tas zit vol met gereedschap/runes (snapshot mediaan 5 vrije vakken, Taverley 22×); een gevechts-loadout zoals `offLoadout` voor verzamelen.
 
+## 24-11-2026 11:45: money making uit de OSRS Wiki, met serverprijzen (branch `analysis/money-making-wiki`)
+
+- **Wat:** alle 1.134 "Money making guide/…"-pagina's via de wiki-API; 651 met `{{Mmgtable}}` geparset (invoer, opbrengst, acties per uur, eisen, plek, intensiteit). Winst opnieuw berekend met `item-prices.json` (inkoop hoog, verkoop laag) en de koopgrenzen uit `grand-exchange.json`. 317 zonder vlag `check`; mediaan serverwinst/wiki-winst 1,0.
+- **Kern:** bots verdienen nu 3-33k gp/uur; op elk level zijn er rustige methodes van 0,3-1,4M binnen de koopgrenzen (dragonhide looien zonder skill-eis, unf potions vanaf Herblore 30, bracelets, dart tips, death runes, runite, master farmers). Verwerking vraagt veel werkkapitaal (ranarr unf ~14,5M per uur); weinig kapitaal → methodes met hoge marge of zonder inkoop; de maxed testprofielen met miljarden zijn ideaal voor dure verwerking.
+- **Pakketten M1-M6** en de dataset: [analysis/2026-11-24-money-making-tips.md](analysis/2026-11-24-money-making-tips.md), `docs/analysis/2026-11-24/money-making-methods.json`, script `docs/analysis/scripts/mmg_scrape.py`.
+
 ## 24-11-2026 12:30: mithril pas vanaf Mining 55 (branch `adventurers/mithril-55`)
 
 - **Bewijs (bot-logs 23-11, `441b072` + `ceefe7a`):** mining was 8% van de bot-tijd met 17k XP/uur (vissen 223k). `mithril_rocks`: 36 klussen, 848 min, 362 OSRS-XP/uur. Onder Mining 55: 29 klussen, 676 min, **0 XP**; vanaf 55: 44k XP/uur (ruw). `idle` met `failedClicks=6` op mithril-rotsen.
