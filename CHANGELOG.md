@@ -14,6 +14,7 @@ Indeling per versie:
 ## [Nog niet uitgebracht]
 
 ### Opgelost
+- Avonturiers met Mining 50 tot 54 gingen mithril hakken, wat pas vanaf 55 kan, en kregen niets. Ze hakken nu coal tot ze 55 zijn.
 - Avonturiers in de Barrows-tunnels stapten door een deur en meteen weer terug, minutenlang, tot ze opgaven. Ze lopen nu door de gang naar de deur van de volgende kamer en gaan daar naar binnen.
 - Avonturiers haalden planken of een hamer van de bank en zetten die meteen weer terug, soms honderd keer achter elkaar. Ze halen nu alleen wat ze nodig hebben en houden het bij zich.
 - Avonturiers die mithril, adamantite of coal wilden hakken, gingen naar het oostelijke deel van Lumbridge Swamp, waar die rotsen niet staan. Ze gaan nu naar de mijn in het westen van het moeras.

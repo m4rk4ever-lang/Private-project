@@ -5,6 +5,15 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 24-11-2026 12:30: mithril pas vanaf Mining 55 (branch `adventurers/mithril-55`)
+
+- **Bewijs (bot-logs 23-11, `441b072` + `ceefe7a`):** mining was 8% van de bot-tijd met 17k XP/uur (vissen 223k). `mithril_rocks`: 36 klussen, 848 min, 362 OSRS-XP/uur. Onder Mining 55: 29 klussen, 676 min, **0 XP**; vanaf 55: 44k XP/uur (ruw). `idle` met `failedClicks=6` op mithril-rotsen.
+- **Oorzaak:** `bot-activities.json` had `mithril_rocks` op level 50; `Mining.plugin.js` vraagt (als OSRS) 55. Bots van 50-54 klikten op rotsen die ze niet mogen mijnen.
+- **Fix:** level 55. Mining 50-54 valt nu terug op coal (gemeten 217k ruw XP/uur bij < 55).
+- **Test:** `tests/bot-activity-levels.test.cjs` legt elk `mine_rocks`-tier naast de rotstabel van de plugin. Andere tiers (bomen, vis, stalls, pickpockets) kloppen met OSRS.
+- **Validatie:** suite 174 pass, 14 fail (baseline).
+- **Bevestigen:** geen `mithril_rocks`-klus met `fit.level` < 55; mining-XP per bot-uur omhoog.
+
 ## 24-11-2026 12:00: Barrows-tunnels, terugstappen na `crossed` (branch `adventurers/barrows-crossed`)
 
 Uit [analysis/2026-11-24-validatie-ceefe7a.md](analysis/2026-11-24-validatie-ceefe7a.md). Geen nieuwe logs sinds 23-11 15:21 (server staat stil); niet in game getest (geen cache in deze omgeving).
