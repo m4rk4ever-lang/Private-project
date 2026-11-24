@@ -5,6 +5,12 @@ eerst [`AI_Constitution.md`](https://github.com/m4rk4ever-lang/private-project/b
 
 ---
 
+## 24-11-2026 11:15: lokaal draaien op een Mac (branch `docs/mac-lokaal`)
+
+- **Aanleiding:** het Codespaces-tegoed van de eigenaar is op (geen logs sinds 23-11 15:21 UTC). Hij draait het spel nu op zijn Mac.
+- **Voor de developer bot:** `scripts/stop-game.sh` werkt niet op macOS: `ss` en `/proc` bestaan daar niet, dus `yarn stop` stopt niets en `yarn update` of een tweede `yarn start` loopt vast op een bezette poort. Voorstel: `lsof` en `ps -o ppid=` als terugval. Ook `scripts/update.sh` r. 29 (`sed -i` zonder argument, werkt niet met BSD-sed).
+- **Details en de stappen voor de eigenaar:** [analysis/2026-11-24-mac-lokaal-draaien.md](analysis/2026-11-24-mac-lokaal-draaien.md).
+
 ## 24-11-2026 10:45: validatie `ceefe7a` (#72) en Barrows-oorzaak (branch `analysis/validatie-ceefe7a`)
 
 - **Logs:** 23-11 14:11-15:21 UTC (70 min). Daarna geen logs meer: de server staat stil.
